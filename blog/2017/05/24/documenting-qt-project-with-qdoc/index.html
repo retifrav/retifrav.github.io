@@ -1,0 +1,458 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Documenting a Qt project with QDoc | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Documenting a Qt project with QDoc" />
+<meta property="og:description" content="When I needed to generate documentation for my projects, I used Doxygen. It&rsquo;s a quite useful tool that parses specially formated comments in your project&rsquo;s source code to produce documentation pages for it. Mostly I used it to document my Qt projects.
+To my shame, I didn&rsquo;t know that Qt has such a tool out-of-the-box - it is the QDoc. In this article I&rsquo;ll show you how to document a custom QML type (Qt Quick control) with QDoc and also how to make the result look a bit less dull." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2017/05/24/documenting-qt-project-with-qdoc/" />
+<meta property="article:published_time" content="2017-05-24T11:21:27+02:00" />
+<meta property="article:modified_time" content="2017-05-24T11:21:27+02:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Documenting a Qt project with QDoc</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2017-05-24 11:21:27 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 5 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>When I needed to generate documentation for my projects, I used <a href="https://en.wikipedia.org/wiki/Doxygen">Doxygen</a>. It&rsquo;s a quite useful tool that parses specially formated comments in your project&rsquo;s source code to produce documentation pages for it. Mostly I used it to document my Qt projects.</p>
+<p>To my shame, I didn&rsquo;t know that Qt has such a tool out-of-the-box - it is the <a href="http://doc.qt.io/qt-5/01-qdoc-manual.html">QDoc</a>. In this article I&rsquo;ll show you how to document a custom QML type (Qt Quick control) with QDoc and also how to make the result look a bit less dull.</p>
+<p>QDoc requires a <a href="http://doc.qt.io/qt-5/qdoc-guide-conf.html">configuration file</a> to understand how to theat your project: where to find sources (and what types of sources should be documented), images, etc. In this config you can also specify additional information, like what external CSS to apply.</p>
+<p>Here&rsquo;s an example of my config:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#75715e"># where your source files are (here it&#39;s just the root directory)</span>
+<span style="color:#ae81ff">sourcedirs = .</span>
+<span style="color:#75715e"># where your header files are (probably in the same place as source)</span>
+<span style="color:#ae81ff">headerdirs = .</span>
+<span style="color:#75715e"># where you store images that are used in your qdoc comments</span>
+<span style="color:#ae81ff">imagedirs = .</span>
+
+<span style="color:#75715e"># what kind of sources should be processed</span>
+<span style="color:#ae81ff">sources.fileextensions = &#34;*.cpp *.qml&#34;</span>
+<span style="color:#75715e"># what kind of headers should be processed</span>
+<span style="color:#ae81ff">headers.fileextensions = &#34;*.hpp&#34;</span>
+
+<span style="color:#75715e"># where to put the result</span>
+<span style="color:#ae81ff">outputdir = ./doc/</span>
+<span style="color:#75715e"># what format to use for generating documentation</span>
+<span style="color:#ae81ff">outputformats = HTML</span>
+
+<span style="color:#75715e"># path to the CSS files if you would like to use any (here it&#39;s the current directory)</span>
+<span style="color:#ae81ff">HTML.stylesheets = style.css</span>
+<span style="color:#75715e"># the string that actually includes the CSS into documentation file</span>
+<span style="color:#ae81ff">HTML.headerstyles = &#34;&lt;link rel=\&#34;stylesheet\&#34; type=\&#34;text/css\&#34; href=\&#34;style/style.css\&#34;/&gt;\n&#34;</span>
+<span style="color:#75715e"># what to append to every page after header</span>
+<span style="color:#ae81ff">HTML.postheader = &#34;&lt;p class=\&#34;header\&#34;&gt;&lt;small&gt;[My awesome documentation]&lt;/small&gt;&lt;/p&gt;&lt;hr/&gt;&#34;</span>
+<span style="color:#75715e"># what to append to every page after the content</span>
+<span style="color:#ae81ff">HTML.footer = &#34;&lt;hr/&gt;&lt;p class=\&#34;footer\&#34;&gt;&lt;small&gt;[some footer and whatnot information]&lt;/small&gt;&lt;/p&gt;&#34;</span></code></pre></div>
+<p>Sometimes <code>qdoc</code> behaves like a whimsy princess: if you would omit some configuration string or add an empty string between two &ldquo;related&rdquo; strings, it won&rsquo;t produce any result. But I can&rsquo;t catch it to reproduce any of those issue guaranteed, so just keep in mind that something like this can happen.</p>
+<p>Full list of HTML variables is <a href="http://doc.qt.io/qt-5/24-qdoc-configuration-htmlvariables.html">here</a>, but it doesn&rsquo;t contain the <code>HTML.headerstyles</code> variable, and without it the CSS file will only be copied to the output directory and will not be applied to pages. Although, this variable is mentioned in <a href="http://doc.qt.io/qt-5/qdoc-guide-conf.html#html-configuration">another article</a>, so it&rsquo;s kinda documented, but its whereabouts can cause some troubles, like it was in my case - only having discovered <a href="https://github.com/blackberry/Cascades-Samples/blob/master/docs/qt-html-default-styles.qdocconf">this page</a> I finally understood what exactly was missing from my config.</p>
+<p>Ok, that is your configuration file for <code>qdoc</code> utility. Save it to your project directory.</p>
+<p>Now you need to write special comments in your source files. Those comments will be used by <code>qdoc</code> to generate the documentation. Use <a href="http://doc.qt.io/qt-5/qdoc-guide-writing.html">this article</a> to master writing documentation comments. By the way, you can use QDoc not only for <a href="http://doc.qt.io/qt-5/qtwritingstyle-cpp.html">C++ code</a>, but for <a href="http://doc.qt.io/qt-5/qtwritingstyle-qml.html">QML code</a> as well.</p>
+<p>I&rsquo;ll show you an example of documenting a new QML type (a bit customized <a href="http://doc.qt.io/qt-5/qml-qtquick-textinput.html">TextInput</a>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#66d9ef">import</span> <span style="color:#a6e22e">QtQuick</span> <span style="color:#ae81ff">2.7</span>
+<span style="color:#66d9ef">import</span> <span style="color:#a6e22e">QtQuick</span>.<span style="color:#a6e22e">Window</span> <span style="color:#ae81ff">2.0</span>
+
+<span style="color:#75715e">/*!
+</span><span style="color:#75715e">   \qmltype AwesomeUIControl
+</span><span style="color:#75715e">   \brief A customized TextInput control
+</span><span style="color:#75715e">
+</span><span style="color:#75715e">   This control extends standard TextInput by adding background color,
+</span><span style="color:#75715e">   paddings, font styles and other stuff. On the screenshot below
+</span><span style="color:#75715e">   you can see it as an input field with green background.
+</span><span style="color:#75715e">
+</span><span style="color:#75715e">   \image awesomeuicontrol.png
+</span><span style="color:#75715e">
+</span><span style="color:#75715e">   \section1 Setting default text and capitalization
+</span><span style="color:#75715e">
+</span><span style="color:#75715e">   To set the default text, auto-capitalized input and password mode - use the properties:
+</span><span style="color:#75715e">
+</span><span style="color:#75715e">   \qml
+</span><span style="color:#75715e">   AwesomeUIControl {
+</span><span style="color:#75715e">       text: &#34;some text&#34;
+</span><span style="color:#75715e">       echoMode: TextInput.Password
+</span><span style="color:#75715e">       capitalization: Font.AllUppercase
+</span><span style="color:#75715e">   }
+</span><span style="color:#75715e">   \endqml
+</span><span style="color:#75715e">
+</span><span style="color:#75715e">*/</span>
+<span style="color:#a6e22e">Rectangle</span> {
+    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">ti_border</span>
+    <span style="color:#a6e22e">width</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">parent</span>.<span style="color:#a6e22e">width</span>
+    <span style="color:#a6e22e">height</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">ti</span>.<span style="color:#a6e22e">contentHeight</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1.5</span>
+    <span style="color:#a6e22e">color</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">ti</span>.<span style="color:#a6e22e">activeFocus</span> <span style="color:#f92672">?</span> <span style="color:#e6db74">&#34;#DCFFD3&#34;</span> <span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;#F2FDEF&#34;</span>
+
+    <span style="color:#75715e">/*!
+</span><span style="color:#75715e">        Default text to be placed to the field.
+</span><span style="color:#75715e">    */</span>
+    <span style="color:#a6e22e">property</span> <span style="color:#a6e22e">alias</span> <span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">ti</span>.<span style="color:#a6e22e">text</span>
+    <span style="color:#75715e">/*!
+</span><span style="color:#75715e">        Internal TextInput.
+</span><span style="color:#75715e">    */</span>
+    <span style="color:#a6e22e">property</span> <span style="color:#a6e22e">alias</span> <span style="color:#a6e22e">input</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">ti</span>
+    <span style="color:#75715e">/*!
+</span><span style="color:#75715e">        Echo mode for the field (normal, password, etc)
+</span><span style="color:#75715e">    */</span>
+    <span style="color:#a6e22e">property</span> <span style="color:#a6e22e">alias</span> <span style="color:#a6e22e">echoMode</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">ti</span>.<span style="color:#a6e22e">echoMode</span>
+    <span style="color:#75715e">/*!
+</span><span style="color:#75715e">        Capitalization mode (all letters are small, big, etc)
+</span><span style="color:#75715e">    */</span>
+    <span style="color:#a6e22e">property</span> <span style="color:#a6e22e">alias</span> <span style="color:#a6e22e">capitalization</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">ti</span>.<span style="color:#a6e22e">font</span>.<span style="color:#a6e22e">capitalization</span>
+
+    <span style="color:#a6e22e">TextInput</span> {
+        <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">ti</span>
+        <span style="color:#a6e22e">leftPadding</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">15</span>
+        <span style="color:#a6e22e">rightPadding</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">15</span>
+        <span style="color:#a6e22e">width</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">parent</span>.<span style="color:#a6e22e">width</span>
+        <span style="color:#a6e22e">anchors</span>.<span style="color:#a6e22e">verticalCenter</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">parent</span>.<span style="color:#a6e22e">verticalCenter</span>
+        <span style="color:#a6e22e">font</span>.<span style="color:#a6e22e">pointSize</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">18</span>
+        <span style="color:#a6e22e">font</span>.<span style="color:#a6e22e">family</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Verdana&#34;</span>
+        <span style="color:#a6e22e">font</span>.<span style="color:#a6e22e">italic</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">ti</span>.<span style="color:#a6e22e">activeFocus</span> <span style="color:#f92672">?</span> <span style="color:#66d9ef">true</span> <span style="color:#f92672">:</span> <span style="color:#66d9ef">false</span>
+        <span style="color:#a6e22e">clip</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>
+    }
+}
+</code></pre></div>
+<p>As you can see, I used specially formated comments to create a simple documentation for my new type <code>AwesomeUIControl</code> (that is stored in <code>AwesomeUIControl.qml</code> file).</p>
+<p>If you would like to include some images in your documentation, like I did, don&rsquo;t forget to add the <code>imagedirs</code> configuration variable, and also beware, that <code>qdoc</code> will use the original size of images and you can&rsquo;t specify any scaling for them, so you have to prepare your images with the right width and height beforehand.</p>
+<p>Alright, you have a configuration file for <code>qdoc</code>, you have special comments in your sources - now you&rsquo;re ready to generate some documentation. Open a command line in your project directory and execute:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">qdoc config.qdocconf</code></pre></div>
+<p>Of course, if <code>qdoc</code> is not in your system environment, then use <code>/path/to/your/Qt/5.8/clang_64/bin/qdoc</code>.</p>
+<p>Anyway, it should produce something like this:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/05/24/documenting-qt-project-with-qdoc/images/qdoc-output.png" alt="QDoc output"/>
+
+</div>
+
+<p>You can open HTML files in web-browser and see the result. It is a good enough already, but default pages look so boring - let&rsquo;s add some simple styling to make them look more lively.</p>
+<p>Here&rsquo;s what I&rsquo;ve put inside the <code>style.css</code> file:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-css" data-lang="css"><span style="color:#f92672">body</span> {
+   <span style="color:#66d9ef">font-family</span>: <span style="color:#e6db74">&#34;Verdana&#34;</span>;
+   <span style="color:#66d9ef">font-size</span>: <span style="color:#ae81ff">14</span><span style="color:#66d9ef">px</span>;
+   <span style="color:#66d9ef">max-width</span>: <span style="color:#ae81ff">80</span><span style="color:#66d9ef">%</span>;
+   <span style="color:#66d9ef">margin</span>: <span style="color:#66d9ef">auto</span>;
+}
+
+<span style="color:#f92672">h1</span><span style="color:#f92672">,</span> <span style="color:#f92672">h2</span><span style="color:#f92672">,</span> <span style="color:#f92672">h3</span> {
+   <span style="color:#66d9ef">color</span>: <span style="color:#66d9ef">green</span>;
+}
+
+<span style="color:#f92672">div</span>.<span style="color:#a6e22e">sidebar</span> {
+    <span style="color:#66d9ef">float</span>: <span style="color:#66d9ef">right</span>;
+}
+
+<span style="color:#f92672">pre</span> {
+    <span style="color:#66d9ef">padding</span>: <span style="color:#ae81ff">15</span><span style="color:#66d9ef">px</span>;
+}
+<span style="color:#f92672">div</span>.<span style="color:#a6e22e">qmlproto</span> {
+    <span style="color:#66d9ef">padding-left</span>: <span style="color:#ae81ff">15</span><span style="color:#66d9ef">px</span>;
+    <span style="color:#66d9ef">padding-right</span>: <span style="color:#ae81ff">15</span><span style="color:#66d9ef">px</span>;
+}
+<span style="color:#f92672">pre</span><span style="color:#f92672">,</span> <span style="color:#f92672">div</span>.<span style="color:#a6e22e">qmlproto</span> {
+    <span style="color:#66d9ef">font-family</span>: <span style="color:#e6db74">&#34;Courier New&#34;</span>;
+    <span style="color:#66d9ef">font-size</span>: <span style="color:#ae81ff">20</span><span style="color:#66d9ef">px</span>;
+    <span style="color:#66d9ef">margin-left</span>: <span style="color:#ae81ff">2</span><span style="color:#66d9ef">em</span>;
+    <span style="color:#66d9ef">background-color</span>: <span style="color:#ae81ff">#F2F2F2</span>;
+}
+
+<span style="color:#f92672">hr</span> {
+    <span style="color:#66d9ef">margin-top</span>: <span style="color:#ae81ff">2</span><span style="color:#66d9ef">em</span>;
+    <span style="color:#66d9ef">margin-bottom</span>: <span style="color:#ae81ff">2</span><span style="color:#66d9ef">em</span>;
+}
+
+<span style="color:#f92672">p</span>.<span style="color:#a6e22e">header</span> {
+    <span style="color:#66d9ef">margin-bottom</span>: <span style="color:#ae81ff">-1</span><span style="color:#66d9ef">em</span>;
+}
+<span style="color:#f92672">p</span>.<span style="color:#a6e22e">footer</span> {
+    <span style="color:#66d9ef">text-align</span>: <span style="color:#66d9ef">right</span>;
+    <span style="color:#66d9ef">margin-top</span>: <span style="color:#ae81ff">-1</span><span style="color:#66d9ef">em</span>;
+}</code></pre></div>
+<p>And that&rsquo;s how my documentation pages nicely look like after such a simple styling:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/05/24/documenting-qt-project-with-qdoc/images/result.png" alt="QDoc HTML output after some styling"/>
+
+</div>
+
+<p>Yeah, a bit stupid to show a screenshot of a webpage, but still.</p>
+<p>Here&rsquo;s a repository with the project including generated documentation pages: <a href="https://github.com/retifrav/qdoc-example">https://github.com/retifrav/qdoc-example</a></p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/qt/">qt</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <script>
+  var id =  23 ;
+
+  if (id)
+  {
+    let url = "https://github.com/retifrav/retifrav.github.io/issues/".concat(id);
+    let api_url = "https://api.github.com/repos/retifrav/retifrav.github.io/issues/".concat(id, "/comments");
+    
+    var commentsDiv = document.getElementById("comments");
+
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", api_url);
+    xhr.setRequestHeader("Accept", "application/vnd.github.v3.html+json");
+    xhr.send();
+
+    xhr.onload = function()
+    {
+      if (xhr.status != 200)
+      {
+        let errorText = document.createElement("p");
+        errorText.innerHTML = "<i>Comments for this post yet are not opened yet (or you have GitHub scripts disabled).</i>";
+        commentsDiv.appendChild(errorText);
+      }
+      else
+      {
+        let comments = xhr.response;
+
+        let mainHeader = document.createElement("h2");
+        mainHeader.innerHTML = "Comments: ".concat(comments.length);
+        commentsDiv.appendChild(mainHeader);
+
+        let issueLink = document.createElement("p");
+        issueLink.innerHTML = "<i>You can leave a comment using this <a href='".concat(url, "'>GitHub issue</a>.</i>");
+        commentsDiv.appendChild(issueLink);
+        
+        comments.forEach(function(comment)
+        {
+            let commentContent = document.createElement("div");
+            commentContent.setAttribute('class', 'gh-comment')
+            commentContent.innerHTML = "".concat(
+                "<div class='gh-header'>",
+                  "<img src='", comment.user.avatar_url, "' />",
+                  "<div style='margin:auto 0;'>",
+                    "<b><a class='gh-username' href='", comment.user.html_url, "'>", comment.user.login, "</a></b>",
+                    " commented at <em>", new Date(comment.created_at), "</em>",
+                  "</div>",
+                "</div>",
+                "<div class='gh-body'>",
+                  comment.body_html,
+                "</div>"
+            );
+            commentsDiv.appendChild(commentContent);
+        });
+      }
+    };
+
+    xhr.onerror = function()
+    {
+      let errorText = document.createElement("p");
+      errorText.innerHTML = "<i>Some error loading comments.</i>";
+      commentsDiv.appendChild(errorText);
+    };
+  }
+</script>
+
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

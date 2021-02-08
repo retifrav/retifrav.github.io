@@ -1,0 +1,410 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Отправка состояния сервера через Telegram | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Отправка состояния сервера через Telegram" />
+<meta property="og:description" content="Я давно собирался написать статью про Telegram, чтобы помочь его продвижению в массы. Не то, чтобы он в нём нуждался, но хотелось просто описать свой опыт использования и поделиться восхищением." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2015/05/12/telegram-server-status/" />
+<meta property="article:published_time" content="2015-05-12T23:37:21+03:00" />
+<meta property="article:modified_time" content="2015-05-12T23:37:21+03:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Отправка состояния сервера через Telegram</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2015-05-12 23:37:21 &#43;0300</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 4 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>Я давно собирался написать статью про <a href="https://telegram.org/">Telegram</a>, чтобы помочь его продвижению в массы. Не то, чтобы он в нём нуждался, но хотелось просто описать свой опыт использования и поделиться восхищением.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#установка-telegram-cli">Установка telegram-cli</a></li>
+    <li><a href="#скрипт-сбора-информации">Скрипт сбора информации</a></li>
+    <li><a href="#создание-задачи-в-планировщике">Создание задачи в планировщике</a></li>
+  </ul>
+</nav>
+<p>Но такого добра, думаю, уже навалом написали, потому это будет полезная статья о том, как использовать <strong>Telegram</strong> для получения информации с Linux-сервера, а именно:</p>
+<ul>
+<li>статус Apache;</li>
+<li>статус MySQL;</li>
+<li>использование процессора;</li>
+<li>объём свободной оперативной памяти;</li>
+<li>использование места на жёстком диске.</li>
+</ul>
+<p>Для этого будет использоваться консольный клиент <a href="https://github.com/vysheng/tg">telegram-cli</a>.</p>
+<p>Опишу своё рабочее окружение. Есть удалённый Linux-сервер с <strong>Ubuntu 14.04.1 LTS</strong>, размещённый у хостера. Я подключаюсь к нему по <strong>SSH</strong> под учётной записью <code>root</code> (то есть, домашняя папка: <code>/root</code>).</p>
+<p>Подразумевается, что вы знакомы с Linux, потому я не буду писать о том, как скопировать файл, как разрешить скрипт на выполнение и прочем подобном.</p>
+<h1 id="установка-telegram-cli">Установка telegram-cli</h1>
+<p>Сначала надо запилить библиотеки:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">apt-get install libreadline-dev libconfig-dev libssl-dev lua5.2 liblua5.2-dev libevent-dev make</code></pre></div>
+<p>Теперь, находясь в <code>/root</code>, получаем из репозитория ветку <code>test</code> - она самая обновляемая, потому я взял её, хотя понятно, чем это может грозить.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone -b test --recursive https://github.com/vysheng/tg.git</code></pre></div>
+<p>Переходим в <code>/root/tg</code>. Там выполняем:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./configure
+make</code></pre></div>
+<p>Дальше нужно создать каталог с данными и файл конфига:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir /root/.telegram-cli
+touch /root/.telegram-cli/config</code></pre></div>
+<p>Вот, кстати, то, что я это делаю всё от <code>root</code>, внесло коррективы в читаемые мной руководства. В основном это воплотилось в использовании опции <code>-U root</code>.</p>
+<p>Итак, первый запуск:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">bin/telegram-cli -k tg-server.pub -U root</code></pre></div>
+<p>Он запустится, выведет что-то типа:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Telegram-cli version 1.2.0, Copyright <span style="color:#f92672">(</span>C<span style="color:#f92672">)</span> 2013-2015 Vitaly Valtman
+Telegram-cli comes with ABSOLUTELY NO WARRANTY; <span style="color:#66d9ef">for</span> details type <span style="color:#e6db74">`</span>show_license<span style="color:#e6db74">&#39;.
+</span><span style="color:#e6db74">This is free software, and you are welcome to redistribute it
+</span><span style="color:#e6db74">under certain conditions; type `show_license&#39;</span> <span style="color:#66d9ef">for</span> details.
+Telegram-cli uses libtgl version 1.2.0
+I: config dir<span style="color:#f92672">=[</span>/home/telegramd/.telegram-cli<span style="color:#f92672">]</span></code></pre></div>
+<p>Тут <u>надо подождать</u>, пока не появится запрос номера телефона, ввести его, получить <strong>SMS</strong> и ввести код из него:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">phone number: +79876543211
+code <span style="color:#f92672">(</span><span style="color:#e6db74">&#39;call&#39;</span> <span style="color:#66d9ef">for</span> phone call<span style="color:#f92672">)</span>: <span style="color:#ae81ff">1111</span></code></pre></div>
+<p>Теперь можно посмотреть список контактов на аккаунте:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">contact_list</code></pre></div>
+<p>Написать одному из контактов сообщение можно так:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">msg vasya_ivanov ololo</code></pre></div>
+<p>Выход из приложения:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">safe_quit</code></pre></div>
+<p>Понятно, что для автоматической отправки сообщений такое не подходит, а нам нужна именно она. Создаём скрипт <code>/root/tg_msg_send.sh</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span>to<span style="color:#f92672">=</span>$1
+msg<span style="color:#f92672">=</span>$2
+tgpath<span style="color:#f92672">=</span>/root/tg
+cd <span style="color:#e6db74">${</span>tgpath<span style="color:#e6db74">}</span>
+<span style="color:#f92672">(</span>echo <span style="color:#e6db74">&#34;safe_quit&#34;</span><span style="color:#f92672">)</span> | <span style="color:#e6db74">${</span>tgpath<span style="color:#e6db74">}</span>/bin/telegram-cli -k tg-server.pub -U root -W -e <span style="color:#e6db74">&#34;msg </span>$to<span style="color:#e6db74"> </span>$msg<span style="color:#e6db74">&#34;</span> &lt;&lt;-EOF</code></pre></div>
+<p>Теперь можно отправлять сообщения так:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./tg_msg_send.sh vasya_ivanov <span style="color:#e6db74">&#34;Hello, madafaqa! :)&#34;</span></code></pre></div>
+<h1 id="скрипт-сбора-информации">Скрипт сбора информации</h1>
+<p>Файл <code>/root/status.sh</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span>
+telescripts_path<span style="color:#f92672">=</span>/root/
+
+info_web<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Web-servers
+</span><span style="color:#e6db74">-------------
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>service apache2 status<span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>service nginx status<span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">&#34;</span>
+
+info_mysql<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;MySQL
+</span><span style="color:#e6db74">-------------
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>mysqladmin ping<span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>mysqladmin status<span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">&#34;</span>
+
+info_cpu<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;CPU
+</span><span style="color:#e6db74">-------------
+</span><span style="color:#e6db74">top -bn1 | grep &#34;</span>Cpu<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span><span style="color:#e6db74">&#34; | sed &#34;</span>s/.*, *<span style="color:#ae81ff">\(</span><span style="color:#f92672">[</span>0-9.<span style="color:#f92672">]</span>*<span style="color:#ae81ff">\)</span>%* id.*/<span style="color:#ae81ff">\1</span>/<span style="color:#e6db74">&#34; | awk &#39;{print 100 - </span>$1<span style="color:#e6db74">&#34;</span> of <span style="color:#ae81ff">100</span> percents<span style="color:#e6db74">&#34;}&#39;
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">&#34;</span>
+
+info_ram<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;RAM
+</span><span style="color:#e6db74">-------------
+</span><span style="color:#e6db74">free: </span><span style="color:#66d9ef">$(</span>free -m | grep Mem | awk <span style="color:#e6db74">&#39;{print $4}&#39;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74"> MB of </span><span style="color:#66d9ef">$(</span>free -m | grep Mem | awk <span style="color:#e6db74">&#39;{print $2}&#39;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74"> MB total
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">&#34;</span>
+
+info_space<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;HDD
+</span><span style="color:#e6db74">-------------
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>df -h --output<span style="color:#f92672">=</span>source,size,used,avail | head -n2<span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">&#34;</span>
+
+text<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>printf <span style="color:#e6db74">&#34;</span>$info_web$info_mysql$info_cpu$info_ram$info_space<span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">)</span>
+printf <span style="color:#e6db74">&#39;%s\n&#39;</span> <span style="color:#e6db74">&#34;</span>$text<span style="color:#e6db74">&#34;</span> &gt; <span style="color:#e6db74">${</span>telescripts_path<span style="color:#e6db74">}</span>/status.txt</code></pre></div>
+<p>Запрос статуса <strong>nginx</strong> добавился позднее, так как через какое-то время я установил и его. Потому если у вас <strong>nginx</strong> отсутствует, то удалите его переменную из этого скрипта.</p>
+<p>Так как у нас тут теперь текстовый файл <code>status.txt</code>, а не просто строка сообщения, надо написать новый скрипт <code>/root/tg_text_send.sh</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span>to<span style="color:#f92672">=</span>$1
+file<span style="color:#f92672">=</span>$2
+tgpath<span style="color:#f92672">=</span>/root/tg
+cd <span style="color:#e6db74">${</span>tgpath<span style="color:#e6db74">}</span>
+<span style="color:#f92672">(</span>echo <span style="color:#e6db74">&#34;safe_quit&#34;</span><span style="color:#f92672">)</span> | <span style="color:#e6db74">${</span>tgpath<span style="color:#e6db74">}</span>/bin/telegram-cli -k tg-server.pub -U root -W -e <span style="color:#e6db74">&#34;send_text </span>$to<span style="color:#e6db74"> </span>$file<span style="color:#e6db74">&#34;</span> &lt;&lt;-EOF</code></pre></div>
+<h1 id="создание-задачи-в-планировщике">Создание задачи в планировщике</h1>
+<p>Сначала пишем ещё скрипт <code>/root/tg_status_send.sh</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span>/root/status.sh
+sleep <span style="color:#ae81ff">3</span>
+/root/tg_text_send.sh vasya_ivanov /root/status.txt</code></pre></div>
+<p>И теперь можно создавать задание в <code>crontab</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">crontab -e</code></pre></div>
+<p>Подробно о редактировании таблицы заданий можно прочитать в хорошей статье <a href="http://kvz.io/blog/2007/07/29/schedule-tasks-on-linux-using-crontab/">Schedule Tasks on Linux Using Crontab</a>.</p>
+<p>Моя строка задания такая:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">*/30 6-23 * * * /root/tg_status_send.sh &gt; /dev/null 2&gt;&amp;<span style="color:#ae81ff">1</span></code></pre></div>
+<p>Это значит, что скрипт (отправка сообщения с информацией по серверу) будет запускаться каждые полчаса, исключая ночное время.</p>
+<p>После сохранения файла с таблицей не помешает перезагрузить службу:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">service cron reload</code></pre></div>
+<p>Для контроля выполнения заданий можно просматривать журнал:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">grep CRON /var/log/syslog</code></pre></div>
+<p>Всё, настройка завершена.</p>
+<p>В результате я получаю на всех своих устройствах (компьютер, телефон, планшет - везде, где у меня установлен <strong>Telegram</strong>) сообщения о состоянии дел на сервере:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2015/05/12/telegram-server-status/images/telegram-message.png" alt="Сообщения в Telegram с информацией о сервере"/>
+
+</div>
+
+<p>Можно усложнить задачу: хочу, чтобы статус отправлялся реже - раз в два часа, но зато каждые 15 минут проверять статус <strong>MySQL</strong>, и если он слёг, то информировать об этом панической картинкой и соответствующим сообщением.</p>
+<p>Ищем подходящую картинку, загружаем её на сервер под именем <code>achtung.png</code> и кладём по пути <code>/root/achtung.png</code>. Пишем скрипт отправки картинки <code>/root/tg_img_send.sh</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span>to<span style="color:#f92672">=</span>$1
+image<span style="color:#f92672">=</span>$2
+tgpath<span style="color:#f92672">=</span>/root/tg
+cd <span style="color:#e6db74">${</span>tgpath<span style="color:#e6db74">}</span>
+<span style="color:#f92672">(</span>echo <span style="color:#e6db74">&#34;safe_quit&#34;</span><span style="color:#f92672">)</span> | <span style="color:#e6db74">${</span>tgpath<span style="color:#e6db74">}</span>/bin/telegram-cli -k tg-server.pub -U root -W -e <span style="color:#e6db74">&#34;send_photo </span>$to<span style="color:#e6db74"> </span>$image<span style="color:#e6db74">&#34;</span> &lt;&lt;-EOF</code></pre></div>
+<p>И скрипт, который будет смотреть за <strong>MySQL</strong> и слать картинку, если он полёг - <code>/root/tg_achtung.sh</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span>msql<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">$(</span>mysqladmin ping<span style="color:#66d9ef">)</span><span style="color:#e6db74">&#34;</span>
+<span style="color:#66d9ef">if</span> test <span style="color:#e6db74">&#34;</span>$msql<span style="color:#e6db74">&#34;</span> !<span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;mysqld is alive&#34;</span>
+<span style="color:#66d9ef">then</span>
+/root/tg_img_send.sh vasya_ivanov /root/achtung.png
+/root/tg_msg_send.sh vasya_ivanov <span style="color:#e6db74">&#34;MySQL is down!&#34;</span>
+<span style="color:#66d9ef">fi</span></code></pre></div>
+<p>Изменяем планировщик:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#ae81ff">0</span> 6-23/2 * * * /root/tg_status_send.sh &gt; /dev/null 2&gt;&amp;<span style="color:#ae81ff">1</span>
+*/15 * * * * /root/tg_achtung.sh &gt; /dev/null 2&gt;&amp;<span style="color:#ae81ff">1</span></code></pre></div>
+<p>Теперь, если <strong>MySQL</strong> упадёт, в течение 15 минут я получу такие сообщения:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2015/05/12/telegram-server-status/images/mysqlisdown.png" alt="Сообщения в Telegram при упавшей службе"/>
+
+</div>
+
+<p>Позже, возможно, напишу, как общаться с сервером онлайн, а не только получать сообщения по расписанию.</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[24.10.2015] Update:</strong> Telegram бот</div>
+<p>А нет, не напишу, как общаться, потому что они запилили поддержку ботов, так что это уже не очень нужно. Вот зато <strike>может быть напишу про своего бота, если сделаю</strike> <a href="/blog/2015/10/24/telegram-bot/">уже написал</a>.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/telegram/">telegram</a><a class="tag" href="https://retifrav.github.io/tags/linux/">linux</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "waspenterprises" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

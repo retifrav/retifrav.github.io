@@ -1,0 +1,367 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Обновление Bitnami Redmine Stack | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Обновление Bitnami Redmine Stack" />
+<meta property="og:description" content="В какой-то момент мы наконец-то созрели до установки системы управления проектами. Я предложил Redmine, так как был уже с ним знаком по прошлой работе. Альтернатив (кроме SharePoint) никто не предложил, потому решено было ставить Redmine.
+Как вы помните, от интернета мы изолированы, что вносит определённые проблемы в установку ПО. Здесь эти проблемы вновь себя проявили, но слава небесам, мы такие не одни на планете, и уже есть решение на такие ситуации - это Bitnami Stack, то есть установка всё-в-одном: и БД, и само приложение, и сопутствующие необходимые компоненты, вроде Ruby on Rails и прочего, и всё это ставится в один каталог, а самое главное - не требуется соединение с интернетом." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2015/04/19/updating-bitnami-redmine-stack/" />
+<meta property="article:published_time" content="2015-04-19T13:32:06+03:00" />
+<meta property="article:modified_time" content="2015-04-19T13:32:06+03:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Обновление Bitnami Redmine Stack</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2015-04-19 13:32:06 &#43;0300</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 4 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>В какой-то момент мы наконец-то созрели до установки системы управления проектами. Я предложил <a href="http://www.redmine.org/">Redmine</a>, так как был уже с ним знаком по прошлой работе. Альтернатив (кроме <a href="https://ru.wikipedia.org/wiki/SharePoint">SharePoint</a>) никто не предложил, потому решено было ставить Redmine.</p>
+<p>Как вы помните, от интернета мы изолированы, что вносит определённые проблемы в установку ПО. Здесь эти проблемы вновь себя проявили, но слава небесам, мы такие не одни на планете, и уже есть решение на такие ситуации - это <a href="https://bitnami.com/stacks">Bitnami Stack</a>, то есть установка всё-в-одном: и БД, и само приложение, и сопутствующие необходимые компоненты, вроде Ruby on Rails и прочего, и всё это ставится в <strong>один</strong> каталог, а самое главное - не требуется соединение с интернетом.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#резервная-копия">Резервная копия</a></li>
+    <li><a href="#установка-новой-версии">Установка новой версии</a></li>
+    <li><a href="#восстановление-базы-данных">Восстановление базы данных</a></li>
+    <li><a href="#копирование-файлов-миграция-бд">Копирование файлов, миграция БД</a></li>
+    <li><a href="#настройка-аутентификации-через-active-directory">Настройка аутентификации через Active Directory</a></li>
+  </ul>
+</nav>
+<p>Ну поставить поставили, однако через некоторое время потребовалось обновить его, так как в новой версии исправили некоторые ошибки. По <a href="https://wiki.bitnami.com/Applications/BitNami_Redmine#How_to_upgrade_Redmine.3f">инструкции с сайта</a> выполнить обновление не удалось, так что после продолжительного секса я написал пошаговую <em>дополненную</em> инструкцию, учитывающую ряд пропущенных нюансов.</p>
+<h1 id="резервная-копия">Резервная копия</h1>
+<p>Итак, текущая версия Bitnami Redmine Stack установлена по пути <code>D:\redmine\</code>.</p>
+<p>Первым делом останавливаем все сервера через <code>D:\redmine\manager-windows.exe</code>:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2015/04/19/updating-bitnami-redmine-stack/images/bs_redmine_1.png" alt="Bitnami Redmine Stack, остановка всех серверов"/>
+
+</div>
+
+<p>И копируем весь каталог куда-нибудь в безопасное место, это будет резервная копия на всякий случай.</p>
+<p>Теперь делаем дамп базы данных. Запускаем сервер <code>MySQL Database</code>:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2015/04/19/updating-bitnami-redmine-stack/images/bs_redmine_2.png" alt="Bitnami Redmine Stack, запущенный сервер MySQL Database"/>
+
+</div>
+
+<p>Открываем консоль (<code>cmd.exe</code>), идём в <code>D:\redmine\mysql\bin\</code>. Команду использовал не из инструкции, а вот <a href="http://makandracards.com/makandra/595-dumping-and-importing-from-to-mysql-in-an-utf-8-safe-way">отсюда</a>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mysqldump.exe -u root -p bitnami_redmine -r redmine.sql</code></pre></div>
+<p>Оно спросит пароль, и вот тут попробуй-ка угадай его? Это ни фига не тот, который прописан в <code>D:\redmine\apps\redmine\htdocs\config\database.yml</code>. Через какое-то время я нашёл, что оно просит пароль, который вы указывали при установке всего пакета - ваш админский пароль от Redmine. Вводим его, оно делает дамп. Файл с дампом будет лежать в том же каталоге, что и <code>mysqldump.exe</code>, если не укажете другой путь. Копируем его тоже в какое-то безопасное место.</p>
+<p>Ещё момент: если у вас MySQL установлен не на стандартном порту 3306, а например на 3307, то в команду надо дописать параметр с портом, например:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mysqldump.exe --port<span style="color:#f92672">=</span><span style="color:#ae81ff">3307</span> -u root -p bitnami_redmine -r redmine.sql</code></pre></div>
+<p>У нас оно именно там и стоит, потому дальше все команды будут с портом 3307, имейте это в виду.</p>
+<h1 id="установка-новой-версии">Установка новой версии</h1>
+<p>Останавливаем сервер <code>MySQL Database</code>, закрываем приложение. Удаляем текущую версию Bitnami Redmine Stack через деинсталлятор <code>D:\redmine\uninstall.exe</code>.</p>
+<p>Загружаем <a href="https://bitnami.com/stack/redmine/installer#windows">новую версию</a>, запускаем установку.</p>
+<p>Обратите внимание на это окно:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2015/04/19/updating-bitnami-redmine-stack/images/bs_redmine_3.png" alt="Bitnami Redmine Stack, админский пароль"/>
+
+</div>
+
+<p>Пароль, который вы укажете здесь, будет админским паролем для входа в Redmine и <strong>также</strong> паролем для <code>root</code> в <code>mysql</code>. Как-то это информация выпала из инструкций на официальном сайте. Ну или я невнимательно читал. Само собой, желательно, чтобы этот был тот же пароль, что и в старой версии.</p>
+<p>Далее выбираете те же порты, что и в предыдущей установке. Настройку почты можно пропустить - потом просто скопируете старый конфиг.</p>
+<p>На этом установка завершена.</p>
+<h1 id="восстановление-базы-данных">Восстановление базы данных</h1>
+<p>Открываем опять <code>D:\redmine\manager-windows.exe</code>, останавливаем все сервера, кроме <code>MySQL Database</code>:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2015/04/19/updating-bitnami-redmine-stack/images/bs_redmine_2.png" alt="Bitnami Redmine Stack, запущенный сервер MySQL Database"/>
+
+</div>
+
+<p>Открываем консоль (<code>cmd.exe</code>), идём в <code>D:\redmine\mysql\bin\</code>, подключаемся:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mysql.exe --port<span style="color:#f92672">=</span><span style="color:#ae81ff">3307</span> -u root -p</code></pre></div>
+<p>Пароль - админский, который вы вводили при установке Bitnami Redmine Stack.</p>
+<p>Дальше вот эти команды:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">drop</span> <span style="color:#66d9ef">database</span> bitnami_redmine;
+<span style="color:#66d9ef">create</span> <span style="color:#66d9ef">database</span> bitnami_redmine;
+<span style="color:#66d9ef">grant</span> <span style="color:#66d9ef">all</span> <span style="color:#66d9ef">privileges</span> <span style="color:#66d9ef">on</span> bitnami_redmine.<span style="color:#f92672">*</span> <span style="color:#66d9ef">to</span> <span style="color:#e6db74">&#39;bitnami&#39;</span><span style="color:#f92672">@</span><span style="color:#e6db74">&#39;localhost&#39;</span> identified <span style="color:#66d9ef">by</span> <span style="color:#e6db74">&#39;ТУТ_ПАРОЛЬ_ИЗ_КОНФИГА&#39;</span>;
+quit;</code></pre></div>
+
+<div >
+
+    <img class="image-post" src="/blog/2015/04/19/updating-bitnami-redmine-stack/images/bs_redmine_4.png" alt="Bitnami Redmine Stack, пересоздание БД"/>
+
+</div>
+
+<p>Пароль из конфига - это из этого: <code>D:\redmine\apps\redmine\htdocs\config\database.yml</code></p>
+<p>Теперь надо восстановить базу из бэкапа. Копируем сохранённый ранее <code>redmine.sql</code> в каталог к <code>mysql.exe</code>. Далее, опять же, по инструкции выдавало различные мистические ошибки, а проблема-то была в кодировке. В общем, благодаря <a href="http://makandracards.com/makandra/595-dumping-and-importing-from-to-mysql-in-an-utf-8-safe-way">всё тому же чуваку</a>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mysql.exe --port<span style="color:#f92672">=</span><span style="color:#ae81ff">3307</span> -u root -p --default-character-set<span style="color:#f92672">=</span>utf8 bitnami_redmine</code></pre></div>
+<p>И там:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SOURCE</span> redmine.<span style="color:#66d9ef">sql</span></code></pre></div>
+<p>Всё, база восстановлена. Файл с дампом можно удалить.</p>
+<h1 id="копирование-файлов-миграция-бд">Копирование файлов, миграция БД</h1>
+<p>Копирование файлов:</p>
+<ul>
+<li>старый конфиг с настройками почты: <code>%КАТАЛОГ_РЕЗЕРВНОЙ_КОПИИ%\redmine\apps\redmine\htdocs\config\configuration.yml</code>;</li>
+<li>файлы аттачей: <code>%КАТАЛОГ_РЕЗЕРВНОЙ_КОПИИ%\redmine\apps\redmine\htdocs\files\</code>;</li>
+<li>темы оформления: <code>%КАТАЛОГ_РЕЗЕРВНОЙ_КОПИИ%\redmine\apps\redmine\htdocs\public\themes\</code>;</li>
+<li>также ещё плагины, но мы их пока не используем, потому копировать было нечего.</li>
+</ul>
+<p>Теперь в консоль, там запустить <code>D:\redmine\use_redmine.bat</code> - переход в окружение Bitnami Redmine Stack. Появится новое окно консоли, в нём надо перейти в каталог с установленным приложением (<code>D:\redmine\apps\redmine\htdocs\</code>).</p>
+<p>Теперь выполняем команды. Переезд на новую базу:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ruby bin/rake db:migrate RAILS_ENV<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;production&#34;</span></code></pre></div>
+<p>И завершающие. Вот на этом шаге в какой-то момент у меня перестали запускаться сервера - стартуют сначала все, а потом остаются только Apache и MySQL, а редмайновские падают. Потому с того момента я этот шаг выполнять перестал. Но вообще, в мануле он есть, потому если у вас проблем нет, то выполняйте:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ruby bin/rake redmine:plugins RAILS_ENV<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;production&#34;</span>
+ruby bin/rake tmp:cache:clear
+ruby bin/rake tmp:sessions:clear</code></pre></div>
+<p>Всё, можно перезапускать сервера:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2015/04/19/updating-bitnami-redmine-stack/images/bs_redmine_5.png" alt="Bitnami Redmine Stack, запущенные сервера"/>
+
+</div>
+
+<p>И если случится ситуация с падением редмайновских серверов как у меня, то придётся весь процесс выполнить по новой, но на этот раз без последнего шага.</p>
+<h1 id="настройка-аутентификации-через-active-directory">Настройка аутентификации через Active Directory</h1>
+<p>Бонусом выложу скриншот настроек для аутентификации с помощью Active Directory. То есть, для входа в систему пользователю не нужно запоминать отдельный пароль, так как будет использоваться его учётная запись из домена, например <strong>sales\ivanovii</strong>.</p>
+<p>Вот скрин настроек:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2015/04/19/updating-bitnami-redmine-stack/images/redmine-ad-settings.png" alt="Настройка AD аутентификации в Redmine"/>
+
+</div>
+
+<p>Здесь <strong>Учётная запись</strong> и <strong>Пароль</strong> - какая-либо техническая учётная запись, имеющая доступ в домен. По-любому же у вас есть такая? Если нет, то можете, наверное, использовать свою.</p>
+<p>В <strong>Атрибутах</strong> ничего изменять, скорее всего, не понадобится, это достаточно стандартные значения.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/devops/">devops</a><a class="tag" href="https://retifrav.github.io/tags/windows/">windows</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "waspenterprises" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

@@ -1,0 +1,538 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Players queue for Heroes of Might and Magic | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Players queue for Heroes of Might and Magic" />
+<meta property="og:description" content="It&rsquo;s not like we at work don&rsquo;t have things to do, but suddenly we decided to play Heroes of Might and Magic. So we created a virtual machine, installed the game and started a hot-seat game via RDP.
+
+
+
+    
+
+
+
+For notifying about next players turn we created a Slack channel. But soon enough it became annoying to announce next turns manually, so I created a simple web-application for that." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2019/09/21/homm-queue/" />
+<meta property="article:published_time" content="2019-09-21T14:58:46+02:00" />
+<meta property="article:modified_time" content="2019-09-21T14:58:46+02:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Players queue for Heroes of Might and Magic</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2019-09-21 14:58:46 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 3 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>It&rsquo;s not like we at work don&rsquo;t have things to do, but suddenly we decided to play <a href="https://www.gog.com/game/heroes_of_might_and_magic_3_complete_edition">Heroes of Might and Magic</a>. So we created a virtual machine, installed the game and started a hot-seat game via RDP.</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/09/21/homm-queue/images/homm-queue.png" alt="HoMM queue"/>
+
+</div>
+
+<p>For notifying about next players turn we created a Slack channel. But soon enough it became annoying to announce next turns manually, so I created a simple web-application for that.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#implementing-the-queue">Implementing the queue</a>
+      <ul>
+        <li><a href="#view-the-queue">View the queue</a></li>
+        <li><a href="#make-a-turn">Make a turn</a></li>
+        <li><a href="#get-current-player">Get current player</a></li>
+      </ul>
+    </li>
+    <li><a href="#slack-notifications">Slack notifications</a></li>
+  </ul>
+</nav>
+<h1 id="implementing-the-queue">Implementing the queue</h1>
+<p>I decided to implement the queue with .NET Core MVC, although it can be any other web-framework really.</p>
+<p>So, where to store players and current turn? Database would be an overkill, so I went with a JSON file in the web-root (<code>/queue.json</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;players&#34;</span>: [
+        {
+            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Chad&#34;</span>,
+            <span style="color:#f92672">&#34;slackID&#34;</span>: <span style="color:#e6db74">&#34;U4JDL9QBC&#34;</span>,
+            <span style="color:#f92672">&#34;playing&#34;</span>: <span style="color:#66d9ef">true</span>,
+            <span style="color:#f92672">&#34;currentTurn&#34;</span>: <span style="color:#66d9ef">false</span>
+        },
+        {
+            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Martin&#34;</span>,
+            <span style="color:#f92672">&#34;slackID&#34;</span>: <span style="color:#e6db74">&#34;U4JLODQ3F&#34;</span>,
+            <span style="color:#f92672">&#34;playing&#34;</span>: <span style="color:#66d9ef">true</span>,
+            <span style="color:#f92672">&#34;currentTurn&#34;</span>: <span style="color:#66d9ef">true</span>
+        },
+        <span style="color:#e6db74">&#34;...&#34;</span>
+    ]
+}</code></pre></div>
+<p>Here&rsquo;s how to read a JSON file using <a href="https://www.newtonsoft.com/json/help/html/ParsingLINQtoJSON.htm#LoadingJSON">Newtonsoft.Json</a>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">HomeController</span> : Controller
+{
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IHostingEnvironment _hostingEnvironment;
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> queueFile = <span style="color:#e6db74">&#34;queue.json&#34;</span>;
+
+    <span style="color:#66d9ef">public</span> HomeController(IHostingEnvironment hostingEnvironment)
+    {
+        _hostingEnvironment = hostingEnvironment;
+        queueFile = Path.Combine(_hostingEnvironment.WebRootPath, queueFile);
+    }
+    
+    <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>
+    <span style="color:#66d9ef">private</span> JObject ReadQueueFile()
+    {
+        <span style="color:#66d9ef">using</span> (StreamReader reader = <span style="color:#66d9ef">new</span> StreamReader(queueFile))
+        {
+            <span style="color:#66d9ef">return</span> (JObject)JToken.ReadFrom(<span style="color:#66d9ef">new</span> JsonTextReader(reader));
+        }
+    }
+}
+</code></pre></div>
+<h2 id="view-the-queue">View the queue</h2>
+<p>Player class:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">namespace</span> homm_queue.Models
+{
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Player</span>
+    {
+        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> Name { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">bool</span> CurrentTurn { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+    }
+}
+</code></pre></div>
+<p>Controller code:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> IActionResult Index()
+{
+    List&lt;Player&gt; queue = <span style="color:#66d9ef">new</span> List&lt;Player&gt;();
+    JObject queueJson = ReadQueueFile();
+    
+    <span style="color:#66d9ef">foreach</span>(<span style="color:#66d9ef">var</span> player <span style="color:#66d9ef">in</span> queueJson[<span style="color:#e6db74">&#34;players&#34;</span>])
+    {
+        <span style="color:#66d9ef">if</span> (Convert.ToBoolean(player[<span style="color:#e6db74">&#34;playing&#34;</span>]))
+        {
+            queue.Add(<span style="color:#66d9ef">new</span> Player()
+            {
+                Name = Convert.ToString(player[<span style="color:#e6db74">&#34;name&#34;</span>]),
+                CurrentTurn = Convert.ToBoolean(player[<span style="color:#e6db74">&#34;currentTurn&#34;</span>])
+            });
+        }
+    }
+
+    <span style="color:#66d9ef">return</span> View(queue);
+}
+</code></pre></div>
+<p>View code:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">@model IEnumerable&lt;<span style="color:#f92672">homm_queue.Models.Player</span>&gt;
+
+&lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;heading&#34;</span>&gt;&lt;<span style="color:#f92672">h3</span>&gt;Total players: @(Model.Count())&lt;/<span style="color:#f92672">h3</span>&gt;&lt;/<span style="color:#f92672">div</span>&gt;
+@foreach (var item in Model)
+{
+    @if (item.CurrentTurn)
+    {
+        &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;player turn&#34;</span>&gt;@item.Name&lt;/<span style="color:#f92672">div</span>&gt;
+    }
+    else
+    {
+        &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;player&#34;</span>&gt;@item.Name&lt;/<span style="color:#f92672">div</span>&gt;
+    }
+}</code></pre></div>
+<h2 id="make-a-turn">Make a turn</h2>
+<p>Every time <code>next</code> button is clicked, current player&rsquo;s <code>currentTurn</code> is set to <code>false</code>, and for the next player it is set to <code>true</code>. If there is no next player (end of the list), then it just starts from the first player in the list.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#a6e22e">[HttpPost(&#34;/MakeTurn&#34;)]</span>
+<span style="color:#66d9ef">public</span> JsonResult MakeTurn()
+{
+    <span style="color:#66d9ef">string</span> nextPlayerID = <span style="color:#e6db74">&#34;unknown&#34;</span>;
+    <span style="color:#66d9ef">bool</span> setCurrentPlayerTurn = <span style="color:#66d9ef">false</span>;
+    
+    JObject queueJson = ReadQueueFile();
+    
+    <span style="color:#66d9ef">foreach</span>(<span style="color:#66d9ef">var</span> player <span style="color:#66d9ef">in</span> queueJson[<span style="color:#e6db74">&#34;players&#34;</span>])
+    {
+        <span style="color:#66d9ef">if</span> (Convert.ToBoolean(player[<span style="color:#e6db74">&#34;playing&#34;</span>]))
+        {
+            <span style="color:#66d9ef">if</span> (setCurrentPlayerTurn)
+            {
+                player[<span style="color:#e6db74">&#34;currentTurn&#34;</span>] = <span style="color:#66d9ef">true</span>;
+                nextPlayerID = Convert.ToString(player[<span style="color:#e6db74">&#34;slackID&#34;</span>]);
+                setCurrentPlayerTurn = <span style="color:#66d9ef">false</span>;
+                <span style="color:#66d9ef">break</span>;
+            }
+            <span style="color:#66d9ef">if</span> (Convert.ToBoolean(player[<span style="color:#e6db74">&#34;currentTurn&#34;</span>]))
+            {
+                player[<span style="color:#e6db74">&#34;currentTurn&#34;</span>] = <span style="color:#66d9ef">false</span>;
+                setCurrentPlayerTurn = <span style="color:#66d9ef">true</span>;
+            }
+        }
+    }
+    <span style="color:#66d9ef">if</span> (setCurrentPlayerTurn)
+    {
+        queueJson[<span style="color:#e6db74">&#34;players&#34;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#34;currentTurn&#34;</span>] = <span style="color:#66d9ef">true</span>;
+        nextPlayerID = Convert.ToString(queueJson[<span style="color:#e6db74">&#34;players&#34;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#34;slackID&#34;</span>]);
+    }
+
+    <span style="color:#66d9ef">using</span> (StreamWriter file = <span style="color:#66d9ef">new</span> StreamWriter(queueFile, <span style="color:#66d9ef">false</span>))
+    <span style="color:#66d9ef">using</span> (JsonTextWriter writer = <span style="color:#66d9ef">new</span> JsonTextWriter(file))
+    {
+        queueJson.WriteTo(writer);
+    }
+
+    PostToSlackChannel(nextPlayerID);
+
+    <span style="color:#66d9ef">return</span> Json(<span style="color:#e6db74">&#34;OK&#34;</span>);
+}
+</code></pre></div>
+<p>Players order in JSON file obviously has to match the players order you have in game.</p>
+<p>How to call this method from view:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">script</span>&gt;
+    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">makeTurn</span>()
+    {
+        <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">xhr</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">XMLHttpRequest</span>();
+        <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">responseType</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;json&#34;</span>;
+        <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">open</span>(<span style="color:#e6db74">&#34;POST&#34;</span>, <span style="color:#e6db74">&#34;/MakeTurn&#34;</span>);
+        <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">send</span>();
+
+        <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">onload</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
+        {
+            <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">status</span> <span style="color:#f92672">!=</span> <span style="color:#ae81ff">200</span>) { <span style="color:#a6e22e">alert</span>(<span style="color:#e6db74">&#34;some error&#34;</span>); }
+            <span style="color:#66d9ef">else</span> { <span style="color:#a6e22e">location</span>.<span style="color:#a6e22e">reload</span>(<span style="color:#66d9ef">true</span>); }
+        };
+    }
+&lt;/<span style="color:#f92672">script</span>&gt;</code></pre></div>
+<h2 id="get-current-player">Get current player</h2>
+<p>And a simple REST API for getting the current player:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp">HttpGet(<span style="color:#e6db74">&#34;/GetCurrentTurn&#34;</span>)]
+<span style="color:#66d9ef">public</span> JsonResult GetCurrentTurn()
+{
+    JObject queueJson = ReadQueueFile();
+    <span style="color:#66d9ef">try</span>
+    {
+        <span style="color:#66d9ef">return</span> Json(
+            queueJson.SelectToken(<span style="color:#e6db74">&#34;$.players[?(@.currentTurn == true)]&#34;</span>)[<span style="color:#e6db74">&#34;name&#34;</span>]
+            );
+    }
+    <span style="color:#66d9ef">catch</span>
+    {
+        <span style="color:#66d9ef">return</span> Json(<span style="color:#e6db74">&#34;unknown&#34;</span>);
+    }
+}
+</code></pre></div>
+<h1 id="slack-notifications">Slack notifications</h1>
+<p>Slack notifications are done via <a href="https://api.slack.com/bot-users">Slack Bot</a>. You only need to set an incoming webhook for the channel:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/09/21/homm-queue/images/slack-bot-webhooks.png" alt="Slack bot incoming webhook"/>
+
+</div>
+
+<p>And then you can post notifications using <a href="https://docs.microsoft.com/en-us/dotnet/api/system.net.http.httpclient">HttpClient</a>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">async</span> <span style="color:#66d9ef">void</span> PostToSlackChannel(<span style="color:#66d9ef">string</span> userSlackID)
+{
+    <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
+    {
+        httpClient.BaseAddress = <span style="color:#66d9ef">new</span> Uri(<span style="color:#e6db74">&#34;https://hooks.slack.com/&#34;</span>);
+
+        HttpRequestMessage request = <span style="color:#66d9ef">new</span> HttpRequestMessage(
+            HttpMethod.Post,
+            <span style="color:#e6db74">&#34;services/YOUR/SLACK/WEBHOOK&#34;</span>
+            );
+        StringBuilder msg = <span style="color:#66d9ef">new</span> StringBuilder()
+            .Append(<span style="color:#e6db74">&#34;{\&#34;text\&#34;:\&#34;&#34;</span>)
+            .Append(<span style="color:#e6db74">$&#34;&lt;@{userSlackID}&gt;&#39;s turn!&#34;</span>)
+            .Append(<span style="color:#e6db74">&#34;\&#34;}&#34;</span>);
+        request.Content = <span style="color:#66d9ef">new</span> StringContent(
+            msg.ToString(),
+            Encoding.UTF8,
+            <span style="color:#e6db74">&#34;application/json&#34;</span>
+            );
+
+        <span style="color:#66d9ef">try</span>
+        {
+            <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.SendAsync(request);
+            <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+            Console.WriteLine(<span style="color:#e6db74">$&#34;[DEBUG] {(int)httpResponse.StatusCode} - {httpContent}&#34;</span>);
+        }
+        <span style="color:#66d9ef">catch</span> (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+    }
+}
+</code></pre></div>
+<p>Full source code of the project is <a href="https://github.com/retifrav/homm-queue">here</a>.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/games/">games</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a><a class="tag" href="https://retifrav.github.io/tags/dotnet/">dotnet</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <script>
+  var id =  32 ;
+
+  if (id)
+  {
+    let url = "https://github.com/retifrav/retifrav.github.io/issues/".concat(id);
+    let api_url = "https://api.github.com/repos/retifrav/retifrav.github.io/issues/".concat(id, "/comments");
+    
+    var commentsDiv = document.getElementById("comments");
+
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", api_url);
+    xhr.setRequestHeader("Accept", "application/vnd.github.v3.html+json");
+    xhr.send();
+
+    xhr.onload = function()
+    {
+      if (xhr.status != 200)
+      {
+        let errorText = document.createElement("p");
+        errorText.innerHTML = "<i>Comments for this post yet are not opened yet (or you have GitHub scripts disabled).</i>";
+        commentsDiv.appendChild(errorText);
+      }
+      else
+      {
+        let comments = xhr.response;
+
+        let mainHeader = document.createElement("h2");
+        mainHeader.innerHTML = "Comments: ".concat(comments.length);
+        commentsDiv.appendChild(mainHeader);
+
+        let issueLink = document.createElement("p");
+        issueLink.innerHTML = "<i>You can leave a comment using this <a href='".concat(url, "'>GitHub issue</a>.</i>");
+        commentsDiv.appendChild(issueLink);
+        
+        comments.forEach(function(comment)
+        {
+            let commentContent = document.createElement("div");
+            commentContent.setAttribute('class', 'gh-comment')
+            commentContent.innerHTML = "".concat(
+                "<div class='gh-header'>",
+                  "<img src='", comment.user.avatar_url, "' />",
+                  "<div style='margin:auto 0;'>",
+                    "<b><a class='gh-username' href='", comment.user.html_url, "'>", comment.user.login, "</a></b>",
+                    " commented at <em>", new Date(comment.created_at), "</em>",
+                  "</div>",
+                "</div>",
+                "<div class='gh-body'>",
+                  comment.body_html,
+                "</div>"
+            );
+            commentsDiv.appendChild(commentContent);
+        });
+      }
+    };
+
+    xhr.onerror = function()
+    {
+      let errorText = document.createElement("p");
+      errorText.innerHTML = "<i>Some error loading comments.</i>";
+      commentsDiv.appendChild(errorText);
+    };
+  }
+</script>
+
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

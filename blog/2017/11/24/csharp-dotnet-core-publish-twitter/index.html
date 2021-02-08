@@ -1,0 +1,606 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>C# / .NET Core, publish to Twitter | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="C# / .NET Core, publish to Twitter" />
+<meta property="og:description" content="We needed to publish updates from our website to various social media. Later I will create posts describing all of them, but right now I&rsquo;ll tell you how to work with Twitter from C# / .NET Core project.
+
+
+
+    
+
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2017/11/24/csharp-dotnet-core-publish-twitter/" />
+<meta property="article:published_time" content="2017-11-24T20:56:49+01:00" />
+<meta property="article:modified_time" content="2017-11-24T20:56:49+01:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">C# / .NET Core, publish to Twitter</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2017-11-24 20:56:49 &#43;0100</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 6 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>We needed to publish updates from our website to various social media. Later I will create posts describing all of them, but right now I&rsquo;ll tell you how to work with Twitter from C# / .NET Core project.</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/24/csharp-dotnet-core-publish-twitter/images/dotnet-core-twitter-logo.png" alt=".NET Core, Twitter, logo"/>
+
+</div>
+
+<p>Naturally, you need to have a Twitter account, where you will be publishing to. And to do that automatically, you need to create a Twitter app.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#app-and-tokens">App and tokens</a></li>
+    <li><a href="#theory">Theory</a></li>
+    <li><a href="#code">Code</a></li>
+  </ul>
+</nav>
+<h1 id="app-and-tokens">App and tokens</h1>
+<p>Go to <a href="https://apps.twitter.com">Twitter Application Management</a> and create new app there. Now open its <strong>Keys and Access Tokens</strong>. Copy the following values from there:</p>
+<ul>
+<li><code>Consumer Key</code>;</li>
+<li><code>Consumer Secret</code>;</li>
+<li><code>Access Token</code>;</li>
+<li><code>Access Token Secret</code>.</li>
+</ul>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/24/csharp-dotnet-core-publish-twitter/images/keys-and-access-tokens.png" alt="Twitter app tokens"/>
+
+</div>
+
+<h1 id="theory">Theory</h1>
+<p>Publishing (or any interaction with the Twitter API) is performed via HTTP requests. And each request to Twitter API should be <a href="https://developer.twitter.com/en/docs/basics/authentication/guides/authorizing-a-request">authenticated and authorized</a> using keys and tokens from above. The most interesting part here is <a href="https://developer.twitter.com/en/docs/basics/authentication/guides/creating-a-signature.html">generating signature</a> for <code>oauth_signature</code> parameter, which is a fucking rocket science, if you ask me.</p>
+<p>Fortunately, I found a <a href="https://blog.dantup.com/2016/07/simplest-csharp-code-to-post-a-tweet-using-oauth/">ready solution</a> on the internet. But this solution covers only publishing a text post, and I needed to attach a picture to it too, so I had to modify the code.</p>
+<p>In order to publish your post with some image attached, you need to send two requests to Twitter API:</p>
+<ol>
+<li>Upload the image to Twitter and get its ID;</li>
+<li>Send your post with this ID in parameters.</li>
+</ol>
+<p>Here&rsquo;s an example of what you get:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/24/csharp-dotnet-core-publish-twitter/images/twitter-post-with-picture.png" alt="Twitter post with picture"/>
+
+</div>
+
+<h1 id="code">Code</h1>
+<p>And that&rsquo;s the class:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Twitter</span>
+{
+    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> _consumerKey;
+    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> _consumerKeySecret;
+    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> _accessToken;
+    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> _accessTokenSecret;
+    <span style="color:#66d9ef">readonly</span> HMACSHA1 _sigHasher;
+    <span style="color:#66d9ef">readonly</span> DateTime _epochUtc = <span style="color:#66d9ef">new</span> DateTime(<span style="color:#ae81ff">1970</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, DateTimeKind.Utc);
+
+    <span style="color:#75715e">/// &lt;summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Twitter endpoint for sending tweets
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> _TwitterTextAPI;
+    <span style="color:#75715e">/// &lt;summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Twitter endpoint for uploading images
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> _TwitterImageAPI;
+    <span style="color:#75715e">/// &lt;summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Current tweet limit
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">int</span> _limit;
+
+    <span style="color:#66d9ef">public</span> Twitter(
+        <span style="color:#66d9ef">string</span> consumerKey,
+        <span style="color:#66d9ef">string</span> consumerKeySecret,
+        <span style="color:#66d9ef">string</span> accessToken,
+        <span style="color:#66d9ef">string</span> accessTokenSecret,
+        <span style="color:#66d9ef">int</span> limit = <span style="color:#ae81ff">280</span>
+        )
+    {
+        _TwitterTextAPI = <span style="color:#e6db74">&#34;https://api.twitter.com/1.1/statuses/update.json&#34;</span>;
+        _TwitterImageAPI = <span style="color:#e6db74">&#34;https://upload.twitter.com/1.1/media/upload.json&#34;</span>;
+        
+        _consumerKey = consumerKey;
+        _consumerKeySecret = consumerKeySecret;
+        _accessToken = accessToken;
+        _accessTokenSecret = accessTokenSecret;
+        _limit = limit;
+
+        _sigHasher = <span style="color:#66d9ef">new</span> HMACSHA1(
+            <span style="color:#66d9ef">new</span> ASCIIEncoding().GetBytes(<span style="color:#e6db74">$&#34;{_consumerKeySecret}&amp;{_accessTokenSecret}&#34;</span>)
+        );
+    }
+
+    <span style="color:#75715e">/// &lt;summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Publish a post with image
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;returns&gt;result&lt;/returns&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;post&#34;&gt;post to publish&lt;/param&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;pathToImage&#34;&gt;image to attach&lt;/param&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> PublishToTwitter(<span style="color:#66d9ef">string</span> post, <span style="color:#66d9ef">string</span> pathToImage)
+    {
+        <span style="color:#66d9ef">try</span>
+        {
+            <span style="color:#75715e">// first, upload the image
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">string</span> mediaID = <span style="color:#66d9ef">string</span>.Empty;
+            <span style="color:#66d9ef">var</span> rezImage = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
+            {
+                <span style="color:#66d9ef">var</span> response = <span style="color:#66d9ef">await</span> TweetImage(pathToImage);
+                <span style="color:#66d9ef">return</span> response;
+            });
+            <span style="color:#66d9ef">var</span> rezImageJson = JObject.Parse(rezImage.Result.Item2);
+            
+            <span style="color:#66d9ef">if</span> (rezImage.Result.Item1 != <span style="color:#ae81ff">200</span>)
+            {
+                <span style="color:#66d9ef">try</span> <span style="color:#75715e">// return error from JSON
+</span><span style="color:#75715e"></span>                {
+                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Error uploading image to Twitter. {rezImageJson[&#34;</span>errors<span style="color:#e6db74">&#34;][0][&#34;</span>message<span style="color:#e6db74">&#34;].Value&lt;string&gt;()}&#34;</span>;
+                }
+                <span style="color:#66d9ef">catch</span> (Exception ex) <span style="color:#75715e">// return unknown error
+</span><span style="color:#75715e"></span>                {
+                    <span style="color:#75715e">// log exception somewhere
+</span><span style="color:#75715e"></span>                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;Unknown error uploading image to Twitter&#34;</span>;
+                }
+            }
+            mediaID = rezImageJson[<span style="color:#e6db74">&#34;media_id_string&#34;</span>].Value&lt;<span style="color:#66d9ef">string</span>&gt;();
+
+            <span style="color:#75715e">// second, send the text with the uploaded image
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">var</span> rezText = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
+            {
+                <span style="color:#66d9ef">var</span> response = <span style="color:#66d9ef">await</span> TweetText(CutTweetToLimit(post), mediaID);
+                <span style="color:#66d9ef">return</span> response;
+            });
+            <span style="color:#66d9ef">var</span> rezTextJson = JObject.Parse(rezText.Result.Item2);
+            
+            <span style="color:#66d9ef">if</span> (rezText.Result.Item1 != <span style="color:#ae81ff">200</span>)
+            {
+                <span style="color:#66d9ef">try</span> <span style="color:#75715e">// return error from JSON
+</span><span style="color:#75715e"></span>                {
+                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Error sending post to Twitter. {rezTextJson[&#34;</span>errors<span style="color:#e6db74">&#34;][0][&#34;</span>message<span style="color:#e6db74">&#34;].Value&lt;string&gt;()}&#34;</span>;
+                }
+                <span style="color:#66d9ef">catch</span> (Exception ex) <span style="color:#75715e">// return unknown error
+</span><span style="color:#75715e"></span>                {
+                    <span style="color:#75715e">// log exception somewhere
+</span><span style="color:#75715e"></span>                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;Unknown error sending post to Twitter&#34;</span>;
+                }
+            }
+
+            <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;OK&#34;</span>;
+        }
+        <span style="color:#66d9ef">catch</span> (Exception ex)
+        {
+            <span style="color:#75715e">// log exception somewhere
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;Unknown error publishing to Twitter&#34;</span>;
+        }
+    }
+
+    <span style="color:#75715e">/// &lt;summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Send a tweet with some image attached
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;returns&gt;HTTP StatusCode and response&lt;/returns&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;text&#34;&gt;Text&lt;/param&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;mediaID&#34;&gt;Media ID for the uploaded image. Pass empty string, if you want to send just text&lt;/param&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; TweetText(<span style="color:#66d9ef">string</span> text, <span style="color:#66d9ef">string</span> mediaID)
+    {
+        <span style="color:#66d9ef">var</span> textData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; {
+                { <span style="color:#e6db74">&#34;status&#34;</span>, text },
+                { <span style="color:#e6db74">&#34;trim_user&#34;</span>, <span style="color:#e6db74">&#34;1&#34;</span> },
+                { <span style="color:#e6db74">&#34;media_ids&#34;</span>, mediaID}
+            };
+
+        <span style="color:#66d9ef">return</span> SendText(_TwitterTextAPI, textData);
+    }
+
+    <span style="color:#75715e">/// &lt;summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Upload some image to Twitter
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;returns&gt;HTTP StatusCode and response&lt;/returns&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;pathToImage&#34;&gt;Path to the image to send&lt;/param&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; TweetImage(<span style="color:#66d9ef">string</span> pathToImage)
+    {
+        <span style="color:#66d9ef">byte</span>[] imgdata = System.IO.File.ReadAllBytes(pathToImage);
+        <span style="color:#66d9ef">var</span> imageContent = <span style="color:#66d9ef">new</span> ByteArrayContent(imgdata);
+        imageContent.Headers.ContentType = <span style="color:#66d9ef">new</span> MediaTypeHeaderValue(<span style="color:#e6db74">&#34;multipart/form-data&#34;</span>);
+
+        <span style="color:#66d9ef">var</span> multipartContent = <span style="color:#66d9ef">new</span> MultipartFormDataContent();
+        multipartContent.Add(imageContent, <span style="color:#e6db74">&#34;media&#34;</span>);
+
+        <span style="color:#66d9ef">return</span> SendImage(_TwitterImageAPI, multipartContent);
+    }
+
+    <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; SendText(<span style="color:#66d9ef">string</span> URL, Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; textData)
+    {
+        <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
+        {
+            httpClient.DefaultRequestHeaders.Add(<span style="color:#e6db74">&#34;Authorization&#34;</span>, PrepareOAuth(URL, textData, <span style="color:#e6db74">&#34;POST&#34;</span>));
+
+            <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.PostAsync(URL, <span style="color:#66d9ef">new</span> FormUrlEncodedContent(textData));
+            <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+                (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+                httpContent
+                );
+        }
+    }
+
+    <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; SendImage(<span style="color:#66d9ef">string</span> URL, MultipartFormDataContent multipartContent)
+    {
+        <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
+        {
+            httpClient.DefaultRequestHeaders.Add(<span style="color:#e6db74">&#34;Authorization&#34;</span>, PrepareOAuth(URL, <span style="color:#66d9ef">null</span>, <span style="color:#e6db74">&#34;POST&#34;</span>));
+
+            <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.PostAsync(URL, multipartContent);
+            <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+                (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+                httpContent
+                );
+        }
+    }
+
+    <span style="color:#75715e">#region Some OAuth magic
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">string</span> PrepareOAuth(<span style="color:#66d9ef">string</span> URL, Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; data, <span style="color:#66d9ef">string</span> httpMethod)
+    {
+        <span style="color:#75715e">// seconds passed since 1/1/1970
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">var</span> timestamp = (<span style="color:#66d9ef">int</span>)((DateTime.UtcNow - _epochUtc).TotalSeconds);
+
+        <span style="color:#75715e">// Add all the OAuth headers we&#39;ll need to use when constructing the hash
+</span><span style="color:#75715e"></span>        Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; oAuthData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt;();
+        oAuthData.Add(<span style="color:#e6db74">&#34;oauth_consumer_key&#34;</span>, _consumerKey);
+        oAuthData.Add(<span style="color:#e6db74">&#34;oauth_signature_method&#34;</span>, <span style="color:#e6db74">&#34;HMAC-SHA1&#34;</span>);
+        oAuthData.Add(<span style="color:#e6db74">&#34;oauth_timestamp&#34;</span>, timestamp.ToString());
+        oAuthData.Add(<span style="color:#e6db74">&#34;oauth_nonce&#34;</span>, Guid.NewGuid().ToString());
+        oAuthData.Add(<span style="color:#e6db74">&#34;oauth_token&#34;</span>, _accessToken);
+        oAuthData.Add(<span style="color:#e6db74">&#34;oauth_version&#34;</span>, <span style="color:#e6db74">&#34;1.0&#34;</span>);
+
+        <span style="color:#66d9ef">if</span> (data != <span style="color:#66d9ef">null</span>) <span style="color:#75715e">// add text data too, because it is a part of the signature
+</span><span style="color:#75715e"></span>        {
+            <span style="color:#66d9ef">foreach</span> (<span style="color:#66d9ef">var</span> item <span style="color:#66d9ef">in</span> data)
+            {
+                oAuthData.Add(item.Key, item.Value);
+            }
+        }
+
+        <span style="color:#75715e">// Generate the OAuth signature and add it to our payload
+</span><span style="color:#75715e"></span>        oAuthData.Add(<span style="color:#e6db74">&#34;oauth_signature&#34;</span>, GenerateSignature(URL, oAuthData, httpMethod));
+
+        <span style="color:#75715e">// Build the OAuth HTTP Header from the data
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> GenerateOAuthHeader(oAuthData);
+    }
+
+    <span style="color:#75715e">/// &lt;summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Generate an OAuth signature from OAuth header values
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">string</span> GenerateSignature(<span style="color:#66d9ef">string</span> url, Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; data, <span style="color:#66d9ef">string</span> httpMethod)
+    {
+        <span style="color:#66d9ef">var</span> sigString = <span style="color:#66d9ef">string</span>.Join(
+            <span style="color:#e6db74">&#34;&amp;&#34;</span>,
+            data
+                .Union(data)
+                .Select(kvp =&gt; <span style="color:#66d9ef">string</span>.Format(<span style="color:#e6db74">&#34;{0}={1}&#34;</span>, Uri.EscapeDataString(kvp.Key), Uri.EscapeDataString(kvp.Value)))
+                .OrderBy(s =&gt; s)
+        );
+
+        <span style="color:#66d9ef">var</span> fullSigData = <span style="color:#66d9ef">string</span>.Format(<span style="color:#e6db74">&#34;{0}&amp;{1}&amp;{2}&#34;</span>,
+            httpMethod,
+            Uri.EscapeDataString(url),
+            Uri.EscapeDataString(sigString.ToString()
+            )
+        );
+
+        <span style="color:#66d9ef">return</span> Convert.ToBase64String(
+            _sigHasher.ComputeHash(
+                <span style="color:#66d9ef">new</span> ASCIIEncoding().GetBytes(fullSigData.ToString())
+            )
+        );
+    }
+
+    <span style="color:#75715e">/// &lt;summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Generate the raw OAuth HTML header from the values (including signature)
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">string</span> GenerateOAuthHeader(Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; data)
+    {
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">string</span>.Format(
+            <span style="color:#e6db74">&#34;OAuth {0}&#34;</span>,
+            <span style="color:#66d9ef">string</span>.Join(
+                <span style="color:#e6db74">&#34;, &#34;</span>,
+                data
+                    .Where(kvp =&gt; kvp.Key.StartsWith(<span style="color:#e6db74">&#34;oauth_&#34;</span>))
+                    .Select(
+                        kvp =&gt; <span style="color:#66d9ef">string</span>.Format(<span style="color:#e6db74">&#34;{0}=\&#34;{1}\&#34;&#34;</span>,
+                        Uri.EscapeDataString(kvp.Key),
+                        Uri.EscapeDataString(kvp.Value)
+                        )
+                    ).OrderBy(s =&gt; s)
+                )
+            );
+    }
+    <span style="color:#75715e">#endregion
+</span><span style="color:#75715e"></span>
+    <span style="color:#75715e">/// &lt;summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Cuts the tweet text to fit the limit
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;returns&gt;Cutted tweet text&lt;/returns&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;tweet&#34;&gt;Uncutted tweet text&lt;/param&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">string</span> CutTweetToLimit(<span style="color:#66d9ef">string</span> tweet)
+    {
+        <span style="color:#66d9ef">while</span> (tweet.Length &gt;= _limit)
+        {
+            tweet = tweet.Substring(<span style="color:#ae81ff">0</span>, tweet.LastIndexOf(<span style="color:#e6db74">&#34; &#34;</span>, StringComparison.Ordinal));
+        }
+        <span style="color:#66d9ef">return</span> tweet;
+    }
+}
+</code></pre></div>
+<p>For more details about Twitter API go to the documentation:</p>
+<ul>
+<li><a href="https://developer.twitter.com/en/docs/tweets/post-and-engage/api-reference/post-statuses-update">Sending tweets</a>;</li>
+<li><a href="https://developer.twitter.com/en/docs/media/upload-media/api-reference/post-media-upload.html">Uploading images</a>.</li>
+</ul>
+<p>And here&rsquo;s how to use this class:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">string</span> ConsumerKey = <span style="color:#e6db74">&#34;YOUR-CONSUMER-KEY&#34;</span>,
+       ConsumerKeySecret = <span style="color:#e6db74">&#34;YOUR-CONSUMER-KEY-SECRET&#34;</span>,
+       AccessToken = <span style="color:#e6db74">&#34;YOUR-ACCESS-TOKEN&#34;</span>,
+       AccessTokenSecret = <span style="color:#e6db74">&#34;YOUR-ACCESS-TOKEN-SECRET&#34;</span>;
+
+<span style="color:#66d9ef">var</span> twitter = <span style="color:#66d9ef">new</span> Twitter(
+    ConsumerKey,
+    ConsumerKeySecret,
+    AccessToken,
+    AccessTokenSecret
+    );
+
+<span style="color:#75715e">// 1) if we want to upload image and post it together with text
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">string</span> response = twitter.PublishToTwitter(<span style="color:#e6db74">&#34;some text&#34;</span>, <span style="color:#e6db74">&#34;/path/to/some/image.png&#34;</span>);
+Console.WriteLine(response);
+
+<span style="color:#75715e">// 2) if want just to send text
+</span><span style="color:#75715e">//var rez = Task.Run(async () =&gt;
+</span><span style="color:#75715e">//{
+</span><span style="color:#75715e">//    var response = await twitter.TweetText(&#34;some another text&#34;, string.Empty);
+</span><span style="color:#75715e">//    return response;
+</span><span style="color:#75715e">//});
+</span><span style="color:#75715e">//Console.WriteLine(rez.Result.Item1);
+</span><span style="color:#75715e">//var rezJson = JObject.Parse(rez.Result.Item2);
+</span><span style="color:#75715e">//Console.WriteLine(rezJson);
+</span><span style="color:#75715e">//string error = rezJson[&#34;errors&#34;] == null ? &#34;OK&#34; : rezJson[&#34;errors&#34;][0][&#34;message&#34;].Value&lt;string&gt;();
+</span><span style="color:#75715e">//Console.WriteLine(error);
+</span></code></pre></div>
+<p>Later I also wrote an article about <a href="/blog/2019/08/22/twitter-chunked-upload-video/">uploading videos</a>.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/dotnet/">dotnet</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "waspenterprises" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

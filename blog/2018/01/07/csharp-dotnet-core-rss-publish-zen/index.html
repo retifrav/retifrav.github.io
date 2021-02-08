@@ -1,0 +1,466 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>C# / .NET Core, RSS feed and Yandex Zen | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="C# / .NET Core, RSS feed and Yandex Zen" />
+<meta property="og:description" content="Actually, that is the first thing you need to do on your webwite. Not Twitter integration and not Facebook integration, but RSS feed. This is the fastest and easiest thing to do, anyway.
+
+
+
+    
+
+
+
+In addition to simply generating RSS, I&rsquo;ll tell you about Yandex Zen (because it&rsquo;s also RSS-based) and my attempts to inegrate with it." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/" />
+<meta property="article:published_time" content="2018-01-07T19:21:08+01:00" />
+<meta property="article:modified_time" content="2018-01-07T19:21:08+01:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">C# / .NET Core, RSS feed and Yandex Zen</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2018-01-07 19:21:08 &#43;0100</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 7 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>Actually, that is the first thing you need to do on your webwite. Not Twitter integration and not Facebook integration, but <a href="https://en.wikipedia.org/wiki/RSS">RSS</a> feed. This is the fastest and easiest thing to do, anyway.</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/dotnet-core-rss-zen-logo.png" alt=".NET Core, RSS, Yandex Zen, logo"/>
+
+</div>
+
+<p>In addition to simply generating RSS, I&rsquo;ll tell you about <a href="https://en.wikipedia.org/wiki/Yandex_Zen">Yandex Zen</a> (because it&rsquo;s also RSS-based) and my attempts to inegrate with it.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#rss">RSS</a>
+      <ul>
+        <li><a href="#possible-problems">Possible problems</a>
+          <ul>
+            <li><a href="#must-be-an-rfc-822-date-time">Must be an RFC-822 date-time</a></li>
+            <li><a href="#must-be-a-full-url">Must be a full URL</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#yandex-zen">Yandex Zen</a></li>
+  </ul>
+</nav>
+<h1 id="rss">RSS</h1>
+<p>Basically, generating an RSS feed merely means creating a <a href="https://validator.w3.org/feed/docs/">specially formed</a> XML file in the root of your website. Each time you have some updates on your website (new content), you need to reflect it in the RSS feed, and then everyone who is subscribed to it will get a notification.</p>
+<p>At our website new content means a new rating for some TV show, and that&rsquo;s what goes to RSS feed. Each time authors publish a new rating, a function call is triggered, and this function gets last 8 ratings and creates a new feed file (overwriting the previous one).</p>
+<p>Here&rsquo;s a simplified last 8 ratings table which I&rsquo;ll use as an example:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#f92672">+</span><span style="color:#75715e">-------------------------------------+----------------------------+----------------------------+---------------------+
+</span><span style="color:#75715e"></span><span style="color:#f92672">|</span> picture_path_main                   <span style="color:#f92672">|</span> title                      <span style="color:#f92672">|</span> short_name                 <span style="color:#f92672">|</span> published_date      <span style="color:#f92672">|</span>
+<span style="color:#f92672">+</span><span style="color:#75715e">-------------------------------------+----------------------------+----------------------------+---------------------+
+</span><span style="color:#75715e"></span><span style="color:#f92672">|</span> death<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>paradise<span style="color:#f92672">-</span>main.png          <span style="color:#f92672">|</span> Death <span style="color:#66d9ef">in</span> Paradise          <span style="color:#f92672">|</span> death<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>paradise          <span style="color:#f92672">|</span> <span style="color:#ae81ff">2018</span><span style="color:#f92672">-</span><span style="color:#ae81ff">01</span><span style="color:#f92672">-</span><span style="color:#ae81ff">05</span> <span style="color:#ae81ff">08</span>:<span style="color:#ae81ff">16</span>:<span style="color:#ae81ff">54</span> <span style="color:#f92672">|</span>
+<span style="color:#f92672">|</span> black<span style="color:#f92672">-</span>mirror<span style="color:#f92672">-</span>main.png               <span style="color:#f92672">|</span> Black Mirror               <span style="color:#f92672">|</span> black<span style="color:#f92672">-</span>mirror               <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">29</span> <span style="color:#ae81ff">11</span>:<span style="color:#ae81ff">42</span>:<span style="color:#ae81ff">25</span> <span style="color:#f92672">|</span>
+<span style="color:#f92672">|</span> murder<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>the<span style="color:#f92672">-</span><span style="color:#66d9ef">first</span><span style="color:#f92672">-</span>main.png        <span style="color:#f92672">|</span> Murder <span style="color:#66d9ef">in</span> the <span style="color:#66d9ef">First</span>        <span style="color:#f92672">|</span> murder<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>the<span style="color:#f92672">-</span><span style="color:#66d9ef">first</span>        <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">27</span> <span style="color:#ae81ff">16</span>:<span style="color:#ae81ff">49</span>:<span style="color:#ae81ff">40</span> <span style="color:#f92672">|</span>
+<span style="color:#f92672">|</span> three<span style="color:#f92672">-</span>girls<span style="color:#f92672">-</span>main.png                <span style="color:#f92672">|</span> Three Girls                <span style="color:#f92672">|</span> three<span style="color:#f92672">-</span>girls                <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">24</span> <span style="color:#ae81ff">16</span>:<span style="color:#ae81ff">45</span>:<span style="color:#ae81ff">37</span> <span style="color:#f92672">|</span>
+<span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>killing<span style="color:#f92672">-</span>main.png                <span style="color:#f92672">|</span> The Killing                <span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>killing                <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">20</span> <span style="color:#ae81ff">17</span>:<span style="color:#ae81ff">11</span>:<span style="color:#ae81ff">04</span> <span style="color:#f92672">|</span>
+<span style="color:#f92672">|</span> midnight<span style="color:#f92672">-</span>texas<span style="color:#f92672">-</span>main.png             <span style="color:#f92672">|</span> Midnight Texas             <span style="color:#f92672">|</span> midnight<span style="color:#f92672">-</span>texas             <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">18</span> <span style="color:#ae81ff">16</span>:<span style="color:#ae81ff">48</span>:<span style="color:#ae81ff">59</span> <span style="color:#f92672">|</span>
+<span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>leftovers<span style="color:#f92672">-</span>main.png              <span style="color:#f92672">|</span> The Leftovers              <span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>leftovers              <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">15</span> <span style="color:#ae81ff">19</span>:<span style="color:#ae81ff">48</span>:<span style="color:#ae81ff">10</span> <span style="color:#f92672">|</span>
+<span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>man<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>the<span style="color:#f92672">-</span>high<span style="color:#f92672">-</span>castle<span style="color:#f92672">-</span>main.png <span style="color:#f92672">|</span> The Man <span style="color:#66d9ef">in</span> The High Castle <span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>man<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>the<span style="color:#f92672">-</span>high<span style="color:#f92672">-</span>castle <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">11</span> <span style="color:#ae81ff">20</span>:<span style="color:#ae81ff">43</span>:<span style="color:#ae81ff">52</span> <span style="color:#f92672">|</span>
+<span style="color:#f92672">+</span><span style="color:#75715e">-------------------------------------+----------------------------+----------------------------+---------------------+</span></code></pre></div>
+<p>Creating an XML document in C# is a pretty easy thing. But XML namespaces were not so easy for me, and also there were some other annoying details, so I felt the need to share the code of my function with you:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#75715e">// configuration - object that works with my appsettings.json
+</span><span style="color:#75715e">// webRootPath - local path to the website root
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> GenerateRSS(IConfiguration configuration, <span style="color:#66d9ef">string</span> webRootPath)
+{
+    <span style="color:#75715e">// http://protvshows.com/
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">string</span> websiteLink = configuration.GetSection(<span style="color:#e6db74">&#34;General:Domain&#34;</span>).Value;
+
+    <span style="color:#75715e">// required namespaces
+</span><span style="color:#75715e"></span>    XNamespace content = <span style="color:#e6db74">&#34;http://purl.org/rss/1.0/modules/content/&#34;</span>;
+    XNamespace dc = <span style="color:#e6db74">&#34;http://purl.org/dc/elements/1.1/&#34;</span>;
+    XNamespace media = <span style="color:#e6db74">&#34;http://search.yahoo.com/mrss/&#34;</span>;
+    XNamespace atom = <span style="color:#e6db74">&#34;http://www.w3.org/2005/Atom&#34;</span>;
+    XNamespace georss = <span style="color:#e6db74">&#34;http://www.georss.org/georss&#34;</span>;
+
+    <span style="color:#75715e">// prepare the XML document
+</span><span style="color:#75715e"></span>    XDocument rss = <span style="color:#66d9ef">new</span> XDocument();
+    rss.Add(
+        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;rss&#34;</span>,
+            <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;version&#34;</span>, <span style="color:#e6db74">&#34;2.0&#34;</span>),
+            <span style="color:#75715e">// that&#39;s how you add namespaces to an XML document
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;content&#34;</span>, content.NamespaceName),
+            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;dc&#34;</span>, dc.NamespaceName),
+            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;media&#34;</span>, media.NamespaceName),
+            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;atom&#34;</span>, atom.NamespaceName),
+            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;georss&#34;</span>, georss.NamespaceName),
+            <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;channel&#34;</span>,
+                <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;title&#34;</span>, <span style="color:#e6db74">&#34;proTVshows&#34;</span>),
+                <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;link&#34;</span>, websiteLink),
+                <span style="color:#66d9ef">new</span> XElement(atom + <span style="color:#e6db74">&#34;link&#34;</span>,
+                    <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;href&#34;</span>, <span style="color:#e6db74">$&#34;{websiteLink}rss.xml&#34;</span>),
+                    <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;rel&#34;</span>, <span style="color:#e6db74">&#34;self&#34;</span>),
+                    <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;type&#34;</span>, <span style="color:#e6db74">&#34;application/rss+xml&#34;</span>)
+                    ),
+                            <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;description&#34;</span>, <span style="color:#e6db74">&#34;Some description&#34;</span>),
+                <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;language&#34;</span>, <span style="color:#e6db74">&#34;ru&#34;</span>)
+                )
+            )
+        );
+
+    <span style="color:#75715e">// get data from database and insert it to the document
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">using</span> (MySqlConnection sqlConn = <span style="color:#66d9ef">new</span> MySqlConnection(configuration.GetConnectionString(<span style="color:#e6db74">&#34;DefaultConnection&#34;</span>)))
+    {
+        sqlConn.Open();
+        MySqlCommand cmd = <span style="color:#66d9ef">new</span> MySqlCommand(<span style="color:#e6db74">&#34;SELECT picture_path_main, title, short_name, published_date FROM ratings;&#34;</span>, sqlConn);
+        <span style="color:#66d9ef">using</span> (MySqlDataReader reader = cmd.ExecuteReader())
+        {
+            <span style="color:#66d9ef">while</span> (reader.Read())
+            {
+                <span style="color:#66d9ef">string</span> title = reader.GetString(<span style="color:#e6db74">&#34;title&#34;</span>);
+                <span style="color:#66d9ef">string</span> postLink = <span style="color:#e6db74">$&#34;{websiteLink}ratings/{reader.GetString(&#34;</span>short_name<span style="color:#e6db74">&#34;)}&#34;</span>;
+                <span style="color:#75715e">// you can add various media to the feed
+</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">string</span> picture = Path.Combine(
+                    <span style="color:#75715e">// /images/ratings/
+</span><span style="color:#75715e"></span>                    configuration.GetSection(<span style="color:#e6db74">&#34;General:ImagesFolder&#34;</span>).Value,
+                    reader.GetString(<span style="color:#e6db74">&#34;picture_path_main&#34;</span>)
+                    );
+                <span style="color:#66d9ef">string</span> pictureLink = <span style="color:#e6db74">$&#34;{websiteLink}{picture}&#34;</span>;
+
+                StringBuilder feedContent = <span style="color:#66d9ef">new</span> StringBuilder()
+                    .Append(<span style="color:#e6db74">$&#34;&lt;h2&gt;{title}&lt;/h2&gt;&#34;</span>)
+                    .Append(<span style="color:#e6db74">$&#34;&lt;p&gt;New stuff!&lt;/p&gt;&#34;</span>);
+
+                rss.Element(<span style="color:#e6db74">&#34;rss&#34;</span>).Element(<span style="color:#e6db74">&#34;channel&#34;</span>).Add(
+                    <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;item&#34;</span>,
+                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;title&#34;</span>, title),
+                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;link&#34;</span>, postLink),
+                        <span style="color:#75715e">// if you use Guid.NewGuid() here, your reader will get duplicates each time you publish
+</span><span style="color:#75715e"></span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;guid&#34;</span>, reader.GetString(<span style="color:#e6db74">&#34;short_name&#34;</span>), <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;isPermaLink&#34;</span>, <span style="color:#e6db74">&#34;false&#34;</span>)),
+                        <span style="color:#75715e">// see about GetRFC822DateTime() in the #problems section
+</span><span style="color:#75715e"></span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;pubDate&#34;</span>, GetRFC822DateTime(reader.GetDateTime(<span style="color:#e6db74">&#34;published_date&#34;</span>))),
+                        <span style="color:#66d9ef">new</span> XElement(media + <span style="color:#e6db74">&#34;rating&#34;</span>, <span style="color:#e6db74">&#34;nonadult&#34;</span>, <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;scheme&#34;</span>, <span style="color:#e6db74">&#34;urn:simple&#34;</span>)),
+                        <span style="color:#75715e">//new XElement(&#34;author&#34;, &#34;proTVshows&#34;),
+</span><span style="color:#75715e"></span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;category&#34;</span>, <span style="color:#e6db74">&#34;TV&#34;</span>),
+                        <span style="color:#75715e">// here goes the picture for the post
+</span><span style="color:#75715e"></span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;enclosure&#34;</span>,
+                            <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;url&#34;</span>, pictureLink),
+                            <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;type&#34;</span>, <span style="color:#e6db74">&#34;image/png&#34;</span>),
+                            <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;length&#34;</span>, pictureLink.Length)
+                            ),
+                        <span style="color:#75715e">// and that&#39;s how you add CDATA
+</span><span style="color:#75715e"></span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;description&#34;</span>, <span style="color:#66d9ef">new</span> XCData(<span style="color:#e6db74">$&#34;A rating for {title}&#34;</span>)),
+                            <span style="color:#66d9ef">new</span> XElement(
+                                content + <span style="color:#e6db74">&#34;encoded&#34;</span>,
+                                <span style="color:#66d9ef">new</span> XCData(feedContent.ToString())
+                                )
+                        )
+                    );
+            }
+        }
+    }
+
+    rss.Save(Path.Combine(webRootPath, <span style="color:#e6db74">&#34;rss.xml&#34;</span>));
+}
+</code></pre></div>
+<p>RSS feed is ready and saved in your website root. Now your readers can subscribe to it and get your updates in their favorite RSS-reader.</p>
+<p>My favorite RSS-reader is <a href="https://feedly.com/i/latest">feedly</a>, and here&rsquo;s how our full <a href="https://protvshows.com/rss.xml">RSS feed</a> looks like there:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/feedly-rss-reader.png" alt="feedly RSS reader"/>
+
+</div>
+
+<h2 id="possible-problems">Possible problems</h2>
+<p>You can use <a href="https://validator.w3.org/feed/">W3C Feed Validation Service</a> to check the validity of your feed. If everything is correct, you&rsquo;ll get this message:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/rss-valid.png" alt="RSS valid"/>
+
+</div>
+
+<p>If your feed contains errors, you&rsquo;ll get something like this:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/rss-invalid.png" alt="RSS invalid"/>
+
+</div>
+
+<h3 id="must-be-an-rfc-822-date-time">Must be an RFC-822 date-time</h3>
+<p>Yeah, you cannot just use <code>DateTime.Now.ToString()</code>, because it doesn&rsquo;t return value in the <a href="https://validator.w3.org/feed/docs/error/InvalidRFC2822Date.html">correct format</a>. So I created this helper function:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">string</span> GetRFC822DateTime(DateTime dateTime)
+{
+    <span style="color:#66d9ef">return</span> dateTime
+        .ToString(<span style="color:#e6db74">&#34;ddd, dd MMM yyyy HH.mm.ss zzz&#34;</span>)
+        .Replace(<span style="color:#e6db74">&#34;:&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>)
+        .Replace(<span style="color:#e6db74">&#34;.&#34;</span>, <span style="color:#e6db74">&#34;:&#34;</span>)
+        ;
+}
+</code></pre></div>
+<h3 id="must-be-a-full-url">Must be a full URL</h3>
+<p>If you have <code>https</code> links, then it&rsquo;s your case, because <code>https</code> <a href="https://validator.w3.org/feed/docs/error/InvalidURLAttribute.html">is not</a> considered to be a valid URL. Just replace it with <code>http</code>. Oh well, actually I can see the logic behind this.</p>
+<h1 id="yandex-zen">Yandex Zen</h1>
+<p>Now let&rsquo;s talk about <a href="https://yandex.com/support/zen/index.html">Yandex Zen</a>. It&rsquo;s a new &ldquo;publishing&rdquo; platform from Yandex. For end-user it looks like yet-another-news-feed. Why would anyone use it in addition to zillion of already existing feeds in their social networks, subscriptions, etc - I have no idea (but apparently Yandex has).</p>
+<p>User can form his personal feed by choosing from available sources and liking/disliking news posts. Zen tries to be smart and to take user&rsquo;s preferences into consideration, in order to offer more relevant news. An <a href="https://www.apple.com/news/">Apple News</a> copycat, so to say.</p>
+<p>Anyone can become a <a href="https://yandex.com/support/zen/publishers/authors.html">author/publisher</a> to post his content to Zen. And here shit goes south, because for whatever reasons there are two different entities there:</p>
+<ul>
+<li><a href="https://yandex.com/support/zen/publishers/publication.html">Zen channel</a> - <code>https://zen.yandex.ru/media/YOUR-DOMAIN</code>, a place where you can publish your content so everyone could see it. You can think about it as a public Page at Facebook, or your Twitter feed, or your blog;</li>
+<li><a href="https://yandex.com/support/zen/publishers/rss-connect.html">Zen RSS feed</a> - <code>https://zen.yandex.ru/YOUR-DOMAIN</code>, just a retranslator for your RSS feed, which should meet <a href="https://yandex.com/support/zen/publishers/rss-connect.html#ariaid-title4">some requirements</a>. And you&rsquo;re in luck, because my feed-generating function from above was created in accordance with those requirements.</li>
+</ul>
+<p>And these two entities (channel and feed) don&rsquo;t cross! It&rsquo;s two separate things. While you can write your own stuff manually to Zen channel, your Zen RSS feed can only get content from your website. So, if you thought that adding your RSS feed to Zen means that your Zen channel will automatically get content from it - no, suck a dick, your channel ain&rsquo;t getting shit from your RSS feed. They even tell you not to publish the same content into RSS feed and Zen channel. Because fuck you, Yandex knows better how to organise a yet-another-publishing-platform in 2017. <em>И всё это вместо того чтобы запилить как можно более простой и удобный API для привлечения издателей/авторов и всячески облизывать каждого желающего воспользоваться их поебенью.</em></p>
+<p>By the way, you cannot just add your RSS feed - first you need to submit it to Yandex for approval, and only after that they will plug it in. Or they won&rsquo;t. Or they will, and then some time later they will unplug it. Very promising, yeah.</p>
+<p>Quality of examples is also not really reassuring:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/yandex-zen-typo.png" alt="Yandex Zen typo"/>
+
+</div>
+
+<p>The concept of Zen channel separated from Zen RSS feed looked so crazy that I contacted their support to make sure that I got it right. After 3 or 4 e-mails of them dodging the issue I aked a direct question: &ldquo;<em>How can I publish to my Zen channel automatically? Is it even possible? What is the point of adding my RSS feed to Zen then (then Zen)?</em>&rdquo;. Aaaaand&hellip; they simply never replied to it (actually, they did - 4 months later).</p>
+<p>And now, ladies and gentlemen, let me show you the true purpose of Zen. Every two rows in this wretched thing there is a bloody Yandex.Direct advertisement block:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/yandex-zen-true-purpose.png" alt="Yandex Zen true purpose"/>
+
+</div>
+
+<p><strong>Now</strong> everything is clear.</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[07.01.2018] Update:</strong> Channel and feed has been joined</div>
+<p>&hellip;Today, couple of months later, I saw this <a href="https://yandex.ru/support/zen/publishers/site-to-channel.html">new documentation page</a> (only russian version is available at the moment), describing exactly this possibility - to join Zen channel and RSS feed. It wasn&rsquo;t there before, and this feature did not exist either. Well, Yandex, congratulations with the first (small and ugly) step in the right direction. After joining them, your Zen feed will get content from both your website RSS and your Zen channel, but Zen channel will still exist as a separate entity (and will not get content from your RSS).</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[15.03.2018] Update:</strong> New changes</div>
+<p>Apparently, something has changed again, and now both <code>https://zen.yandex.ru/media/YOUR-DOMAIN</code> and <code>https://zen.yandex.ru/YOUR-DOMAIN</code> show the same content, which is not your RSS-feed but what you manually create as an author. Or is it the same thing that I described in the previos update?..</p>
+<p>And where the hell your RSS-feed content goes - remains to be unknown. I guess, users can see it on Zen, but you can&rsquo;t get a &ldquo;link&rdquo; for it to see the whole feed.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/dotnet/">dotnet</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "waspenterprises" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

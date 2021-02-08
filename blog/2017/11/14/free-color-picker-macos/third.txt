@@ -1,0 +1,54 @@
+-- https://apple.stackexchange.com/a/321377/92892
+
+try
+    set format to (button returned of (display dialog "Select the format of the chosen color for the clipboard." buttons {"Cancel", "HEX", "RGB"} default button 3 with icon 1 with title "Color Picker"))
+    set {r, g, b} to choose color
+    set {r, g, b} to {_16_to_8(r), _16_to_8(g), _16_to_8(b)}
+on error e number n
+    if (n = -128) then --user canceled
+        set clipboard_string to (get the clipboard)
+        if ((clipboard_string count) = 6) then
+            set {r, g, b} to hex_string_to_dec(clipboard_string)
+        else
+            return
+        end if
+    else
+        log {n:n, e:e}
+        return
+    end if
+end try
+if (format = "RGB") then
+    set the clipboard to ("rgb(" & r & ", " & g & ", " & b & ")")
+else
+    set the clipboard to ("#" & {dec_to_hex(r), dec_to_hex(g), dec_to_hex(b)})
+end if
+
+on _16_to_8(n)
+    return ((n / 65535) * 255) as integer
+end _16_to_8
+
+property hex_chars : "0123456789ABCDEF"'s characters
+on dec_to_hex(n)
+    if (n = 0) then return "00"
+    return (hex_chars's item (((n div 16) mod 16) + 1)) & (hex_chars's item ((n mod 16) + 1))
+end dec_to_hex
+
+property hex_to_dec_chars : "0.1.2.3.4.5.6.7.8.9AaBbCcDdEeFf"
+on hex_to_dec(s)
+    set s to s's items's reverse
+    set {d, p} to {0, 0}
+    repeat with c in s
+        set d to d + (((offset of c in hex_to_dec_chars) div 2) * (16 ^ p))
+        set p to p + 1
+    end repeat
+    return d as integer
+end hex_to_dec
+
+on hex_string_to_dec(s)
+    if character 1 of s = "#" then set s to s's text 2 thru -1
+    set r to {}
+    repeat with x from 1 to length of s by 2
+        set end of r to hex_to_dec(s's text x thru (x + 1))
+    end repeat
+    return r
+end hex_string_to_dec

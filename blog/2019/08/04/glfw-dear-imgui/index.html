@@ -1,0 +1,874 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>GLFW and Dear ImGui | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="GLFW and Dear ImGui" />
+<meta property="og:description" content="Last time I tried SDL and Dear ImGui and that was quite interesting. So today I would like to explore a GLFW and Dear ImGui combo.
+
+
+
+    
+
+
+
+There will be also a silly SDL vs GLFW comparison." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2019/08/04/glfw-dear-imgui/" />
+<meta property="article:published_time" content="2019-08-04T14:56:39+02:00" />
+<meta property="article:modified_time" content="2019-08-04T14:56:39+02:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">GLFW and Dear ImGui</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2019-08-04 14:56:39 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 9 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>Last time I tried <a href="/blog/2019/05/26/sdl-imgui/">SDL and Dear ImGui</a> and that was quite interesting. So today I would like to explore a GLFW and Dear ImGui combo.</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/08/04/glfw-dear-imgui/images/glfw-imgui-macos.png" alt="GLFW, Dear ImGui and a model on Mac OS"/>
+
+</div>
+
+<p>There will be also a silly SDL vs GLFW comparison.</p>
+<p><a href="https://www.glfw.org">GLFW</a> is almost the same thing as <a href="https://www.libsdl.org">SDL</a> - a way to create windows and OpenGL contexts. It also seems to have most of the SDL features as well, such as events, user input with keyboard and mouse, and others.</p>
+<p>So let&rsquo;s create a cross-platform application using GLFW and add a Dear ImGui to it.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#cmakeliststxt">CMakeLists.txt</a>
+      <ul>
+        <li><a href="#glfw">GLFW</a></li>
+        <li><a href="#glad">glad</a></li>
+        <li><a href="#dear-imgui">Dear ImGui</a></li>
+        <li><a href="#system-libraries">System libraries</a>
+          <ul>
+            <li><a href="#windows">Windows</a></li>
+            <li><a href="#mac-os">Mac OS</a></li>
+            <li><a href="#linux">Linux</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#application">Application</a>
+      <ul>
+        <li><a href="#a-simple-window">A simple window</a>
+          <ul>
+            <li><a href="#high-dpi">High DPI</a></li>
+          </ul>
+        </li>
+        <li><a href="#adding-dear-imgui">Adding Dear ImGui</a></li>
+        <li><a href="#its-cross-platform">It&rsquo;s cross-platform</a></li>
+      </ul>
+    </li>
+    <li><a href="#glfw-vs-sdl">GLFW vs SDL</a>
+      <ul>
+        <li><a href="#mac-os-1">Mac OS</a></li>
+        <li><a href="#linux-1">Linux</a></li>
+        <li><a href="#windows-1">Windows</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h1 id="cmakeliststxt">CMakeLists.txt</h1>
+<p>It looks like I switched to CMake for good, so I&rsquo;ll be using it for all my C++ projects, including this one.</p>
+<h2 id="glfw">GLFW</h2>
+<p>If you&rsquo;re on Mac OS or Windows, simply <a href="https://www.glfw.org/download.html">download</a> the pre-build binaries.</p>
+<p>If you&rsquo;re on Linux, then you can try to install it via your package manager, but for me that option failed, so I built it from sources (<em>which can be downloaded from the same page</em>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cd <span style="color:#f92672">~/</span><span style="color:#a6e22e">Downloads</span><span style="color:#f92672">/</span>glfw<span style="color:#f92672">-</span><span style="color:#ae81ff">3.3</span><span style="color:#f92672">.</span><span style="color:#ae81ff">2</span>
+$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#a6e22e">$_</span>
+$ nano <span style="color:#f92672">../</span><span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
+<span style="color:#75715e">// you might want to change install path to something else
+</span><span style="color:#75715e"></span>set<span style="color:#f92672">(</span><span style="color:#a6e22e">CMAKE_INSTALL_PREFIX</span> <span style="color:#e6db74">&#34;/home/YOUR-NAME/programs/glfw&#34;</span><span style="color:#f92672">)</span>
+
+$ cmake <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> <span style="color:#f92672">..</span></code></pre></div>
+<p>If that fails with the following error:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">CMake</span> <span style="color:#a6e22e">Error</span> at <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt<span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">208</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">message</span><span style="color:#f92672">)</span><span style="color:#66d9ef">:</span>
+  <span style="color:#a6e22e">RandR</span> headers not found<span style="color:#f92672">;</span> install libxrandr development package</code></pre></div>
+<p>Install these packages and try again:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo apt install xorg<span style="color:#f92672">-</span>dev libglu1<span style="color:#f92672">-</span>mesa<span style="color:#f92672">-</span>dev
+
+$ cmake <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> <span style="color:#f92672">..</span>
+$ cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target install
+<span style="color:#f92672">...</span>
+<span style="color:#a6e22e">Install</span> the project<span style="color:#f92672">...</span>
+<span style="color:#f92672">--</span> <span style="color:#a6e22e">Install</span> configuration<span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">Release</span><span style="color:#960050;background-color:#1e0010">&#34;</span>
+<span style="color:#66d9ef">--</span> <span style="color:#66d9ef">Installing:</span> <span style="color:#66d9ef">/home/YOUR-NAME/programs/glfw/include/GLFW</span>
+<span style="color:#f92672">--</span> <span style="color:#a6e22e">Installing</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">/home/YOUR-NAME/programs/glfw/include/GLFW/glfw3native.h</span>
+<span style="color:#f92672">--</span> <span style="color:#a6e22e">Installing</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">/home/YOUR-NAME/programs/glfw/include/GLFW/glfw3.h</span>
+<span style="color:#f92672">--</span> <span style="color:#a6e22e">Installing</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">/home/YOUR-NAME/programs/glfw/lib/cmake/glfw3/glfw3Config.cmake</span>
+<span style="color:#f92672">--</span> <span style="color:#a6e22e">Installing</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">/home/YOUR-NAME/programs/glfw/lib/cmake/glfw3/glfw3ConfigVersion.cmake</span>
+<span style="color:#f92672">--</span> <span style="color:#a6e22e">Installing</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">/home/YOUR-NAME/programs/glfw/lib/cmake/glfw3/glfw3Targets.cmake</span>
+<span style="color:#f92672">--</span> <span style="color:#a6e22e">Installing</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">/home/YOUR-NAME/programs/glfw/lib/cmake/glfw3/glfw3Targets-noconfig.cmake</span>
+<span style="color:#f92672">--</span> <span style="color:#a6e22e">Installing</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">/home/YOUR-NAME/programs/glfw/lib/pkgconfig/glfw3.pc</span>
+<span style="color:#f92672">--</span> <span style="color:#a6e22e">Installing</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">/home/YOUR-NAME/programs/glfw/lib/libglfw3.a</span></code></pre></div>
+<p>Now back to your project. Add GLFW library and its headers:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">find_library(<span style="color:#e6db74">GLFW</span> <span style="color:#e6db74">glfw3</span> <span style="color:#e6db74">PATHS</span> <span style="color:#e6db74">&#34;/home/YOUR-NAME/programs/glfw/lib&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>include_directories(
+    <span style="color:#e6db74">&#34;/home/YOUR-NAME/programs/glfw/include&#34;</span>
+    )<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>target_link_libraries(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+    <span style="color:#f92672">${</span>GLFW<span style="color:#f92672">}</span>
+    )</code></pre></div>
+<h2 id="glad">glad</h2>
+<p>Once again, in order to be able to use the latest OpenGL version, you will need an <a href="https://www.glfw.org/docs/latest/context_guide.html#context_glext_auto">OpenGL loader library</a>, one of which is <a href="https://github.com/Dav1dde/glad">glad</a>.</p>
+<p>I already described how to get it in the <a href="/blog/2019/05/26/sdl-imgui#glad">previous article</a> about SDL.</p>
+<h2 id="dear-imgui">Dear ImGui</h2>
+<p>Like the <a href="/blog/2019/05/26/sdl-imgui/#dear-imgui">last time</a> Dear ImGui source code files are added as they are:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">set(<span style="color:#e6db74">sources</span>
+    <span style="color:#e6db74">main.cpp</span>
+    <span style="color:#e6db74">functions.cpp</span>
+    <span style="color:#e6db74">imgui/imconfig.h</span>
+    <span style="color:#e6db74">imgui/imgui_demo.cpp</span>
+    <span style="color:#e6db74">imgui/imgui_draw.cpp</span>
+    <span style="color:#e6db74">imgui/imgui_impl_glfw.cpp</span>
+    <span style="color:#e6db74">imgui/imgui_impl_glfw.h</span>
+    <span style="color:#e6db74">imgui/imgui_impl_opengl3.cpp</span>
+    <span style="color:#e6db74">imgui/imgui_impl_opengl3.h</span>
+    <span style="color:#e6db74">imgui/imgui_internal.h</span>
+    <span style="color:#e6db74">imgui/imgui_widgets.cpp</span>
+    <span style="color:#e6db74">imgui/imgui.cpp</span>
+    <span style="color:#e6db74">imgui/imgui.h</span>
+    <span style="color:#e6db74">imgui/imstb_rectpack.h</span>
+    <span style="color:#e6db74">imgui/imstb_textedit.h</span>
+    <span style="color:#e6db74">imgui/imstb_truetype.h</span>
+    )</code></pre></div>
+<p>The only difference is that this time instead of SDL implementation we&rsquo;re using GLFW implementation.</p>
+<h2 id="system-libraries">System libraries</h2>
+<p>On all the platforms you&rsquo;ll need the OpenGL package:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">find_package(<span style="color:#e6db74">OpenGL</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>target_link_libraries(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+    <span style="color:#f92672">${</span>OPENGL_gl_LIBRARY<span style="color:#f92672">}</span>
+    )</code></pre></div>
+<h3 id="windows">Windows</h3>
+<p>Nothing else is required on Windows. Seriously, it&rsquo;s not the first time when some development-related thing goes smoothly on Windows, while on other platforms it is accompanied with all sorts of brainfuck. Makes you think, you know.</p>
+<p>Well, actually there was one thing. At first building was failing with complains about <code>main()</code> function not being <code>WinMain()</code>, which I resolved with the following instruction:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">set(<span style="color:#e6db74">CMAKE_EXE_LINKER_FLAGS</span> <span style="color:#e6db74">&#34;${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup&#34;</span>)</code></pre></div>
+<p>But when I removed it later at some point, nothing changed - there were no more complains and it all worked fine with <code>main()</code>.</p>
+<h3 id="mac-os">Mac OS</h3>
+<p>On Mac OS the following frameworks are <a href="https://www.glfw.org/docs/latest/build.html#build_link_osx">required</a>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">target_link_libraries(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+    <span style="color:#e6db74">&#34;-framework Cocoa&#34;</span>
+    <span style="color:#e6db74">&#34;-framework IOKit&#34;</span>
+    <span style="color:#e6db74">&#34;-framework CoreVideo&#34;</span>
+    )</code></pre></div>
+<p>Without it you&rsquo;ll get a kilometer-long <a href="glfw-macos-linking-errors.txt">list of linking errors</a> like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#f92672">[</span>build<span style="color:#f92672">]</span> Undefined symbols <span style="color:#66d9ef">for</span> architecture x86_64:
+<span style="color:#f92672">[</span>build<span style="color:#f92672">]</span>   <span style="color:#e6db74">&#34;_CFArrayAppendValue&#34;</span>, referenced from:
+<span style="color:#f92672">[</span>build<span style="color:#f92672">]</span>       __glfwInitJoysticksNS in libglfw3.a<span style="color:#f92672">(</span>cocoa_joystick.m.o<span style="color:#f92672">)</span>
+<span style="color:#f92672">[</span>build<span style="color:#f92672">]</span>       _matchCallback in libglfw3.a<span style="color:#f92672">(</span>cocoa_joystick.m.o<span style="color:#f92672">)</span></code></pre></div>
+<h3 id="linux">Linux</h3>
+<p>On Linux you&rsquo;ll need the following packages:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">find_package(<span style="color:#e6db74">Threads</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>find_package(<span style="color:#e6db74">X11</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>target_link_libraries(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+    <span style="color:#f92672">${</span>CMAKE_THREAD_LIBS_INIT<span style="color:#f92672">}</span>
+    <span style="color:#f92672">${</span>X11_LIBRARIES<span style="color:#f92672">}</span>
+    <span style="color:#f92672">${</span>CMAKE_DL_LIBS<span style="color:#f92672">}</span>
+    )</code></pre></div>
+<p>If you won&rsquo;t add those, you&rsquo;ll get these linking errors:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#f92672">[</span>build<span style="color:#f92672">]</span> /usr/bin/ld: libglfw3.a<span style="color:#f92672">(</span>posix_thread.c.o<span style="color:#f92672">)</span>: undefined reference to symbol <span style="color:#e6db74">&#39;pthread_key_delete@@GLIBC_2.2.5&#39;</span>
+<span style="color:#f92672">[</span>build<span style="color:#f92672">]</span> //lib/x86_64-linux-gnu/libpthread.so.0: error adding symbols: DSO missing from command line
+
+<span style="color:#f92672">[</span>build<span style="color:#f92672">]</span> /usr/bin/ld: libglfw3.a<span style="color:#f92672">(</span>x11_window.c.o<span style="color:#f92672">)</span>: undefined reference to symbol <span style="color:#e6db74">&#39;XConvertSelection&#39;</span>
+<span style="color:#f92672">[</span>build<span style="color:#f92672">]</span> //usr/lib/x86_64-linux-gnu/libX11.so.6: error adding symbols: DSO missing from command line
+
+<span style="color:#f92672">[</span>build<span style="color:#f92672">]</span> /usr/bin/ld: libglad.a<span style="color:#f92672">(</span>glad.c.o<span style="color:#f92672">)</span>: undefined reference to symbol <span style="color:#e6db74">&#39;dlclose@@GLIBC_2.2.5&#39;</span>
+<span style="color:#f92672">[</span>build<span style="color:#f92672">]</span> //lib/x86_64-linux-gnu/libdl.so.2: error adding symbols: DSO missing from command line</code></pre></div>
+<p>You can find the full <code>CMakeLists.txt</code> <a href="https://github.com/retifrav/glfw-imgui-example/blob/master/CMakeLists.txt">here</a>.</p>
+<h1 id="application">Application</h1>
+<h2 id="a-simple-window">A simple window</h2>
+<p>Here&rsquo;s how you get a basic window with GLFW:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">// C++
+</span><span style="color:#75715e"></span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;string&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;iostream&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span><span style="color:#75715e">// GLFW
+</span><span style="color:#75715e"></span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;glad/glad.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;GLFW/glfw3.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;functions.h&#34;</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span>
+std<span style="color:#f92672">::</span>string programName <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;GLFW window&#34;</span>;
+<span style="color:#66d9ef">int</span> windowWidth <span style="color:#f92672">=</span> <span style="color:#ae81ff">1200</span>,
+    windowHeight <span style="color:#f92672">=</span> <span style="color:#ae81ff">800</span>;
+<span style="color:#66d9ef">float</span> backgroundR <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.1f</span>,
+      backgroundG <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.3f</span>,
+      backgroundB <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.2f</span>;
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">framebuffer_size_callback</span>(GLFWwindow <span style="color:#f92672">*</span>window, <span style="color:#66d9ef">int</span> width, <span style="color:#66d9ef">int</span> height)
+{
+    glViewport(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, width, height);
+}
+
+<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">teardown</span>(GLFWwindow <span style="color:#f92672">*</span>window)
+{
+    <span style="color:#66d9ef">if</span> (window <span style="color:#f92672">!=</span> NULL) { glfwDestroyWindow(window); }
+    glfwTerminate();
+}
+
+<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>(<span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>argv[])
+{
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>glfwInit())
+    {
+        std<span style="color:#f92672">::</span>cerr <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;[ERROR] Couldn&#39;t initialize GLFW</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>;
+        <span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>;
+    }
+    <span style="color:#66d9ef">else</span>
+    {
+        std<span style="color:#f92672">::</span>cout <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;[INFO] GLFW initialized</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>;
+    }
+
+    <span style="color:#75715e">// setup GLFW window
+</span><span style="color:#75715e"></span>
+    glfwWindowHint(GLFW_DOUBLEBUFFER , <span style="color:#ae81ff">1</span>);
+    glfwWindowHint(GLFW_DEPTH_BITS, <span style="color:#ae81ff">24</span>);
+    glfwWindowHint(GLFW_STENCIL_BITS, <span style="color:#ae81ff">8</span>);
+
+    glfwWindowHint(
+        GLFW_OPENGL_PROFILE,
+        GLFW_OPENGL_CORE_PROFILE
+        );
+
+    std<span style="color:#f92672">::</span>string glsl_version <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span>;
+<span style="color:#75715e">#ifdef __APPLE__
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// GL 3.2 + GLSL 150
+</span><span style="color:#75715e"></span>    glsl_version <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;#version 150&#34;</span>;
+    glfwWindowHint( <span style="color:#75715e">// required on Mac OS
+</span><span style="color:#75715e"></span>        GLFW_OPENGL_FORWARD_COMPAT,
+        GL_TRUE
+        );
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, <span style="color:#ae81ff">4</span>);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, <span style="color:#ae81ff">1</span>);
+<span style="color:#75715e">#elif __linux__
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// GL 3.2 + GLSL 150
+</span><span style="color:#75715e"></span>    glsl_version <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;#version 150&#34;</span>;
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, <span style="color:#ae81ff">4</span>);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, <span style="color:#ae81ff">3</span>);
+<span style="color:#75715e">#elif _WIN32
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// GL 3.0 + GLSL 130
+</span><span style="color:#75715e"></span>    glsl_version <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;#version 130&#34;</span>;
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, <span style="color:#ae81ff">3</span>);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, <span style="color:#ae81ff">2</span>);
+<span style="color:#75715e">#endif
+</span><span style="color:#75715e"></span>
+    <span style="color:#66d9ef">float</span> highDPIscaleFactor <span style="color:#f92672">=</span> <span style="color:#ae81ff">1.0</span>;
+<span style="color:#75715e">#ifdef _WIN32
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// if it&#39;s a HighDPI monitor, try to scale everything
+</span><span style="color:#75715e"></span>    GLFWmonitor <span style="color:#f92672">*</span>monitor <span style="color:#f92672">=</span> glfwGetPrimaryMonitor();
+    <span style="color:#66d9ef">float</span> xscale, yscale;
+    glfwGetMonitorContentScale(monitor, <span style="color:#f92672">&amp;</span>xscale, <span style="color:#f92672">&amp;</span>yscale);
+    <span style="color:#66d9ef">if</span> (xscale <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">1</span> <span style="color:#f92672">||</span> yscale <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">1</span>)
+    {
+        highDPIscaleFactor <span style="color:#f92672">=</span> xscale;
+        glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
+    }
+<span style="color:#75715e">#elif __APPLE__
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// to prevent 1200x800 from becoming 2400x1600
+</span><span style="color:#75715e"></span>    glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
+<span style="color:#75715e">#endif
+</span><span style="color:#75715e"></span>
+    GLFWwindow <span style="color:#f92672">*</span>window <span style="color:#f92672">=</span> glfwCreateWindow(
+        windowWidth,
+        windowHeight,
+        programName.c_str(),
+        NULL,
+        NULL
+        );
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>window)
+    {
+        std<span style="color:#f92672">::</span>cerr <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;[ERROR] Couldn&#39;t create a GLFW window</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>;
+        teardown(NULL);
+        <span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>;
+    }
+    <span style="color:#75715e">// watch window resizing
+</span><span style="color:#75715e"></span>    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwMakeContextCurrent(window);
+    <span style="color:#75715e">// VSync
+</span><span style="color:#75715e"></span>    glfwSwapInterval(<span style="color:#ae81ff">1</span>);
+
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+        std<span style="color:#f92672">::</span>cerr <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;[ERROR] Couldn&#39;t initialize GLAD&#34;</span> <span style="color:#f92672">&lt;&lt;</span> std<span style="color:#f92672">::</span>endl;
+        teardown(window);
+        <span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>;
+    }
+    <span style="color:#66d9ef">else</span>
+    {
+        std<span style="color:#f92672">::</span>cout <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;[INFO] GLAD initialized</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>;
+    }
+
+    std<span style="color:#f92672">::</span>cout <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;[INFO] OpenGL from glad &#34;</span>
+              <span style="color:#f92672">&lt;&lt;</span> GLVersion.major <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;.&#34;</span> <span style="color:#f92672">&lt;&lt;</span> GLVersion.minor
+              <span style="color:#f92672">&lt;&lt;</span> std<span style="color:#f92672">::</span>endl;
+
+    <span style="color:#66d9ef">int</span> actualWindowWidth, actualWindowHeight;
+    glfwGetWindowSize(window, <span style="color:#f92672">&amp;</span>actualWindowWidth, <span style="color:#f92672">&amp;</span>actualWindowHeight);
+    glViewport(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, actualWindowWidth, actualWindowHeight);
+
+    glClearColor(backgroundR, backgroundG, backgroundB, <span style="color:#ae81ff">1.0f</span>);
+    <span style="color:#75715e">// --- rendering loop
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">while</span> (<span style="color:#f92672">!</span>glfwWindowShouldClose(window))
+    {
+        glClear(GL_COLOR_BUFFER_BIT <span style="color:#f92672">|</span> GL_DEPTH_BUFFER_BIT);
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    teardown(window);
+
+    <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+}
+</code></pre></div>
+<p>Running this on Mac OS gives this simple window:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/08/04/glfw-dear-imgui/images/glfw-window-macos.png" alt="GLFW window on Mac OS"/>
+
+</div>
+
+<p>And the console output:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">INFO</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">GLFW</span> initialized
+<span style="color:#f92672">[</span><span style="color:#66d9ef">INFO</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">GLAD</span> initialized
+<span style="color:#f92672">[</span><span style="color:#66d9ef">INFO</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">OpenGL</span> from glad <span style="color:#ae81ff">4.1</span></code></pre></div>
+<h3 id="high-dpi">High DPI</h3>
+<p>What&rsquo;s interesting here is the way how GLFW allows you to handle High DPI / Retina displays - you can set so-called <a href="https://www.glfw.org/docs/latest/window.html#window_hints">window creation hints</a> before creating a window.</p>
+<p>For example, on Mac OS you can use <a href="https://www.glfw.org/docs/latest/window_guide.html#GLFW_COCOA_RETINA_FRAMEBUFFER_hint">GLFW_COCOA_RETINA_FRAMEBUFFER</a> hint to prevent your window from getting values twice as big in pixels:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">glfwWindowHint<span style="color:#f92672">(</span><span style="color:#a6e22e">GLFW_COCOA_RETINA_FRAMEBUFFER</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">GLFW_FALSE</span><span style="color:#f92672">);</span></code></pre></div>
+<p>And on Windows it&rsquo;s the other way around - if your window is too damn small, then you might want to set <a href="https://www.glfw.org/docs/latest/window_guide.html#GLFW_SCALE_TO_MONITOR">GLFW_SCALE_TO_MONITOR</a> hint:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">glfwWindowHint<span style="color:#f92672">(</span><span style="color:#a6e22e">GLFW_SCALE_TO_MONITOR</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">GLFW_TRUE</span><span style="color:#f92672">);</span></code></pre></div>
+<p>As you can see I also defined a <code>highDPIscaleFactor</code> variable here for later use.</p>
+<!--
+## Add some model to the scene
+
+Now let's show some model on the scene. I took a simple cube from [here](https://sourceforge.net/p/anttweakbar/code/ci/master/tree/examples/TwSimpleGLFW.c):
+
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">void <span style="color:#a6e22e">DrawModel</span><span style="color:#f92672">(</span>int wireframe<span style="color:#f92672">)</span>
+<span style="color:#f92672">{</span>
+    int pass<span style="color:#f92672">,</span> numPass<span style="color:#f92672">;</span>
+
+    <span style="color:#75715e">// enable OpenGL transparency and light
+</span><span style="color:#75715e"></span>    glEnable<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_BLEND</span><span style="color:#f92672">);</span>
+    glBlendFunc<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_SRC_ALPHA</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">GL_ONE_MINUS_SRC_ALPHA</span><span style="color:#f92672">);</span>
+    glEnable<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_DEPTH_TEST</span><span style="color:#f92672">);</span>
+    <span style="color:#75715e">// use default light diffuse and position
+</span><span style="color:#75715e"></span>    glEnable<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_LIGHT0</span><span style="color:#f92672">);</span>
+    glLightModeli<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_LIGHT_MODEL_TWO_SIDE</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+    glEnable<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_COLOR_MATERIAL</span><span style="color:#f92672">);</span>
+    glColorMaterial<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_FRONT_AND_BACK</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">GL_DIFFUSE</span><span style="color:#f92672">);</span>
+    glEnable<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_LINE_SMOOTH</span><span style="color:#f92672">);</span>
+    glLineWidth<span style="color:#f92672">(</span><span style="color:#ae81ff">3.0</span><span style="color:#f92672">);</span>
+
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>wireframe<span style="color:#f92672">)</span>
+    <span style="color:#f92672">{</span>
+        glDisable<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_CULL_FACE</span><span style="color:#f92672">);</span>
+        glDisable<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_LIGHTING</span><span style="color:#f92672">);</span>
+        glPolygonMode<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_FRONT_AND_BACK</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">GL_LINE</span><span style="color:#f92672">);</span>
+        numPass <span style="color:#66d9ef">=</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">else</span>
+    <span style="color:#f92672">{</span>
+        glEnable<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_CULL_FACE</span><span style="color:#f92672">);</span>
+        glEnable<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_LIGHTING</span><span style="color:#f92672">);</span>
+        glPolygonMode<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_FRONT_AND_BACK</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">GL_FILL</span><span style="color:#f92672">);</span>
+        numPass <span style="color:#66d9ef">=</span> <span style="color:#ae81ff">2</span><span style="color:#f92672">;</span>
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>pass <span style="color:#66d9ef">=</span> <span style="color:#ae81ff">0</span><span style="color:#f92672">;</span> pass <span style="color:#f92672">&lt;</span> numPass<span style="color:#f92672">;</span> <span style="color:#f92672">++</span>pass<span style="color:#f92672">)</span>
+    <span style="color:#f92672">{</span>
+        <span style="color:#75715e">// since the material could be transparent,
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">// we draw the convex model in 2 passes
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">// first its back faces, and second its front faces.
+</span><span style="color:#75715e"></span>        glCullFace<span style="color:#f92672">((</span>pass <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span><span style="color:#f92672">)</span> <span style="color:#f92672">?</span> <span style="color:#a6e22e">GL_FRONT</span> <span style="color:#66d9ef">:</span> <span style="color:#66d9ef">GL_BACK</span><span style="color:#f92672">);</span>
+        <span style="color:#75715e">// draw the model (a cube)
+</span><span style="color:#75715e"></span>        glBegin<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_QUADS</span><span style="color:#f92672">);</span>
+            <span style="color:#75715e">// front face
+</span><span style="color:#75715e"></span>            glNormal3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            <span style="color:#75715e">// back face
+</span><span style="color:#75715e"></span>            glNormal3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,+</span><span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+            <span style="color:#75715e">// left face
+</span><span style="color:#75715e"></span>            glNormal3f<span style="color:#f92672">(-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            <span style="color:#75715e">// right face
+</span><span style="color:#75715e"></span>            glNormal3f<span style="color:#f92672">(+</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+            <span style="color:#75715e">// bottom face
+</span><span style="color:#75715e"></span>            glNormal3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+            <span style="color:#75715e">// top face
+</span><span style="color:#75715e"></span>            glNormal3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,+</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">);</span>
+            glVertex3f<span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">0</span><span style="color:#f92672">);</span>
+        glEnd<span style="color:#f92672">();</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span></code></pre></div>
+
+You can put it into the rendering loop like this:
+
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#75715e">// current time and enlapsed time
+</span><span style="color:#75715e"></span>double time <span style="color:#66d9ef">=</span> glfwGetTime<span style="color:#f92672">(),</span> dt<span style="color:#f92672">;</span>
+<span style="color:#75715e">// model turn counter
+</span><span style="color:#75715e"></span>double turn <span style="color:#66d9ef">=</span> <span style="color:#ae81ff">0</span><span style="color:#f92672">;</span>
+<span style="color:#75715e">// model rotation speed
+</span><span style="color:#75715e"></span>double speed <span style="color:#66d9ef">=</span> <span style="color:#ae81ff">0.2</span><span style="color:#f92672">;</span>
+<span style="color:#75715e">// draw model in wireframe?
+</span><span style="color:#75715e"></span>int wire <span style="color:#66d9ef">=</span> <span style="color:#ae81ff">0</span><span style="color:#f92672">;</span>
+<span style="color:#75715e">// model color (32bits RGBA)
+</span><span style="color:#75715e"></span>unsigned char cubeColor<span style="color:#f92672">[]</span> <span style="color:#66d9ef">=</span> <span style="color:#f92672">{</span> <span style="color:#ae81ff">255</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">0</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">0</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">128</span> <span style="color:#f92672">};</span>
+
+<span style="color:#66d9ef">while</span> <span style="color:#f92672">(!</span>glfwWindowShouldClose<span style="color:#f92672">(</span>window<span style="color:#f92672">))</span>
+<span style="color:#f92672">{</span>
+    glClearColor<span style="color:#f92672">(</span>backgroundR<span style="color:#f92672">,</span> backgroundG<span style="color:#f92672">,</span> backgroundB<span style="color:#f92672">,</span> <span style="color:#ae81ff">1.0f</span><span style="color:#f92672">);</span>
+    glClear<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_COLOR_BUFFER_BIT</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">GL_DEPTH_BUFFER_BIT</span><span style="color:#f92672">);</span>
+
+    <span style="color:#75715e">// rotate the cube
+</span><span style="color:#75715e"></span>    dt <span style="color:#66d9ef">=</span> glfwGetTime<span style="color:#f92672">()</span> <span style="color:#f92672">-</span> time<span style="color:#f92672">;</span>
+    <span style="color:#66d9ef">if</span><span style="color:#f92672">(</span>dt <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">0</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span> dt <span style="color:#66d9ef">=</span> <span style="color:#ae81ff">0</span><span style="color:#f92672">;</span> <span style="color:#f92672">}</span>
+    time <span style="color:#f92672">+=</span> dt<span style="color:#f92672">;</span>
+    turn <span style="color:#f92672">+=</span> speed <span style="color:#f92672">*</span> dt<span style="color:#f92672">;</span>
+    glMatrixMode<span style="color:#f92672">(</span><span style="color:#a6e22e">GL_MODELVIEW</span><span style="color:#f92672">);</span>
+    glLoadIdentity<span style="color:#f92672">();</span>
+    glRotated<span style="color:#f92672">(</span><span style="color:#ae81ff">360.0</span> <span style="color:#f92672">*</span> turn<span style="color:#f92672">,</span> <span style="color:#ae81ff">0.4</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">0.2</span><span style="color:#f92672">);</span>
+    glTranslated<span style="color:#f92672">(-</span><span style="color:#ae81ff">0.5</span><span style="color:#f92672">,</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">0.5</span><span style="color:#f92672">,</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">0.5</span><span style="color:#f92672">);</span>
+    <span style="color:#75715e">// set the cube color
+</span><span style="color:#75715e"></span>    glColor4ubv<span style="color:#f92672">(</span>cubeColor<span style="color:#f92672">);</span>
+    <span style="color:#75715e">// and finally draw it
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">DrawModel</span><span style="color:#f92672">(</span>wire<span style="color:#f92672">);</span>
+
+    glfwSwapBuffers<span style="color:#f92672">(</span>window<span style="color:#f92672">);</span>
+    glfwPollEvents<span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span></code></pre></div>
+
+Here's how it will look like at runtime:
+
+
+
+
+
+
+
+    <video autoplay="yes" controls="yes" loop="yes"  class="video">
+        <source src="/blog/2019/08/04/glfw-dear-imgui/video/window-model.mp4" type="video/mp4">
+    </video>
+    
+    <p class="video-fallback">If video doesn’t play in your browser, you can download it <a href="/blog/2019/08/04/glfw-dear-imgui/video/window-model.mp4">here</a></p>
+    
+
+
+-->
+<h2 id="adding-dear-imgui">Adding Dear ImGui</h2>
+<p>Rendering GUI with Dear ImGui in a GLFW window is not so different from doing the same <a href="/blog/2019/05/26/sdl-imgui/#plugging-dear-imgui-into-sdl">with SDL</a>, so I won&rsquo;t place the entire code for it here, you can take a look at it later in the repository.</p>
+<p>I based my code on <a href="https://github.com/ocornut/imgui/blob/master/examples/example_sdl_opengl3/main.cpp">this example</a></p>
+<p>Mostly, the only differences would be GLFW-related Dear ImGui implementations, which come instead of SDL:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#75715e">//#include &#34;imgui/imgui_impl_sdl.h&#34;
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">#</span>include <span style="color:#e6db74">&#34;imgui/imgui_impl_glfw.h&#34;</span>
+
+<span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">//ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">ImGui_ImplGlfw_InitForOpenGL</span><span style="color:#f92672">(</span>window<span style="color:#f92672">,</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">);</span>
+<span style="color:#a6e22e">ImGui_ImplOpenGL3_Init</span><span style="color:#f92672">(</span>glsl_version<span style="color:#f92672">.</span>c_str<span style="color:#f92672">());</span>
+
+<span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">//ImGui_ImplSDL2_NewFrame(window);
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">ImGui_ImplGlfw_NewFrame</span><span style="color:#f92672">();</span></code></pre></div>
+<p>Note that I used an OpenGL 3.x (<code>imgui/imgui_impl_opengl3.h</code>) implementation here. This is because documentation recommends not to use OpenGL 2.x (<code>imgui/imgui_impl_opengl2.h</code>) implementation in actual applications and take the OpenGL 3.x instead. I can only second this suggestion as while this example worked just fine, I ran into certain problems with my other application, and I was able to resolve those only after switching to OpenGL 3.x implementation.</p>
+<p>On High DPI displays you might want to utilize <code>highDPIscaleFactor</code> variable that we set <a href="#high-dpi">earlier</a> - to scale all the paddings/margins/spacings:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">void setImGuiStyle<span style="color:#f92672">(</span>float highDPIscaleFactor<span style="color:#f92672">)</span>
+<span style="color:#f92672">{</span>
+    <span style="color:#a6e22e">ImGuiStyle</span> <span style="color:#f92672">&amp;</span>style <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">ImGui</span><span style="color:#66d9ef">:</span><span style="color:#66d9ef">:GetStyle</span><span style="color:#f92672">();</span>
+
+    <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>
+    style<span style="color:#f92672">.</span><span style="color:#a6e22e">ScaleAllSizes</span><span style="color:#f92672">(</span>highDPIscaleFactor<span style="color:#f92672">);</span>
+<span style="color:#f92672">}</span></code></pre></div>
+<p>and also the font sizes:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">io<span style="color:#f92672">.</span><span style="color:#a6e22e">Fonts</span><span style="color:#f92672">-&gt;</span><span style="color:#a6e22e">AddFontFromFileTTF</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;verdana.ttf&#34;</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">18.0f</span> <span style="color:#f92672">*</span> highDPIscaleFactor<span style="color:#f92672">,</span> <span style="color:#a6e22e">NULL</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">NULL</span><span style="color:#f92672">);</span></code></pre></div>
+<!--
+But anyway, here's what we're getting:
+
+
+
+
+
+
+
+    <video autoplay="yes" controls="yes" loop="yes"  class="video">
+        <source src="/blog/2019/08/04/glfw-dear-imgui/video/window-model-imgui.mp4" type="video/mp4">
+    </video>
+    
+    <p class="video-fallback">If video doesn’t play in your browser, you can download it <a href="/blog/2019/08/04/glfw-dear-imgui/video/window-model-imgui.mp4">here</a></p>
+    
+
+
+-->
+<h2 id="its-cross-platform">It&rsquo;s cross-platform</h2>
+<p>Since it&rsquo;s C++ and thanks to our universal <a href="#cmakelists-txt">CMakeLists.txt</a>, the application builds and works fine not only on Mac OS but also on Windows:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/08/04/glfw-dear-imgui/images/glfw-imgui-windows.png" alt="GLFW and Dear ImGui on Windows"/>
+
+</div>
+
+<p>and on Linux:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/08/04/glfw-dear-imgui/images/glfw-imgui-linux.png" alt="GLFW and Dear ImGui on Linux"/>
+
+</div>
+
+<p>The full project source code is published <a href="https://github.com/retifrav/glfw-imgui-example">here</a>.</p>
+<h1 id="glfw-vs-sdl">GLFW vs SDL</h1>
+<p>I cannot really compare GLFW with SDL thoroughly, because I don&rsquo;t know much about their capabilities, but I was curious to compare the footprint of applications built with both.</p>
+<h2 id="mac-os-1">Mac OS</h2>
+<p>Binary size:</p>
+<ul>
+<li>SDL-based: 693 KB;</li>
+<li>GLFW-based: 1.3 MB.</li>
+</ul>
+<p>CPU and memory usage:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/08/04/glfw-dear-imgui/images/glfw-vs-sdl-macos.png" alt="GLFW vs SDL, CPU and memory usage on Mac OS"/>
+
+</div>
+
+<h2 id="linux-1">Linux</h2>
+<p>Binary size:</p>
+<ul>
+<li>SDL-based: 731 KB;</li>
+<li>GLFW-based: 1.4 MB.</li>
+</ul>
+<p>CPU and memory usage:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/08/04/glfw-dear-imgui/images/glfw-vs-sdl-linux.png" alt="GLFW vs SDL, CPU and memory usage on Linux"/>
+
+</div>
+
+<h2 id="windows-1">Windows</h2>
+<p>Binary size:</p>
+<ul>
+<li>SDL-based: 506 KB (<em>plus 1.26 MB of <code>SDL2.dll</code>, which should be less in case of static linking</em>);</li>
+<li>GLFW-based: 882 KB.</li>
+</ul>
+<p>CPU and memory usage:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/08/04/glfw-dear-imgui/images/glfw-vs-sdl-windows.png" alt="GLFW vs SDL, CPU and memory usage on Windows"/>
+
+</div>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/cpp/">cpp</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <script>
+  var id =  26 ;
+
+  if (id)
+  {
+    let url = "https://github.com/retifrav/retifrav.github.io/issues/".concat(id);
+    let api_url = "https://api.github.com/repos/retifrav/retifrav.github.io/issues/".concat(id, "/comments");
+    
+    var commentsDiv = document.getElementById("comments");
+
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", api_url);
+    xhr.setRequestHeader("Accept", "application/vnd.github.v3.html+json");
+    xhr.send();
+
+    xhr.onload = function()
+    {
+      if (xhr.status != 200)
+      {
+        let errorText = document.createElement("p");
+        errorText.innerHTML = "<i>Comments for this post yet are not opened yet (or you have GitHub scripts disabled).</i>";
+        commentsDiv.appendChild(errorText);
+      }
+      else
+      {
+        let comments = xhr.response;
+
+        let mainHeader = document.createElement("h2");
+        mainHeader.innerHTML = "Comments: ".concat(comments.length);
+        commentsDiv.appendChild(mainHeader);
+
+        let issueLink = document.createElement("p");
+        issueLink.innerHTML = "<i>You can leave a comment using this <a href='".concat(url, "'>GitHub issue</a>.</i>");
+        commentsDiv.appendChild(issueLink);
+        
+        comments.forEach(function(comment)
+        {
+            let commentContent = document.createElement("div");
+            commentContent.setAttribute('class', 'gh-comment')
+            commentContent.innerHTML = "".concat(
+                "<div class='gh-header'>",
+                  "<img src='", comment.user.avatar_url, "' />",
+                  "<div style='margin:auto 0;'>",
+                    "<b><a class='gh-username' href='", comment.user.html_url, "'>", comment.user.login, "</a></b>",
+                    " commented at <em>", new Date(comment.created_at), "</em>",
+                  "</div>",
+                "</div>",
+                "<div class='gh-body'>",
+                  comment.body_html,
+                "</div>"
+            );
+            commentsDiv.appendChild(commentContent);
+        });
+      }
+    };
+
+    xhr.onerror = function()
+    {
+      let errorText = document.createElement("p");
+      errorText.innerHTML = "<i>Some error loading comments.</i>";
+      commentsDiv.appendChild(errorText);
+    };
+  }
+</script>
+
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

@@ -1,0 +1,584 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Apple TV, Kodi and network share | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Apple TV, Kodi and network share" />
+<meta property="og:description" content="For a long time I was using Kodi with LibreELEC running on a Raspberry Pi 3 Model B device. It was pretty good, and I was going to write a post about it, but never had time for that, and now I got an Apple TV, so instead I&rsquo;ll write a post about using Kodi on Apple TV.
+
+
+
+    
+
+
+
+I&rsquo;ll talk about how to install Kodi on Apple TV and how to create a network media storage for it." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2019/12/26/appletv-kodi-network-share/" />
+<meta property="article:published_time" content="2019-12-26T17:53:31+01:00" />
+<meta property="article:modified_time" content="2019-12-26T17:53:31+01:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Apple TV, Kodi and network share</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2019-12-26 17:53:31 &#43;0100</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 13 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>For a long time I was using <a href="https://kodi.tv">Kodi</a> with <a href="https://libreelec.tv">LibreELEC</a> running on a <a href="https://www.raspberrypi.org/products/raspberry-pi-3-model-b/">Raspberry Pi 3 Model B</a> device. It was pretty good, and I was going to write a post about it, but never had time for that, and now I got an Apple TV, so instead I&rsquo;ll write a post about using Kodi on Apple TV.</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/12/26/appletv-kodi-network-share/images/appletv-kodi-rpi.png" alt="Apple TV, Kodi and network media storage"/>
+
+</div>
+
+<p>I&rsquo;ll talk about how to install Kodi on Apple TV and how to create a network media storage for it.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#whats-wrong-with-apple-tv">What&rsquo;s wrong with Apple TV</a>
+      <ul>
+        <li><a href="#the-fuck-then-would-you-buy-apple-tv-for">The fuck then would you buy Apple TV for</a></li>
+      </ul>
+    </li>
+    <li><a href="#make-apple-tv-a-better-media-box">Make Apple TV a better media box</a>
+      <ul>
+        <li><a href="#set-up-a-network-share">Set-up a network share</a>
+          <ul>
+            <li><a href="#mounting-external-disk">Mounting external disk</a></li>
+            <li><a href="#sharing-the-files">Sharing the files</a>
+              <ul>
+                <li><a href="#samba">Samba</a></li>
+                <li><a href="#sftp">SFTP</a></li>
+              </ul>
+            </li>
+            <li><a href="#downloading-new-files">Downloading new files</a></li>
+          </ul>
+        </li>
+        <li><a href="#install-kodi">Install Kodi</a>
+          <ul>
+            <li><a href="#how-to-upload-an-application-to-apple-tv">How to upload an application to Apple TV</a></li>
+          </ul>
+        </li>
+        <li><a href="#connect-to-network-share-from-kodi">Connect to network share from Kodi</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h1 id="whats-wrong-with-apple-tv">What&rsquo;s wrong with Apple TV</h1>
+<p>Given its price, one would think that Apple TV should be able to do a lot of things and to have great media capabilities.</p>
+<p>In reality, Apple TV as a media box is pretty much useless on its own. If you are not subscribed to the whole bazillion of TV services (<em>Netflix, HBO, Hulu and many many more</em>), then you will always be missing something (<em>quite a lot of something</em>), as TV shows are heavily scattered across TV providers and none has them all. It is fair to say that without subscriptions Apple TV is merely just an <a href="https://www.apple.com/airplay/">AirPlay</a> host.</p>
+<p>Certainly, you can buy or rent TV shows or movies in iTunes Store, but that will cost you a fortune, so it&rsquo;s not really an option.</p>
+<p>The conclusion here is that you need a proper <a href="#install-kodi">video player</a> - the one that could simply play your video files from wherever they are.</p>
+<p>But that&rsquo;s not all: Apple TV has a very limited internal storage. Basically, you won&rsquo;t be able to store your movies and TV shows collection on it. Well, Raspberry&rsquo;s case is even worse in that regard, but hear this - Apple TV does not support connecting external disk drives! And that means that the only option would be to set-up a <a href="#sharing-the-files">network share</a>, and play your videos from there.</p>
+<h2 id="the-fuck-then-would-you-buy-apple-tv-for">The fuck then would you buy Apple TV for</h2>
+<p>So, what is the point in getting Apple TV at all? There is actually a couple of reasons.</p>
+<p>First of all, it is actually quite a powerful device in terms of hardware, plus it has a very nice GUI and an unusual remote control (<em>a bit retarded, but also nice</em>).</p>
+<p>AirPlay is also a quite nice thing to have, because the majority of devices and computers in the house are from Apple.</p>
+<p>But mostly I got Apple TV kinda &ldquo;for the future&rdquo;: till the times I&rsquo;ll have a 4K HDR Dolby Atmos telly, and also hoping that there will be finally a single streaming service containing all the movies and TV shows from all the networks - something I would gladly pay for.</p>
+<h1 id="make-apple-tv-a-better-media-box">Make Apple TV a better media box</h1>
+<p>Meanwhile, let&rsquo;s try to make Apple TV to be more useful with what we have nowadays.</p>
+<h2 id="set-up-a-network-share">Set-up a network share</h2>
+<p>I reused the same Raspberry Pi device (<em>the one that was my media player before</em>) as the server. Since I&rsquo;ve had it with all the limitations of LibreELEC, I formatted the card and put there <a href="https://www.raspberrypi.org/downloads/raspbian/">Raspbian</a> instead. And as the purpose of the device is just to share files from the connected external disk over the network, there was no point in having a desktop environment, so I took Raspbian Buster Lite.</p>
+<h3 id="mounting-external-disk">Mounting external disk</h3>
+<p>I have an external disk drive, where I store my movies and TV shows collection plus downloads, and I wanted to use this disk as the main storage for Raspberry device.</p>
+<p>For that it needs to auto-mount every time the device reboots and also it needs to mount to the same path. In order to do that, first you need to find its label (<em>or UUID</em>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo blkid
+
+<span style="color:#f92672">/</span>dev<span style="color:#f92672">/</span>mmcblk0p1<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">LABEL_FATBOOT</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;boot&#34;</span> <span style="color:#a6e22e">LABEL</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;boot&#34;</span> <span style="color:#a6e22e">UUID</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;5203-VC74&#34;</span> <span style="color:#a6e22e">TYPE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;vfat&#34;</span> <span style="color:#a6e22e">PARTUUID</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;6c586e13-01&#34;</span>
+<span style="color:#f92672">/</span>dev<span style="color:#f92672">/</span>mmcblk0p2<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">LABEL</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;rootfs&#34;</span> <span style="color:#a6e22e">UUID</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;2ab3f8e1-7dc6-43f5-b0db-dd1159d51l2e&#34;</span> <span style="color:#a6e22e">TYPE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ext4&#34;</span> <span style="color:#a6e22e">PARTUUID</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;6c586e13-02&#34;</span>
+<span style="color:#f92672">/</span>dev<span style="color:#f92672">/</span>mmcblk0<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">PTUUID</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;6c586e55&#34;</span> <span style="color:#a6e22e">PTTYPE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;dos&#34;</span>
+<span style="color:#f92672">/</span>dev<span style="color:#f92672">/</span>sda1<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">LABEL</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;somedisk&#34;</span> <span style="color:#a6e22e">UUID</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;21V9-9819&#34;</span> <span style="color:#a6e22e">TYPE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;exfat&#34;</span> <span style="color:#a6e22e">PARTUUID</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ol37c326-01&#34;</span></code></pre></div>
+<p>Create a mounting folder (<em>it will also be your share</em>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo mkdir <span style="color:#f92672">/</span>media<span style="color:#f92672">/</span>somedisk</code></pre></div>
+<p>Then edit <code>/etc/fstab</code> like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">LABEL</span><span style="color:#66d9ef">=</span>somedisk <span style="color:#f92672">/</span>media<span style="color:#f92672">/</span>somedisk exfat defaults<span style="color:#f92672">,</span>uid<span style="color:#66d9ef">=</span><span style="color:#ae81ff">1000</span><span style="color:#f92672">,</span>gid<span style="color:#66d9ef">=</span><span style="color:#ae81ff">1000</span><span style="color:#f92672">,</span>nofail <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">0</span></code></pre></div>
+<p>Values <code>uid</code> and <code>gid</code> stand for user and group IDs - who will have access to the mounted path. By default, in Raspbian your user (<code>pi</code>) has ID = 1000 for both itself and its group. You can check that with the following command:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ id</code></pre></div>
+<p>Also, as you can see, my disk is formatted to exFAT, so I needed to install these as well:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo apt install exfat<span style="color:#f92672">-</span>fuse exfat<span style="color:#f92672">-</span>utils</code></pre></div>
+<p>Now the disk will be mounted automatically every time the system starts.</p>
+<h3 id="sharing-the-files">Sharing the files</h3>
+<p>What file sharing service/protocol to use?</p>
+<h4 id="samba">Samba</h4>
+<p>For many years I was stumbling upon <a href="https://en.wikipedia.org/wiki/Digital_Living_Network_Alliance">DLNA</a> being mentioned here and there, implying that it is a widely known and adopted media sharing standard, so I thought it&rsquo;s a good time to finally try it. I installed <a href="https://wiki.archlinux.org/index.php/ReadyMedia">MiniDNLA</a>, but to my surprise it did not get discovered by neither of media players (<em>I tried Kodi, VLC and others</em>).</p>
+<p>Having wasted some time on trying to make it announce itself in a way someone would finally discover it, I got a seditious idea to just try <a href="https://en.wikipedia.org/wiki/Server_Message_Block">SMB</a>.</p>
+<p>Install Samba and create user password (<em>I went with default <code>pi</code></em>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo apt install samba samba<span style="color:#f92672">-</span>common<span style="color:#f92672">-</span>bin
+$ sudo smbpasswd <span style="color:#f92672">-</span>a pi</code></pre></div>
+<p>Edit the config:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo nano <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>samba<span style="color:#f92672">/</span>smb<span style="color:#f92672">.</span>conf</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[global]</span>
+<span style="color:#a6e22e">workgroup</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">WORKGROUP</span>
+
+<span style="color:#66d9ef">[share]</span>
+<span style="color:#a6e22e">Comment</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">MediaPi SMB</span>
+<span style="color:#a6e22e">Path</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">/media/somedisk</span>
+<span style="color:#a6e22e">Browseable</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">yes</span>
+<span style="color:#a6e22e">Writeable</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">no</span>
+<span style="color:#a6e22e">only guest</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">no</span>
+<span style="color:#a6e22e">create mask</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">0644</span>
+<span style="color:#a6e22e">directory mask</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">0644</span>
+<span style="color:#a6e22e">Public</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">yes</span>
+<span style="color:#a6e22e">Guest ok</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">no</span></code></pre></div>
+<p>Restart the service:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo systemctl restart smbd<span style="color:#f92672">.</span>service</code></pre></div>
+<p>And you know what? It just worked - the share immediately became discoverable from anywhere. So much for the media &ldquo;standards&rdquo;.</p>
+<h4 id="sftp">SFTP</h4>
+<p>Why didn&rsquo;t I use SFTP and went with Samba? Because I wanted to have SSH passwords disabled on my file server and allow connecting with SSH keys only, and Kodi on Apple TV sadly cannot use SSH keys (<em>or I didn&rsquo;t find a way</em>).</p>
+<p>What I didn&rsquo;t know is that <a href="https://serverfault.com/a/695026/410288">it is possible</a> to enable using SSH password just for one user.</p>
+<p>So when suddenly Kodi (<em>and VLC too</em>) stopped connecting to my Samba share (<em>could recent tvOS update be the reason?</em>), I just enabled SSH password for <code>pi</code> user:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo nano <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>ssh<span style="color:#f92672">/</span>sshd_config
+
+<span style="color:#a6e22e">Match</span> <span style="color:#a6e22e">User</span> pi
+    <span style="color:#a6e22e">PasswordAuthentication</span> yes</code></pre></div>
+<p>and then added my file server to Kodi with SFTP.</p>
+<p>The <code>pi</code> user here might seem not the best example, but actually later I&rsquo;ve replaced Raspberry Pi with a proper PC and desktop Ubuntu, and there <code>pi</code> user was created with very limited rights.</p>
+<p>By the way, my seedbox also allows connecting to it via SFTP, so now I don&rsquo;t even need to download files to my local server (<em>though I&rsquo;ll still talk about it below</em>).</p>
+<h3 id="downloading-new-files">Downloading new files</h3>
+<p>Okay, you can share existing files <em>from the disk</em>, but how to put new files <em>to the disk</em>?</p>
+<p>If you are from a country that doesn&rsquo;t care much about you stealing media content via torrents, then I guess you can just install a torrent client (<em>although I would first think about your disk resource first</em>). And if you are from a Germany-like country, then most likely you are using a <a href="/blog/2016/04/15/seedbox/">seedbox</a> and are downloading files from it via SFTP/FTPS.</p>
+<p>One way would be to download files to your computer first and then upload them to Raspberry via the very same SMB (<em>or, better yet, via SFTP</em>), but wouldn&rsquo;t it be faster to download files directly to Raspberry without this intermediate step?</p>
+<p>It definitely would, if only there was some remote GUI for that, because doing this via CLI is not so convenient.</p>
+<p>And there is at least one such tool - <a href="https://rclone.org/downloads/">rclone</a>. It&rsquo;s great for transferring files, and also it has a web-based GUI, so you can control it from your computer remotely, while all the downloads will happen directly on Raspberry.</p>
+<p>Install rclone and config it with two remotes: one for your actual source of downloads (<em>a seedbox, some server, some cloud storage, whatever</em>) and another for your external disk. Here&rsquo;s my config, for example:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">seedbox</span><span style="color:#f92672">]</span>
+<span style="color:#66d9ef">type</span> <span style="color:#f92672">=</span> sftp
+host <span style="color:#66d9ef">=</span> some<span style="color:#f92672">.</span>seedbox<span style="color:#f92672">.</span>io
+user <span style="color:#66d9ef">=</span> some
+pass <span style="color:#66d9ef">=</span> some
+md5sum_command <span style="color:#66d9ef">=</span> none
+sha1sum_command <span style="color:#66d9ef">=</span> none
+
+<span style="color:#f92672">[</span><span style="color:#66d9ef">disk</span><span style="color:#f92672">]</span>
+<span style="color:#66d9ef">type</span> <span style="color:#f92672">=</span> local</code></pre></div>
+<p>The reason you need to add the disk as a remote is that without it rclone will map <code>/</code> path to <code>/home/pi/</code>, so downloads will go to SD card instead of the disk. I have no idea why is that.</p>
+<p>Here&rsquo;s how to launch rclone with web GUI:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ rclone rcd <span style="color:#f92672">--</span>rc<span style="color:#f92672">-</span>web<span style="color:#f92672">-</span>gui <span style="color:#f92672">--</span>rc<span style="color:#f92672">-</span>addr <span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">8998</span> <span style="color:#66d9ef">--rc-htpasswd</span> <span style="color:#66d9ef">/home/pi/.htpasswd</span></code></pre></div>
+<p>To generate <code>/home/pi/.htpasswd</code>, install <code>apache2-utils</code> and provide a password of your choice:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo apt install apache2<span style="color:#f92672">-</span>utils
+$ htpasswd <span style="color:#f92672">-</span>c <span style="color:#f92672">/</span>home<span style="color:#f92672">/</span>pi<span style="color:#f92672">/.</span>htpasswd</code></pre></div>
+<p>Now open http://PASPBERRY-IP-ADDRESS:8998 in your browser, enter login/password and here&rsquo;s what you should see in the files explorer:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/12/26/appletv-kodi-network-share/images/rclone-web-gui.png" alt="rclone web GUI"/>
+
+</div>
+
+<p>To start a download just drag and drop files/folders from the remote to your disk.</p>
+<p>Works fine, however there are some pretty annoying issues:</p>
+<ul>
+<li>what&rsquo;s the point of checkboxes next to files, as there are no group operations;
+<ul>
+<li>by the way, it wouldn&rsquo;t hurt to be able to select several files and drag and drop all of them to start the download. At the moment you have to drag and drop them one by one;</li>
+</ul>
+</li>
+<li>when you add several downloads, all of them are downloading in parallel, as there is no queue;</li>
+<li>there is no way to cancel ongoing downloads;</li>
+<li>it is unclear what Load Media button does;</li>
+<li>floating Progress window doesn&rsquo;t show anything;</li>
+<li>files are sorted alphabetically and you can&rsquo;t sort them otherwise;</li>
+<li>one wrong move and files are downloading in your browser.</li>
+</ul>
+<p>Hopefully, those will be fixed eventually, especially given that <a href="https://github.com/rclone/rclone-webui-react">the whole project</a> started not that long ago. Meanwhile, I&rsquo;ve created <a href="https://github.com/retifrav/rclone-rc-web-gui">my own web-interface</a> for the task (<em>I&rsquo;ll write a separate post about it some time later</em>).</p>
+<p>Another more serous issue with rclone itself is that the download speed endlessly decreases right from the download start till it reaches some ridiculously low values, while the actual download never progresses past a couple of megabytes. Apparently, it has something to do with relatively recent changes regarding threads, because providing <code>--multi-thread-streams 1</code> option solves the issue.</p>
+<p>One last step is to create a systemd service for rclone running with web GUI:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[Unit]</span>
+<span style="color:#a6e22e">Description</span><span style="color:#f92672">=</span><span style="color:#e6db74">rclone web GUI</span>
+
+<span style="color:#66d9ef">[Service]</span>
+<span style="color:#a6e22e">WorkingDirectory</span><span style="color:#f92672">=</span><span style="color:#e6db74">/home/pi</span>
+<span style="color:#a6e22e">ExecStart</span><span style="color:#f92672">=</span><span style="color:#e6db74">rclone rcd --rc-web-gui --rc-addr :8998 --rc-htpasswd /home/pi/.htpasswd --transfers 1 --multi-thread-streams 1</span>
+<span style="color:#a6e22e">Restart</span><span style="color:#f92672">=</span><span style="color:#e6db74">always</span>
+<span style="color:#a6e22e">RestartSec</span><span style="color:#f92672">=</span><span style="color:#e6db74">10</span>
+<span style="color:#a6e22e">SyslogIdentifier</span><span style="color:#f92672">=</span><span style="color:#e6db74">rclonewebgui</span>
+<span style="color:#a6e22e">User</span><span style="color:#f92672">=</span><span style="color:#e6db74">pi</span>
+
+<span style="color:#66d9ef">[Install]</span>
+<span style="color:#a6e22e">WantedBy</span><span style="color:#f92672">=</span><span style="color:#e6db74">multi-user.target</span></code></pre></div>
+<h2 id="install-kodi">Install Kodi</h2>
+<p>There is at least a couple of promising media players in the App Store, but they cost around 10 USD per year (<em>or 60 USD for a lifetime license</em>), which is a rip-off.</p>
+<p>There is also <a href="https://www.videolan.org/vlc/download-appletv.html">VLC</a>, and it is available for free, however I don&rsquo;t like its GUI and media capabilities (<em>from my experience with its desktop version</em>). Although, to be fair, VLC can actually serve the purpose, because it supports reading files from network share plus it provides its own service for uploading videos from computer.</p>
+<p>But why bother with all that when there is Kodi - the best thing to have as a media player on a TV box.</p>
+<p>Unfortunately, it is not available in App Store. Fortunately, you can install it on Apple TV yourself. It&rsquo;s the same thing as with iOS devices - as a developer you can install anything you want on your device (<em>goes without saying that you&rsquo;ll need a Mac for that</em>).</p>
+<p>Here&rsquo;s the <a href="https://forum.kodi.tv/showthread.php?tid=245978">instruction</a> with all the details, and here I&rsquo;ll only list a short version of the process:</p>
+<ol>
+<li>Get an <a href="https://developer.apple.com">Apple Developer</a> account;</li>
+<li>Add it to Xcode;</li>
+<li>Create a new project for tvOS - this is only needed to generate a provisioning profile, nothing else. Refer to the detailed manual from the link above for how to do that. The most problematic part for me was setting the Bundle Identifier as I felt smart-ass and chose a non-<code>.com</code> value;</li>
+<li><a href="http://mirrors.kodi.tv/test-builds/darwin/tvos/">Download</a> Kodi binaries for tvOS. Regrettably, it is not being updated for quite a while now, and the latest build is from 27.02.2018, but it still works fine;</li>
+<li><a href="http://dantheman827.github.io/ios-app-signer/">Download</a> iOS App Signer;</li>
+<li>Launch iOS App Signer, choose <code>.deb</code> bundle you downloaded at the step 4, select Signing Certificate from your Apple Developer account, select Provisioning Profile you generated in Xcode at step 3 and sign the bundle;</li>
+<li>Upload signed <code>.ipa</code> bundle to Apple TV.</li>
+</ol>
+<p>And it&rsquo;s all good, except for one sad little detail - basic (unpaid) Apple Developer account allows you to create provisioning profiles that are valid for only 7 days, so you&rsquo;ll have to repeat steps 3 (<em>just open the same project and check the provisioning profile</em>), 6 and 7 every week. When I get annoyed enough, I&rsquo;ll try to find a way to automate that.</p>
+<h3 id="how-to-upload-an-application-to-apple-tv">How to upload an application to Apple TV</h3>
+<p>Open Devices and Simulators in Xcode. If your Apple TV has a cable connection, everything should be straightforward for you, but in my case it is an Apple TV 4K version, so the only way to connect to it is wirelessly.</p>
+<p>To make an Apple TV discoverable, open Remote App and Devices in its Settings:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/12/26/appletv-kodi-network-share/images/remote-app-and-devices.png" alt="Apple TV, Remote App and Devices"/>
+
+</div>
+
+<p>Then you should be able to initiate the pairing process from Xcode. After it&rsquo;s paired, just click on <code>+</code> button in the Installed apps section and upload the <code>.ipa</code> file to Apple TV:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/12/26/appletv-kodi-network-share/images/xcode-devices-and-simulators.png" alt="Xcode, Devices and Simulators"/>
+
+</div>
+
+<p>After that Kodi application should appear on your Apple TV:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/12/26/appletv-kodi-network-share/images/kodi-on-apple-tv.png" alt="Kodi on Apple TV"/>
+
+</div>
+
+<p>Here&rsquo;re also screenshots with system information from Kodi:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/12/26/appletv-kodi-network-share/images/kodi-on-apple-tv-summary.png" alt="Kodi on Apple TV, summary"/>
+
+</div>
+
+
+<div >
+
+    <img class="image-post" src="/blog/2019/12/26/appletv-kodi-network-share/images/kodi-on-apple-tv-video.png" alt="Kodi on Apple TV, video"/>
+
+</div>
+
+<h2 id="connect-to-network-share-from-kodi">Connect to network share from Kodi</h2>
+<p>Finally, everything is ready to work together.</p>
+<p>Add your SMB share to Kodi:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/12/26/appletv-kodi-network-share/images/kodi-share-new.png" alt="Kodi, new share"/>
+
+</div>
+
+<p>Choose <code>WORKGROUP</code> and it will discover your Raspberry share automatically. Choose a folder and add it as a source:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/12/26/appletv-kodi-network-share/images/kodi-share-smb.png" alt="Kodi, SMB share"/>
+
+</div>
+
+<p>Now you&rsquo;ll be able to navigate it like a local filesystem and open any video file you put there.</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[23.03.2020] Update:</strong> New build of the latest Kodi for tvOS</div>
+<p>Kodi 19 for tvOS <a href="https://kodi.tv/article/kodi-19-welcomes-tvos-says-goodbye-ios-32bit">was announced</a> at the official Kodi website, so I went and installed the latest <code>kodi-20200316-b31d8bf0-depends-libnfs-tvos.deb</code> (<em>it is uploaded to the <a href="http://mirrors.kodi.tv/test-builds/darwin/tvos/">same folder</a></em>).</p>
+<p>&hellip;And rolled back to the old one because of the following issues with the new one:</p>
+<ul>
+<li>it is slow/laggy and poorly optimized</li>
+<li>Siri remote control works quite badly: hypersensitivity and glitches</li>
+<li>it couldn&rsquo;t automatically discover or manually add my Samba share as a source
+<ul>
+<li>also I couldn&rsquo;t delete this failed source from the list as there is suddenly no context menu</li>
+</ul>
+</li>
+<li>it did not pick up my existing settings (<em>moreover, it fucking ruined them, so when I rolled back to the old version, I had to set everything up again</em>)</li>
+<li>there is no clicking sound for menu actions</li>
+<li>they say you need to have a paid Apple Developer account for the <a href="https://developer.apple.com/design/human-interface-guidelines/tvos/overview/top-shelf/">Top Shelf</a> feature now. Lolwut, it was working just with fine before</li>
+</ul>
+<p>And the good old <code>kodi-20180227-4a25e62-yab-tvos.deb</code> has none of these issues. So what was the point of the new build?</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[24.10.2020] Update:</strong> New versions are still no good</div>
+<p>I saw that there are a lot of <a href="http://mirrors.kodi.tv/test-builds/darwin/tvos/">new releases available</a> and decided to try the latest. I tried the following 3 (<em>so you can already tell that it didn&rsquo;t go well</em>):</p>
+<ul>
+<li><code>kodi-20201008-7a0563a7-media_import_19.0a2-Matrix-tvos.deb</code> from 21.10.2020</li>
+<li><code>kodi-20201007-f4787d92-PR18528-head-tvos.deb</code> from 08.10.2020</li>
+<li><code>kodi-20201005-54be31bc-master-tvos.deb</code> from 05.10.2020</li>
+</ul>
+<p>This time they did not ruin my settings, so that&rsquo;s already some progress, however all 3 had these issues:</p>
+<ul>
+<li>still Top Shelf feature is not working. I don&rsquo;t really need it, but that&rsquo;s just amusing how two years old version has it and the latest ones don&rsquo;t</li>
+<li>still no clicking sound for menu/navigation actions</li>
+<li>now it couldn&rsquo;t connect to any of my SFTP shares, which renders the whole application useless</li>
+</ul>
+<p>Needless to say, reverting back to the reliable <code>kodi-20180227-4a25e62-yab-tvos.deb</code> made things right again.</p>
+<p>Oh well, I&rsquo;ll check again another half-year later.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/linux/">linux</a><a class="tag" href="https://retifrav.github.io/tags/macos/">macos</a><a class="tag" href="https://retifrav.github.io/tags/piracy/">piracy</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <script>
+  var id =  43 ;
+
+  if (id)
+  {
+    let url = "https://github.com/retifrav/retifrav.github.io/issues/".concat(id);
+    let api_url = "https://api.github.com/repos/retifrav/retifrav.github.io/issues/".concat(id, "/comments");
+    
+    var commentsDiv = document.getElementById("comments");
+
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", api_url);
+    xhr.setRequestHeader("Accept", "application/vnd.github.v3.html+json");
+    xhr.send();
+
+    xhr.onload = function()
+    {
+      if (xhr.status != 200)
+      {
+        let errorText = document.createElement("p");
+        errorText.innerHTML = "<i>Comments for this post yet are not opened yet (or you have GitHub scripts disabled).</i>";
+        commentsDiv.appendChild(errorText);
+      }
+      else
+      {
+        let comments = xhr.response;
+
+        let mainHeader = document.createElement("h2");
+        mainHeader.innerHTML = "Comments: ".concat(comments.length);
+        commentsDiv.appendChild(mainHeader);
+
+        let issueLink = document.createElement("p");
+        issueLink.innerHTML = "<i>You can leave a comment using this <a href='".concat(url, "'>GitHub issue</a>.</i>");
+        commentsDiv.appendChild(issueLink);
+        
+        comments.forEach(function(comment)
+        {
+            let commentContent = document.createElement("div");
+            commentContent.setAttribute('class', 'gh-comment')
+            commentContent.innerHTML = "".concat(
+                "<div class='gh-header'>",
+                  "<img src='", comment.user.avatar_url, "' />",
+                  "<div style='margin:auto 0;'>",
+                    "<b><a class='gh-username' href='", comment.user.html_url, "'>", comment.user.login, "</a></b>",
+                    " commented at <em>", new Date(comment.created_at), "</em>",
+                  "</div>",
+                "</div>",
+                "<div class='gh-body'>",
+                  comment.body_html,
+                "</div>"
+            );
+            commentsDiv.appendChild(commentContent);
+        });
+      }
+    };
+
+    xhr.onerror = function()
+    {
+      let errorText = document.createElement("p");
+      errorText.innerHTML = "<i>Some error loading comments.</i>";
+      commentsDiv.appendChild(errorText);
+    };
+  }
+</script>
+
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

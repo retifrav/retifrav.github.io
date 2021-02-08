@@ -1,0 +1,453 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Visual Studio Code and CMake for Qt | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Visual Studio Code and CMake for Qt" />
+<meta property="og:description" content="After numerous promises of how Qbs will be the Qt&rsquo;s default build system, The Qt Company suddenly killed it, announced that qmake is a dead man walking too, and actually Qt is switching to CMake.
+So I guess we should start using CMake for building Qt applications as well. Let&rsquo;s see then what it takes to switch from qmake to CMake with a couple of basic examples.
+
+
+
+    
+
+
+
+I also wanted to try Qt development with Visual Studio Code, and now is a good occasion for that." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2019/05/11/vscode-cmake-qt/" />
+<meta property="article:published_time" content="2019-05-11T15:00:23+02:00" />
+<meta property="article:modified_time" content="2019-05-11T15:00:23+02:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Visual Studio Code and CMake for Qt</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2019-05-11 15:00:23 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 5 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p><a href="https://blog.qt.io/blog/2017/05/29/qbs-1-8-released/">After</a> <a href="https://blog.qt.io/blog/2017/09/05/qbs-1-9-released/">numerous</a> <a href="https://blog.qt.io/blog/2017/12/07/qbs-1-10-released/">promises</a> of how <a href="https://doc.qt.io/qbs/index.html">Qbs</a> will be the Qt&rsquo;s default build system, The Qt Company suddenly <a href="https://blog.qt.io/blog/2018/10/29/deprecation-of-qbs/">killed it</a>, announced that <a href="https://doc.qt.io/qt-5/qmake-manual.html">qmake</a> is a dead man walking too, and actually Qt is switching to <a href="https://cmake.org">CMake</a>.</p>
+<p>So I guess we should start using CMake for building Qt applications as well. Let&rsquo;s see then what it takes to switch from qmake to CMake with a couple of basic examples.</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/05/11/vscode-cmake-qt/images/qt-cmake-vscode.png" alt="Qt, CMake and Visual Studio Code"/>
+
+</div>
+
+<p>I also wanted to try Qt development with Visual Studio Code, and now is a good occasion for that.</p>
+<p>I tried it on Windows 10 with MSVC 2017, however it will work on other systems too.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#cmakeliststxt">CMakeLists.txt</a>
+      <ul>
+        <li><a href="#qt-widgets">Qt Widgets</a></li>
+        <li><a href="#qt-quick">Qt Quick</a></li>
+      </ul>
+    </li>
+    <li><a href="#visual-studio-code">Visual Studio Code</a></li>
+  </ul>
+</nav>
+<h1 id="cmakeliststxt">CMakeLists.txt</h1>
+<p>I&rsquo;ve never used CMake for anything before, so to get familiar with it I decided to create two very basic applications, one with Qt Widgets and another with Qt Quick.</p>
+<p>Instead of qmake&rsquo;s <code>.pro</code> file CMake uses <code>CMakeLists.txt</code>. And having spent some time I&rsquo;ve managed to create correct <code>CMakeLists.txt</code> files for both projects, although I can&rsquo;t tell that it was very straightforward.</p>
+<p>Lots of examples from the internet didn&rsquo;t work and were way too complex and overloaded in general. Surprisingly, the simplest one turned out to be <a href="https://doc.qt.io/qt-5/cmake-manual.html">the one</a> from the official Qt documentation - who would have thought, as usually it&rsquo;s the other way around.</p>
+<h2 id="qt-widgets">Qt Widgets</h2>
+<p>Anyway, here a project file for a Qt Widgets based application:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">cmake_minimum_required(<span style="color:#e6db74">VERSION</span> <span style="color:#e6db74">3.10</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># your project name
+</span><span style="color:#75715e"></span>project(<span style="color:#e6db74">&#34;qt-widgets-cmake&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># find includes in the corresponding build directories
+</span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CMAKE_INCLUDE_CURRENT_DIR</span> <span style="color:#e6db74">ON</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># run moc automatically
+</span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CMAKE_AUTOMOC</span> <span style="color:#e6db74">ON</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># if you&#39;re using Widgets and editing .ui forms in Designer
+</span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CMAKE_AUTOUIC</span> <span style="color:#e6db74">ON</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>message(<span style="color:#e6db74">&#34;Looking for Qt...&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># Qt modules (https://doc.qt.io/qt-5/qtmodules.html) you&#39;re using in your application
+</span><span style="color:#75715e"></span>find_package(<span style="color:#e6db74">Qt5</span> <span style="color:#e6db74">REQUIRED</span> <span style="color:#e6db74">Widgets</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>if (<span style="color:#f92672">${</span>Qt5_FOUND<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">&#34;Found Qt &#34;</span> <span style="color:#f92672">${</span>Qt5_VERSION<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>else()<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">&#34;Couldn&#39;t find Qt&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># your source files
+</span><span style="color:#75715e"></span>set(<span style="color:#e6db74">sources</span>
+    <span style="color:#e6db74">mainwindow.ui</span>
+    <span style="color:#e6db74">mainwindow.cpp</span>
+    <span style="color:#e6db74">main.cpp</span>
+)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># name of the .exe file, window flag and the list of things to compile
+</span><span style="color:#75715e"></span>add_executable(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#e6db74">WIN32</span> <span style="color:#f92672">${</span>sources<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># also tell CMake to link with the libraries from the line 14
+</span><span style="color:#75715e"># otherwise it&#39;ll think that you wanted to find those just for fun and won&#39;t link them
+</span><span style="color:#75715e"></span>target_link_libraries(
+    <span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+    <span style="color:#e6db74">Qt5::Widgets</span>
+    )</code></pre></div>
+<p>Essential thing here is <code>find_package()</code> - I have no idea what black magic it uses to find Qt in my system, but it did find it despite the fact it is installed in <code>D:\programs\qt\</code> (<em>not the most common/standard installation path</em>). Most likely it just checks the <code>PATH</code> system variable, because I have <code>D:\programs\qt\5.12.3\msvc2017_64\bin\</code> there.</p>
+<p>When I tried this on Mac OS, the configure command failed, so I had to provide the path to Qt manually:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">cmake_minimum_required(<span style="color:#e6db74">VERSION</span> <span style="color:#e6db74">3.10</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>SET(<span style="color:#e6db74">CMAKE_PREFIX_PATH</span> <span style="color:#e6db74">&#34;~/programs/qt/5.12.3/clang_64&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># your project name
+</span><span style="color:#75715e"></span>project(<span style="color:#e6db74">&#34;qt-widgets-cmake&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">...</span></code></pre></div>
+<p>What I don&rsquo;t get is why do I need to set <code>target_link_libraries()</code> in addition to <code>find_package()</code>. I mean, why would I want to find some library if not to link with it?</p>
+<p><code>WIN32</code> is an important flag if you&rsquo;re building a GUI application on Windows - without it the build will fail. Obviously, you don&rsquo;t need it on Mac OS or Linux.</p>
+<p>Note the <code>${CMAKE_PROJECT_NAME}</code> construction - that&rsquo;s how you use variables in CMake. So instead of writing the name of the project (<code>qt-widgets-cmake</code>) I just refer to the <a href="https://cmake.org/cmake/help/latest/variable/CMAKE_PROJECT_NAME.html">CMAKE_PROJECT_NAME</a> variable. And of course you can define your own variables: for instance, I used my variable <code>sources</code> to gather all the source files for <code>add_executable()</code>.</p>
+<h2 id="qt-quick">Qt Quick</h2>
+<p>CMake project file for a Qt Quick application is not that difficult either. However, there are some differences:</p>
+<ul>
+<li>there is no need in <code>CMAKE_AUTOUIC</code> as you won&rsquo;t be using widgets-based <code>.ui</code> forms;</li>
+<li>instead of <code>Widgets</code> you now need <code>Quick</code> and <code>Qml</code> modules;</li>
+<li>since QML files are part of resources, you need to tell CMake about that.</li>
+</ul>
+<p>So here&rsquo;re the changes to be made in <code>CMakeLists.txt</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#960050;background-color:#1e0010">...
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e">#set(CMAKE_AUTOUIC ON)
+</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>find_package(<span style="color:#e6db74">Qt5</span> <span style="color:#e6db74">REQUIRED</span> <span style="color:#e6db74">Quick</span> <span style="color:#e6db74">Qml</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># your sources
+</span><span style="color:#75715e"></span>set(<span style="color:#e6db74">sources</span>
+    <span style="color:#e6db74">main.cpp</span>
+)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># specify resource file names here, required for QML
+</span><span style="color:#75715e"></span>qt5_add_resources(<span style="color:#e6db74">qrc</span> <span style="color:#e6db74">qml.qrc</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>add_executable(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#e6db74">WIN32</span> <span style="color:#f92672">${</span>sources<span style="color:#f92672">}</span> <span style="color:#f92672">${</span>qrc<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>target_link_libraries(
+    <span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+    <span style="color:#e6db74">Qt5::Quick</span>
+    <span style="color:#e6db74">Qt5::Qml</span>
+    )</code></pre></div>
+<p>The source code of both projects including <code>CMakeLists.txt</code> files is available <a href="https://github.com/retifrav/qt-cmake-widgets-quick">here</a>.</p>
+<h1 id="visual-studio-code">Visual Studio Code</h1>
+<p>First, install <a href="https://marketplace.visualstudio.com/items?itemName=vector-of-bool.cmake-tools">CMake Tools
+</a> extension, because it conveniently does all the work of calling CMake with the right set of arguments for configure and build tasks.</p>
+<p>Open your project folder in Visual Studio Code, press <code>Ctrl + Shift + P</code> and run <code>CMake: Configure</code>. First time it will ask you for a kit/toolchain - what compiler should be used for building your application. On Windows that choice can look like this:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/05/11/vscode-cmake-qt/images/vscode-choosing-kit.png" alt="Visual Studio Code, choosing kit on Windows"/>
+
+</div>
+
+<p>And here&rsquo;s the configure output:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">The</span> C compiler identification is <span style="color:#a6e22e">MSVC</span> <span style="color:#ae81ff">19.16</span><span style="color:#f92672">.</span><span style="color:#ae81ff">27030.1</span>
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">The</span> <span style="color:#a6e22e">CXX</span> compiler identification is <span style="color:#a6e22e">MSVC</span> <span style="color:#ae81ff">19.16</span><span style="color:#f92672">.</span><span style="color:#ae81ff">27030.1</span>
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Check</span> <span style="color:#66d9ef">for</span> working C compiler<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">E:/tools/vs/VC/Tools/MSVC/</span><span style="color:#960050;background-color:#1e0010">14</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">16</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">27023</span><span style="color:#66d9ef">/bin/Hostx64/x64/cl.exe</span>
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Check</span> <span style="color:#66d9ef">for</span> working C compiler<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">E:/tools/vs/VC/Tools/MSVC/</span><span style="color:#960050;background-color:#1e0010">14</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">16</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">27023</span><span style="color:#66d9ef">/bin/Hostx64/x64/cl.exe</span> <span style="color:#66d9ef">--</span> <span style="color:#66d9ef">works</span>
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Detecting</span> C compiler <span style="color:#a6e22e">ABI</span> info
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Detecting</span> C compiler <span style="color:#a6e22e">ABI</span> info <span style="color:#f92672">-</span> done
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Detecting</span> C compile features
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Detecting</span> C compile features <span style="color:#f92672">-</span> done
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Check</span> <span style="color:#66d9ef">for</span> working <span style="color:#a6e22e">CXX</span> compiler<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">E:/tools/vs/VC/Tools/MSVC/</span><span style="color:#960050;background-color:#1e0010">14</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">16</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">27023</span><span style="color:#66d9ef">/bin/Hostx64/x64/cl.exe</span>
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Check</span> <span style="color:#66d9ef">for</span> working <span style="color:#a6e22e">CXX</span> compiler<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">E:/tools/vs/VC/Tools/MSVC/</span><span style="color:#960050;background-color:#1e0010">14</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">16</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">27023</span><span style="color:#66d9ef">/bin/Hostx64/x64/cl.exe</span> <span style="color:#66d9ef">--</span> <span style="color:#66d9ef">works</span>
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Detecting</span> <span style="color:#a6e22e">CXX</span> compiler <span style="color:#a6e22e">ABI</span> info
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Detecting</span> <span style="color:#a6e22e">CXX</span> compiler <span style="color:#a6e22e">ABI</span> info <span style="color:#f92672">-</span> done
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Detecting</span> <span style="color:#a6e22e">CXX</span> compile features
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Detecting</span> <span style="color:#a6e22e">CXX</span> compile features <span style="color:#f92672">-</span> done
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Looking</span> <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">Qt</span><span style="color:#f92672">...</span>
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Found</span> <span style="color:#a6e22e">Qt</span> <span style="color:#ae81ff">5.12</span><span style="color:#f92672">.</span><span style="color:#ae81ff">3</span>
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Configuring</span> done
+<span style="color:#f92672">[</span><span style="color:#66d9ef">cmake</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Generating</span> done</code></pre></div>
+<p>If it&rsquo;s all good, run <code>CMake: Build</code> and you&rsquo;ll get your application executable in the build folder. Here&rsquo;s its output:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">build</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Starting</span> build
+<span style="color:#f92672">[</span><span style="color:#66d9ef">proc</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Executing</span> command<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">e:\tools\cmake\bin\cmake.EXE</span> <span style="color:#66d9ef">--build</span> <span style="color:#66d9ef">e:/code/qt-widgets-cmake/build</span> <span style="color:#66d9ef">--config</span> <span style="color:#66d9ef">Debug</span> <span style="color:#66d9ef">--target</span> <span style="color:#66d9ef">all</span> <span style="color:#66d9ef">--</span> <span style="color:#66d9ef">-j</span> <span style="color:#960050;background-color:#1e0010">18</span>
+<span style="color:#960050;background-color:#1e0010">[</span><span style="color:#66d9ef">build</span><span style="color:#960050;background-color:#1e0010">]</span> <span style="color:#960050;background-color:#1e0010">[1</span><span style="color:#66d9ef">/</span><span style="color:#960050;background-color:#1e0010">5</span>  <span style="color:#960050;background-color:#1e0010">20</span><span style="color:#66d9ef">%</span> <span style="color:#66d9ef">::</span> <span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">115]</span> <span style="color:#66d9ef">Automatic</span> <span style="color:#66d9ef">MOC</span> <span style="color:#66d9ef">and</span> <span style="color:#66d9ef">UIC</span> <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">target</span> <span style="color:#66d9ef">qt-widgets-cmake</span>
+<span style="color:#f92672">[</span><span style="color:#66d9ef">build</span><span style="color:#f92672">]</span> <span style="color:#f92672">[</span><span style="color:#960050;background-color:#1e0010">4</span><span style="color:#66d9ef">/</span><span style="color:#960050;background-color:#1e0010">5</span>  <span style="color:#960050;background-color:#1e0010">40</span><span style="color:#66d9ef">%</span> <span style="color:#66d9ef">::</span> <span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">904</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Building</span> <span style="color:#a6e22e">CXX</span> <span style="color:#66d9ef">object</span> <span style="color:#a6e22e">CMakeFiles\qt</span><span style="color:#f92672">-</span>widgets<span style="color:#f92672">-</span>cmake<span style="color:#f92672">.</span>dir\qt<span style="color:#f92672">-</span>widgets<span style="color:#f92672">-</span>cmake_autogen\mocs_compilation<span style="color:#f92672">.</span>cpp<span style="color:#f92672">.</span>obj
+<span style="color:#f92672">[</span><span style="color:#66d9ef">build</span><span style="color:#f92672">]</span> <span style="color:#f92672">[</span><span style="color:#960050;background-color:#1e0010">4</span><span style="color:#66d9ef">/</span><span style="color:#960050;background-color:#1e0010">5</span>  <span style="color:#960050;background-color:#1e0010">60</span><span style="color:#66d9ef">%</span> <span style="color:#66d9ef">::</span> <span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">984</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Building</span> <span style="color:#a6e22e">CXX</span> <span style="color:#66d9ef">object</span> <span style="color:#a6e22e">CMakeFiles\qt</span><span style="color:#f92672">-</span>widgets<span style="color:#f92672">-</span>cmake<span style="color:#f92672">.</span>dir\main<span style="color:#f92672">.</span>cpp<span style="color:#f92672">.</span>obj
+<span style="color:#f92672">[</span><span style="color:#66d9ef">build</span><span style="color:#f92672">]</span> <span style="color:#f92672">[</span><span style="color:#960050;background-color:#1e0010">4</span><span style="color:#66d9ef">/</span><span style="color:#960050;background-color:#1e0010">5</span>  <span style="color:#960050;background-color:#1e0010">80</span><span style="color:#66d9ef">%</span> <span style="color:#66d9ef">::</span> <span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">985</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Building</span> <span style="color:#a6e22e">CXX</span> <span style="color:#66d9ef">object</span> <span style="color:#a6e22e">CMakeFiles\qt</span><span style="color:#f92672">-</span>widgets<span style="color:#f92672">-</span>cmake<span style="color:#f92672">.</span>dir\mainwindow<span style="color:#f92672">.</span>cpp<span style="color:#f92672">.</span>obj
+<span style="color:#f92672">[</span><span style="color:#66d9ef">build</span><span style="color:#f92672">]</span> <span style="color:#f92672">[</span><span style="color:#960050;background-color:#1e0010">5</span><span style="color:#66d9ef">/</span><span style="color:#960050;background-color:#1e0010">5</span> <span style="color:#960050;background-color:#1e0010">100</span><span style="color:#66d9ef">%</span> <span style="color:#66d9ef">::</span> <span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">463</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Linking</span> <span style="color:#a6e22e">CXX</span> executable qt<span style="color:#f92672">-</span>widgets<span style="color:#f92672">-</span>cmake<span style="color:#f92672">.</span>exe
+<span style="color:#f92672">[</span><span style="color:#66d9ef">build</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Build</span> finished <span style="color:#66d9ef">with</span> exit code <span style="color:#ae81ff">0</span></code></pre></div>
+<p>Your application is ready to run.</p>
+<p>Well, it turned out to be easier than I thought - to use CMake for building Qt applications, though I spent a couple of days till I made it work. But as I read in several places, making simple things with CMake is simple, it&rsquo;s custom things that make everything horrible and awful - something I am yet to see.</p>
+<p>And when it comes to Visual Studio Code as an IDE for Qt development, I have to admit - Qt Creator is still better. Especially it becomes obvious when you iterate between Designer and VS Code, or constantly read the Qt documentation because auto-complete feature sucks big ass for QML at the moment (<em>yes, even bigger one than in Qt Creator - there is simply none</em>).</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/qt/">qt</a><a class="tag" href="https://retifrav.github.io/tags/cpp/">cpp</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <script>
+  var id =  20 ;
+
+  if (id)
+  {
+    let url = "https://github.com/retifrav/retifrav.github.io/issues/".concat(id);
+    let api_url = "https://api.github.com/repos/retifrav/retifrav.github.io/issues/".concat(id, "/comments");
+    
+    var commentsDiv = document.getElementById("comments");
+
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", api_url);
+    xhr.setRequestHeader("Accept", "application/vnd.github.v3.html+json");
+    xhr.send();
+
+    xhr.onload = function()
+    {
+      if (xhr.status != 200)
+      {
+        let errorText = document.createElement("p");
+        errorText.innerHTML = "<i>Comments for this post yet are not opened yet (or you have GitHub scripts disabled).</i>";
+        commentsDiv.appendChild(errorText);
+      }
+      else
+      {
+        let comments = xhr.response;
+
+        let mainHeader = document.createElement("h2");
+        mainHeader.innerHTML = "Comments: ".concat(comments.length);
+        commentsDiv.appendChild(mainHeader);
+
+        let issueLink = document.createElement("p");
+        issueLink.innerHTML = "<i>You can leave a comment using this <a href='".concat(url, "'>GitHub issue</a>.</i>");
+        commentsDiv.appendChild(issueLink);
+        
+        comments.forEach(function(comment)
+        {
+            let commentContent = document.createElement("div");
+            commentContent.setAttribute('class', 'gh-comment')
+            commentContent.innerHTML = "".concat(
+                "<div class='gh-header'>",
+                  "<img src='", comment.user.avatar_url, "' />",
+                  "<div style='margin:auto 0;'>",
+                    "<b><a class='gh-username' href='", comment.user.html_url, "'>", comment.user.login, "</a></b>",
+                    " commented at <em>", new Date(comment.created_at), "</em>",
+                  "</div>",
+                "</div>",
+                "<div class='gh-body'>",
+                  comment.body_html,
+                "</div>"
+            );
+            commentsDiv.appendChild(commentContent);
+        });
+      }
+    };
+
+    xhr.onerror = function()
+    {
+      let errorText = document.createElement("p");
+      errorText.innerHTML = "<i>Some error loading comments.</i>";
+      commentsDiv.appendChild(errorText);
+    };
+  }
+</script>
+
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

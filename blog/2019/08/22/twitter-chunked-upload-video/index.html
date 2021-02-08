@@ -1,0 +1,715 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Chunked upload to Twitter with C# / .NET Core | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Chunked upload to Twitter with C# / .NET Core" />
+<meta property="og:description" content="While images can be uploaded to Twitter in one request, uploading a video is a different story.
+
+
+
+    
+
+
+
+And although I&rsquo;ve managed to implement it, I am not entirely happy with the result, and later you will see why is that." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2019/08/22/twitter-chunked-upload-video/" />
+<meta property="article:published_time" content="2019-08-22T16:19:40+02:00" />
+<meta property="article:modified_time" content="2019-08-22T16:19:40+02:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Chunked upload to Twitter with C# / .NET Core</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2019-08-22 16:19:40 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 9 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>While images can be <a href="/blog/2017/11/24/csharp-dotnet-core-publish-twitter/">uploaded to Twitter</a> in one request, uploading a video is a different story.</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/08/22/twitter-chunked-upload-video/images/dotnet-core-twitter-logo.png" alt=".NET Core, Twitter"/>
+
+</div>
+
+<p>And although I&rsquo;ve managed to implement it, I am not entirely happy with the result, and later you will see why is that.</p>
+<div class="unsolved"><b>Unsolved:</b> While it all works fine, I don&#39;t like the fact that chunks are sent as a part of URL query string</div>
+
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#video-requirements">Video requirements</a></li>
+    <li><a href="#upload-process">Upload process</a></li>
+    <li><a href="#implementation">Implementation</a>
+      <ul>
+        <li><a href="#init">INIT</a></li>
+        <li><a href="#append">APPEND</a></li>
+        <li><a href="#finalize">FINALIZE</a></li>
+        <li><a href="#status">STATUS</a></li>
+      </ul>
+    </li>
+    <li><a href="#posting-a-tweet-with-video">Posting a tweet with video</a></li>
+  </ul>
+</nav>
+<h1 id="video-requirements">Video requirements</h1>
+<p>Not every video will be accepted by Twitter API - take a look at <a href="https://developer.twitter.com/en/docs/media/upload-media/uploading-media/media-best-practices#video-specs">their specifications</a>. Although, I am not sure if you can trust those, because here it says:</p>
+<blockquote>
+File size must not exceed 512 MB
+</blockquote>
+<p>And on <a href="https://developer.twitter.com/en/docs/media/upload-media/overview">another page</a> it says:</p>
+<blockquote>
+Size restrictions for uploading via API
+<ul>
+    <li>...</li>
+    <li>Video 15MB</li>
+</ul>
+</blockquote>
+<p>Go figure.</p>
+<p>When it comes to other characteristics like codec and others, in <a href="/blog/2019/07/22/twitter-redesign-rectangle-previews/#a-workaround">my case</a> I needed to make a video out of 2 images, so here&rsquo;s the FFmpeg command:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">ffmpeg <span style="color:#f92672">-</span>r <span style="color:#ae81ff">1</span><span style="color:#f92672">/</span><span style="color:#ae81ff">4</span> <span style="color:#f92672">-</span>i <span style="color:#e6db74">&#34;concat:1.png|2.png&#34;</span> <span style="color:#f92672">-</span>pix_fmt yuv420p video<span style="color:#f92672">.</span>mp4</code></pre></div>
+<p>The result video file is accepted by Twitter with no problems.</p>
+<h1 id="upload-process">Upload process</h1>
+<p>Here&rsquo;re some official <a href="https://developer.twitter.com/en/docs/media/upload-media/uploading-media/media-best-practices">guidelines</a>. Eventually you will come to understanding that video uploads need to go through <a href="https://developer.twitter.com/en/docs/media/upload-media/uploading-media/chunked-media-upload">chunked media upload</a>.</p>
+<p>Unlike regular <a href="https://developer.twitter.com/en/docs/media/upload-media/api-reference/post-media-upload.html">upload media</a> single request, chunked upload consists of four requests (<em>or rather stages, because some stages can have more than one request of their own</em>):</p>
+<ol>
+<li><a href="https://developer.twitter.com/en/docs/media/upload-media/api-reference/post-media-upload-init">INIT</a></li>
+<li><a href="https://developer.twitter.com/en/docs/media/upload-media/api-reference/post-media-upload-append">APPEND</a></li>
+<li><a href="https://developer.twitter.com/en/docs/media/upload-media/api-reference/post-media-upload-finalize">FINALIZE</a></li>
+<li><a href="https://developer.twitter.com/en/docs/media/upload-media/api-reference/get-media-upload-status">STATUS</a></li>
+</ol>
+<h1 id="implementation">Implementation</h1>
+<p>The following implementation continues/extends the <a href="/blog/2017/11/24/csharp-dotnet-core-publish-twitter/#code">code</a> I had wrote earlier.</p>
+<h2 id="init">INIT</h2>
+<p>INIT request initializes the upload. If it is successful, you will get a response with <code>media_id</code> identificator, which will be used for all further requests.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; SendInit(<span style="color:#66d9ef">long</span> videoSizeBytes)
+{
+    <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
+    {
+        <span style="color:#66d9ef">var</span> initData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt;
+        {
+<span style="display:block;width:100%;background-color:#3c3d38">            { <span style="color:#e6db74">&#34;command&#34;</span>, <span style="color:#e6db74">&#34;INIT&#34;</span> },
+</span><span style="display:block;width:100%;background-color:#3c3d38">            { <span style="color:#e6db74">&#34;total_bytes&#34;</span>, <span style="color:#e6db74">$&#34;{videoSizeBytes}&#34;</span> },
+</span><span style="display:block;width:100%;background-color:#3c3d38">            { <span style="color:#e6db74">&#34;media_type&#34;</span>, <span style="color:#e6db74">&#34;video/mp4&#34;</span> },
+</span>            { <span style="color:#e6db74">&#34;media_category&#34;</span>, <span style="color:#e6db74">&#34;tweet_video&#34;</span> } <span style="color:#75715e">// not really required
+</span><span style="color:#75715e"></span>        };
+
+        httpClient.DefaultRequestHeaders.Add(
+            <span style="color:#e6db74">&#34;Authorization&#34;</span>,
+            PrepareOAuth(_TwitterMediaAPI, initData, <span style="color:#e6db74">&#34;POST&#34;</span>)
+            );
+        <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.PostAsync(
+            _TwitterMediaAPI,
+            <span style="color:#66d9ef">new</span> FormUrlEncodedContent(initData)
+            );
+        <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+            (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+            httpContent
+            );
+    }
+}
+</code></pre></div>
+<p>Note that the <code>media_category</code> parameter is not mandatory, I tried sending requests without it, and my video was posted anyway, so I can&rsquo;t tell what role does it actually play (<em>documentation says that it &ldquo;enables advanced features&rdquo;</em>), but I decided to keep it just in case.</p>
+<p>The method can be called like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">string</span> pathToVideo = <span style="color:#e6db74">&#34;video.mp4&#34;</span>;
+<span style="color:#66d9ef">byte</span>[] videoData = System.IO.File.ReadAllBytes(pathToVideo);
+
+<span style="color:#66d9ef">var</span> rezInit = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
+{
+<span style="display:block;width:100%;background-color:#3c3d38">    <span style="color:#66d9ef">var</span> response = <span style="color:#66d9ef">await</span> twitter.SendInit(videoData.Length);
+</span>    <span style="color:#66d9ef">return</span> response;
+});
+
+<span style="display:block;width:100%;background-color:#3c3d38"><span style="color:#66d9ef">if</span> (rezInit.Result.Item1 != <span style="color:#ae81ff">202</span>)
+</span>{
+    Console.WriteLine(<span style="color:#e6db74">$&#34;[ERROR] {rezInit.Result.Item1}: {rezInit.Result.Item2}&#34;</span>);
+    <span style="color:#66d9ef">return</span>;
+}
+<span style="color:#66d9ef">var</span> rezInitJson = JObject.Parse(rezInit.Result.Item2);
+
+<span style="color:#75715e">// here&#39;s the media_id value we&#39;re after
+</span><span style="display:block;width:100%;background-color:#3c3d38"><span style="color:#75715e"></span><span style="color:#66d9ef">string</span> mediaID = rezInitJson[<span style="color:#e6db74">&#34;media_id&#34;</span>].Value&lt;<span style="color:#66d9ef">string</span>&gt;();
+</span></code></pre></div>
+<p>Just in case, here&rsquo;s an example of a full JSON response:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;media_id&#34;</span>: <span style="color:#ae81ff">1193135308410889857</span>,
+  <span style="color:#f92672">&#34;media_id_string&#34;</span>: <span style="color:#e6db74">&#34;1193135308410889857&#34;</span>,
+  <span style="color:#f92672">&#34;expires_after_secs&#34;</span>: <span style="color:#ae81ff">86399</span>,
+  <span style="color:#f92672">&#34;media_key&#34;</span>: <span style="color:#e6db74">&#34;7_1193135308410889857&#34;</span>
+}</code></pre></div>
+<p>And the response code should be <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/202">202</a>.</p>
+<h2 id="append">APPEND</h2>
+<p>That was the most difficult part. First of all, chunked upload means that you need to slice your file in portions (<em>chunks</em>) and send those one by one, so you need to organize a chain of requests. That alone was not the easiest thing in the world, but I also got several other problems along the way.</p>
+<p>The most troublesome one was this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-css" data-lang="css"><span style="color:#f92672">Segments</span> <span style="color:#f92672">do</span> <span style="color:#f92672">not</span> <span style="color:#f92672">add</span> <span style="color:#f92672">up</span> <span style="color:#f92672">to</span> <span style="color:#f92672">provided</span> <span style="color:#f92672">total</span> <span style="color:#f92672">file</span> <span style="color:#f92672">size</span></code></pre></div>
+<p>So, after I sent all the chunks and finished the chain with <a href="#finalize">FINALIZE</a>, Twitter responded that the chunked file I sent has a different size, comparing to the amount of bytes I announced in <a href="#init">INIT</a>.</p>
+<p>That didn&rsquo;t makes sense, and I wasted a lot of time looking for a solution. I tried to find how other people did it, but surprisingly there are very few .NET/C# implementations. And one of those is <a href="https://github.com/linvi/tweetinvi">Tweetinvi</a> library - a monumental piece of software, which sources are so complicated, that soon enough I fell into despair and gave up on the idea to get anything useful out of it.</p>
+<p>But eventually I found out what was wrong. It turned out that I haven&rsquo;t actually sent a single chunk, because all my APPEND requests were failing! And I didn&rsquo;t notice it, because I wasn&rsquo;t checking if responses contain any errors. That simple.</p>
+<p>And the error in my case was failed authentication:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;errors&#34;</span>: [
+    {
+      <span style="color:#f92672">&#34;code&#34;</span>: <span style="color:#ae81ff">32</span>,
+      <span style="color:#f92672">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;Could not authenticate you.&#34;</span>
+    }
+  ]
+}</code></pre></div>
+<p>That happened because first I tried to use the same authentication scheme as with sending images:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp">httpClient.DefaultRequestHeaders.Add(
+    <span style="color:#e6db74">&#34;Authorization&#34;</span>,
+    PrepareOAuth(_TwitterMediaAPI, <span style="color:#66d9ef">null</span>, <span style="color:#e6db74">&#34;POST&#34;</span>)
+    );
+</code></pre></div>
+<p>Because why would I do it otherwise, right? That&rsquo;s the way it works for sending images. Besides, documentation <a href="https://developer.twitter.com/en/docs/media/upload-media/uploading-media/media-best-practices">says so</a> as well:</p>
+<blockquote>
+Because the method uses multipart POST, OAuth is handled differently. POST or query string parameters are not used when calculating an OAuth signature basestring or signature. Only the oauth_* parameters are used.
+</blockquote>
+<p>Nevertheless, my requests were failing till I added query string parameters to the signature as well.</p>
+<p>Here&rsquo;s the method&rsquo;s code:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; SendAppend(<span style="color:#66d9ef">byte</span>[] chunk, <span style="color:#66d9ef">int</span> chunkID, <span style="color:#66d9ef">string</span> mediaID)
+{
+    <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
+    {
+        <span style="color:#75715e">// chunks need to be base64-encoded
+</span><span style="display:block;width:100%;background-color:#3c3d38"><span style="color:#75715e"></span>        <span style="color:#66d9ef">string</span> videoBase64 = Convert.ToBase64String(chunk);
+</span>
+        <span style="color:#66d9ef">var</span> appendData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt;
+        {
+<span style="display:block;width:100%;background-color:#3c3d38">            { <span style="color:#e6db74">&#34;command&#34;</span>, <span style="color:#e6db74">&#34;APPEND&#34;</span> },
+</span><span style="display:block;width:100%;background-color:#3c3d38">            { <span style="color:#e6db74">&#34;media_id&#34;</span>, <span style="color:#e6db74">$&#34;{mediaID}&#34;</span> },
+</span><span style="display:block;width:100%;background-color:#3c3d38">            { <span style="color:#e6db74">&#34;media_data&#34;</span>, <span style="color:#e6db74">$&#34;{videoBase64}&#34;</span> },
+</span><span style="display:block;width:100%;background-color:#3c3d38">            { <span style="color:#e6db74">&#34;segment_index&#34;</span>, <span style="color:#e6db74">$&#34;{chunkID}&#34;</span> }
+</span>        };
+
+        <span style="color:#66d9ef">var</span> fuec = <span style="color:#66d9ef">new</span> FormUrlEncodedContent(appendData);
+        fuec.Headers.ContentType = <span style="color:#66d9ef">new</span> MediaTypeHeaderValue(
+<span style="display:block;width:100%;background-color:#3c3d38">            <span style="color:#e6db74">&#34;application/x-www-form-urlencoded&#34;</span>
+</span>            );
+
+        httpClient.DefaultRequestHeaders.Add(
+            <span style="color:#e6db74">&#34;Authorization&#34;</span>,
+<span style="display:block;width:100%;background-color:#3c3d38">            PrepareOAuth(_TwitterMediaAPI, appendData, <span style="color:#e6db74">&#34;POST&#34;</span>)
+</span>            );
+        <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.PostAsync(_TwitterMediaAPI, fuec);
+        <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+            (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+            httpContent
+            );
+    }
+}
+</code></pre></div>
+<p>As you can see, I set <code>application/x-www-form-urlencoded</code> in <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type">Content-Type</a> header. Even though documentation says:</p>
+<blockquote>
+Requests should be either multipart/form-data or application/x-www-form-urlencoded POST formats.
+</blockquote>
+<p>in my case <code>multipart/form-data</code> header did not work. It actually did not work in two ways: if query parameters are signed too, then it&rsquo;s this again:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-css" data-lang="css"><span style="color:#f92672">Could</span> <span style="color:#f92672">not</span> <span style="color:#f92672">authenticate</span> <span style="color:#f92672">you</span><span style="color:#f92672">.</span></code></pre></div>
+<p>and if I pass null, like when sending images, then it&rsquo;s something different:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;errors&#34;</span>: [
+        {
+            <span style="color:#f92672">&#34;code&#34;</span>: <span style="color:#ae81ff">214</span>,
+            <span style="color:#f92672">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;Bad request.&#34;</span>
+        }
+    ]
+}</code></pre></div>
+<p>And <code>application/x-www-form-urlencoded</code> worked just fine.</p>
+<p>Speaking about failing authentication, since I am using  <a href="https://docs.microsoft.com/en-us/dotnet/api/system.net.http.formurlencodedcontent">FormUrlEncodedContent</a> instead of <a href="https://docs.microsoft.com/en-us/dotnet/api/system.net.http.MultipartFormDataContent">MultipartFormDataContent</a>, apparently that&rsquo;s why query parameters have to be signed as well.</p>
+<p>Here&rsquo;s how to use the method:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="display:block;width:100%;background-color:#3c3d38"><span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int</span> chunkSize = <span style="color:#ae81ff">40</span> * <span style="color:#ae81ff">1024</span>; <span style="color:#75715e">// read the file by chunks of 40 KB
+</span></span><span style="color:#75715e"></span><span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> file = File.OpenRead(pathToVideo))
+{
+    <span style="color:#66d9ef">int</span> bytesRead, chunkID = <span style="color:#ae81ff">0</span>;
+    <span style="color:#66d9ef">var</span> buffer = <span style="color:#66d9ef">new</span> <span style="color:#66d9ef">byte</span>[chunkSize];
+<span style="display:block;width:100%;background-color:#3c3d38">    <span style="color:#66d9ef">while</span> ((bytesRead = file.Read(buffer, <span style="color:#ae81ff">0</span>, buffer.Length)) &gt; <span style="color:#ae81ff">0</span>)
+</span>    {
+        <span style="color:#66d9ef">if</span> (bytesRead &lt; chunkSize)
+        {
+            <span style="color:#66d9ef">var</span> lastBuffer = <span style="color:#66d9ef">new</span> <span style="color:#66d9ef">byte</span>[bytesRead];
+            Buffer.BlockCopy(buffer, <span style="color:#ae81ff">0</span>, lastBuffer, <span style="color:#ae81ff">0</span>, bytesRead);
+            buffer = <span style="color:#66d9ef">new</span> <span style="color:#66d9ef">byte</span>[bytesRead];
+            buffer = lastBuffer;
+        }
+        <span style="color:#66d9ef">try</span>
+        {
+            <span style="color:#66d9ef">var</span> rezAppend = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
+            {
+<span style="display:block;width:100%;background-color:#3c3d38">                <span style="color:#66d9ef">var</span> response = <span style="color:#66d9ef">await</span> twitter.SendAppend(
+</span><span style="display:block;width:100%;background-color:#3c3d38">                    buffer,
+</span><span style="display:block;width:100%;background-color:#3c3d38">                    chunkID,
+</span><span style="display:block;width:100%;background-color:#3c3d38">                    mediaID
+</span><span style="display:block;width:100%;background-color:#3c3d38">                    );
+</span>                <span style="color:#66d9ef">return</span> response;
+            });
+<span style="display:block;width:100%;background-color:#3c3d38">            <span style="color:#66d9ef">if</span> (rezAppend.Result.Item1 != <span style="color:#ae81ff">204</span>)
+</span>            {
+                Console.WriteLine(<span style="color:#e6db74">$&#34;[ERROR] {rezAppend.Result.Item1}: {rezAppend.Result.Item2}&#34;</span>);
+                <span style="color:#66d9ef">return</span>;
+            }
+        }
+        <span style="color:#66d9ef">catch</span> (Exception ex)
+        {
+            Console.WriteLine(<span style="color:#e6db74">$&#34;[ERROR] {ex.Message}&#34;</span>);
+            <span style="color:#66d9ef">return</span>;
+        }
+        chunkID++;
+    }
+}
+</code></pre></div>
+<p>So the method is called in a loop till the whole file is read.</p>
+<p>To each APPEND request Twitter should respond with <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/204">204</a> code. There is JSON response, only this code.</p>
+<p>Now we get to the point which I mentioned in the very beginning - that I am not entirely happy with my implementation. So the problem here is that by the looks of it, file chunks are sent not in the request body but as a part of the URL query parameters, which feels very retarded.</p>
+<p>Not just retarded, but that also applies certain limitation to the chunk size, because URL length has its limits (<em>well, not really, according to <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">RFC</a>, but let&rsquo;s follow common sense</em>), so setting <code>chunkSize</code> to some big value results in:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-css" data-lang="css"><span style="color:#f92672">Invalid</span> <span style="color:#f92672">URI</span><span style="color:#f92672">:</span> <span style="color:#f92672">The</span> <span style="color:#f92672">Uri</span> <span style="color:#f92672">string</span> <span style="color:#f92672">is</span> <span style="color:#f92672">too</span> <span style="color:#f92672">long</span><span style="color:#f92672">.</span></code></pre></div>
+<p>So I am not sure if sending chunk bytes as a part of query parameters is the way it is supposed to be, but I just couldn&rsquo;t find the way to send bytes in payload, provide required query parameters and make Twitter to accept all that.</p>
+<p>And just look at their <a href="https://developer.twitter.com/en/docs/media/upload-media/api-reference/post-media-upload-append#example-request">example request</a>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">POST</span> https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//upload.twitter.com/</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">/media/upload.json?command</span><span style="color:#f92672">=</span><span style="color:#a6e22e">APPEND</span><span style="color:#f92672">&amp;</span>media_id<span style="color:#66d9ef">=</span><span style="color:#ae81ff">123</span><span style="color:#f92672">&amp;</span>segment_index<span style="color:#66d9ef">=</span><span style="color:#ae81ff">2</span><span style="color:#f92672">&amp;</span>media_data<span style="color:#66d9ef">=</span><span style="color:#ae81ff">123</span></code></pre></div>
+<p>They seem to fine with it, so apparently it is okay?</p>
+<h2 id="finalize">FINALIZE</h2>
+<p>That is the request you need to send after the last chunk of your file was accepted. You&rsquo;re letting Twitter know that you finished transferring the file and it should now be processed:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; SendFinalize(<span style="color:#66d9ef">string</span> mediaID)
+{
+    <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
+    {
+        <span style="color:#66d9ef">var</span> finalizeData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt;
+        {
+<span style="display:block;width:100%;background-color:#3c3d38">            { <span style="color:#e6db74">&#34;command&#34;</span>, <span style="color:#e6db74">&#34;FINALIZE&#34;</span> },
+</span><span style="display:block;width:100%;background-color:#3c3d38">            { <span style="color:#e6db74">&#34;media_id&#34;</span>, mediaID }
+</span>        };
+
+        httpClient.DefaultRequestHeaders.Add(
+            <span style="color:#e6db74">&#34;Authorization&#34;</span>,
+            PrepareOAuth(_TwitterMediaAPI, finalizeData, <span style="color:#e6db74">&#34;POST&#34;</span>)
+            );
+        <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.PostAsync(
+            _TwitterMediaAPI,
+            <span style="color:#66d9ef">new</span> FormUrlEncodedContent(finalizeData)
+            );
+        <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+            (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+            httpContent
+            );
+    }
+}
+</code></pre></div>
+<p>The response can look like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;media_id&#34;</span>: <span style="color:#ae81ff">1193135308410889857</span>,
+  <span style="color:#f92672">&#34;media_id_string&#34;</span>: <span style="color:#e6db74">&#34;1193135308410889857&#34;</span>,
+  <span style="color:#f92672">&#34;media_key&#34;</span>: <span style="color:#e6db74">&#34;7_1193135308410889857&#34;</span>,
+  <span style="color:#f92672">&#34;size&#34;</span>: <span style="color:#ae81ff">165152</span>,
+  <span style="color:#f92672">&#34;expires_after_secs&#34;</span>: <span style="color:#ae81ff">86400</span>,
+  <span style="color:#f92672">&#34;processing_info&#34;</span>: {
+    <span style="color:#f92672">&#34;state&#34;</span>: <span style="color:#e6db74">&#34;pending&#34;</span>,
+    <span style="color:#f92672">&#34;check_after_secs&#34;</span>: <span style="color:#ae81ff">2</span>
+  }
+}</code></pre></div>
+<p>If it does not contain <code>processing_info</code> section, then your video is ready to be used, so you can already attach it to a tweet. And if it does contain this section, then it means that the file is being processed and you need to wait until it&rsquo;s ready.</p>
+<h2 id="status">STATUS</h2>
+<p>This request allows you to check the processing progress after you sent <a href="#finalize">FINALIZE</a> and got a response with <code>processing_info</code>. If you try to sent STATUS request at any point before that, you&rsquo;ll get this error:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;errors&#34;</span>: [
+        {
+            <span style="color:#f92672">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;Sorry, that page does not exist&#34;</span>,
+            <span style="color:#f92672">&#34;code&#34;</span>: <span style="color:#ae81ff">34</span>
+        }
+    ]
+}</code></pre></div>
+<p>And here&rsquo;s the code for the request:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; StatusMedia(<span style="color:#66d9ef">string</span> mediaID)
+{
+    <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
+    {
+        <span style="color:#66d9ef">var</span> statusData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt;
+        {
+<span style="display:block;width:100%;background-color:#3c3d38">            { <span style="color:#e6db74">&#34;command&#34;</span>, <span style="color:#e6db74">&#34;STATUS&#34;</span> },
+</span><span style="display:block;width:100%;background-color:#3c3d38">            { <span style="color:#e6db74">&#34;media_id&#34;</span>, <span style="color:#e6db74">$&#34;{mediaID}&#34;</span> }
+</span>        };
+        <span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">$&#34;{_TwitterMediaAPI}?command=STATUS&amp;media_id={mediaID}&#34;</span>;
+
+        httpClient.DefaultRequestHeaders.Add(
+            <span style="color:#e6db74">&#34;Authorization&#34;</span>,
+            PrepareOAuth(_TwitterMediaAPI, statusData, <span style="color:#e6db74">&#34;GET&#34;</span>)
+            );
+        <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.GetAsync(url);
+        <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+            (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+            httpContent
+            );
+    }
+}
+</code></pre></div>
+<p>Here&rsquo;s a response you can get:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;media_id&#34;</span>: <span style="color:#ae81ff">1193135308410889857</span>,
+    <span style="color:#f92672">&#34;media_id_string&#34;</span>: <span style="color:#e6db74">&#34;1193135308410889857&#34;</span>,
+    <span style="color:#f92672">&#34;media_key&#34;</span>: <span style="color:#e6db74">&#34;7_1193135308410889857&#34;</span>,
+    <span style="color:#f92672">&#34;processing_info&#34;</span>: {
+        <span style="color:#f92672">&#34;state&#34;</span>: <span style="color:#e6db74">&#34;in_progress&#34;</span>,
+        <span style="color:#f92672">&#34;check_after_secs&#34;</span>: <span style="color:#ae81ff">1</span>,
+        <span style="color:#f92672">&#34;progress_percent&#34;</span>: <span style="color:#ae81ff">37</span>
+    }
+}</code></pre></div>
+<p>And you guessed it right, you need to run a loop of STATUS requests until the <code>state</code> becomes <code>succeeded</code> (<em>and/or <code>progress_percent</code> becomes <code>100</code></em>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;media_id&#34;</span>: <span style="color:#ae81ff">1193135308410889857</span>,
+    <span style="color:#f92672">&#34;media_id_string&#34;</span>: <span style="color:#e6db74">&#34;1193135308410889857&#34;</span>,
+    <span style="color:#f92672">&#34;media_key&#34;</span>: <span style="color:#e6db74">&#34;7_1193135308410889857&#34;</span>,
+    <span style="color:#f92672">&#34;size&#34;</span>: <span style="color:#ae81ff">165152</span>,
+    <span style="color:#f92672">&#34;expires_after_secs&#34;</span>: <span style="color:#ae81ff">86398</span>,
+    <span style="color:#f92672">&#34;video&#34;</span>: {
+        <span style="color:#f92672">&#34;video_type&#34;</span>: <span style="color:#e6db74">&#34;video\/mp4&#34;</span>
+    },
+    <span style="color:#f92672">&#34;processing_info&#34;</span>: {
+        <span style="color:#f92672">&#34;state&#34;</span>: <span style="color:#e6db74">&#34;succeeded&#34;</span>,
+        <span style="color:#f92672">&#34;progress_percent&#34;</span>: <span style="color:#ae81ff">100</span>
+    }
+}</code></pre></div>
+<p>So let&rsquo;s prepare a helper method:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">int</span> CheckStatus(<span style="color:#66d9ef">string</span> mediaID)
+{
+    <span style="color:#66d9ef">var</span> rezStatus = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
+    {
+<span style="display:block;width:100%;background-color:#3c3d38">        <span style="color:#66d9ef">var</span> response = <span style="color:#66d9ef">await</span> StatusMedia(mediaID);
+</span>        <span style="color:#66d9ef">return</span> response;
+    });
+    <span style="color:#66d9ef">if</span> (rezStatus.Result.Item1 == <span style="color:#ae81ff">200</span>)
+    {
+        <span style="color:#66d9ef">var</span> rezStatusJson = JObject.Parse(rezStatus.Result.Item2);
+<span style="display:block;width:100%;background-color:#3c3d38">        <span style="color:#66d9ef">if</span> (rezStatusJson[<span style="color:#e6db74">&#34;processing_info&#34;</span>][<span style="color:#e6db74">&#34;state&#34;</span>].Value&lt;<span style="color:#66d9ef">string</span>&gt;() != <span style="color:#e6db74">&#34;succeeded&#34;</span>)
+</span>        {
+            <span style="color:#66d9ef">return</span> rezStatusJson[<span style="color:#e6db74">&#34;processing_info&#34;</span>][<span style="color:#e6db74">&#34;check_after_secs&#34;</span>].Value&lt;<span style="color:#66d9ef">int</span>&gt;();
+        }
+        <span style="color:#66d9ef">else</span>
+        {
+            <span style="color:#66d9ef">return</span> -<span style="color:#ae81ff">1</span>;
+        }
+    }
+    <span style="color:#66d9ef">else</span>
+    {
+        <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> Exception(<span style="color:#e6db74">$&#34;{rezStatus.Result.Item1}: {rezStatus.Result.Item2}&#34;</span>);
+    }
+}
+</code></pre></div>
+<p>And now we can combine it with <a href="#finalize">FINALIZE</a>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">var</span> rezFinalize = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
+{
+<span style="display:block;width:100%;background-color:#3c3d38">    <span style="color:#66d9ef">var</span> response = <span style="color:#66d9ef">await</span> twitter.SendFinalize(mediaID);
+</span>    <span style="color:#66d9ef">return</span> response;
+});
+<span style="color:#66d9ef">var</span> rezFinalizeJson = JObject.Parse(rezFinalize.Result.Item2);
+
+<span style="display:block;width:100%;background-color:#3c3d38"><span style="color:#66d9ef">if</span> (rezFinalizeJson[<span style="color:#e6db74">&#34;processing_info&#34;</span>] != <span style="color:#66d9ef">null</span>)
+</span>{
+    <span style="color:#66d9ef">int</span> checkAfter = rezFinalizeJson[<span style="color:#e6db74">&#34;processing_info&#34;</span>][<span style="color:#e6db74">&#34;check_after_secs&#34;</span>].Value&lt;<span style="color:#66d9ef">int</span>&gt;();
+<span style="display:block;width:100%;background-color:#3c3d38">    <span style="color:#66d9ef">while</span> (checkAfter != -<span style="color:#ae81ff">1</span>)
+</span>    {
+        Thread.Sleep(checkAfter * <span style="color:#ae81ff">1000</span>); <span style="color:#75715e">// or some better pause implementation
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">try</span>
+        {
+            checkAfter = twitter.CheckStatus(mediaID);
+        }
+        <span style="color:#66d9ef">catch</span> (Exception ex)
+        {
+            Console.WriteLine(<span style="color:#e6db74">$&#34;[ERROR] {ex.Message}&#34;</span>);
+            <span style="color:#66d9ef">return</span>;
+        }
+    }
+}
+<span style="color:#66d9ef">else</span>
+{
+    <span style="color:#75715e">// your video is ready
+</span><span style="color:#75715e"></span>}
+</code></pre></div>
+<h1 id="posting-a-tweet-with-video">Posting a tweet with video</h1>
+<p>Now, when you have an identificator of an uploaded and processed video file, you can attach it to a tweet the same way it was with images:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">var</span> rezText = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
+{
+    <span style="color:#66d9ef">var</span> response = <span style="color:#66d9ef">await</span> twitter.TweetText(<span style="color:#e6db74">&#34;ololo&#34;</span>, mediaID);
+    <span style="color:#66d9ef">return</span> response;
+});
+</code></pre></div>
+<p>For videos to play automatically your users need to enable autoplay in <a href="https://twitter.com/settings/data">data settings</a>.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/dotnet/">dotnet</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a><a class="tag" href="https://retifrav.github.io/tags/unsolved/">unsolved</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <script>
+  var id =  30 ;
+
+  if (id)
+  {
+    let url = "https://github.com/retifrav/retifrav.github.io/issues/".concat(id);
+    let api_url = "https://api.github.com/repos/retifrav/retifrav.github.io/issues/".concat(id, "/comments");
+    
+    var commentsDiv = document.getElementById("comments");
+
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", api_url);
+    xhr.setRequestHeader("Accept", "application/vnd.github.v3.html+json");
+    xhr.send();
+
+    xhr.onload = function()
+    {
+      if (xhr.status != 200)
+      {
+        let errorText = document.createElement("p");
+        errorText.innerHTML = "<i>Comments for this post yet are not opened yet (or you have GitHub scripts disabled).</i>";
+        commentsDiv.appendChild(errorText);
+      }
+      else
+      {
+        let comments = xhr.response;
+
+        let mainHeader = document.createElement("h2");
+        mainHeader.innerHTML = "Comments: ".concat(comments.length);
+        commentsDiv.appendChild(mainHeader);
+
+        let issueLink = document.createElement("p");
+        issueLink.innerHTML = "<i>You can leave a comment using this <a href='".concat(url, "'>GitHub issue</a>.</i>");
+        commentsDiv.appendChild(issueLink);
+        
+        comments.forEach(function(comment)
+        {
+            let commentContent = document.createElement("div");
+            commentContent.setAttribute('class', 'gh-comment')
+            commentContent.innerHTML = "".concat(
+                "<div class='gh-header'>",
+                  "<img src='", comment.user.avatar_url, "' />",
+                  "<div style='margin:auto 0;'>",
+                    "<b><a class='gh-username' href='", comment.user.html_url, "'>", comment.user.login, "</a></b>",
+                    " commented at <em>", new Date(comment.created_at), "</em>",
+                  "</div>",
+                "</div>",
+                "<div class='gh-body'>",
+                  comment.body_html,
+                "</div>"
+            );
+            commentsDiv.appendChild(commentContent);
+        });
+      }
+    };
+
+    xhr.onerror = function()
+    {
+      let errorText = document.createElement("p");
+      errorText.innerHTML = "<i>Some error loading comments.</i>";
+      commentsDiv.appendChild(errorText);
+    };
+  }
+</script>
+
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

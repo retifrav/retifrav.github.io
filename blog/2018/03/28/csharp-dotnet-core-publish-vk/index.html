@@ -1,0 +1,565 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>C# / .NET Core, публикация ВКонтакте | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="C# / .NET Core, публикация ВКонтакте" />
+<meta property="og:description" content="Публикацию в Twitter и Facebook мы уже запилили, настала очередь ВКонтакте.
+
+
+
+    
+
+
+
+Тут, конечно, получше дела обстоят, чем с Facebook, но местами всё равно пиздец." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2018/03/28/csharp-dotnet-core-publish-vk/" />
+<meta property="article:published_time" content="2018-03-28T00:02:52+02:00" />
+<meta property="article:modified_time" content="2018-03-28T00:02:52+02:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">C# / .NET Core, публикация ВКонтакте</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2018-03-28 00:02:52 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 9 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>Публикацию в <a href="/blog/2017/11/24/csharp-dotnet-core-publish-twitter/">Twitter</a> и <a href="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/">Facebook</a> мы уже запилили, настала очередь ВКонтакте.</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2018/03/28/csharp-dotnet-core-publish-vk/images/dotnet-core-vk-logo.png" alt=".NET Core VK logo"/>
+
+</div>
+
+<p>Тут, конечно, получше дела обстоят, чем с Facebook, но местами всё равно пиздец.</p>
+<p>Итак, наша цель - публиковать контент с сайта на стене публичной страницы (паблика) ВКонтакте. Пост должен содержать картинку, текст, хэштеги и ссылку. Выглядеть будет примерно так:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2018/03/28/csharp-dotnet-core-publish-vk/images/vk-post-example.png" alt="ВКонтакте, пример поста с картинкой и ссылкой"/>
+
+</div>
+
+<p>Делать будем через API ВКонтакте с реализацией на C# (из .NET Core MVC приложения).</p>
+<p><a href="https://vk.com/dev/first_guide?f=4">Официальная документация</a> весьма неплохо рассказывает о том что тут и как. Первым делом нужно <a href="https://vk.com/editapp?act=create">создать приложение</a> и получить через него токен доступа, который необходим для отправки запросов к API.</p>
+<p>Платформа приложения должна быть <code>Standalone</code>:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2018/03/28/csharp-dotnet-core-publish-vk/images/vk-create-app.png" alt="ВКонтакте, новое приложение"/>
+
+</div>
+
+<p>После создания открыть его настройки и изменить через <code>Состояние</code> на включённое (я ещё <code>Open API</code> добавил, хотя и не уверен, нужно ли это вообще):</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2018/03/28/csharp-dotnet-core-publish-vk/images/vk-app-settings.png" alt="ВКонтакте, настройки приложения"/>
+
+</div>
+
+<p>Из всего этого нам нужен только <code>ID приложения</code>.</p>
+<p>Теперь можно получать токен. Откройте такую ссылку в браузере:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#75715e">//oauth.vk.com/authorize
+</span><span style="color:#75715e"></span>  <span style="color:#f92672">?</span>v<span style="color:#66d9ef">=</span><span style="color:#ae81ff">5.73</span>
+  <span style="color:#f92672">&amp;</span>client_id<span style="color:#66d9ef">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">APPLICATION</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span>
+  <span style="color:#f92672">&amp;</span>display<span style="color:#66d9ef">=</span>page
+  <span style="color:#f92672">&amp;</span>redirect_uri<span style="color:#66d9ef">=</span>https<span style="color:#66d9ef">:</span><span style="color:#75715e">//oauth.vk.com/blank.html
+</span><span style="color:#75715e"></span>  <span style="color:#f92672">&amp;</span>scope<span style="color:#66d9ef">=</span>wall<span style="color:#f92672">,</span>offline<span style="color:#f92672">,</span>groups<span style="color:#f92672">,</span>photos
+  <span style="color:#f92672">&amp;</span>response_type<span style="color:#66d9ef">=</span>token</code></pre></div>
+<p>в которой:</p>
+<ul>
+<li><code>YOUR-APPLICATION-ID</code> - ваш ID приложения;</li>
+<li><code>wall,offline,groups,photos</code> - так называемый <a href="https://vk.com/dev/permissions">scope</a>, то есть что приложение будет уметь делать от имени вашего  аккаунта. Кстати, возможно, я ему тут лишнего наразрешал. У меня там ещё <code>manage</code> был, но он-то вроде точно не нужен. Обратите внимание на <code>offline</code> - без него токен будет со сроком действия и через какое-то время протухнет.</li>
+</ul>
+<p>Ладно, открываете ссылку в браузере, ВКонтакте покажет диалог подтверждения авторизации:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2018/03/28/csharp-dotnet-core-publish-vk/images/vk-api-auth.png" alt="ВКонтакте, авторизация приложения"/>
+
+</div>
+
+<p>По нажатию на <code>Разрешить</code>, откроется пустая страница, но нам нужно не её содержимое, а её адрес, вернее параметр <code>access_token</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#75715e">//oauth.vk.com/blank.html
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">#</span>access_token<span style="color:#66d9ef">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ACCESS</span><span style="color:#f92672">-</span><span style="color:#a6e22e">TOKEN</span>
+  <span style="color:#f92672">&amp;</span>expires_in<span style="color:#66d9ef">=</span><span style="color:#ae81ff">0</span>
+  <span style="color:#f92672">&amp;</span>user_id<span style="color:#66d9ef">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span></code></pre></div>
+<p>Всё, теперь можно отправлять запросы к API.</p>
+<p>Как вообще составлять запросы, рассказывает <a href="https://vk.com/dev/api_requests">документация</a>. Среди параметров есть маленький, но, сука, гордый параметр <a href="https://vk.com/dev/versions">версии API</a> - <code>v</code>, в котором нужно обязательно указать версию API. В нормальных API, если не указана конкретная версия, по умолчанию берётся свежайшая, но API ВКонтакте к нормальным относиться не планировал, как я понимаю. Хочешь использовать последнюю версию - иди ищи её вручную.</p>
+<p>Чтобы постить на стене паблика (от имени паблика), вы должны быть его администратором или редактором. Проверить доступ к сообществам можно таким запросом:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#75715e">//api.vk.com/method/groups.get
+</span><span style="color:#75715e"></span>  <span style="color:#f92672">?</span>v<span style="color:#66d9ef">=</span><span style="color:#ae81ff">5.73</span>
+  <span style="color:#f92672">&amp;</span>access_token<span style="color:#66d9ef">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ACCESS</span><span style="color:#f92672">-</span><span style="color:#a6e22e">TOKEN</span>
+  <span style="color:#f92672">&amp;</span>filter<span style="color:#66d9ef">=</span>admin</code></pre></div>
+<p>Пример результата:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;response&#34;</span>: {
+    <span style="color:#f92672">&#34;count&#34;</span>: <span style="color:#ae81ff">1</span>,
+    <span style="color:#f92672">&#34;items&#34;</span>: [
+      <span style="color:#960050;background-color:#1e0010">YOUR-GROUP-ID</span>
+    ]
+  }
+}</code></pre></div>
+<p>Я админ только в одной группе (которая и есть мой паблик), потому у меня тут только один результат. У вас может быть больше, разумеется.</p>
+<p>На всякий случай, сравните ID из этого списка с реальным ID паблика, найти который можно открыв его страницу и нажав <code>Записи сообщества</code> - в адресе страницы будет ID. Весьма тривиально, не правда ли.</p>
+<p>Теперь можно постить на стену:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#75715e">//api.vk.com/method/wall.post
+</span><span style="color:#75715e"></span>  <span style="color:#f92672">?</span>v<span style="color:#66d9ef">=</span><span style="color:#ae81ff">5.73</span>
+  <span style="color:#f92672">&amp;</span>access_token<span style="color:#66d9ef">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ACCESS</span><span style="color:#f92672">-</span><span style="color:#a6e22e">TOKEN</span>
+  <span style="color:#f92672">&amp;</span>owner_id<span style="color:#f92672">=-</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">GROUP</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span>
+  <span style="color:#f92672">&amp;</span>from_group<span style="color:#66d9ef">=</span><span style="color:#ae81ff">1</span>
+  <span style="color:#f92672">&amp;</span>message<span style="color:#66d9ef">=</span><span style="color:#a6e22e">TEXT</span></code></pre></div>
+<p>где:</p>
+<ul>
+<li><code>-YOUR-GROUP-ID</code> - ID паблика. Здесь важно, чтобы он был со знаком <code>-</code>. А вот во всех остальных запросах он будет <strong>без минуса</strong>. Как эту логику понимать?</li>
+<li><code>TEXT</code> - текст для публикации на стене паблика.</li>
+</ul>
+<p>Этот запрос должен опубликовать запись на стене паблика. Я сначала по инерции передал ID приложения, а не паблика, потому получил:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Access denied: no access to call this method</code></pre></div>
+<p>Теперь как загружать картинку. ВКонтакте не искали лёгких путей при проектировании API, потому процесс состоит из <strong>трёх</strong> шагов:</p>
+<ol>
+<li>Получить сервер, на который <em>будет</em> загружаться картинка;</li>
+<li>Загрузить картинку на этот сервер;</li>
+<li><em>Сохранить</em> картинку.</li>
+</ol>
+<p>Всё просто пронизано заботой о разработчике (а также логикой). Но оставим психическое здоровье создателей в стороне и перейдём к реализации этого безумия на C#.</p>
+<p>Продраться сквозь гениальный замысел сумрачного гения ВКонтакте помогла <a href="https://avleonov.com/2017/07/10/automated-posting-on-vkontakte-public-pages-using-vk-api-and-python/">вот эта статья</a>, хотя там и речь про загрузку фотографии в альбом, а не на стену.</p>
+<p>Ну так вот, сначала через метод <a href="https://vk.com/dev/photos.getWallUploadServer">photos.getWallUploadServer</a> надо получить сервер для загрузки картинки (фотографии). Да, вот так, API не может само как-то разобраться в своих серверах, потому для этого нужно выполнять аж целый отдельный запрос. Вот такой:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#75715e">//api.vk.com/method/photos.getWallUploadServer
+</span><span style="color:#75715e"></span>  <span style="color:#f92672">?</span>v<span style="color:#66d9ef">=</span><span style="color:#ae81ff">5.73</span>
+  <span style="color:#f92672">&amp;</span>access_token<span style="color:#66d9ef">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ACCESS</span><span style="color:#f92672">-</span><span style="color:#a6e22e">TOKEN</span>
+  <span style="color:#f92672">&amp;</span>group_id<span style="color:#66d9ef">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">GROUP</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span></code></pre></div>
+<p>В ответ придёт следующее:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;response&#34;</span>: {
+    <span style="color:#f92672">&#34;upload_url&#34;</span>: <span style="color:#e6db74">&#34;https:\/\/pu.vk.com\/c847219\/upload.php?act=do_add&amp;mid=YOUR-ID&amp;aid=-ALBUM-ID&amp;gid=YOUR-GROUP-ID&amp;hash=HASH-VALUE&amp;rhash=RHASH-VALUE&amp;swfupload=1&amp;api=1&amp;wallphoto=1&#34;</span>,
+    <span style="color:#f92672">&#34;album_id&#34;</span>: <span style="color:#960050;background-color:#1e0010">ALBUM-ID</span>,
+    <span style="color:#f92672">&#34;user_id&#34;</span>: <span style="color:#960050;background-color:#1e0010">YOUR-ID</span>
+  }
+}</code></pre></div>
+<p>Отсюда нам нужна вся строка из <code>upload_url</code> - на этот URL и надо отправлять картинку в POST запросе. И хотя процесс описан в <a href="https://vk.com/dev/upload_files?f=2.+%D0%97%D0%B0%D0%B3%D1%80%D1%83%D0%B7%D0%BA%D0%B0+%D1%84%D0%BE%D1%82%D0%BE%D0%B3%D1%80%D0%B0%D1%84%D0%B8%D0%B9+%D0%BD%D0%B0+%D1%81%D1%82%D0%B5%D0%BD%D1%83">документации</a>, с реальностью это описание слегка расходится. Вот цитата оттуда:</p>
+<blockquote>Передайте файл на адрес upload_url, полученный в предыдущем пункте, сформировав POST-запрос с полем photo. Это поле должно содержать изображение в формате multipart/form-data.</blockquote>
+<p>То есть, нужно просто запилить POST запрос с полем <code>photo</code>, в котором будут лежать байты картинки? Окей, давайте попробуем:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#75715e">// uploadServer - URL сервера, полученный на предыдущем шаге
+</span><span style="color:#75715e">// pathToImage - где у нас лежит файл с картинкой
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">// читаем содержимое файла картинки
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">byte</span>[] imgdata = System.IO.File.ReadAllBytes(pathToImage);
+<span style="color:#66d9ef">var</span> imageContent = <span style="color:#66d9ef">new</span> ByteArrayContent(imgdata);
+
+<span style="color:#75715e">// создаём тело запроса в формате multipart/form-data
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">var</span> multipartContent = <span style="color:#66d9ef">new</span> MultipartFormDataContent();
+<span style="color:#75715e">// имя параметра &#34;photo&#34;, как и просили
+</span><span style="color:#75715e"></span>multipartContent.Add(imageContent, <span style="color:#e6db74">&#34;photo&#34;</span>);
+
+<span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
+{
+    <span style="color:#75715e">// отправляем POST запрос
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.PostAsync(uploadServer, multipartContent);
+    <span style="color:#75715e">// вот сюда придёт JSON ответа
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">string</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+}
+</code></pre></div>
+<p>Кстати говоря, Twitter API принимает файлы таким же запросом, и там этого хватает без проблем, но API ВКонтакте - зверь особой породы.</p>
+<p><a href="/images/dotnet-core-publish-some/vk/nachnem.jpg">Начнём с того, блядь</a>, что вы получите вот такую ошибку <strike>нахуй</strike> в лицо:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs">The character <span style="color:#66d9ef">set</span> provided <span style="color:#66d9ef">in</span> ContentType <span style="color:#66d9ef">is</span> invalid. Cannot read content <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">string</span> <span style="color:#66d9ef">using</span> an invalid character <span style="color:#66d9ef">set</span>.
+</code></pre></div>
+<p>Что бы это могло означать? А то, что в 2018 году сраный ВКонтач отдаёт результат в кодировке <code>Windows-1251</code>! И причём только вот в этом методе (в других не заметил), остальные выдают нормальный UTF-8. В документации такое поведение хуй упомянуто, то есть кодировку ответа каждого метода предлагается угадывать самостоятельно.</p>
+<p>Ну ладно, будем работать с <code>Windows-1251</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
+{
+    <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.PostAsync(server, multipartContent);
+    <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsByteArrayAsync();
+    <span style="color:#75715e">// вот в этой строке теперь будет JSON ответа
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">string</span> responseString = Encoding.GetEncoding(<span style="color:#ae81ff">1251</span>).GetString(
+        httpContent, <span style="color:#ae81ff">0</span>, httpContent.Length
+        );
+}
+</code></pre></div>
+<p>При сборке вы скорее всего вы получите такую ошибку:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs">No data <span style="color:#66d9ef">is</span> available <span style="color:#66d9ef">for</span> encoding <span style="color:#ae81ff">1251.</span> For information <span style="color:#66d9ef">on</span> defining a custom encoding, see the documentation <span style="color:#66d9ef">for</span> the Encoding.RegisterProvider method.
+</code></pre></div>
+<p>Надо поставить NuGet пакет:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs">dotnet <span style="color:#66d9ef">add</span> package System.Text.Encoding.CodePages
+</code></pre></div>
+<p>И добавить провайдер в <code>Startup.cs</code> (или в <code>Main</code>, где у вас там):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> ConfigureServices(IServiceCollection services)
+{
+    <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>
+    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+    
+    <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>}
+</code></pre></div>
+<p>С кодировкой справились, теперь наконец-то можно посмотреть ответ от API:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;server&#34;</span>: <span style="color:#960050;background-color:#1e0010">SERVER-ID</span>,
+  <span style="color:#f92672">&#34;photo&#34;</span>: <span style="color:#e6db74">&#34;[]&#34;</span>,
+  <span style="color:#f92672">&#34;hash&#34;</span>: <span style="color:#e6db74">&#34;SOME-HASH&#34;</span>
+}</code></pre></div>
+<p>Ошибок нет, значит это наш результат, правильно? Смотрим в документацию:</p>
+<blockquote>После успешной загрузки сервер возвращает в ответе JSON-объект с полями server, photo, hash...</blockquote>
+<p>Ну так и есть, вот мы получили ID сервера, получили хэш, но&hellip; почему поле <code>photo</code> пустое? Судя по документации, там должен быть JSON-массив с информацией по фото, но почему там ничего нет? И почему ничего не сказано о том, что возвращается в случае <em>неуспешной</em> загрузки? Так, подождите&hellip; неужели&hellip; <strong>это бля и есть неуспешная загрузка</strong>?! И значит пустой элемент <code>photo</code> означает ошибку? Какое охуенное, блядь, API.</p>
+<p>Ну так и оказалось - если вам пришёл такой результат, то API что-то не понравилось в вашем запросе, и бря удачи в поисках что именно.</p>
+<p>Нет, серьёзно, как из <code>[]</code> получить текст ошибки или хоть какой-то намёк на причину? Да никак, ебитесь в рот, ваш ВКонтакт. Единственное, что оставалось делать, это гуглить вариации &ldquo;<em><a href="https://www.google.com/search?q=%D0%92%D0%9A%D0%BE%D0%BD%D1%82%D0%B0%D0%BA%D1%82%D0%B5%20API%20%D0%BF%D1%83%D1%81%D1%82%D0%BE%D0%B5%20photo">ВКонтакте API пустое photo</a></em>&rdquo;.</p>
+<p>Поиски неистово отягощались тем, что <strong>подавляющее</strong> большинство вопросов и примеров в интернетах посвящены PHP-реализациям неосиляторов, которые сидят на Wordpress&rsquo;е и тупо шлют запросы через cURL. Кроме PHP я видел даже пару примеров на C++, но ни одного на C#. И разумеется, нигде нет никаких конкретных решений, потому что из описания проблемы у всех только кофейная гуща, разлитая внутри квадратных скобок.</p>
+<p>Убив чуть не целый день на поиски, я уже даже не помню где встретил какой-то пример отправки файла, в котором кроме содержимого файла передавалось также и его имя(!).</p>
+<p>Я проверил это у себя:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">var</span> multipartContent = <span style="color:#66d9ef">new</span> MultipartFormDataContent();
+multipartContent.Add(imageContent, <span style="color:#e6db74">&#34;photo&#34;</span>, <span style="color:#e6db74">&#34;some.png&#34;</span>);
+</code></pre></div>
+<p>И таки да, это и оказалось причиной. Какого же хера это не указано в документации?! И не возвращается в качестве ошибки?! А главное, я бы может понял, если бы имя файла хоть где-то потом использовалось, но что-то я нигде не нашёл его следов после загрузки. Кроме того, <em>для всех</em> загружаемых файлов можно передавать <em>одно и то же</em> имя (например, <code>vkontakteebanytoeapi.png</code>), и это ни на что не повлияет. Пиздец.</p>
+<p>&hellip;Вот теперь результат возвращается в том виде, в каком и было обещано:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;server&#34;</span>: <span style="color:#960050;background-color:#1e0010">SERVER-ID</span>,
+  <span style="color:#f92672">&#34;photo&#34;</span>: <span style="color:#e6db74">&#34;[{\&#34;photo\&#34;:\&#34;85602013a2:x\&#34;,\&#34;sizes\&#34;:[[\&#34;s\&#34;,924020981,\&#34;9d1e\&#34;,\&#34;dcvjUHL9SEs\&#34;,75,75],[\&#34;m\&#34;,924020981,\&#34;9d1f\&#34;,\&#34;H_rKPVP2wrs\&#34;,130,130],[\&#34;x\&#34;,924020981,\&#34;9d20\&#34;,\&#34;-jYMssa2aAc\&#34;,300,300],[\&#34;o\&#34;,924020981,\&#34;9d21\&#34;,\&#34;o9ta1uV_0ik\&#34;,130,130],[\&#34;p\&#34;,924020981,\&#34;9d22\&#34;,\&#34;ZCsZ--h1nlY\&#34;,200,200],[\&#34;q\&#34;,924020981,\&#34;9d23\&#34;,\&#34;6vn_QEFgd4Y\&#34;,300,300],[\&#34;r\&#34;,924020981,\&#34;9d24\&#34;,\&#34;6p4zQpQBfxU\&#34;,300,300]],\&#34;latitude\&#34;:0,\&#34;longitude\&#34;:0,\&#34;kid\&#34;:\&#34;80e1clo3ef1b24d2s6d2a6l41pe0d26b9\&#34;}]&#34;</span>,
+  <span style="color:#f92672">&#34;hash&#34;</span>: <span style="color:#e6db74">&#34;SOME-HASH&#34;</span>
+}</code></pre></div>
+<p>Если интересно, вот как выглядят запрос и результат в &ldquo;сыром&rdquo; виде (хотя всё самое интересное скрыто в <code>&lt;Binary body&gt;</code>):</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2018/03/28/csharp-dotnet-core-publish-vk/images/vk-upload-request-raw.png" alt="Загрузка фотографии на сервер ВКонтакте, вид запроса в Proxie"/>
+
+</div>
+
+<p>Остался последний шаг - сохранить (г&rsquo;споди, что за идиотизм) <em>уже загруженную картинку</em> в куда-то там через метод <a href="https://vk.com/dev/photos.saveWallPhoto">photos.saveWallPhoto</a>, используя значения из полученных результатов отправки. Запрос такой:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#75715e">//api.vk.com/method/photos.saveWallPhoto
+</span><span style="color:#75715e"></span>  <span style="color:#f92672">?</span>v<span style="color:#66d9ef">=</span><span style="color:#ae81ff">5.73</span>
+  <span style="color:#f92672">&amp;</span>access_token<span style="color:#66d9ef">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ACCESS</span><span style="color:#f92672">-</span><span style="color:#a6e22e">TOKEN</span>
+  <span style="color:#f92672">&amp;</span>group_id<span style="color:#66d9ef">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">GROUP</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span>
+  <span style="color:#f92672">&amp;</span>photo<span style="color:#66d9ef">=</span><span style="color:#a6e22e">PHOTO</span><span style="color:#f92672">-</span><span style="color:#a6e22e">VALUE</span>
+  <span style="color:#f92672">&amp;</span>server<span style="color:#66d9ef">=</span><span style="color:#a6e22e">SERVER</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span>
+  <span style="color:#f92672">&amp;</span>hash<span style="color:#66d9ef">=</span><span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">HASH</span></code></pre></div>
+<p>Результат будет выглядеть так:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;response&#34;</span>: [
+    {
+      <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#960050;background-color:#1e0010">PHOTO-ID</span>,
+      <span style="color:#f92672">&#34;album_id&#34;</span>: <span style="color:#ae81ff">-14</span>,
+      <span style="color:#f92672">&#34;owner_id&#34;</span>: <span style="color:#960050;background-color:#1e0010">YOUR-ID</span>,
+      <span style="color:#f92672">&#34;photo_75&#34;</span>: <span style="color:#e6db74">&#34;https://pp.userapi.com/g745593/b946739573/e366/rdjtBFuL0AU.jpg&#34;</span>,
+      <span style="color:#f92672">&#34;photo_130&#34;</span>: <span style="color:#e6db74">&#34;https://pp.userapi.com/g745593/b946739573/e367/F0YFn9dcxYw.jpg&#34;</span>,
+      <span style="color:#f92672">&#34;photo_604&#34;</span>: <span style="color:#e6db74">&#34;https://pp.userapi.com/g745593/b946739573/e368/PPKmXvdSSHc.jpg&#34;</span>,
+      <span style="color:#f92672">&#34;photo_807&#34;</span>: <span style="color:#e6db74">&#34;https://pp.userapi.com/g745593/b946739573/e369/XQ9yKDshx-k.jpg&#34;</span>,
+      <span style="color:#f92672">&#34;photo_1280&#34;</span>: <span style="color:#e6db74">&#34;https://pp.userapi.com/g745593/b946739573/e36a/OdfOPoXXz3k.jpg&#34;</span>,
+      <span style="color:#f92672">&#34;width&#34;</span>: <span style="color:#ae81ff">1000</span>,
+      <span style="color:#f92672">&#34;height&#34;</span>: <span style="color:#ae81ff">1000</span>,
+      <span style="color:#f92672">&#34;text&#34;</span>: <span style="color:#e6db74">&#34;&#34;</span>,
+      <span style="color:#f92672">&#34;date&#34;</span>: <span style="color:#ae81ff">1521917953</span>,
+      <span style="color:#f92672">&#34;access_key&#34;</span>: <span style="color:#e6db74">&#34;n3e12036c6dOeQQ4b8&#34;</span>
+    }
+  ]
+}</code></pre></div>
+<p>Почти всё готово, но напоследок ВКонтакте предлагает ещё и пособирать пазл, потому что ведь нельзя же просто так взять и вернуть финальный пригодный для использования ID картинки. Нет, требуемое значение нужно собрать руками по следующей формуле: <code>photo[owner_id]_[id]</code>, то есть <code>photoYOUR-ID_PHOTO-ID</code>. И вот это уже то самое значение, которое можно использовать для публикации поста с картинкой на стене паблика:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#75715e">//api.vk.com/method/wall.post
+</span><span style="color:#75715e"></span>  <span style="color:#f92672">?</span>v<span style="color:#66d9ef">=</span><span style="color:#ae81ff">5.73</span>
+  <span style="color:#f92672">&amp;</span>access_token<span style="color:#66d9ef">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ACCESS</span><span style="color:#f92672">-</span><span style="color:#a6e22e">TOKEN</span>
+  <span style="color:#f92672">&amp;</span>owner_id<span style="color:#f92672">=-</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">GROUP</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span>
+  <span style="color:#f92672">&amp;</span>from_group<span style="color:#66d9ef">=</span><span style="color:#ae81ff">1</span>
+  <span style="color:#f92672">&amp;</span>message<span style="color:#66d9ef">=</span><span style="color:#a6e22e">TEXT</span>
+  <span style="color:#f92672">&amp;</span>attachments<span style="color:#66d9ef">=</span>photoYOUR<span style="color:#f92672">-</span><span style="color:#a6e22e">ID_PHOTO</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span></code></pre></div>
+<p>В параметр <code>attachments</code> можно также передать ссылку (прям втупую через запятую после фотки), но в пост она будет поставлена весьма по-уродски, так что нет, спасибо. К тому же никто не запрещает использовать ссылки в тексте поста, и они тоже будут кликабельными.</p>
+<p>Весь C#-класс я на этот раз в статью пихать не буду, так что смотрите <a href="https://github.com/retifrav/protvshows/blob/master/protvshows/Code/VK.cs">в репозитории</a>.</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[13.04.2018] Update:</strong> 414 Request-URI Too Long</div>
+<p>Хочу обратить ваше внимание на разницу между <code>GET</code> и <code>POST</code> запросами. Я сначала всё делал через <code>GET</code>, то есть в исходниках у меня было так:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">public</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; WallPostWithPhoto(<span style="color:#66d9ef">string</span> post, <span style="color:#66d9ef">string</span> photoID)
+{
+    post = WebUtility.UrlEncode(post);
+    <span style="color:#66d9ef">return</span> PostToWall(post, photoID);
+}
+
+<span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; PostToWall(<span style="color:#66d9ef">string</span> post, <span style="color:#66d9ef">string</span> photoID)
+{
+    <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
+    {
+        <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.GetAsync(
+            <span style="color:#e6db74">$&#34;{_postToWallURL}&amp;from_group=1&amp;message={post}&amp;attachments={photoID}&#34;</span>
+        );
+        <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+            (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+            httpContent
+            );
+    }
+}
+</code></pre></div>
+<p>И однажды я был за это наказан ошибкой:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">html</span>&gt;
+&lt;<span style="color:#f92672">head</span>&gt;&lt;<span style="color:#f92672">title</span>&gt;414 Request-URI Too Long&lt;/<span style="color:#f92672">title</span>&gt;&lt;/<span style="color:#f92672">head</span>&gt;
+&lt;<span style="color:#f92672">body</span> <span style="color:#a6e22e">bgcolor</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;white&#34;</span>&gt;
+&lt;<span style="color:#f92672">center</span>&gt;&lt;<span style="color:#f92672">h1</span>&gt;414 Request-URI Too Long&lt;/<span style="color:#f92672">h1</span>&gt;&lt;/<span style="color:#f92672">center</span>&gt;
+&lt;<span style="color:#f92672">hr</span>&gt;&lt;<span style="color:#f92672">center</span>&gt;nginx/0.3.33&lt;/<span style="color:#f92672">center</span>&gt;
+&lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;</code></pre></div>
+<p>Потому что такие вещи должны делаться через <code>POST</code>, а не через <code>GET</code>.</p>
+<p>Исправленная версия запроса:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">public</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; WallPostWithPhoto(<span style="color:#66d9ef">string</span> post, <span style="color:#66d9ef">string</span> photoID)
+{
+    <span style="color:#66d9ef">var</span> postData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; {
+            { <span style="color:#e6db74">&#34;v&#34;</span>, _APIver },
+            { <span style="color:#e6db74">&#34;owner_id&#34;</span>, <span style="color:#e6db74">$&#34;-{_PageID}&#34;</span> },
+            { <span style="color:#e6db74">&#34;access_token&#34;</span>, _AccessToken},
+            { <span style="color:#e6db74">&#34;from_group&#34;</span>, <span style="color:#e6db74">&#34;1&#34;</span> },
+            { <span style="color:#e6db74">&#34;message&#34;</span>, post },
+            { <span style="color:#e6db74">&#34;attachments&#34;</span>, photoID }
+        };
+    <span style="color:#66d9ef">return</span> PostToWall(postData);
+}
+
+<span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; PostToWall(Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; postData)
+{
+    <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
+    {
+        <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.PostAsync(
+            <span style="color:#e6db74">$&#34;{_API}{_APImethodPost}&#34;</span>,
+            <span style="color:#66d9ef">new</span> FormUrlEncodedContent(postData)
+        );
+        <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+            (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+            httpContent
+            );
+    }
+}
+</code></pre></div>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[01.05.2018] Update:</strong> Репорт багов</div>
+<p>Я, кстати говоря, написал ВКонтакте обо всём этом бардаке, но так как спустя месяц ничего не исправлено, то можно сделать вывод, что они просто ложили хуй.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/dotnet/">dotnet</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "waspenterprises" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

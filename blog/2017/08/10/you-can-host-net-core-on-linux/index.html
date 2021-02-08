@@ -1,0 +1,481 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>You can host a .NET Core MVC app on Linux | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="You can host a .NET Core MVC app on Linux" />
+<meta property="og:description" content="
+
+    
+
+
+
+Ya, rly." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2017/08/10/you-can-host-net-core-on-linux/" />
+<meta property="article:published_time" content="2017-08-10T14:21:41+02:00" />
+<meta property="article:modified_time" content="2017-08-10T14:21:41+02:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">You can host a .NET Core MVC app on Linux</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2017-08-10 14:21:41 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 3 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <div >
+
+    <img class="image-post" src="/blog/2017/08/10/you-can-host-net-core-on-linux/images/breaking-news.jpg" alt="Breaking news slowpoke"/>
+
+</div>
+
+<p>Ya, rly.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#publishing">Publishing</a></li>
+    <li><a href="#systemd-service">systemd service</a></li>
+    <li><a href="#nginx">NGINX</a>
+      <ul>
+        <li><a href="#tcp">TCP</a></li>
+        <li><a href="#unix-socket">Unix socket</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<p>I&rsquo;ve missed the beginning of <a href="https://dotnet.microsoft.com">.NET Core</a>, so I&rsquo;ve just recently discovered that one can host a .NET Core MVC web-application on a Linux server. I always liked C#/.NET, but I didn&rsquo;t like to be tied to IIS/Windows platform, so that looked very interesting to me.</p>
+<p>The whole setup-from-scratch process takes about 15 minutes. I kid you not! And below I will show you it step-by-step (based on <a href="https://docs.microsoft.com/en-us/aspnet/core/publishing/linuxproduction">this instruction</a>) - how to host a .NET Core MVC application with <a href="https://www.nginx.com">NGINX</a> and <a href="https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/#kestrel">Kestrel</a> on a Linux server.</p>
+<h1 id="publishing">Publishing</h1>
+<p>So, we have:</p>
+<ul>
+<li>Clean, out-of-the-box, remote Linux server running some Linux</li>
+<li>Some .NET Core MVC application ready for deployment</li>
+</ul>
+<p>Connect to your server via SSH:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ssh root@YOUR-SERVER-IP</code></pre></div>
+<p>Install <a href="https://dotnet.microsoft.com/download">.NET Core</a> for Linux on your server and check if it works:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ dotnet --info
+.NET Core SDK <span style="color:#f92672">(</span>reflecting any global.json<span style="color:#f92672">)</span>:
+ Version:   2.2.402
+ Commit:    c7f2f96116
+
+Runtime Environment:
+ OS Name:     ubuntu
+ OS Version:  18.04
+ OS Platform: Linux
+ RID:         ubuntu.18.04-x64
+ Base Path:   /usr/share/dotnet/sdk/2.2.402/
+
+Host <span style="color:#f92672">(</span>useful <span style="color:#66d9ef">for</span> support<span style="color:#f92672">)</span>:
+  Version: 2.2.7
+  Commit:  b1e29ae826
+
+.NET Core SDKs installed:
+  2.2.402 <span style="color:#f92672">[</span>/usr/share/dotnet/sdk<span style="color:#f92672">]</span>
+
+.NET Core runtimes installed:
+  Microsoft.AspNetCore.All 2.2.7 <span style="color:#f92672">[</span>/usr/share/dotnet/shared/Microsoft.AspNetCore.All<span style="color:#f92672">]</span>
+  Microsoft.AspNetCore.App 2.2.7 <span style="color:#f92672">[</span>/usr/share/dotnet/shared/Microsoft.AspNetCore.App<span style="color:#f92672">]</span>
+  Microsoft.NETCore.App 2.2.7 <span style="color:#f92672">[</span>/usr/share/dotnet/shared/Microsoft.NETCore.App<span style="color:#f92672">]</span></code></pre></div>
+<p>On your local machine publish your project by running the following from the project folder:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ dotnet publish <span style="color:#f92672">-</span>c <span style="color:#a6e22e">Release</span> <span style="color:#f92672">-</span>o <span style="color:#f92672">../</span><span style="color:#a6e22e">_deploy</span></code></pre></div>
+<p>Create a website folder on the server:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ mkdir -p /var/www/YOUR-WEBSITE</code></pre></div>
+<p>And copy the contents of <code>../_deploy</code> from your machine to <code>/var/www/YOUR-WEBSITE/</code> on the server.</p>
+<p>Change the owner of your website&rsquo;s directory so it would belong to NGINX&rsquo;s user (<code>www-data</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ chown -R www-data:www-data /var/www/</code></pre></div>
+<h1 id="systemd-service">systemd service</h1>
+<p>Create a <code>systemd</code> config for <code>Kestrel</code> instance:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ nano /etc/systemd/system/kestrel-YOUR-WEBSITE.service</code></pre></div>
+<p>Edit it like that:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">Unit</span><span style="color:#f92672">]</span>
+<span style="color:#a6e22e">Description</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">WEBSITE</span>
+
+<span style="color:#f92672">[</span><span style="color:#66d9ef">Service</span><span style="color:#f92672">]</span>
+<span style="color:#a6e22e">WorkingDirectory</span><span style="color:#f92672">=/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>www<span style="color:#f92672">/</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">WEBSITE</span><span style="color:#f92672">/</span>
+<span style="color:#a6e22e">ExecStart</span><span style="color:#f92672">=/</span>usr<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>dotnet <span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>www<span style="color:#f92672">/</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">WEBSITE</span><span style="color:#f92672">/</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">WEBSITE</span><span style="color:#f92672">.</span>dll
+<span style="color:#a6e22e">Restart</span><span style="color:#66d9ef">=</span>always
+<span style="color:#a6e22e">RestartSec</span><span style="color:#66d9ef">=</span><span style="color:#ae81ff">10</span>
+<span style="color:#a6e22e">SyslogIdentifier</span><span style="color:#66d9ef">=</span>dotnet<span style="color:#f92672">-</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">WEBSITE</span>
+<span style="color:#a6e22e">User</span><span style="color:#66d9ef">=</span>www<span style="color:#f92672">-</span>data
+<span style="color:#a6e22e">Environment</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">ASPNETCORE_ENVIRONMENT</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Production</span>
+
+<span style="color:#f92672">[</span><span style="color:#66d9ef">Install</span><span style="color:#f92672">]</span>
+<span style="color:#a6e22e">WantedBy</span><span style="color:#66d9ef">=</span>multi<span style="color:#f92672">-</span>user<span style="color:#f92672">.</span>target</code></pre></div>
+<p>Enable and start it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ systemctl enable kestrel-YOUR-WEBSITE.service
+$ systemctl start kestrel-YOUR-WEBSITE.service</code></pre></div>
+<p>You can check its status:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ systemctl status kestrel-YOUR-WEBSITE.service</code></pre></div>
+<p>If everything is okay, then it will show something like that:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">● kestrel-YOUR-WEBSITE.service - YOUR-WEBSITE
+   Loaded: loaded <span style="color:#f92672">(</span>/etc/systemd/system/kestrel-YOUR-WEBSITE.service; enabled; vendor preset: enabled<span style="color:#f92672">)</span>
+   Active: active <span style="color:#f92672">(</span>running<span style="color:#f92672">)</span> since Thu 2017-08-10 11:30:09 UTC; 1s ago
+ Main PID: <span style="color:#ae81ff">15628</span> <span style="color:#f92672">(</span>dotnet<span style="color:#f92672">)</span>
+    Tasks: <span style="color:#ae81ff">14</span>
+   Memory: 25.4M
+      CPU: 1.380s
+   CGroup: /system.slice/kestrel-YOUR-WEBSITE.service
+           └─15628 /usr/bin/dotnet /var/www/YOUR-WEBSITE/YOUR-WEBSITE.dll</code></pre></div>
+<h1 id="nginx">NGINX</h1>
+<p>Install NGINX:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ apt-get install nginx</code></pre></div>
+<p>Now, there are 2 options how NGINX can send requests to Kestrel: via <a href="#tcp">TCP</a> or via <a href="#unix-socket">Unix socket</a>.</p>
+<h2 id="tcp">TCP</h2>
+<p>Your <code>Program.cs</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> IWebHostBuilder CreateWebHostBuilder(<span style="color:#66d9ef">string</span>[] args) =&gt;
+    WebHost.CreateDefaultBuilder(args)
+        .UseUrls(<span style="color:#e6db74">&#34;http://localhost:5000/&#34;</span>)
+        .UseStartup&lt;Startup&gt;();
+
+<span style="color:#75715e">// ...
+</span></code></pre></div>
+<p>NGINX config (<code>/etc/nginx/sites-available/default</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">server</span> {
+    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span>;
+    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span>;
+
+    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+            <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://localhost:5000</span>;
+            <span style="color:#f92672">proxy_http_version</span> <span style="color:#ae81ff">1</span><span style="color:#e6db74">.1</span>;
+            <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Upgrade</span> $http_upgrade;
+            <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Connection</span> <span style="color:#e6db74">keep-alive</span>;
+            <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Host</span> $host;
+            <span style="color:#f92672">proxy_cache_bypass</span> $http_upgrade;
+            <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-For</span> $proxy_add_x_forwarded_for;
+            <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-Proto</span> $scheme;
+    }
+}
+
+<span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#66d9ef">...</span></code></pre></div>
+<h2 id="unix-socket">Unix socket</h2>
+<p>This should be better in terms of performance as there is no TCP overhead. Even if there was no performance impact, on a local machine &ldquo;talking&rdquo; through Unix socket simply make more sense than communicating over TCP.</p>
+<p>Your <code>Program.cs</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> IWebHostBuilder CreateWebHostBuilder(<span style="color:#66d9ef">string</span>[] args) =&gt;
+    WebHost.CreateDefaultBuilder(args)
+        .UseLibuv()
+        .ConfigureKestrel(
+            (context, serverOptions) =&gt;
+            {
+                <span style="color:#75715e">// /var/www/YOUR-WEBSITE
+</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">string</span> root = Path.GetDirectoryName(
+                    System.Reflection.Assembly.GetExecutingAssembly().Location
+                );
+                <span style="color:#75715e">// if we are (behind NGINX) and on Linux, then can use sockets
+</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">if</span> (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    <span style="color:#75715e">// path to socket has to be absolute
+</span><span style="color:#75715e"></span>                    <span style="color:#66d9ef">string</span> socket = Path.Combine(root, <span style="color:#e6db74">&#34;kestrel.sock&#34;</span>);
+                    serverOptions.ListenUnixSocket(socket);
+                }
+                <span style="color:#66d9ef">else</span>
+                {
+                    serverOptions.Listen(IPAddress.Loopback, <span style="color:#ae81ff">5000</span>);
+                }
+            }
+        )
+        .UseStartup&lt;Startup&gt;();
+
+<span style="color:#75715e">// ...
+</span></code></pre></div>
+<p>For that to work you need to add <a href="https://www.nuget.org/packages/Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv/">Transport.Libuv</a> package, so you&rsquo;ll have the following in your <code>.csproj</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#f92672">&lt;PackageReference</span> <span style="color:#a6e22e">Include=</span><span style="color:#e6db74">&#34;Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv&#34;</span> <span style="color:#a6e22e">Version=</span><span style="color:#e6db74">&#34;2.2.0&#34;</span> <span style="color:#f92672">/&gt;</span></code></pre></div>
+<p>NGINX config in this case:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">location</span> <span style="color:#e6db74">/</span> {
+    <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://unix:/var/www/YOUR-WEBSITE/kestrel.sock</span>;
+    <span style="color:#f92672">proxy_http_version</span> <span style="color:#ae81ff">1</span><span style="color:#e6db74">.1</span>;
+    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Upgrade</span> $http_upgrade;
+    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Connection</span> <span style="color:#e6db74">keep-alive</span>;
+    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Host</span> $host;
+    <span style="color:#f92672">proxy_cache_bypass</span> $http_upgrade;
+    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-For</span> $proxy_add_x_forwarded_for;
+    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-Proto</span> $scheme;
+}
+
+<span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#66d9ef">...</span></code></pre></div>
+<p>Save it and restart NGINX:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ systemctl restart nginx.service</code></pre></div>
+<p>Now open your web-browser and go to http://YOUR-SERVER-IP/. It fucking works!</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/dotnet/">dotnet</a><a class="tag" href="https://retifrav.github.io/tags/linux/">linux</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a><a class="tag" href="https://retifrav.github.io/tags/devops/">devops</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <script>
+  var id =  37 ;
+
+  if (id)
+  {
+    let url = "https://github.com/retifrav/retifrav.github.io/issues/".concat(id);
+    let api_url = "https://api.github.com/repos/retifrav/retifrav.github.io/issues/".concat(id, "/comments");
+    
+    var commentsDiv = document.getElementById("comments");
+
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", api_url);
+    xhr.setRequestHeader("Accept", "application/vnd.github.v3.html+json");
+    xhr.send();
+
+    xhr.onload = function()
+    {
+      if (xhr.status != 200)
+      {
+        let errorText = document.createElement("p");
+        errorText.innerHTML = "<i>Comments for this post yet are not opened yet (or you have GitHub scripts disabled).</i>";
+        commentsDiv.appendChild(errorText);
+      }
+      else
+      {
+        let comments = xhr.response;
+
+        let mainHeader = document.createElement("h2");
+        mainHeader.innerHTML = "Comments: ".concat(comments.length);
+        commentsDiv.appendChild(mainHeader);
+
+        let issueLink = document.createElement("p");
+        issueLink.innerHTML = "<i>You can leave a comment using this <a href='".concat(url, "'>GitHub issue</a>.</i>");
+        commentsDiv.appendChild(issueLink);
+        
+        comments.forEach(function(comment)
+        {
+            let commentContent = document.createElement("div");
+            commentContent.setAttribute('class', 'gh-comment')
+            commentContent.innerHTML = "".concat(
+                "<div class='gh-header'>",
+                  "<img src='", comment.user.avatar_url, "' />",
+                  "<div style='margin:auto 0;'>",
+                    "<b><a class='gh-username' href='", comment.user.html_url, "'>", comment.user.login, "</a></b>",
+                    " commented at <em>", new Date(comment.created_at), "</em>",
+                  "</div>",
+                "</div>",
+                "<div class='gh-body'>",
+                  comment.body_html,
+                "</div>"
+            );
+            commentsDiv.appendChild(commentContent);
+        });
+      }
+    };
+
+    xhr.onerror = function()
+    {
+      let errorText = document.createElement("p");
+      errorText.innerHTML = "<i>Some error loading comments.</i>";
+      commentsDiv.appendChild(errorText);
+    };
+  }
+</script>
+
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

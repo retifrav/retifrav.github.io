@@ -1,0 +1,1187 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Data compression in IIS, Apache and NGINX | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Data compression in IIS, Apache and NGINX" />
+<meta property="og:description" content="Some of our users are residing in areas with very slow or/and metered internet connection, so the amount of data transferred is very important to them. And since web servers do support data compression, enabling it can certainly improve the situation for such users.
+
+
+
+    
+
+
+
+We took IIS, Apache and NGINX and ran some tests to see how compression is configured in each of them and to compare how well do they do it." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2020/08/12/compression-in-iis-apache-nginx/" />
+<meta property="article:published_time" content="2020-08-12T15:27:42+02:00" />
+<meta property="article:modified_time" content="2020-08-12T15:27:42+02:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Data compression in IIS, Apache and NGINX</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2020-08-12 15:27:42 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 9 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>Some of our users are residing in areas with very slow or/and metered internet connection, so the amount of data transferred is very important to them. And since web servers do support data compression, enabling it can certainly improve the situation for such users.</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2020/08/12/compression-in-iis-apache-nginx/images/web-servers-compression.png" alt="Web servers compression"/>
+
+</div>
+
+<p>We took IIS, Apache and NGINX and ran some tests to see how compression is configured in each of them and to compare how well do they do it.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#environment">Environment</a>
+      <ul>
+        <li><a href="#servers">Servers</a>
+          <ul>
+            <li><a href="#data">Data</a></li>
+          </ul>
+        </li>
+        <li><a href="#client">Client</a></li>
+      </ul>
+    </li>
+    <li><a href="#how-to-enable-compression">How to enable compression</a>
+      <ul>
+        <li><a href="#iis">IIS</a></li>
+        <li><a href="#apache">Apache</a></li>
+        <li><a href="#nginx">NGINX</a></li>
+      </ul>
+    </li>
+    <li><a href="#testing-web-servers">Testing web servers</a>
+      <ul>
+        <li><a href="#about-compression-level">About compression level</a></li>
+        <li><a href="#results">Results</a>
+          <ul>
+            <li><a href="#windows">Windows</a>
+              <ul>
+                <li><a href="#iis-1">IIS</a>
+                  <ul>
+                    <li><a href="#no-compression">No compression</a></li>
+                    <li><a href="#with-compression">With compression</a></li>
+                  </ul>
+                </li>
+                <li><a href="#apache-1">Apache</a>
+                  <ul>
+                    <li><a href="#no-compression-1">No compression</a></li>
+                    <li><a href="#with-compression-1">With compression</a></li>
+                  </ul>
+                </li>
+                <li><a href="#nginx-1">NGINX</a>
+                  <ul>
+                    <li><a href="#no-compression-2">No compression</a></li>
+                    <li><a href="#with-compression-2">With compression</a></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+            <li><a href="#linux">Linux</a>
+              <ul>
+                <li><a href="#apache-2">Apache</a>
+                  <ul>
+                    <li><a href="#no-compression-3">No compression</a></li>
+                    <li><a href="#with-compression-3">With compression</a></li>
+                  </ul>
+                </li>
+                <li><a href="#nginx-2">NGINX</a>
+                  <ul>
+                    <li><a href="#no-compression-4">No compression</a></li>
+                    <li><a href="#with-compression-4">With compression</a></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li><a href="#conclusion">Conclusion</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h1 id="environment">Environment</h1>
+<p>The tests were performed on Windows (<em>IIS, Apache and NGINX</em>) and on Linux (<em>Apache and NGINX</em>) servers. The servers hardware was pretty much the same (<em>virtual machines with similar configuration</em>).</p>
+<p>The web servers were ran one after another, being binded to the same <code>80</code> port.</p>
+<h2 id="servers">Servers</h2>
+<p>Windows:</p>
+<ul>
+<li>Windows 10.0.17763.1369
+<ul>
+<li>IIS 10.0.17763.1</li>
+<li>Apache 2.4.46</li>
+<li>NGINX 1.18.0</li>
+</ul>
+</li>
+<li>NTFS</li>
+</ul>
+<p>Linux:</p>
+<ul>
+<li>Ubuntu 18.04.5 LTS
+<ul>
+<li>Apache 2.4.29</li>
+<li>NGINX 1.19.1</li>
+</ul>
+</li>
+<li>ext4</li>
+</ul>
+<h3 id="data">Data</h3>
+<p>The data for tests was a web application with Emscripten/WASM and binary data (<em>3D visualization scene and models</em>), 876 MB in total.</p>
+<h2 id="client">Client</h2>
+<ul>
+<li>Windows 10.0.18363.997
+<ul>
+<li>Microsoft Edge Dev 86.0.594.1
+<ul>
+<li>caching was disabled</li>
+<li>the page was reloaded for every test with &ldquo;Empty Cache and Hard Refresh&rdquo; option</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="how-to-enable-compression">How to enable compression</h1>
+<h2 id="iis">IIS</h2>
+<p>In IIS Manager select the website you want to enable compression for (<em>or just the <code>Default Web Site</code></em>), open <code>Compression</code> item and check <code>Enable static content compression</code>.</p>
+<p>Now open <code>Configuration Editor</code> and edit the following sections there.</p>
+<p>Section <a href="https://docs.microsoft.com/en-us/iis/configuration/system.webserver/serverruntime">system.webServer/serverRuntime</a>:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2020/08/12/compression-in-iis-apache-nginx/images/iis-server-runtime.jpg" alt="IIS Manager, serverRuntime"/>
+
+</div>
+
+<ul>
+<li>click the <code>Unlock Section</code></li>
+<li>set <code>frequentHitThreshold</code> to <code>1</code>. This turned out to be an important setting as with values above <code>1</code> the IIS will be trying to be clever and compress only the responses he thinks are for frequent enough requests</li>
+<li>change <code>frequentHitTimePeriod</code> from <code>00:00:10</code> to something like <code>10000.00:00:00</code> (<em>but perhaps setting <code>frequentHitThreshold</code> to <code>1</code> is enough</em>)</li>
+</ul>
+<p>Section <a href="https://docs.microsoft.com/en-us/iis/configuration/system.webserver/httpCompression/">system.webServer/httpCompression</a>:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2020/08/12/compression-in-iis-apache-nginx/images/iis-http-compression.jpg" alt="IIS Manager, httpCompression"/>
+
+</div>
+
+<ul>
+<li>increase the <code>maxDiskSpaceUsage</code>, as the default value of 100 MB is way too small when you expect to serve more than 800 MB. As I understood, that is the space that IIS will be using for storing already compressed data (<em>there will be more information about this later</em>)</li>
+<li>change <code>staticCompressionIgnoreHitFrequency</code> from <code>False</code> to <code>True</code></li>
+<li>add <code>application/octet-stream</code> and <code>application/wasm</code> to <code>staticTypes</code></li>
+</ul>
+<p>The same configuration can be set directly in the root <code>web.config</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#75715e">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
+<span style="color:#f92672">&lt;configuration&gt;</span>
+    <span style="color:#f92672">&lt;system.webServer&gt;</span>
+        <span style="color:#f92672">&lt;urlCompression</span> <span style="color:#a6e22e">doStaticCompression=</span><span style="color:#e6db74">&#34;true&#34;</span> <span style="color:#f92672">/&gt;</span>
+        <span style="color:#f92672">&lt;serverRuntime</span> <span style="color:#a6e22e">frequentHitThreshold=</span><span style="color:#e6db74">&#34;1&#34;</span> <span style="color:#a6e22e">frequentHitTimePeriod=</span><span style="color:#e6db74">&#34;10000.00:00:00&#34;</span> <span style="color:#f92672">/&gt;</span>
+        <span style="color:#f92672">&lt;httpCompression</span> <span style="color:#a6e22e">maxDiskSpaceUsage=</span><span style="color:#e6db74">&#34;10000&#34;</span> <span style="color:#a6e22e">staticCompressionIgnoreHitFrequency=</span><span style="color:#e6db74">&#34;true&#34;</span> <span style="color:#a6e22e">staticCompressionEnableCpuUsage=</span><span style="color:#e6db74">&#34;90&#34;</span><span style="color:#f92672">&gt;</span>
+            <span style="color:#f92672">&lt;staticTypes&gt;</span>
+                <span style="color:#f92672">&lt;add</span> <span style="color:#a6e22e">mimeType=</span><span style="color:#e6db74">&#34;application/octet-stream&#34;</span> <span style="color:#a6e22e">enabled=</span><span style="color:#e6db74">&#34;true&#34;</span> <span style="color:#f92672">/&gt;</span>
+                <span style="color:#f92672">&lt;add</span> <span style="color:#a6e22e">mimeType=</span><span style="color:#e6db74">&#34;application/wasm&#34;</span> <span style="color:#a6e22e">enabled=</span><span style="color:#e6db74">&#34;true&#34;</span> <span style="color:#f92672">/&gt;</span>
+            <span style="color:#f92672">&lt;/staticTypes&gt;</span>
+        <span style="color:#f92672">&lt;/httpCompression&gt;</span>
+    <span style="color:#f92672">&lt;/system.webServer&gt;</span>
+<span style="color:#f92672">&lt;/configuration&gt;</span></code></pre></div>
+<h2 id="apache">Apache</h2>
+<p>Edit the config (<code>c:\path\to\apache\conf\httpd.conf</code> or <code>/etc/apache2/apache2.conf</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-apache" data-lang="apache"><span style="color:#75715e"># ...</span>
+
+<span style="color:#75715e"># most likely you&#39;ll need to enable these modules only on Windows,</span>
+<span style="color:#75715e"># as on Linux they will be enabled by default</span>
+LoadModule deflate_module modules/mod_deflate.so
+LoadModule filter_module modules/mod_filter.so
+
+<span style="color:#75715e"># ...</span>
+
+<span style="color:#f92672">&lt;IfModule</span> <span style="color:#e6db74">mod_deflate.c</span><span style="color:#f92672">&gt;</span>
+  DeflateCompressionLevel <span style="color:#ae81ff">6</span>
+  AddOutputFilterByType DEFLATE application/javascript
+  AddOutputFilterByType DEFLATE application/rss+xml
+  AddOutputFilterByType DEFLATE application/xml
+  AddOutputFilterByType DEFLATE font/opentype
+  AddOutputFilterByType DEFLATE font/otf
+  AddOutputFilterByType DEFLATE font/ttf
+  AddOutputFilterByType DEFLATE image/svg+xml
+  AddOutputFilterByType DEFLATE text/css
+  AddOutputFilterByType DEFLATE text/html
+  AddOutputFilterByType DEFLATE text/javascript
+  AddOutputFilterByType DEFLATE text/plain
+  AddOutputFilterByType DEFLATE text/xml
+  AddOutputFilterByType DEFLATE application/wasm
+  AddOutputFilterByType DEFLATE application/octet-stream
+<span style="color:#f92672">&lt;/IfModule&gt;</span></code></pre></div>
+<h2 id="nginx">NGINX</h2>
+<p>Edit the config (<code>c:\path\to\nginx\conf\nginx.conf</code> or <code>/etc/nginx/nginx.conf</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">worker_processes</span> <span style="color:#ae81ff">4</span>;
+
+<span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">http</span> {
+
+    <span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span>
+    <span style="color:#f92672">gzip</span> <span style="color:#66d9ef">on</span>;
+    <span style="color:#f92672">gzip_types</span> <span style="color:#e6db74">text/plain</span> <span style="color:#e6db74">text/css</span> <span style="color:#e6db74">application/json</span> <span style="color:#e6db74">application/javascript</span> <span style="color:#e6db74">text/xml</span> <span style="color:#e6db74">application/xml</span> <span style="color:#e6db74">application/xml+rss</span> <span style="color:#e6db74">application/wasm</span> <span style="color:#e6db74">application/octet-stream</span>;
+    <span style="color:#f92672">gzip_min_length</span> <span style="color:#ae81ff">10240</span>;
+    <span style="color:#f92672">gzip_comp_level</span> <span style="color:#ae81ff">6</span>;
+    <span style="color:#f92672">gzip_buffers</span> <span style="color:#ae81ff">16</span> <span style="color:#ae81ff">8k</span>;
+    <span style="color:#75715e">#gzip_proxied no-cache no-store private expired auth;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">#gzip_vary on;
+</span><span style="color:#75715e"></span>
+    <span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span>}</code></pre></div>
+<p>And <code>mime.types</code> just in case:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">types</span> {
+    <span style="color:#f92672">text/html</span>            <span style="color:#e6db74">html</span> <span style="color:#e6db74">htm</span> <span style="color:#e6db74">shtml</span>;
+    <span style="color:#f92672">text/css</span>             <span style="color:#e6db74">css</span>;
+    <span style="color:#75715e"># ...                ...
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">application/wasm</span>     <span style="color:#e6db74">wasm</span>;
+}</code></pre></div>
+<h1 id="testing-web-servers">Testing web servers</h1>
+<p>Here&rsquo;s how the tests were ran. The web application was reloaded 5 times first with <u>no compression enabled</u> on web server, and then again reloaded 5 times but this time with <u>compression enabled</u> on web server.</p>
+<p>The following things were measured:</p>
+<ul>
+<li>total amount of data transferred</li>
+<li>the time to load the page and all the associated data (all the 3D models on the scene)</li>
+<li>the CPU utilization during compression</li>
+</ul>
+<p>Just in case, here&rsquo;s a screenshot of testing in progress:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2020/08/12/compression-in-iis-apache-nginx/images/developer-tools-requests.png" alt="HTTP requests in Edge Developer tools"/>
+
+</div>
+
+<p>And here goes a single request for binary data:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2020/08/12/compression-in-iis-apache-nginx/images/developer-tools-request-details.png" alt="HTTPS request details in Edge Developer tools"/>
+
+</div>
+
+<h2 id="about-compression-level">About compression level</h2>
+<p>Naturally, you will face a tradeoff between compression ratio and compression time. This is controlled by the compression level: the higher the level, the smaller will be the transferred data, but also the longer it will take to serve the data (<em>though it also depends on the connection speed, the amount of files and the latency</em>) and the higher will be the CPU utilization.</p>
+<p>The latter you should definitely keep in mind, as on higher compression levels the CPU load will be very significant, especially when you have a lot of connected clients, and every request needs to be compressed &ldquo;on the fly&rdquo;.</p>
+<p>So if you only care about minimizing the transferred data, then you should try setting higher compression levels. But if the application load time and server performance are more important, then you should lower the compression level.</p>
+<p>While with <a href="http://nginx.org/en/docs/http/ngx_http_gzip_module.html#gzip_comp_level">NGINX</a> and <a href="https://httpd.apache.org/docs/2.4/mod/mod_deflate.html#deflatecompressionlevel">Apache</a> compression level values are fairly easy to find and change, in case of IIS it is <a href="https://docs.microsoft.com/en-us/iis/extensions/iis-compression/using-iis-compression#compression-level">a bit more complicated</a>.</p>
+<h2 id="results">Results</h2>
+<h3 id="windows">Windows</h3>
+<h4 id="iis-1">IIS</h4>
+<h5 id="no-compression">No compression</h5>
+<div style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Requests</th>
+        <th>Transferred, MB</th>
+        <th>Loading time, sec</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>test #1</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>10.79</td>
+      </tr>
+      <tr>
+        <th>test #2</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>10.72</td>
+      </tr>
+      <tr>
+        <th>test #3</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>11.05</td>
+      </tr>
+      <tr>
+        <th>test #4</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>11.04</td>
+      </tr>
+      <tr>
+        <th>test #5</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>11.11</td>
+      </tr>
+      <tr><th colspan="3" style="text-align:right;">average</th><th>10.94</th></tr>
+    </tbody>
+  </table>
+</div>
+<h5 id="with-compression">With compression</h5>
+<p>IIS turned out to be smart enough to store already compressed data for future use, so on first request the data is compressed, but all the consequent requests get already compressed data from the first request! That helps with the load time dramatically and saves a lot of CPU utilization.</p>
+<p>You can check it yourself - find the folder specified in <code>system.webServer/httpCompression/directory</code> parameter (<em>default value should be <code>%SystemDrive%\inetpub\temp\IIS Temporary Compressed Files</code></em>) and watch its contents.</p>
+<p>So with IIS the tests were ran twice, in the following manner.</p>
+<p>First with clearing the folder with pre-compressed data and restarting the website after each full page load:</p>
+<div style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Requests</th>
+        <th>Transferred, MB</th>
+        <th>Loading time, sec</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>test #1</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>38.26</td>
+      </tr>
+      <tr>
+        <th>test #2</th>
+        <td>1683</td>
+        <td>300/876</td>
+        <td>34.37</td>
+      </tr>
+      <tr>
+        <th>test #3</th>
+        <td>1683</td>
+        <td>299/876</td>
+        <td>33.51</td>
+      </tr>
+      <tr>
+        <th>test #4</th>
+        <td>1683</td>
+        <td>300/876</td>
+        <td>33.58</td>
+      </tr>
+      <tr>
+        <th>test #5</th>
+        <td>1683</td>
+        <td>300/876</td>
+        <td>33.31</td>
+      </tr>
+      <tr><th colspan="3" style="text-align:right;">average</th><th>34.61</th></tr>
+    </tbody>
+  </table>
+</div>
+<p>CPU usage was around 85%.</p>
+<p>And then with generating pre-compressing the data on the first load and taking measurements with pre-compressed data:</p>
+<div style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Requests</th>
+        <th>Transferred, MB</th>
+        <th>Loading time, sec</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>test #1</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>9.50</td>
+      </tr>
+      <tr>
+        <th>test #2</th>
+        <td>1682</td>
+        <td>298/876</td>
+        <td>9.63</td>
+      </tr>
+      <tr>
+        <th>test #3</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>9.79</td>
+      </tr>
+      <tr>
+        <th>test #4</th>
+        <td>1682</td>
+        <td>298/876</td>
+        <td>9.91</td>
+      </tr>
+      <tr>
+        <th>test #5</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>9.62</td>
+      </tr>
+      <tr><th colspan="3" style="text-align:right;">average</th><th>9.69</th></tr>
+    </tbody>
+  </table>
+</div>
+<p>No CPU utilization was observed.</p>
+<h4 id="apache-1">Apache</h4>
+<h5 id="no-compression-1">No compression</h5>
+<div style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Requests</th>
+        <th>Transferred, MB</th>
+        <th>Loading time, sec</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>test #1</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>11.20</td>
+      </tr>
+      <tr>
+        <th>test #2</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>11.15</td>
+      </tr>
+      <tr>
+        <th>test #3</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>11.28</td>
+      </tr>
+      <tr>
+        <th>test #4</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>11.26</td>
+      </tr>
+      <tr>
+        <th>test #5</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>11.29</td>
+      </tr>
+      <tr><th colspan="3" style="text-align:right;">average</th><th>11.24</th></tr>
+    </tbody>
+  </table>
+</div>
+<h5 id="with-compression-1">With compression</h5>
+<div style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Requests</th>
+        <th>Transferred, MB</th>
+        <th>Loading time, sec</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>test #1</th>
+        <td>1683</td>
+        <td>306/876</td>
+        <td>21.29</td>
+      </tr>
+      <tr>
+        <th>test #2</th>
+        <td>1683</td>
+        <td>306/876</td>
+        <td>21.83</td>
+      </tr>
+      <tr>
+        <th>test #3</th>
+        <td>1683</td>
+        <td>306/876</td>
+        <td>21.87</td>
+      </tr>
+      <tr>
+        <th>test #4</th>
+        <td>1683</td>
+        <td>306/876</td>
+        <td>22.19</td>
+      </tr>
+      <tr>
+        <th>test #5</th>
+        <td>1683</td>
+        <td>306/876</td>
+        <td>21.52</td>
+      </tr>
+      <tr><th colspan="3" style="text-align:right;">average</th><th>21.74</th></tr>
+    </tbody>
+  </table>
+</div>
+<p>CPU usage was around 82%.</p>
+<h4 id="nginx-1">NGINX</h4>
+<h5 id="no-compression-2">No compression</h5>
+<div style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Requests</th>
+        <th>Transferred, MB</th>
+        <th>Loading time, sec</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>test #1</th>
+        <td>1682</td>
+        <td>876/876</td>
+        <td>12.08</td>
+      </tr>
+      <tr>
+        <th>test #2</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>11.40</td>
+      </tr>
+      <tr>
+        <th>test #3</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>11.50</td>
+      </tr>
+      <tr>
+        <th>test #4</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>11.75</td>
+      </tr>
+      <tr>
+        <th>test #5</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>11.52</td>
+      </tr>
+      <tr><th colspan="3" style="text-align:right;">average</th><th>11.65</th></tr>
+    </tbody>
+  </table>
+</div>
+<h5 id="with-compression-2">With compression</h5>
+<p>Surprisingly, <code>1</code> worker or <code>4</code> workers didn&rsquo;t make any difference (<em>you&rsquo;ll see why that&rsquo;s important later in the Linux tests</em>).</p>
+<div style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Requests</th>
+        <th>Transferred, MB</th>
+        <th>Loading time, sec</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>test #1</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>56.89</td>
+      </tr>
+      <tr>
+        <th>test #2</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>57.90</td>
+      </tr>
+      <tr>
+        <th>test #3</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>56.91</td>
+      </tr>
+      <tr>
+        <th>test #4</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>57.51</td>
+      </tr>
+      <tr>
+        <th>test #5</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>57.47</td>
+      </tr>
+      <tr><th colspan="3" style="text-align:right;">average</th><th>57.34</th></tr>
+    </tbody>
+  </table>
+</div>
+<p>And CPU usage was around 28%. That is also very different from what you&rsquo;ll see later on Linux.</p>
+<h3 id="linux">Linux</h3>
+<h4 id="apache-2">Apache</h4>
+<h5 id="no-compression-3">No compression</h5>
+<div style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Requests</th>
+        <th>Transferred, MB</th>
+        <th>Loading time, sec</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>test #1</th>
+        <td>1683</td>
+        <td>874/876</td>
+        <td>10.63</td>
+      </tr>
+      <tr>
+        <th>test #2</th>
+        <td>1683</td>
+        <td>874/876</td>
+        <td>10.66</td>
+      </tr>
+      <tr>
+        <th>test #3</th>
+        <td>1683</td>
+        <td>874/876</td>
+        <td>10.56</td>
+      </tr>
+      <tr>
+        <th>test #4</th>
+        <td>1683</td>
+        <td>874/876</td>
+        <td>10.31</td>
+      </tr>
+      <tr>
+        <th>test #5</th>
+        <td>1683</td>
+        <td>874/876</td>
+        <td>10.74</td>
+      </tr>
+      <tr><th colspan="3" style="text-align:right;">average</th><th>10.58</th></tr>
+    </tbody>
+  </table>
+</div>
+<p>I have no idea where 2 MB (<code>874/876</code>) went to, but that&rsquo;s what browser reported to me.</p>
+<h5 id="with-compression-3">With compression</h5>
+<div style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Requests</th>
+        <th>Transferred, MB</th>
+        <th>Loading time, sec</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>test #1</th>
+        <td>1683</td>
+        <td>306/876</td>
+        <td>18.91</td>
+      </tr>
+      <tr>
+        <th>test #2</th>
+        <td>1683</td>
+        <td>306/876</td>
+        <td>19.16</td>
+      </tr>
+      <tr>
+        <th>test #3</th>
+        <td>1683</td>
+        <td>306/876</td>
+        <td>18.93</td>
+      </tr>
+      <tr>
+        <th>test #4</th>
+        <td>1683</td>
+        <td>306/876</td>
+        <td>18.99</td>
+      </tr>
+      <tr>
+        <th>test #5</th>
+        <td>1683</td>
+        <td>306/876</td>
+        <td>18.69</td>
+      </tr>
+      <tr><th colspan="3" style="text-align:right;">average</th><th>18.94</th></tr>
+    </tbody>
+  </table>
+</div>
+<p>CPU load was about 75%.</p>
+<h4 id="nginx-2">NGINX</h4>
+<h5 id="no-compression-4">No compression</h5>
+<div style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Requests</th>
+        <th>Transferred, MB</th>
+        <th>Loading time, sec</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>test #1</th>
+        <td>1682</td>
+        <td>876/876</td>
+        <td>10.47</td>
+      </tr>
+      <tr>
+        <th>test #2</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>11.14</td>
+      </tr>
+      <tr>
+        <th>test #3</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>10.92</td>
+      </tr>
+      <tr>
+        <th>test #4</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>11.13</td>
+      </tr>
+      <tr>
+        <th>test #5</th>
+        <td>1683</td>
+        <td>876/876</td>
+        <td>10.74</td>
+      </tr>
+      <tr><th colspan="3" style="text-align:right;">average</th><th>10.88</th></tr>
+    </tbody>
+  </table>
+</div>
+<h5 id="with-compression-4">With compression</h5>
+<p>And here comes the difference with Windows. In case of <code>1</code> worker, the CPU load is 100% and the results are:</p>
+<div style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Requests</th>
+        <th>Transferred, MB</th>
+        <th>Loading time, sec</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>test #1</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>49.69</td>
+      </tr>
+      <tr>
+        <th>test #2</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>49.42</td>
+      </tr>
+      <tr>
+        <th>test #3</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>49.85</td>
+      </tr>
+      <tr>
+        <th>test #4</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>49.49</td>
+      </tr>
+      <tr>
+        <th>test #5</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>49.25</td>
+      </tr>
+      <tr><th colspan="3" style="text-align:right;">average</th><th>49.54</th></tr>
+    </tbody>
+  </table>
+</div>
+<p>And with <code>4</code> workers the CPU load is 75% and the results are:</p>
+<div style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Requests</th>
+        <th>Transferred, MB</th>
+        <th>Loading time, sec</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>test #1</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>18.94</td>
+      </tr>
+      <tr>
+        <th>test #2</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>19.10</td>
+      </tr>
+      <tr>
+        <th>test #3</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>18.68</td>
+      </tr>
+      <tr>
+        <th>test #4</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>19.49</td>
+      </tr>
+      <tr>
+        <th>test #5</th>
+        <td>1683</td>
+        <td>298/876</td>
+        <td>18.31</td>
+      </tr>
+      <tr><th colspan="3" style="text-align:right;">average</th><th>18.90</th></tr>
+    </tbody>
+  </table>
+</div>
+<p>So either there is a bug with NGINX workers on Windows, or it&rsquo;s either of the two.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Here&rsquo;s the final table with everything in one place:</p>
+<div style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Platform</th>
+        <th>Web server</th>
+        <th>No compression, sec</th>
+        <th>With compression, sec</th>
+        <th>Transferred, MB</th>
+        <th>CPU utilization</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Windows</td>
+        <td>IIS</td>
+        <td>10.94</td>
+        <td>9.69</td>
+        <td>298</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>Windows</td>
+        <td>Apache</td>
+        <td>11.24</td>
+        <td>21.74</td>
+        <td>306</td>
+        <td>82%</td>
+      </tr>
+      <tr>
+        <td>Windows</td>
+        <td>NGINX</td>
+        <td>11.65</td>
+        <td>57.34</td>
+        <td>298</td>
+        <td>28%</td>
+      </tr>
+      <tr>
+        <td>Linux</td>
+        <td>Apache</td>
+        <td>10.58</td>
+        <td>18.94</td>
+        <td>306</td>
+        <td>75%</td>
+      </tr>
+      <tr>
+        <td>Linux</td>
+        <td>NGINX</td>
+        <td>10.88</td>
+        <td>18.90</td>
+        <td>298</td>
+        <td>75%</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p>As it turns out, on Windows IIS provides the best results - simply because it compresses the data only once, on first request, and then all the consequent requests get already pre-compressed data, so you have everything: minimal amount of transferred data, faster loading and barely any CPU utilization.</p>
+<p>Neither NGINX nor Apache have this, as they compress the data &ldquo;on the fly&rdquo; for every request and do not store and re-use already compressed data from previous requests. Even though it is certainly possible to manually compress the data beforehand, that would require some additional effort and further configuration tweaking, while with IIS the whole thing &ldquo;just works&rdquo; almost out of the box.</p>
+<p>On Linux platform, however, IIS is not present, so the choice is between NGINX and Apache. From the tests results above NGINX has shown a bit higher compression ratio, so if you are after minimizing the transferred data, NGINX might be a better choice for bigger datasets, though I guess the only way to say for sure is by performing your own tests with your particular data.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/devops/">devops</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a><a class="tag" href="https://retifrav.github.io/tags/windows/">windows</a><a class="tag" href="https://retifrav.github.io/tags/linux/">linux</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <script>
+  var id =  51 ;
+
+  if (id)
+  {
+    let url = "https://github.com/retifrav/retifrav.github.io/issues/".concat(id);
+    let api_url = "https://api.github.com/repos/retifrav/retifrav.github.io/issues/".concat(id, "/comments");
+    
+    var commentsDiv = document.getElementById("comments");
+
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", api_url);
+    xhr.setRequestHeader("Accept", "application/vnd.github.v3.html+json");
+    xhr.send();
+
+    xhr.onload = function()
+    {
+      if (xhr.status != 200)
+      {
+        let errorText = document.createElement("p");
+        errorText.innerHTML = "<i>Comments for this post yet are not opened yet (or you have GitHub scripts disabled).</i>";
+        commentsDiv.appendChild(errorText);
+      }
+      else
+      {
+        let comments = xhr.response;
+
+        let mainHeader = document.createElement("h2");
+        mainHeader.innerHTML = "Comments: ".concat(comments.length);
+        commentsDiv.appendChild(mainHeader);
+
+        let issueLink = document.createElement("p");
+        issueLink.innerHTML = "<i>You can leave a comment using this <a href='".concat(url, "'>GitHub issue</a>.</i>");
+        commentsDiv.appendChild(issueLink);
+        
+        comments.forEach(function(comment)
+        {
+            let commentContent = document.createElement("div");
+            commentContent.setAttribute('class', 'gh-comment')
+            commentContent.innerHTML = "".concat(
+                "<div class='gh-header'>",
+                  "<img src='", comment.user.avatar_url, "' />",
+                  "<div style='margin:auto 0;'>",
+                    "<b><a class='gh-username' href='", comment.user.html_url, "'>", comment.user.login, "</a></b>",
+                    " commented at <em>", new Date(comment.created_at), "</em>",
+                  "</div>",
+                "</div>",
+                "<div class='gh-body'>",
+                  comment.body_html,
+                "</div>"
+            );
+            commentsDiv.appendChild(commentContent);
+        });
+      }
+    };
+
+    xhr.onerror = function()
+    {
+      let errorText = document.createElement("p");
+      errorText.innerHTML = "<i>Some error loading comments.</i>";
+      commentsDiv.appendChild(errorText);
+    };
+  }
+</script>
+
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

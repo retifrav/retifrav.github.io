@@ -1,0 +1,883 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>C# / .NET Core, publish to Facebook | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="C# / .NET Core, publish to Facebook" />
+<meta property="og:description" content="I started with Twitter, and today I&rsquo;ll tell you how I was struggling with publishing to Facebook from C# / .NET Core project. &ldquo;Struggling&rdquo; part is totally on the Facebook side. Потому что это, блядь, нечто.
+
+
+
+    
+
+" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2017/11/25/csharp-dotnet-core-publish-facebook/" />
+<meta property="article:published_time" content="2017-11-25T19:51:23+01:00" />
+<meta property="article:modified_time" content="2017-11-25T19:51:23+01:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">C# / .NET Core, publish to Facebook</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2017-11-25 19:51:23 &#43;0100</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 17 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>I <a href="/blog/2017/11/24/csharp-dotnet-core-publish-twitter/">started</a> with Twitter, and today I&rsquo;ll tell you how I was struggling with publishing to Facebook from C# / .NET Core project. &ldquo;Struggling&rdquo; part is totally on the Facebook side. <em>Потому что это, блядь, нечто.</em></p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/dotnet-core-facebook-logo.png" alt=".NET Core, Facebook, logo"/>
+
+</div>
+
+<p>Now to the details.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#getting-started">Getting started</a></li>
+    <li><a href="#torments-agony-and-misery">Torments, agony and misery</a></li>
+    <li><a href="#how-it-actually-works">How it actually works</a>
+      <ul>
+        <li><a href="#getting-page-access-token">Getting Page Access Token</a></li>
+        <li><a href="#publishing-to-facebook-page">Publishing to Facebook Page</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h1 id="getting-started">Getting started</h1>
+<p>So, we want to post updates from our website to a <a href="https://www.facebook.com/business/products/pages">Facebook page</a>. For that you&rsquo;ll need to have a Facebook account (obviously) and <a href="https://www.facebook.com/pages/create">create a page</a>.</p>
+<p>And you&rsquo;ll need to <a href="https://developers.facebook.com">become a developer</a> and create a <a href="https://developers.facebook.com/apps/">Facebook app</a>. Having done that, go to your app settings and copy the following values from there:</p>
+<ul>
+<li><code>App ID</code>;</li>
+<li><code>App Secret</code>.</li>
+</ul>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-app-settings.png" alt="Facebook app settings"/>
+
+</div>
+
+<p>So far so good.</p>
+<h1 id="torments-agony-and-misery">Torments, agony and misery</h1>
+<p>But then I got heavily misled by the Facebook <a href="https://developers.facebook.com/docs/pages/publishing">documentation</a>. It says, that to publish as a page you need to obtain <a href="https://developers.facebook.com/docs/pages/access-tokens">access tokens</a> first. Okay, let&rsquo;s try to do that:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">var</span> rez = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
+{
+    <span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/YOUR-PAGE-ID?fields=access_token&#34;</span>;
+    <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
+    {
+        <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> http.GetAsync(url);
+        <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+        
+        <span style="color:#66d9ef">return</span> httpContent;
+    }
+});
+<span style="color:#66d9ef">var</span> rezJson = JObject.Parse(rez.Result);
+Console.WriteLine(rezJson);
+</code></pre></div>
+<p>Here&rsquo;s the response:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;error&#34;</span>: {
+    <span style="color:#f92672">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;An access token is required to request this resource.&#34;</span>,
+    <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;OAuthException&#34;</span>,
+    <span style="color:#f92672">&#34;code&#34;</span>: <span style="color:#ae81ff">104</span>,
+    <span style="color:#f92672">&#34;fbtrace_id&#34;</span>: <span style="color:#e6db74">&#34;some/id&#34;</span>
+  }
+}</code></pre></div>
+<p>Right, so we need <strong>some other</strong> access token first? No shit, that&rsquo;s why this request looked so suspiciously simple. But okay, indeed, there is some <a href="https://developers.facebook.com/docs/facebook-login">Facebook Login</a> mentioned there, so let&rsquo;s go there.</p>
+<p>Okay, we&rsquo;re here, where to next?</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-login.png" alt="Facebook Login documentation"/>
+
+</div>
+
+<p>You think, <a href="https://developers.facebook.com/docs/facebook-login/web">Websites or mobile websites</a>? Sounds logical, right? No! Because fuck you, that&rsquo;s why!</p>
+<p><a href="https://developers.facebook.com/docs/facebook-login/access-tokens">Access Tokens</a> is the one you need. Yes, <strong>another</strong>, <strong>different</strong> access tokens page. There you need <a href="https://developers.facebook.com/docs/facebook-login/access-tokens#apptokens">App Access Tokens</a> section. Let&rsquo;s try to get this one:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/oauth/access_token?client_id=YOUR-APP-ID&amp;client_secret=YOUR-APP-SECRET&amp;grant_type=client_credentials&#34;</span>;
+<span style="color:#75715e">// ...
+</span></code></pre></div>
+<p>Okay, this time it actually returned some token:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;access_token&#34;</span>: <span style="color:#e6db74">&#34;GENERATED-APP-ACCESS-TOKEN&#34;</span>,
+  <span style="color:#f92672">&#34;token_type&#34;</span>: <span style="color:#e6db74">&#34;bearer&#34;</span>
+}</code></pre></div>
+<p>Now let&rsquo;s try to repeat the previous request with this token in parameters:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/YOUR-PAGE-ID?fields=access_token&amp;access_token=GENERATED-APP-ACCESS-TOKEN&#34;</span>;
+<span style="color:#75715e">// ...
+</span></code></pre></div>
+<p>Response:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;YOUR-PAGE-ID&#34;</span>
+}</code></pre></div>
+<p>Thanks a lot! That&rsquo;s exactly what I&hellip; see no point in getting! Documentation promised me <code>Page Access Token</code>, but where is it? Here in the response there is only my <code>Page ID</code>, which I already knew.</p>
+<h1 id="how-it-actually-works">How it actually works</h1>
+<p>Okay, I&rsquo;ll spare you from hours of me being raped by the Facebook documentation (<em>блядский кусок говна этот Фейсбук вместе с его пиздовыебанной документацией</em>) and tell you <strong>how it actually works</strong>.</p>
+<p>Those Stack Exchange answers were a great help:</p>
+<ul>
+<li><a href="https://stackoverflow.com/a/39248356/">https://stackoverflow.com/a/39248356/</a></li>
+<li><a href="https://stackoverflow.com/a/28418469/">https://stackoverflow.com/a/28418469/</a></li>
+</ul>
+<p>After reading those, I understood <strong>the biggest confusion of the whole fucking Facebook documentation</strong> - the only way to get <code>Page Access Token</code> is to use <a href="https://developers.facebook.com/tools/explorer/">Graph API Explorer</a>! You cannot get it by performing silly HTTP requests from your HTTP client. So, it would be really helpful, if it was written in the very first sentence at the very first documentation page.</p>
+<p>And the whole <a href="https://developers.facebook.com/docs/facebook-login">Facebook Login</a> thing apparently is supposed to be used for users social logins on websites and applications, and not for requests from servers.</p>
+<p>Okay, let&rsquo;s get this bloody <code>Page Access Token</code>.</p>
+<h2 id="getting-page-access-token">Getting Page Access Token</h2>
+<p>One more surprise for you - Facebook access tokens have expiration time, so they are valid for a particular amount of time: standard ones expire in 2 hours (or less), and extended ones expire in 2 months. Fortunately, the <code>Page Access Token</code>, that we will be getting, has no expiration time (is valid forever).</p>
+<p>Open <a href="https://developers.facebook.com/tools/explorer/">Graph API Explorer</a> and choose your application here:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/gae-choose-application.png" alt="Graph API Explorer, choosing application"/>
+
+</div>
+
+<p>Now click on <code>Get User Access Token</code>:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/gae-user-access-token.png" alt="Graph API Explorer, User Access Token"/>
+
+</div>
+
+<p>A dialog window with lots of checkboxes will appear. Check these two: <code>manage_pages</code> and <code>publish_pages</code>.</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/gae-permissions.png" alt="Graph API Explorer, permissions"/>
+
+</div>
+
+<p>Generated token will appear in the <code>Access Token</code> field. It&rsquo;s a short-term one. <a href="https://developers.facebook.com/tools/debug/accesstoken">Here</a> you can check when it expires:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/short-term-access-token.png" alt="Facebook short-term access token"/>
+
+</div>
+
+<p>You can (probably) continue using Graph API Explorer, but I closed it and did the rest from code.</p>
+<p><a name="short" style="text-decoration:none; color:inherit;">Here&rsquo;s</a> how you get an extended token:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/oauth/access_token?client_id=YOUR-APP-ID&amp;client_secret=YOUR-APP-SECRET&amp;grant_type=fb_exchange_token&amp;fb_exchange_token=YOUR-SHORT-TERM-TOKEN&#34;</span>;
+<span style="color:#75715e">// ...
+</span></code></pre></div>
+<p>Take it from the response:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;access_token&#34;</span>: <span style="color:#e6db74">&#34;EXTENDED-TOKEN&#34;</span>,
+  <span style="color:#f92672">&#34;token_type&#34;</span>: <span style="color:#e6db74">&#34;bearer&#34;</span>,
+  <span style="color:#f92672">&#34;expires_in&#34;</span>: <span style="color:#ae81ff">5183975</span>
+}</code></pre></div>
+<p>Check its expiration time:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/extended-access-token.png" alt="Facebook extended access token"/>
+
+</div>
+
+<p><a name="extended" style="text-decoration:none; color:inherit;">And finally</a> send this request:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/me/accounts?access_token=YOUR-EXTENDED-TOKEN&#34;</span>;
+<span style="color:#75715e">// ...
+</span></code></pre></div>
+<p>Grab your <code>Page Access Token</code> (and also <code>Page ID</code>) from the response:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;data&#34;</span>: [
+    {
+      <span style="color:#f92672">&#34;access_token&#34;</span>: <span style="color:#e6db74">&#34;PAGE-ACCESS-TOKEN&#34;</span>,
+      <span style="color:#f92672">&#34;category&#34;</span>: <span style="color:#e6db74">&#34;Website&#34;</span>,
+      <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;YOUR-PAGE-NAME&#34;</span>,
+      <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;YOUR-PAGE-ID&#34;</span>,
+      <span style="color:#f92672">&#34;perms&#34;</span>: [
+        <span style="color:#e6db74">&#34;ADMINISTER&#34;</span>,
+        <span style="color:#e6db74">&#34;EDIT_PROFILE&#34;</span>,
+        <span style="color:#e6db74">&#34;CREATE_CONTENT&#34;</span>,
+        <span style="color:#e6db74">&#34;MODERATE_CONTENT&#34;</span>,
+        <span style="color:#e6db74">&#34;CREATE_ADS&#34;</span>,
+        <span style="color:#e6db74">&#34;BASIC_ADMIN&#34;</span>
+      ]
+    }
+  ],
+  <span style="color:#f92672">&#34;paging&#34;</span>: {
+    <span style="color:#f92672">&#34;cursors&#34;</span>: {
+      <span style="color:#f92672">&#34;before&#34;</span>: <span style="color:#e6db74">&#34;some&#34;</span>,
+      <span style="color:#f92672">&#34;after&#34;</span>: <span style="color:#e6db74">&#34;some&#34;</span>
+    }
+  }
+}</code></pre></div>
+<p>Check its expiration time:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/page-access-token.png" alt="Facebook Page Access Token"/>
+
+</div>
+
+<p>Expires: never. Hallelujah.</p>
+<h2 id="publishing-to-facebook-page">Publishing to Facebook Page</h2>
+<p>In order to be able to publish stuff to your Facebook page via Facebook API you need to have 2 things;</p>
+<ol>
+<li><code>Page Access Token</code> - we got it on the previous step;</li>
+<li><code>Page ID</code> - same here, but &ldquo;just for fun&rdquo; try to find this one on your Facebook page.</li>
+</ol>
+<p>Publishing a simple text post is pretty easy, I will show this one as well, but I also needed to publish posts with pictures attached, and that&rsquo;s&hellip; something.</p>
+<p>I tried lots of things: uploading attachments, attaching links, some other stuff, but nothing worked the way I wanted. Either nothing was attached, or picture was attached in some clipped form, or it was transformed to a web-link with some sort of a preview. You know, what worked? <a href="https://developers.facebook.com/docs/graph-api/photo-uploads">Uploading a new photo</a> to the page album, getting the ID of the creating post (not the photo ID) and then updating its <a href="https://developers.facebook.com/docs/workplace/integrations/custom-integrations/reference/post">message</a> field! <em>Пиздец.</em> That way photo, that was published to the page feed, miraculously becomes a post (kinda?..).</p>
+<p>That&rsquo;s an example of what I wanted to get (and finally did):</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-post-with-picture.png" alt="Facebook post with picture"/>
+
+</div>
+
+<p>So, here&rsquo;s my class for publishing to a Facebook page:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Facebook</span>
+{
+    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> _accessToken;
+    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> _pageID;
+    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> _facebookAPI = <span style="color:#e6db74">&#34;https://graph.facebook.com/&#34;</span>;
+    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> _pageEdgeFeed = <span style="color:#e6db74">&#34;feed&#34;</span>;
+    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> _pageEdgePhotos = <span style="color:#e6db74">&#34;photos&#34;</span>;
+    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> _postToPageURL;
+    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> _postToPagePhotosURL;
+
+    <span style="color:#66d9ef">public</span> Facebook(<span style="color:#66d9ef">string</span> accessToken, <span style="color:#66d9ef">string</span> pageID)
+    {
+        _accessToken = accessToken;
+        _pageID = pageID;
+        _postToPageURL = <span style="color:#e6db74">$&#34;{_facebookAPI}{pageID}/{_pageEdgeFeed}&#34;</span>;
+        _postToPagePhotosURL = <span style="color:#e6db74">$&#34;{_facebookAPI}{pageID}/{_pageEdgePhotos}&#34;</span>;
+    }
+
+    <span style="color:#75715e">/// &lt;summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Publish a simple text post
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;returns&gt;StatusCode and JSON response&lt;/returns&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;postText&#34;&gt;Text for posting&lt;/param&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; PublishSimplePost(<span style="color:#66d9ef">string</span> postText)
+    {
+        <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
+        {
+            <span style="color:#66d9ef">var</span> postData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; {
+                { <span style="color:#e6db74">&#34;access_token&#34;</span>, _accessToken },
+                { <span style="color:#e6db74">&#34;message&#34;</span>, postText }<span style="color:#75715e">//,
+</span><span style="color:#75715e"></span>                <span style="color:#75715e">// { &#34;formatting&#34;, &#34;MARKDOWN&#34; } // doesn&#39;t work
+</span><span style="color:#75715e"></span>            };
+
+            <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> http.PostAsync(
+                _postToPageURL,
+                <span style="color:#66d9ef">new</span> FormUrlEncodedContent(postData)
+                );
+            <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+            
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+                (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+                httpContent
+                );
+        }
+    }
+
+    <span style="color:#75715e">/// &lt;summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Publish a post to Facebook page
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;returns&gt;Result&lt;/returns&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;postText&#34;&gt;Post to publish&lt;/param&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;pictureURL&#34;&gt;Post to publish&lt;/param&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> PublishToFacebook(<span style="color:#66d9ef">string</span> postText, <span style="color:#66d9ef">string</span> pictureURL)
+    {
+        <span style="color:#66d9ef">try</span>
+        {
+            <span style="color:#75715e">// upload picture first
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">var</span> rezImage = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
+            {
+                <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
+                {
+                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">await</span> UploadPhoto(pictureURL);
+                }
+            });
+            <span style="color:#66d9ef">var</span> rezImageJson = JObject.Parse(rezImage.Result.Item2);
+            
+            <span style="color:#66d9ef">if</span> (rezImage.Result.Item1 != <span style="color:#ae81ff">200</span>)
+            {
+                <span style="color:#66d9ef">try</span> <span style="color:#75715e">// return error from JSON
+</span><span style="color:#75715e"></span>                {
+                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Error uploading photo to Facebook. {rezImageJson[&#34;</span>error<span style="color:#e6db74">&#34;][&#34;</span>message<span style="color:#e6db74">&#34;].Value&lt;string&gt;()}&#34;</span>;
+                }
+                <span style="color:#66d9ef">catch</span> (Exception ex) <span style="color:#75715e">// return unknown error
+</span><span style="color:#75715e"></span>                {
+                    <span style="color:#75715e">// log exception somewhere
+</span><span style="color:#75715e"></span>                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Unknown error uploading photo to Facebook. {ex.Message}&#34;</span>;
+                }
+            }
+            <span style="color:#75715e">// get post ID from the response
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">string</span> postID = rezImageJson[<span style="color:#e6db74">&#34;post_id&#34;</span>].Value&lt;<span style="color:#66d9ef">string</span>&gt;();
+            
+            <span style="color:#75715e">// and update this post (which is actually a photo) with your text
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">var</span> rezText = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
+            {
+                <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
+                {
+                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">await</span> UpdatePhotoWithPost(postID, postText);
+                }
+            });
+            <span style="color:#66d9ef">var</span> rezTextJson = JObject.Parse(rezText.Result.Item2);
+            
+            <span style="color:#66d9ef">if</span> (rezText.Result.Item1 != <span style="color:#ae81ff">200</span>)
+            {
+                <span style="color:#66d9ef">try</span> <span style="color:#75715e">// return error from JSON
+</span><span style="color:#75715e"></span>                {
+                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Error posting to Facebook. {rezTextJson[&#34;</span>error<span style="color:#e6db74">&#34;][&#34;</span>message<span style="color:#e6db74">&#34;].Value&lt;string&gt;()}&#34;</span>;
+                }
+                <span style="color:#66d9ef">catch</span> (Exception ex) <span style="color:#75715e">// return unknown error
+</span><span style="color:#75715e"></span>                {
+                    <span style="color:#75715e">// log exception somewhere
+</span><span style="color:#75715e"></span>                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Unknown error posting to Facebook. {ex.Message}&#34;</span>;
+                }
+            }
+
+            <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;OK&#34;</span>;
+        }
+        <span style="color:#66d9ef">catch</span> (Exception ex)
+        {
+            <span style="color:#75715e">// log exception somewhere
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Unknown error publishing post to Facebook. {ex.Message}&#34;</span>;
+        }
+    }
+
+    <span style="color:#75715e">/// &lt;summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Upload a picture (photo)
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;returns&gt;StatusCode and JSON response&lt;/returns&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;photoURL&#34;&gt;URL of the picture to upload&lt;/param&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; UploadPhoto(<span style="color:#66d9ef">string</span> photoURL)
+    {
+        <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
+        {
+            <span style="color:#66d9ef">var</span> postData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; {
+                { <span style="color:#e6db74">&#34;access_token&#34;</span>, _accessToken },
+                { <span style="color:#e6db74">&#34;url&#34;</span>, photoURL }
+            };
+
+            <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> http.PostAsync(
+                _postToPagePhotosURL,
+                <span style="color:#66d9ef">new</span> FormUrlEncodedContent(postData)
+                );
+            <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+            
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+                (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+                httpContent
+                );
+        }
+    }
+
+    <span style="color:#75715e">/// &lt;summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Update the uploaded picture (photo) with the given text
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;returns&gt;StatusCode and JSON response&lt;/returns&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;postID&#34;&gt;Post ID&lt;/param&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;postText&#34;&gt;Text to add tp the post&lt;/param&gt;
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; UpdatePhotoWithPost(<span style="color:#66d9ef">string</span> postID, <span style="color:#66d9ef">string</span> postText)
+    {
+        <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
+        {
+            <span style="color:#66d9ef">var</span> postData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; {
+                { <span style="color:#e6db74">&#34;access_token&#34;</span>, _accessToken },
+                { <span style="color:#e6db74">&#34;message&#34;</span>, postText }<span style="color:#75715e">//,
+</span><span style="color:#75715e"></span>                <span style="color:#75715e">// { &#34;formatting&#34;, &#34;MARKDOWN&#34; } // doesn&#39;t work
+</span><span style="color:#75715e"></span>            };
+
+            <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> http.PostAsync(
+                <span style="color:#e6db74">$&#34;{_facebookAPI}{postID}&#34;</span>,
+                <span style="color:#66d9ef">new</span> FormUrlEncodedContent(postData)
+                );
+            <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+            
+            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+                (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+                httpContent
+                );
+        }
+    }
+}
+</code></pre></div>
+<p>And how to use it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs">Facebook facebook = <span style="color:#66d9ef">new</span> Facebook(<span style="color:#e6db74">&#34;YOUR-PAGE-ACCESS-TOKEN&#34;</span>, <span style="color:#e6db74">&#34;YOUR-PAGE-ID&#34;</span>);
+
+<span style="color:#75715e">// 1) if you want to publish a post with attached photo (actually, the other way around)
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">string</span> result = facebook.PublishToFacebook(<span style="color:#e6db74">&#34;some text&#34;</span>, <span style="color:#e6db74">&#34;http://your.website/images/some.png&#34;</span>);
+Console.WriteLine(result);
+
+<span style="color:#75715e">// 2) if you want just to publish a simple text post
+</span><span style="color:#75715e">// var rezText = Task.Run(async () =&gt;
+</span><span style="color:#75715e">// {
+</span><span style="color:#75715e">//     using (var http = new HttpClient())
+</span><span style="color:#75715e">//     {
+</span><span style="color:#75715e">//         return await facebook.PublishSimplePost(&#34;some another text&#34;);
+</span><span style="color:#75715e">//     }
+</span><span style="color:#75715e">// });
+</span><span style="color:#75715e">// var rezTextJson = JObject.Parse(rezText.Result.Item2);
+</span><span style="color:#75715e">// if (rezText.Result.Item1 != 200)
+</span><span style="color:#75715e">// {
+</span><span style="color:#75715e">//     try // return error from JSON
+</span><span style="color:#75715e">//     {
+</span><span style="color:#75715e">//         Console.WriteLine($&#34;Error posting to Facebook. {rezTextJson[&#34;error&#34;][&#34;message&#34;].Value&lt;string&gt;()}&#34;);
+</span><span style="color:#75715e">//         return;
+</span><span style="color:#75715e">//     }
+</span><span style="color:#75715e">//     catch (Exception ex) // return unknown error
+</span><span style="color:#75715e">//     {
+</span><span style="color:#75715e">//         // log exception somewhere
+</span><span style="color:#75715e">//         Console.WriteLine($&#34;Unknown error posting to Facebook. {ex.Message}&#34;);
+</span><span style="color:#75715e">//         return;
+</span><span style="color:#75715e">//     }
+</span><span style="color:#75715e">// }
+</span><span style="color:#75715e">// Console.WriteLine(rezTextJson);
+</span></code></pre></div>
+<p>One more thing: right now your Facebook app is in <em>development</em> mode and is not publicly available. That means, all the posts you publish with it won&rsquo;t be visible to anyone, except those whom you added into your app <strong>Roles</strong> (<a href="https://developers.facebook.com/apps/YOUR-APP/roles/)">https://developers.facebook.com/apps/YOUR-APP/roles/)</a>. At first I didn&rsquo;t know that, so I was totally freaking out, because I clearly saw my posts on the page under my account, while other users didn&rsquo;t, for them it was an empty wall/timeline.</p>
+<p>So, go to <strong>App Review</strong> (<a href="https://developers.facebook.com/apps/YOUR-APP/review-status/">https://developers.facebook.com/apps/YOUR-APP/review-status/</a>) section and switch &ldquo;make it public&rdquo; button. You don&rsquo;t need to submit your app for approval, just make it public:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-app-public.png" alt="Facebook app public"/>
+
+</div>
+
+<p>After that all your posts you made while your app was in <em>development</em> mode will become visible to everyone (and all the future posts too, of course).</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[26.11.2017] Update:</strong> More information about Facebook Login</div>
+<p>Having started to work on integration with Instagram API, I suddenly understood <a href="https://developers.facebook.com/docs/facebook-login">Facebook Login</a> mechanism better (thanks to the <a href="https://www.instagram.com/developer/authentication/">Instagram documentation</a>).</p>
+<p>Turns out, you can actually make Facebook Login work. But you anyway cannot achieve it by using <em>only</em> HTTP requests from your server - for the initial step you will anyway need a browser, where user (you) will click on buttons in the Facebook login dialog.</p>
+<p>And for that you first need to register a <code>redirect URI</code> in your app settings. Don&rsquo;t let this <code>redirect URI</code> scare you, it&rsquo;s nothing biggie - you can specify any address there, even <a href="http://example.org">http://example.org</a>, like I did:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-app-login.png" alt="Facebook app login"/>
+
+</div>
+
+<p>After that, according to the information from <a href="https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow">this page</a>, you need to open the following URL <strong>in browser</strong>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//www.facebook.com/dialog/oauth?client_id</span><span style="color:#f92672">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ADD</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span><span style="color:#f92672">&amp;</span>redirect_uri<span style="color:#66d9ef">=</span>http<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//example.org/</span></code></pre></div>
+<p>Pay attention to the trailing slash (<code>/</code>), because redirect URI should be exactly the same as you registered it in your app settings.</p>
+<p>Okay, you opened the URL, it showed you Facebook login dialog, and after that redirected you to the specified <a href="http://example.org/">http://example.org/</a> and put a <code>code</code> parameter in the URL - check the address bar in your browser:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-redirect-code.png" alt="Facebook login redirect"/>
+
+</div>
+
+<p>Now documentation says to send this request (this one you can send from code):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>https:<span style="color:#75715e">//graph.facebook.com/oauth/access_token?client_id=YOUR-APP-ID&amp;redirect_uri=http://example.org/&amp;client_secret=YOUR-APP-SECRET&amp;code=THE-CODE-YOU-JUST-GOT-FROM-BROWSER
+</span><span style="color:#75715e">// ...
+</span></code></pre></div>
+<p>Again, <a href="https://stackoverflow.com/a/6838759/">pay attention</a> to the trailing slash (<code>/</code>)! If you&rsquo;ll miss it, response will be the following:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;error&#34;</span>: {
+    <span style="color:#f92672">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;Error validating verification code. Please make sure your redirect_uri is identical to the one you used in the OAuth dialog request&#34;</span>,
+    <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;OAuthException&#34;</span>,
+    <span style="color:#f92672">&#34;code&#34;</span>: <span style="color:#ae81ff">100</span>,
+    <span style="color:#f92672">&#34;fbtrace_id&#34;</span>: <span style="color:#e6db74">&#34;some&#34;</span>
+  }
+}</code></pre></div>
+<p>And if you formed request right, you&rsquo;ll get this response:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;access_token&#34;</span>: <span style="color:#e6db74">&#34;USER-ACCESS-TOKEN&#34;</span>,
+  <span style="color:#f92672">&#34;token_type&#34;</span>: <span style="color:#e6db74">&#34;bearer&#34;</span>
+}</code></pre></div>
+<p>And that&rsquo;s the <code>User Access Token</code> (already extended, I believe) you need for <a href="#extended">this step</a> (if it&rsquo;s not an extended token, then for <a href="#short">this step</a>).</p>
+<p><strong>BUT.</strong></p>
+<p><strike>Documentation has fucked you up again</strike> Default login URL only gives you default <a href="https://developers.facebook.com/docs/facebook-login/permissions">permissions</a> (such as viewing public profile). So, trying to proceed and get <code>Page Access Token</code> will give you this response:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;data&#34;</span>: []
+}</code></pre></div>
+<p>Meaning, that your app has no permissions to do anything on any page.</p>
+<p>So, if you need more permissions (publishing as page, for instance), you need to add <code>scope</code> parameter to the login URL, like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//www.facebook.com/v2.</span><span style="color:#960050;background-color:#1e0010">11</span><span style="color:#66d9ef">/dialog/oauth?client_id</span><span style="color:#f92672">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ADD</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span><span style="color:#f92672">&amp;</span>redirect_uri<span style="color:#66d9ef">=</span>http<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//example.org/&amp;scope</span><span style="color:#f92672">=</span>manage_pages<span style="color:#f92672">,</span>publish_pages</code></pre></div>
+<p>Remember, this is an URL you need to open in browser (to get a Facebook login dialog).</p>
+<p>And here&rsquo;s the final surprise - you cannot ask for permissions such as <code>manage_pages</code> and <code>publish_pages</code> for an <a href="https://developers.facebook.com/docs/facebook-login/review/">un-reviewed app</a> using login dialog. Of course, if you were anyway going to submit your app for reviewing, then it should not be a problem for you. Meanwhile, that&rsquo;s what you get:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-unreviewed-app-permissions.png" alt="Facebook unreviewed app permissions"/>
+
+</div>
+
+<p>&hellip;So, I&rsquo;ll stick to the <a href="#howto">Graph API Explorer</a> method.</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[01.08.2018] Update:</strong> Mandatory App Reviews</div>
+<p>So, from today Facebook requires all the apps to go through the <a href="https://developers.facebook.com/docs/apps/review/">App Review</a>.</p>
+<p>I knew it was coming, but I wasn&rsquo;t worrying about that, because all 3 warnings I received were saying the following:</p>
+<blockquote>
+    If your app is not submitted for review, you will lose access to any permissions or features requiring review, including these:
+    <ul>
+        <li>user_friends</li>
+        <li>user_link</li>
+        <li>user_gender</li>
+        <li>user_age_range</li>
+    </ul>
+</blockquote>
+<p>I am not using any of those (neither did I request any of those), so I thought I&rsquo;m fine.</p>
+<p>But today I got the following error in my requests:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">The permissions manage_pages,publish_pages are not available. It could because either they are deprecated or need to be approved by App Review</code></pre></div>
+<p>Nice surprise, thank you, Facebook.</p>
+<p>I went to the application page, and suddenly discovered that my app does have <code>user_friends</code> permission, because it was granted automatically:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-default-permissions.png" alt="Facebook default permissions"/>
+
+</div>
+
+<p>Okay, let&rsquo;s try to submit our app for review then:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-manage-publish-permissions.png" alt="Facebook manage and publish permissions"/>
+
+</div>
+
+<p>Oh, so <code>manage_pages</code> and <code>publish_pages</code> are also the kind of permissions that require passing App Review.</p>
+<p>Okay, let&rsquo;s check what sort of &ldquo;additional information&rdquo; in needed there:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-no-approve.png" alt="Facebook no approve for publishing"/>
+
+</div>
+
+<p>Ha-ha, 2nd and 3rd options (let&rsquo;s not count <code>other</code>) say that &ldquo;<em>Apps won&rsquo;t be approved for this use of publish_page</em>&rdquo;, so you can only go through the 1st one, which has some ridiculous requirements, considering the actual use-case - automatic content posting from a website to a public Facebook page. I mean, my app isn&rsquo;t even supposed to be used by anyone but me, and I used it only once myself, when I was getting the API key.</p>
+<p>Perhaps, such usage of the Facebook API was not allowed from the beginning, I don&rsquo;t know (and I didn&rsquo;t read the rules). But if Facebook doesn&rsquo;t want me to deliver new content to their wretched network, so be it.</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[03.08.2018] Update:</strong> Sudden rollback</div>
+<p>Today I suddenly discovered that my requests to Facebook API <em>are working again</em>, even though I haven&rsquo;t done anything and most definitely did not submit my app for review.</p>
+<p>I went to <a href="https://www.facebook.com/groups/fbdevelopers/">Facebook Developer Community</a> to see if it&rsquo;s not only me, and discovered that Facebook got <em>a lot</em> of angry posts from developers towards the whole revoking access and mandatory App Review thing.</p>
+<p>These guys, for instance, almost got their business destroyed (and they still might):</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-business-fucked.png" alt="Facebook has fucked some business"/>
+
+</div>
+
+<p>And this one is fairly loosing his shit over the fact that he has to demonstrate his server-to-server use-case somehow:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-server-to-server.png" alt="Facebook App Review for a server-to-server interaction"/>
+
+</div>
+
+<p>Another example:</p>
+<p><a href="https://www.facebook.com/groups/fbdevelopers/permalink/1881371928572979/">
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-server-to-server2.png" alt="Facebook App Review for a server-to-server interaction"/>
+
+</div>
+</a></p>
+<p>Seriously, how does one suppose to show a reviewer the &ldquo;improvement of user experience&rdquo;? I am that user, it&rsquo;s for me only! But as I said, looks like such usage of API was not really allowed in the first place.</p>
+<p>But anyway, my guess is that Facebook realized how big it did fuck up (way too many <em>unhappy</em> developers) and rollbacked the access revocation. I saw others saying the same thing - that they just got the access back without doing anything.</p>
+<p>Well, it&rsquo;s good that requests are working again, but who knows what happens next. I won&rsquo;t be surprised if they will revoke the access again later on.</p>
+<p>А этот скрин просто поугарать:</p>
+<p><a href="https://www.facebook.com/groups/fbdevelopers/permalink/1878975245479314/">
+<div >
+
+    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-yrup.png" alt="Урюпинская епархия работает с API"/>
+
+</div>
+</a></p>
+<p>Какая продвинутая святая обитель, общается с паствой прямо в бездуховных соцсетях, гугугу.</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[01.02.2019] Update:</strong> Yet another brief permissions issues</div>
+<p>Today I started getting this error again:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">The permission<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span> manage_pages,publish_pages are not available. It could because either they are deprecated or need to be approved by App Review.</code></pre></div>
+<p>And just like the <a href="#update3">last time</a> is miraculously disappeared by itself in a day or so. Classic Failsbook.</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[01.03.2019] Update:</strong> Forced App Review</div>
+<p>Today I got the following e-mail from the Facebook:</p>
+<blockquote>
+<p>Your app was proactively submitted for App Review</p>
+<p>As communicated on August 1, 2018, APP-NAME was proactively submitted for App Review, and is now in a queue awaiting review. While your app is pending review, you can make updates to ensure the accuracy of your request. For example, you can edit your app settings and permission details. However, please note that you will not be able to cancel or remove permissions from your request prior to review. Additionally, due to increased volumes, we are unable to provide you with an anticipated review date. As a result, please make any updates to your submission as soon as possible to ensure the App Review team reviews the most up-to-date information.</p>
+<p>You can view this and other Developer Notifications related to your app, in the App Dashboard.</p>
+</blockquote>
+<p>Yeah, whatever. I <a href="#update2">tried</a> submitting my app for the review myself, but that didn&rsquo;t work out that well, so.</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[06.03.2019] Update:</strong> Unexpected App Review results</div>
+<p>So today I suddenly received the following results from the recent <a href="#update5">forced App Review</a>:</p>
+<blockquote>
+<p>Your app review has been completed.</p>
+<p>The review of APP-NAME has been completed. For more detail on the review please visit the App Review tab.</p>
+</blockquote>
+<p>I went there and discovered several failed permissions I never asked for: <code>user_gender</code>, <code>user_friends</code>, <code>user_age_range</code> and others, and every one of those had a question &ldquo;<em>tell us how you&rsquo;ll use&hellip;</em>&rdquo;. But I never requested those in the first place, you dumb twats. And the ones I did request (<code>manage_pages</code>, <code>publish_pages</code>) have just disappeared. Fucking piece of shit of fucking pieces of shits!</p>
+<p>But wait, my application still works fine, even though the App Review didn&rsquo;t go that well as it seems. So what has changed, and/or what is the point of this stupid App Review then? Because I didn&rsquo;t change a single thing about my app, it remained untouched for all this time since I created it more than a year ago. So all of the sudden it is okay now? Oh wow, thanks a bunch, what a useful process.</p>
+<p>And I reckon, the same happened with all the data-harvesting apps you had a hearing about at the Senate, so they will just continue to function like before. Well done, Failsbook, that&rsquo;s just grand.</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[29.03.2019] Update:</strong> Another notification</div>
+<p>Today Facebook sent me the following:</p>
+<blockquote>
+<p>Hi,</p>
+<p>Access to certain permissions or features expires on Apr 28, 2019</p>
+<p>You can view this and other Developer Notifications related to your app, in the App Dashboard.</p>
+<p>Thanks,
+The Facebook Team</p>
+</blockquote>
+<p>I could care less up to this point, to be honest. If Failsbook will disable my posting application, I&rsquo;ll just ditch it for good.</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[23.09.2019] Update:</strong> App Review required</div>
+<p>Oh, lookie who&rsquo;s here! Long time no see, but today I got <a href="images/app-review-email.png">another e-mail</a> from Failsbook:</p>
+<blockquote>
+<p>App Review required to retain access to specific permissions or features</p> 
+<p>As a result of changes to our platform, APP-NAME will need to submit an App Review request by October 23, 2019 to retain access to platform data for the following permissions or features: publish_pages, manage_pages</p>
+<p>If APP-NAME doesn't submit for App Review by the deadline, it may impact how it accesses data.</p>
+<p>If you are currently in Dev Mode, you will also need to switch your app to Live Mode after successfully completing App Review to maintain your current functionality.</p>
+</blockquote>
+<p>Yeah, how about fuck you. I ain&rsquo;t gonna do nothing, because from my experience ain&rsquo;t nothing is going to happen.</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[22.10.2019] Update:</strong> Deadline extended</div>
+<p>Hello, retard police? Failsbook is at it again. Here&rsquo;s a <a href="images/app-review-email-deadline-extended.png">new e-mail</a> from them:</p>
+<blockquote>
+<p>Deadline extended for platform changes</p>
+<p>You were recently notified about actions required by October 23, 2019 for APP-NAME to maintain the current level of access and functionality. We are reevaluating out timeline and will delay enforcement until early 2020.</p>
+<p>While no specific date has been set, we still recommend that you submit for App Review if necessary, switch all apps to Live Mode for production use and complete business or individual verification.</p>
+</blockquote>
+<p>Deadline is extended, my ass. What did I tell you? Nothing is going to happen, and nothing did. And nothing will. What a fucking nonsense. Looking forward to &ldquo;early 2020&rdquo; with a great excitement.</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[03.02.2020] Update:</strong> Error validating access token</div>
+<p>Oh wow, Falsebook has actually done something! Now my requests fail with an error:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">Error</span> validating access token<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">The</span> <span style="color:#66d9ef">user</span> <span style="color:#66d9ef">has</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">authorized</span> <span style="color:#66d9ef">application</span></code></pre></div>
+<p>It only took them 1.5 years.</p>
+<p>It actually might be something not related, but Foicebook can go fuck itself an anyway, because I have no desire to waste any more time on this piece of shit. Good thing we didn&rsquo;t really need it in the first place.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/dotnet/">dotnet</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "waspenterprises" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

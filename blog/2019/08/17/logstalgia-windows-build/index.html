@@ -1,0 +1,577 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Logstalgia, build for Windows | Declaration of VAR</title>
+
+    <meta name="generator" content="Hugo 0.80.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Logstalgia, build for Windows" />
+<meta property="og:description" content="There is this amazing tool Logstalgia which visualizes web-server logs. Sadly, there were no new builds for Windows after the version 1.0.9, so I decided to make one with the latest version (1.1.2 at the moment).
+
+
+
+    
+
+
+
+I will describe the process and also publish pre-built binaries." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2019/08/17/logstalgia-windows-build/" />
+<meta property="article:published_time" content="2019-08-17T14:20:36+02:00" />
+<meta property="article:modified_time" content="2019-08-17T14:20:36+02:00" />
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.20ca545f318465243c5bb2ebc3f6115983db7bff5a077a49534277259f32e9bc.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Logstalgia, build for Windows</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2019-08-17 14:20:36 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 6 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>There is this amazing tool <a href="https://logstalgia.io">Logstalgia</a> which visualizes web-server logs. Sadly, there were no new builds for Windows after the version 1.0.9, so I decided to make one with the latest version (<em>1.1.2 at the moment</em>).</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/08/17/logstalgia-windows-build/images/logstalgia-windows-build.png" alt="Logstalgia, Windows build"/>
+
+</div>
+
+<p>I will describe the process and also publish pre-built binaries.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#about">About</a></li>
+    <li><a href="#build">Build</a>
+      <ul>
+        <li><a href="#environment">Environment</a></li>
+        <li><a href="#sources">Sources</a></li>
+        <li><a href="#dependencies">Dependencies</a>
+          <ul>
+            <li><a href="#sdl">SDL</a></li>
+            <li><a href="#sdl_image">SDL_image</a></li>
+            <li><a href="#glew">GLEW</a></li>
+            <li><a href="#freetype">freetype</a></li>
+            <li><a href="#zlib">zlib</a></li>
+            <li><a href="#libpng">libpng</a></li>
+            <li><a href="#glm">glm</a></li>
+            <li><a href="#boost">boost</a></li>
+            <li><a href="#pcre">PCRE</a></li>
+          </ul>
+        </li>
+        <li><a href="#icon">Icon</a></li>
+        <li><a href="#building">Building</a></li>
+      </ul>
+    </li>
+    <li><a href="#deployment">Deployment</a>
+      <ul>
+        <li><a href="#cmake-install">CMake install</a></li>
+        <li><a href="#dlls">DLLs</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h1 id="about">About</h1>
+<p>Logstalgia is really amazing. What it does is it parses the access logs from nginx, Apache or other web-server and visualizes all the requests and responses sent. It is a such a simple idea, but it serves the purpose so well.</p>
+<p>For example, here&rsquo;s how a DDoS attack on VideoLAN server looked like:</p>
+<iframe width="100%" height="500" src="https://www.youtube.com/embed/hNjdBSoIa8k" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<p>And here&rsquo;s a visualization of silly attempts to guess the CMS on our server:</p>
+
+
+
+
+
+
+    <video autoplay="yes" controls="yes" loop="yes"  class="video">
+        <source src="/blog/2019/08/17/logstalgia-windows-build/video/logstalgia-protvshows-com.mp4" type="video/mp4">
+    </video>
+    
+    <p class="video-fallback">If video doesn’t play in your browser, you can download it <a href="/blog/2019/08/17/logstalgia-windows-build/video/logstalgia-protvshows-com.mp4">here</a></p>
+    
+
+
+<p>Mainly I use it to run a live visualization of our website&rsquo;s access log. Even though it requires SSH, that still can be done on Windows thanks to <code>sh.exe</code> environment from the Git package:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">ssh protvshows tail <span style="color:#f92672">-</span>f <span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>log<span style="color:#f92672">/</span>apache2<span style="color:#f92672">/</span>protvshows<span style="color:#f92672">.</span>com <span style="color:#f92672">|</span> <span style="color:#f92672">/</span>d<span style="color:#f92672">/</span>programs<span style="color:#f92672">/</span>logstalgia<span style="color:#f92672">/</span>logstalgia<span style="color:#f92672">.</span>exe <span style="color:#f92672">-</span>b <span style="color:#ae81ff">101010</span> <span style="color:#f92672">--</span>font<span style="color:#f92672">-</span>size <span style="color:#ae81ff">16</span> <span style="color:#f92672">-</span>x</code></pre></div>
+<p>When I want to record a video, I run the following:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">ssh protvshows tail <span style="color:#f92672">-</span>f <span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>log<span style="color:#f92672">/</span>apache2<span style="color:#f92672">/</span>protvshows<span style="color:#f92672">.</span>com <span style="color:#f92672">|</span> <span style="color:#f92672">/</span>d<span style="color:#f92672">/</span>programs<span style="color:#f92672">/</span>logstalgia<span style="color:#f92672">/</span>logstalgia<span style="color:#f92672">.</span>exe <span style="color:#f92672">-</span><span style="color:#ae81ff">1920</span>x1080 <span style="color:#f92672">-</span>b <span style="color:#ae81ff">101010</span> <span style="color:#f92672">--</span>font<span style="color:#f92672">-</span>size <span style="color:#ae81ff">16</span> <span style="color:#f92672">-</span>x <span style="color:#f92672">-</span>r <span style="color:#ae81ff">60</span> <span style="color:#f92672">-</span>o <span style="color:#f92672">/</span>d<span style="color:#f92672">/</span>temp<span style="color:#f92672">/</span>recording<span style="color:#f92672">.</span>ppm</code></pre></div>
+<p>And then using FFmpeg:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">ffmpeg <span style="color:#f92672">-</span>r <span style="color:#ae81ff">60</span> <span style="color:#f92672">-</span>i recording<span style="color:#f92672">.</span>ppm <span style="color:#f92672">-</span>crf <span style="color:#ae81ff">18</span> <span style="color:#f92672">-</span>pix_fmt yuv420p output<span style="color:#f92672">.</span>mp4</code></pre></div>
+<h1 id="build">Build</h1>
+<p>Here&rsquo;s what it takes to build Logstalgia on Windows.</p>
+<h2 id="environment">Environment</h2>
+<p>What I used:</p>
+<ul>
+<li>Windows 8.1 or 10 (<em>tested on both</em>)</li>
+<li>CMake</li>
+<li>Visual Studio Code
+<ul>
+<li><a href="https://vector-of-bool.github.io/docs/vscode-cmake-tools/">CMake Tools</a></li>
+</ul>
+</li>
+<li>MSVC 2019 x64</li>
+<li>MinGW 7.3.0 x64</li>
+</ul>
+<p>MSVC 2019 comes as a part of <a href="https://visualstudio.microsoft.com/vs/">Visual Studio 2019</a>. And MiGW 7.3.0 can be installed from the <a href="https://www.qt.io/download-qt-installer">Qt online installer</a>:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/08/17/logstalgia-windows-build/images/qt-installer-mingw.png" alt="Qt installer, MinGW 7.3.0"/>
+
+</div>
+
+<h2 id="sources">Sources</h2>
+<p>The source code can be cloned from the Logstalgia repository:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">git clone <span style="color:#f92672">--</span>recurse<span style="color:#f92672">-</span>submodules git<span style="color:#a6e22e">@github</span><span style="color:#f92672">.</span>com<span style="color:#66d9ef">:</span><span style="color:#66d9ef">acaudwell/Logstalgia.git</span></code></pre></div>
+<p>However, on Windows they recommend to use Qt Creator and qmake. That didn&rsquo;t work for me, so I went with <a href="/blog/2019/05/26/sdl-imgui/#building-from-visual-studio-code">CMake and Visual Studio Code</a> instead.</p>
+<p>And since I plan to publish Windows builds, I needed a place for uploading those, so I <a href="https://github.com/retifrav/logstalgia-windows">forked</a> the Logstalgia repository - and that&rsquo;s the only purpose of my repository as it is highly unlikely that I will modify anything in the original source code.</p>
+<h2 id="dependencies">Dependencies</h2>
+<p>Logstalgia depends on quite a few libraries, and that is why building it for Windows is rather an annoying task. Some of those can be found as pre-built binaries, but others I had to build from sources - luckily all of them are built with CMake as well.</p>
+<p>Here&rsquo;re the relevant parts from <code>CMakeLists.txt</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">project(<span style="color:#e6db74">&#34;logstalgia&#34;</span> <span style="color:#e6db74">VERSION</span> <span style="color:#e6db74">1.1.2</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">&#34;tools-path&#34;</span> <span style="color:#e6db74">&#34;d:/programs&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># actually, C++11 should be enough
+</span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CMAKE_CXX_STANDARD</span> <span style="color:#e6db74">17</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>find_package(<span style="color:#e6db74">OpenGL</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># NO_DEFAULT_PATH is set so it wouldn&#39;t pick up libraries from other places in PATH
+</span><span style="color:#75715e"></span>find_library(<span style="color:#e6db74">SDL2</span> <span style="color:#e6db74">SDL2</span> <span style="color:#e6db74">PATHS</span> <span style="color:#e6db74">&#34;${tools-path}/sdl/lib/x64&#34;</span> <span style="color:#e6db74">NO_DEFAULT_PATH</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>find_library(<span style="color:#e6db74">SDL2main</span> <span style="color:#e6db74">SDL2main</span> <span style="color:#e6db74">PATHS</span> <span style="color:#e6db74">&#34;${tools-path}/sdl/lib/x64&#34;</span> <span style="color:#e6db74">NO_DEFAULT_PATH</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>find_library(<span style="color:#e6db74">SDL2_image</span> <span style="color:#e6db74">SDL2_image</span> <span style="color:#e6db74">PATHS</span> <span style="color:#e6db74">&#34;${tools-path}/sdl/sdl-image/lib/x64&#34;</span> <span style="color:#e6db74">NO_DEFAULT_PATH</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>find_library(<span style="color:#e6db74">freetype</span> <span style="color:#e6db74">freetype</span> <span style="color:#e6db74">PATHS</span> <span style="color:#e6db74">&#34;${tools-path}/freetype/win64&#34;</span> <span style="color:#e6db74">NO_DEFAULT_PATH</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>find_library(<span style="color:#e6db74">libpng</span> <span style="color:#e6db74">libpng16</span> <span style="color:#e6db74">PATHS</span> <span style="color:#e6db74">&#34;${tools-path}/libpng/lib&#34;</span> <span style="color:#e6db74">NO_DEFAULT_PATH</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>find_library(<span style="color:#e6db74">GLEW</span> <span style="color:#e6db74">glew32</span> <span style="color:#e6db74">PATHS</span> <span style="color:#e6db74">&#34;${tools-path}/glew/lib/Release/x64&#34;</span> <span style="color:#e6db74">NO_DEFAULT_PATH</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>find_library(<span style="color:#e6db74">PCRE</span> <span style="color:#e6db74">pcre</span> <span style="color:#e6db74">PATHS</span> <span style="color:#e6db74">&#34;${tools-path}/pcre/lib&#34;</span> <span style="color:#e6db74">NO_DEFAULT_PATH</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>include_directories(
+    <span style="color:#e6db74">&#34;${tools-path}/boost&#34;</span>
+    <span style="color:#e6db74">&#34;${tools-path}/glm/include&#34;</span>
+    <span style="color:#e6db74">&#34;${tools-path}/glew/include&#34;</span>
+    <span style="color:#e6db74">&#34;${tools-path}/sdl/include&#34;</span>
+    <span style="color:#e6db74">&#34;${tools-path}/sdl/sdl-image/include&#34;</span>
+    <span style="color:#e6db74">&#34;${tools-path}/freetype/include&#34;</span>
+    <span style="color:#e6db74">&#34;${tools-path}/libpng/include&#34;</span>
+    <span style="color:#e6db74">&#34;${tools-path}/pcre/include&#34;</span>
+    )<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>target_link_libraries(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+    <span style="color:#f92672">${</span>OPENGL_gl_LIBRARY<span style="color:#f92672">}</span>
+    <span style="color:#f92672">${</span>GLEW<span style="color:#f92672">}</span>
+    <span style="color:#f92672">${</span>SDL2<span style="color:#f92672">}</span>
+    <span style="color:#f92672">${</span>SDL2main<span style="color:#f92672">}</span>
+    <span style="color:#f92672">${</span>SDL2_image<span style="color:#f92672">}</span>
+    <span style="color:#f92672">${</span>freetype<span style="color:#f92672">}</span>
+    <span style="color:#f92672">${</span>libpng<span style="color:#f92672">}</span>
+    <span style="color:#f92672">${</span>PCRE<span style="color:#f92672">}</span>
+    <span style="color:#e6db74">-lglu32</span>
+    <span style="color:#e6db74">-static-libgcc</span>
+    <span style="color:#e6db74">-static-libstdc++</span>
+    <span style="color:#e6db74">-lcomdlg32</span>
+    )</code></pre></div>
+<p>Now let&rsquo;s see how to get all those dependencies.</p>
+<h3 id="sdl">SDL</h3>
+<p>Download <a href="https://www.libsdl.org/download-2.0.php">pre-built package</a>. Development libraries for Visual C++ 32/64-bit.</p>
+<h3 id="sdl_image">SDL_image</h3>
+<p>Download <a href="https://www.libsdl.org/projects/SDL_image/">pre-built package</a>. Development libraries for Visual C++ 32/64-bit.</p>
+<h3 id="glew">GLEW</h3>
+<p>Download <a href="http://glew.sourceforge.net/">pre-built package</a>.</p>
+<h3 id="freetype">freetype</h3>
+<p>Download <a href="https://github.com/ubawurinna/freetype-windows-binaries/releases">pre-built package</a>.</p>
+<h3 id="zlib">zlib</h3>
+<p>This one is actually a dependency of <a href="#libpng">libpng</a>. Download the <a href="https://www.zlib.net/">sources</a> and set the install prefix:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">project(<span style="color:#e6db74">zlib</span> <span style="color:#e6db74">C</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>set (<span style="color:#e6db74">CMAKE_INSTALL_PREFIX</span> <span style="color:#e6db74">&#34;d:/programs/zlib&#34;</span>)</code></pre></div>
+<p>Building from Visual Studio Code:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">CMake</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Configure</span>
+<span style="color:#a6e22e">CMake</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Build</span>
+<span style="color:#a6e22e">CMake</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Install</span></code></pre></div>
+<h3 id="libpng">libpng</h3>
+<p>Download the <a href="http://www.libpng.org/pub/png/libpng.html">sources</a>, set the install prefix and the path to <a href="#zlib">zlib</a>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">project(<span style="color:#e6db74">libpng</span> <span style="color:#e6db74">C</span> <span style="color:#e6db74">ASM</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>set (<span style="color:#e6db74">CMAKE_INSTALL_PREFIX</span> <span style="color:#e6db74">&#34;d:/programs/libpng&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>set (<span style="color:#e6db74">ZLIB_ROOT</span> <span style="color:#e6db74">&#34;d:/programs/zlib&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># Allow users to specify location of Zlib.
+</span><span style="color:#75715e"># Useful if zlib is being built alongside this as a sub-project.
+</span><span style="color:#75715e"></span>option(<span style="color:#e6db74">PNG_BUILD_ZLIB</span> <span style="color:#e6db74">&#34;Custom zlib Location, else find_package is used&#34;</span> <span style="color:#e6db74">OFF</span>)</code></pre></div>
+<p>Building from Visual Studio Code:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">CMake</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Configure</span>
+<span style="color:#a6e22e">CMake</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Build</span>
+<span style="color:#a6e22e">CMake</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Install</span></code></pre></div>
+<h3 id="glm">glm</h3>
+<p>Download the <a href="https://github.com/g-truc/glm/tags">sources</a> and set the install prefix:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">set (<span style="color:#e6db74">CMAKE_INSTALL_PREFIX</span> <span style="color:#e6db74">&#34;d:/programs/glm&#34;</span>)</code></pre></div>
+<p>Building from Visual Studio Code:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">CMake</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Configure</span>
+<span style="color:#a6e22e">CMake</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Build</span>
+<span style="color:#a6e22e">CMake</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Install</span></code></pre></div>
+<h3 id="boost">boost</h3>
+<p>Download the <a href="https://www.boost.org/">library</a>.</p>
+<h3 id="pcre">PCRE</h3>
+<p>I don&rsquo;t know where I was supposed to get PCRE from, because all the pre-built distributions I found did not work for me. So eventually I just built if from source.</p>
+<p>There are <a href="https://www.pcre.org/">two versions</a> of PCRE at the moment:</p>
+<ol>
+<li>PCRE 8.43 and that&rsquo;s the one required;</li>
+<li>PCRE2 10.33.</li>
+</ol>
+<p>So download <a href="https://ftp.pcre.org/pub/pcre/">sources</a> for the first one and build it. It is important to use MinGW x64 kit (<em>the same kit that will be used for building the Logstalgia itself</em>):</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/08/17/logstalgia-windows-build/images/vscode-cmake-kit.png" alt="VS Code, CMake kit"/>
+
+</div>
+
+<p>What I find peculiar though is that I built all the other dependencies using MSVC kit, and that caused no troubles, but when I tried to build PCRE with MSVC, Logstalgia failed to build, so apparently MinGW is a strict requirement here. It is also required to use the Ninja generator.</p>
+<p>So, set the install prefix:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">set (<span style="color:#e6db74">CMAKE_INSTALL_PREFIX</span> <span style="color:#e6db74">&#34;d:/programs/pcre&#34;</span>)</code></pre></div>
+<p>and build it from Visual Studio Code:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">CMake</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Configure</span>
+<span style="color:#a6e22e">CMake</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Build</span>
+<span style="color:#a6e22e">CMake</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Install</span></code></pre></div>
+<h2 id="icon">Icon</h2>
+<p>Let&rsquo;s also add an application icon. Create <code>resources.rc</code> resource file:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">IDI_ICON1</span> <span style="color:#a6e22e">ICON</span> <span style="color:#a6e22e">DISCARDABLE</span> <span style="color:#e6db74">&#34;logstalgia.ico&#34;</span></code></pre></div>
+<p>And add it to <code>CMakeLists.txt</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">add_executable(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#f92672">${</span>sources<span style="color:#f92672">}</span> <span style="color:#e6db74">resources.rc</span>)</code></pre></div>
+<h2 id="building">Building</h2>
+<p>Like I said, the original repository suggests to use <code>logstalgia.pro</code> file, which is a qmake project file, and to build it from Qt Creator with MinGW x64.</p>
+<p>Nevertheless, in addition to switching to CMake, I tried to build it with MSVC first (<em>and PCRE library build with MSVC</em>), but that failed with the following error:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-perl" data-lang="perl">Cannot open include file: <span style="color:#e6db74">&#39;unistd.h&#39;</span></code></pre></div>
+<p>And when I chose MinGW x64 kit with Ninja generator, the project built with no problems.</p>
+<p>Well, actually there was one:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-perl" data-lang="perl">undefined reference to <span style="color:#e6db74">&#39;__imp_pcre_compile&#39;</span>
+undefined reference to <span style="color:#e6db74">&#39;__imp_pcre_free&#39;</span>
+undefined reference to <span style="color:#e6db74">&#39;__imp_pcre_exec&#39;</span>
+undefined reference to <span style="color:#e6db74">&#39;__imp_pcre_exec&#39;</span></code></pre></div>
+<p>I&rsquo;ve spent quite some time googling the solution, till I found <a href="http://www.voidcn.com/article/p-eggotmrg-bao.html">one</a>. From the <a href="https://www.pcre.org/original/doc/html/pcredemo.html">official example</a>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#75715e">/*
+</span><span style="color:#75715e">If you want to statically link this program against a non-dll .a file, you must
+</span><span style="color:#75715e">define PCRE_STATIC before including pcre.h, otherwise the pcre_malloc() and
+</span><span style="color:#75715e">pcre_free() exported functions will be declared __declspec(dllimport), with
+</span><span style="color:#75715e">unwanted results. So in this environment, uncomment the following line.
+</span><span style="color:#75715e">*/</span>
+
+<span style="color:#75715e">/* #define PCRE_STATIC */</span>
+
+<span style="color:#66d9ef">#</span>include <span style="color:#f92672">&lt;</span>stdio<span style="color:#f92672">.</span>h<span style="color:#f92672">&gt;</span>
+<span style="color:#66d9ef">#</span>include <span style="color:#f92672">&lt;</span>string<span style="color:#f92672">.</span>h<span style="color:#f92672">&gt;</span>
+<span style="color:#66d9ef">#</span>include <span style="color:#f92672">&lt;</span>pcre<span style="color:#f92672">.</span>h<span style="color:#f92672">&gt;</span></code></pre></div>
+<p>So I edited the <code>src\core\regex.h</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#66d9ef">#</span>define <span style="color:#a6e22e">PCRE_STATIC</span>
+<span style="color:#66d9ef">#</span>include <span style="color:#e6db74">&#34;pcre.h&#34;</span></code></pre></div>
+<h1 id="deployment">Deployment</h1>
+<h2 id="cmake-install">CMake install</h2>
+<p>Some silly attempts to make installation instructions for the <code>CMake: Install</code> command:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">set(<span style="color:#e6db74">CMAKE_INSTALL_PREFIX</span> <span style="color:#e6db74">&#34;${tools-path}/${CMAKE_PROJECT_NAME}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>install(<span style="color:#e6db74">TARGETS</span> <span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+    <span style="color:#e6db74">RUNTIME</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">&#34;${CMAKE_INSTALL_PREFIX}&#34;</span>
+    <span style="color:#e6db74">ARCHIVE</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">&#34;${CMAKE_INSTALL_PREFIX}&#34;</span>
+    <span style="color:#e6db74">LIBRARY</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">&#34;${CMAKE_INSTALL_PREFIX}&#34;</span>
+    )<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>install(<span style="color:#e6db74">DIRECTORY</span> <span style="color:#e6db74">&#34;data&#34;</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">&#34;${CMAKE_INSTALL_PREFIX}&#34;</span>)</code></pre></div>
+<p>That will put the <code>logstalgia.exe</code> and its assets from <code>data</code> folder to the installation path, but sadly it will not copy the libraries it depends on, so that needs to be done manually.</p>
+<h2 id="dlls">DLLs</h2>
+<p>According to the list of dependencies or through the way of trial and error, here&rsquo;s a list of .dll&rsquo;s required for our application to launch:</p>
+<ul>
+<li>freetype.dll</li>
+<li>glew32.dll</li>
+<li>libpng16.dll</li>
+<li>SDL2.dll</li>
+<li>SDL2_image.dll</li>
+<li>zlib.dll</li>
+</ul>
+<p>You can also use <a href="http://www.dependencywalker.com">Dependency Walker</a> to list all the dependencies:</p>
+
+<div >
+
+    <img class="image-post" src="/blog/2019/08/17/logstalgia-windows-build/images/logstalgia-dependency-walker.png" alt="Dependency Walker, Logstalgia"/>
+
+</div>
+
+<p>Copy the libraries that are really required to the same folder with <code>logstalgia.exe</code> and here we go:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">d<span style="color:#66d9ef">:</span><span style="color:#66d9ef">\programs\logstalgia&gt;logstalgia.exe</span> <span style="color:#66d9ef">--help</span>
+<span style="color:#a6e22e">Logstalgia</span> v1<span style="color:#f92672">.</span><span style="color:#ae81ff">1.2</span></code></pre></div>
+<p>Hallelujah.</p>
+<p>I published the 1.1.2 release <a href="https://github.com/retifrav/logstalgia-windows/releases/tag/v1.1.2-win">here</a>.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/cpp/">cpp</a><a class="tag" href="https://retifrav.github.io/tags/windows/">windows</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a><a class="tag" href="https://retifrav.github.io/tags/soft/">soft</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <script>
+  var id =  28 ;
+
+  if (id)
+  {
+    let url = "https://github.com/retifrav/retifrav.github.io/issues/".concat(id);
+    let api_url = "https://api.github.com/repos/retifrav/retifrav.github.io/issues/".concat(id, "/comments");
+    
+    var commentsDiv = document.getElementById("comments");
+
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", api_url);
+    xhr.setRequestHeader("Accept", "application/vnd.github.v3.html+json");
+    xhr.send();
+
+    xhr.onload = function()
+    {
+      if (xhr.status != 200)
+      {
+        let errorText = document.createElement("p");
+        errorText.innerHTML = "<i>Comments for this post yet are not opened yet (or you have GitHub scripts disabled).</i>";
+        commentsDiv.appendChild(errorText);
+      }
+      else
+      {
+        let comments = xhr.response;
+
+        let mainHeader = document.createElement("h2");
+        mainHeader.innerHTML = "Comments: ".concat(comments.length);
+        commentsDiv.appendChild(mainHeader);
+
+        let issueLink = document.createElement("p");
+        issueLink.innerHTML = "<i>You can leave a comment using this <a href='".concat(url, "'>GitHub issue</a>.</i>");
+        commentsDiv.appendChild(issueLink);
+        
+        comments.forEach(function(comment)
+        {
+            let commentContent = document.createElement("div");
+            commentContent.setAttribute('class', 'gh-comment')
+            commentContent.innerHTML = "".concat(
+                "<div class='gh-header'>",
+                  "<img src='", comment.user.avatar_url, "' />",
+                  "<div style='margin:auto 0;'>",
+                    "<b><a class='gh-username' href='", comment.user.html_url, "'>", comment.user.login, "</a></b>",
+                    " commented at <em>", new Date(comment.created_at), "</em>",
+                  "</div>",
+                "</div>",
+                "<div class='gh-body'>",
+                  comment.body_html,
+                "</div>"
+            );
+            commentsDiv.appendChild(commentContent);
+        });
+      }
+    };
+
+    xhr.onerror = function()
+    {
+      let errorText = document.createElement("p");
+      errorText.innerHTML = "<i>Some error loading comments.</i>";
+      commentsDiv.appendChild(errorText);
+    };
+  }
+</script>
+
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          Copyright &copy; 2014-2021 <a href="/about/">retif</a>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/291" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (58)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (37)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (30)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (19)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (18)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (12)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (11)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

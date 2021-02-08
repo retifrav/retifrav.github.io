@@ -1,0 +1,40 @@
+-- http://hints.macworld.com/article.php?story=20080229093118547
+
+set the RGB16bit_list to (choose color default color {65535, 50584, 0})
+display dialog "Which notation should be copied to the clipboard?" buttons {"8-bit RGB", "16-bit RGB", "HEX"} default button 3
+if the button returned of the result is "HEX" then
+    -- convert choosen color to HEX with leading #
+    set the formatedColor to my RBG_to_HEX(RGB16bit_list)
+else if the button returned of the result is "8-bit RGB" then
+    -- convert choosen color to (class:RGB color, red:8bitvalue, green:8bitvalue, blue:8bitvalue)
+    set the formatedColor to my RBG_to_RGB8bit(RGB16bit_list)
+else
+    -- convert choosen color to (class:RGB color, red:16bitvalue, green:16bitvalue, blue:16bitvalue)
+    set the formatedColor to my RBG_to_RGB16bit(RGB16bit_list)
+end if
+set the clipboard to formatedColor
+
+on RBG_to_HEX(RGB_values)
+    -- this subroutine was taken from "http://www.apple.com/applescript/sbrt/sbrt-04.html"
+    set the hex_list to {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"}
+    set the the hex_value to ""
+    repeat with i from 1 to the count of the RGB_values
+        set this_value to (item i of the RGB_values) div 256
+        if this_value is 256 then set this_value to 255
+        set x to item ((this_value div 16) + 1) of the hex_list
+        set y to item (((this_value / 16 mod 1) * 16) + 1) of the hex_list
+        set the hex_value to (the hex_value & x & y) as string
+    end repeat
+    return ("#" & the hex_value)
+end RBG_to_HEX
+
+on RBG_to_RGB8bit({r, g, b})
+    set r to (r ^ 0.5) div 1
+    set g to (g ^ 0.5) div 1
+    set b to (b ^ 0.5) div 1
+    return "{class:8-bit RGB color, red:" & r & ", green:" & g & ", blue:" & b & "}" as string
+end RBG_to_RGB8bit
+
+on RBG_to_RGB16bit({r, g, b})
+    return "{class:16-bit RGB color, red:" & r & ", green:" & g & ", blue:" & b & "}" as string
+end RBG_to_RGB16bit
