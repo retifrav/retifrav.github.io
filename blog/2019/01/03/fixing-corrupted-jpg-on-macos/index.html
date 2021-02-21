@@ -92,50 +92,45 @@ So far my solution was to re-save the picture on Windows using GIMP or something
 <p>Okay, so we need a HEX editor. Here&rsquo;s a nice one for Mac OS - <a href="https://ridiculousfish.com/hexfiend/">Hex Fiend</a>. By the way, if you look for it in the App Store, then beside that one you&rsquo;ll find some paid alternatives which apparently are not really alternatives but complete clones of the original tool with the only difference of them being paid ones. Hilarious.</p>
 <p>Anyway, that&rsquo;s how a JPG file looks like there:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/hex-fiend-jpg-header.png" alt="JPG file opened in Hex Fiend"/>
 
-</div>
+    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/hex-fiend-jpg-header.png" alt="JPG file opened in Hex Fiend">
+
 
 <p>And you guessed it right, the selected part is the one that causes troubles. Let&rsquo;s investigate it.</p>
 <p>If you don&rsquo;t want (<em>but why?</em>) to read the full <a href="https://www.w3.org/Graphics/JPEG/jfif3.pdf">JPEG File Interchange Format specification</a>, it is enough to rely just on <a href="https://en.wikipedia.org/wiki/JPEG_File_Interchange_Format#File_format_structure">Wikipedia</a> and <a href="http://www.file-recovery.com/jpg-signature-format.htm">this page</a>. Also, if you know russian, <a href="https://habr.com/post/102521/">this article</a> can be of help, although it&rsquo;s a bit too heavy for our purpose.</p>
 <p>So, what do we have here in the editor? First of all, if you don&rsquo;t know that already, we are looking at <a href="https://en.wikipedia.org/wiki/Binary_file">binary data</a> represented in <a href="https://en.wikipedia.org/wiki/Hexadecimal">hexadecimal form</a>. Another thing you should know is that the picture contents do not start with the very first byte of the file, so the line I selected on the screenshot above is a part of a so-called JPEG header. And that&rsquo;s where I found the source of the issue.</p>
 <p>Here&rsquo;s a detailed explanation of the header bytes:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/fixing-jpg-on-macos-broken.png" alt="JPG header in HEX"/>
 
-</div>
+    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/fixing-jpg-on-macos-broken.png" alt="JPG header in HEX">
+
 
 <p>After reading those two article, I don&rsquo;t see any problems here. But since the file does not open on Mac OS, obviously there are some.</p>
 <p>In order to find the problem, I uploaded the file to this <a href="https://ezgif.com/optijpeg">online JPEG image optimizer</a> and tried to optimize it without compression:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/jpeg-optimizer.png" alt="Online JPEG image optimizer"/>
 
-</div>
+    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/jpeg-optimizer.png" alt="Online JPEG image optimizer">
+
 
 <p>Having downloaded the &ldquo;optimized&rdquo; file, I discovered that it opens on Mac OS just fine!</p>
 <p>Okay then, let&rsquo;s compare it with its broken original version in Hex Fiend:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/hex-fiend-compare.png" alt="HEX Fiend compare mode"/>
 
-</div>
+    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/hex-fiend-compare.png" alt="HEX Fiend compare mode">
+
 
 <p>From that comparison I discovered that the length byte in the &ldquo;fixed&rdquo; file is <code>0x10</code> (<code>16</code>) instead of <code>0xE</code> (<code>14</code>), and also there are 2 null bytes in the end of <code>APP0</code> section (<em>which makes it exactly 16 bytes for the whole section</em>).</p>
 <p>JPEG specification states that these 2 bytes are responsible for storing the size of a thumbnail. And it is my guess that Mac OS is sensitive to this, so even if there is no thumbnail embedded into the file, these 2 bytes should be present anyway, despite the fact that they will simply store nulls.</p>
 <p>So the correct header of the file should look like this:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/fixing-jpg-on-macos-fixed.png" alt="JPG header in HEX"/>
 
-</div>
+    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/fixing-jpg-on-macos-fixed.png" alt="JPG header in HEX">
+
 
 <p>Let&rsquo;s now try to &ldquo;fix&rdquo; the &ldquo;broken&rdquo; original by editing its header in HEX Fiend:</p>
 
@@ -306,11 +301,11 @@ So far my solution was to re-save the picture on Windows using GIMP or something
                   
                   <li><a href="/tags/movies">movies (15)</a></li>
                   
+                  <li><a href="/tags/tractor">tractor (13)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (12)</a></li>
+                  
                   <li><a href="/tags/telegram">telegram (12)</a></li>
-                  
-                  <li><a href="/tags/tractor">tractor (12)</a></li>
-                  
-                  <li><a href="/tags/norway">norway (11)</a></li>
                   
                   <li><a href="/tags/python">python (10)</a></li>
                   

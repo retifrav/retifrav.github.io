@@ -22,7 +22,6 @@
     
 
 
-
 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://some.host?params=ololo. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing).
 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://some.host?params=ololo. (Reason: CORS request did not succeed).
 That&rsquo;s how I learnt about the existence of CORS, as it turned out I never sent cross-origin requests before." />
@@ -69,11 +68,10 @@ That&rsquo;s how I learnt about the existence of CORS, as it turned out I never 
       <div class="post-content">
         <p>So I was working on some web view and I needed to send an <a href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest">XMLHttpRequest</a> using JS. Usually I was working with my own backend, but this time it was a different remote host (<em>our <a href="https://www.jetbrains.com/youtrack/">YouTrack</a> instance</em>), and my request failed with the following error:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2019/10/10/the-fuck-is-this-cors/images/firefox-cors-missing-header.png" alt="Firefox, missing CORS header"/>
 
-</div>
+    <img class="image-post" src="/blog/2019/10/10/the-fuck-is-this-cors/images/firefox-cors-missing-header.png" alt="Firefox, missing CORS header">
+
 
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">Cross</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Origin</span> <span style="color:#a6e22e">Request</span> <span style="color:#a6e22e">Blocked</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">The</span> <span style="color:#66d9ef">Same</span> <span style="color:#66d9ef">Origin</span> <span style="color:#66d9ef">Policy</span> <span style="color:#66d9ef">disallows</span> <span style="color:#66d9ef">reading</span> <span style="color:#66d9ef">the</span> <span style="color:#66d9ef">remote</span> <span style="color:#66d9ef">resource</span> <span style="color:#66d9ef">at</span> <span style="color:#66d9ef">http://some.host?params</span><span style="color:#f92672">=</span>ololo<span style="color:#f92672">.</span> <span style="color:#f92672">(</span><span style="color:#a6e22e">Reason</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">CORS</span> <span style="color:#66d9ef">header</span> <span style="color:#960050;background-color:#1e0010">‘</span><span style="color:#66d9ef">Access-Control-Allow-Origin</span><span style="color:#960050;background-color:#1e0010">’</span> <span style="color:#66d9ef">missing</span><span style="color:#f92672">).</span>
 <span style="color:#a6e22e">Cross</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Origin</span> <span style="color:#a6e22e">Request</span> <span style="color:#a6e22e">Blocked</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">The</span> <span style="color:#66d9ef">Same</span> <span style="color:#66d9ef">Origin</span> <span style="color:#66d9ef">Policy</span> <span style="color:#66d9ef">disallows</span> <span style="color:#66d9ef">reading</span> <span style="color:#66d9ef">the</span> <span style="color:#66d9ef">remote</span> <span style="color:#66d9ef">resource</span> <span style="color:#66d9ef">at</span> <span style="color:#66d9ef">http://some.host?params</span><span style="color:#f92672">=</span>ololo<span style="color:#f92672">.</span> <span style="color:#f92672">(</span><span style="color:#a6e22e">Reason</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">CORS</span> <span style="color:#66d9ef">request</span> <span style="color:#66d9ef">did</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">succeed</span><span style="color:#f92672">).</span></code></pre></div>
@@ -109,21 +107,19 @@ That&rsquo;s how I learnt about the existence of CORS, as it turned out I never 
 <p>Here&rsquo;s why: <strong>trusted origins are set on the server side</strong>, and it&rsquo;s a web-server or application who returns a special <code>Access-Control-Allow-Origin</code> header, which should contain the origin (<em>and preferably not a wildcard <code>*</code></em>) from which you are allowed to reach them.</p>
 <p>In my case it was simple - YouTrack has a setting exactly for this purpose:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2019/10/10/the-fuck-is-this-cors/images/youtrack-allowed-origins.png" alt="YouTrack allowed origins"/>
 
-</div>
+    <img class="image-post" src="/blog/2019/10/10/the-fuck-is-this-cors/images/youtrack-allowed-origins.png" alt="YouTrack allowed origins">
+
 
 <p>So I allowed my <code>http://localhost:5000</code> origin, and requests started to work. Obviously, you&rsquo;ll also need to add the origin of your actual domain from where your scripts will run in production.</p>
 <p>If other cases it might be a similar setting somewhere in the service settings, or a corresponding line in NGINX/Apache/etc config.</p>
 <p>Here&rsquo;s how a successful XMLHttpRequest looks like:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2019/10/10/the-fuck-is-this-cors/images/firefox-xmlhttprequest-headers.png" alt="Firefox XMLHttpRequest headers"/>
 
-</div>
+    <img class="image-post" src="/blog/2019/10/10/the-fuck-is-this-cors/images/firefox-xmlhttprequest-headers.png" alt="Firefox XMLHttpRequest headers">
+
 
 <p>As you can see, the browser added <code>Origin: http://localhost:5000</code> header (<em>browser does it by itself for all cross-origin requests</em>), and server returned <code>Access-Control-Allow-Origin: http://localhost:5000</code> header, which means that the request is allowed to be sent.</p>
 <p>There is more to it, as requests can be <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#Simple_requests">simple</a> and <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#Preflighted_requests">preflighted</a>. The <a href="https://dzone.com/articles/do-you-really-know-cors">same article</a> has a shorter explanation.</p>
@@ -131,11 +127,10 @@ That&rsquo;s how I learnt about the existence of CORS, as it turned out I never 
 <p>I said that requests started to work after I added my origin to the list of allowed origins on server. And they did, but not right away.</p>
 <p>At first they were still failing, and <a href="https://stackoverflow.com/a/56970532">the reason</a> for that was my <a href="https://github.com/gorhill/uMatrix">uMatrix</a> browser extension:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2019/10/10/the-fuck-is-this-cors/images/umatrix-blocking-xhr.png" alt="uMatrix blocking XHR"/>
 
-</div>
+    <img class="image-post" src="/blog/2019/10/10/the-fuck-is-this-cors/images/umatrix-blocking-xhr.png" alt="uMatrix blocking XHR">
+
 
 <p>That&rsquo;s totally my fault because I should have thought about that. Enabling XHR solved the issue.</p>
 <h1 id="requests-implementation">Requests implementation</h1>
@@ -428,11 +423,11 @@ That&rsquo;s how I learnt about the existence of CORS, as it turned out I never 
                   
                   <li><a href="/tags/movies">movies (15)</a></li>
                   
+                  <li><a href="/tags/tractor">tractor (13)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (12)</a></li>
+                  
                   <li><a href="/tags/telegram">telegram (12)</a></li>
-                  
-                  <li><a href="/tags/tractor">tractor (12)</a></li>
-                  
-                  <li><a href="/tags/norway">norway (11)</a></li>
                   
                   <li><a href="/tags/python">python (10)</a></li>
                   

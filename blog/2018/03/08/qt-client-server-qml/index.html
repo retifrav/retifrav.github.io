@@ -22,7 +22,6 @@
     
 
 
-
 Today I want to revisit the subject and provide a more sophisticated example - two applications with network communication between them (client and server)." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://retifrav.github.io/blog/2018/03/08/qt-client-server-qml/" />
@@ -67,11 +66,10 @@ Today I want to revisit the subject and provide a more sophisticated example - t
       <div class="post-content">
         <p>More than an year ago I wrote an article about <a href="/blog/2016/07/18/cpp-backend-qml/">C++ backend for QML</a>, showing a very basic example of interaction between QML and C++. If you don&rsquo;t know anything about C++/QML interaction, I recommend you to read that one first.</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/frontend-backend.png" alt="C&#43;&#43; backend for QML"/>
 
-</div>
+    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/frontend-backend.png" alt="C&#43;&#43; backend for QML">
+
 
 <p>Today I want to revisit the subject and provide a more sophisticated example - two applications with network communication between them (client and server).</p>
 <p>Even today, in 2018, I keep seeing a decent level of confusion about Qt Quick/QML. Quite often people just don&rsquo;t believe/aware that Qt Quick/QML applications can be as capable as the ones based on Qt Widgets.</p>
@@ -84,37 +82,33 @@ Today I want to revisit the subject and provide a more sophisticated example - t
 </ol>
 <p>Let&rsquo;s start with backend. In our case, it implements <a href="http://doc.qt.io/qt-5/qtcpserver.html">QTcpServer</a> and <a href="http://doc.qt.io/qt-5/qtcpsocket.html">QTcpSocket</a> network communication. So, there is a server application and there is a client application. Server application has QTcpServer and it listens to some port. Client has QTcpSocket, but has not connected to the server yet:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/qtcpserver-qtcpsocket.png" alt="QTcpServer and QTcpSocket"/>
 
-</div>
+    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/qtcpserver-qtcpsocket.png" alt="QTcpServer and QTcpSocket">
+
 
 <p>When client connects to server, a QTcpSocket is created on the server&rsquo;s side, through which server and client can talk to each other:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/qtcpserver-qtcpsocket-client.png" alt="QTcpServer and QTcpSocket client"/>
 
-</div>
+    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/qtcpserver-qtcpsocket-client.png" alt="QTcpServer and QTcpSocket client">
+
 
 <p>There can be even several clients - server will create a separate socket for each one of them:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/qtcpserver-qtcpsocket-clients.png" alt="QTcpServer and QTcpSocket clients"/>
 
-</div>
+    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/qtcpserver-qtcpsocket-clients.png" alt="QTcpServer and QTcpSocket clients">
+
 
 <p>I won&rsquo;t show the code for QTcpServer/QTcpSocket implementation here as it is pretty trivial and is not the point anyway, but if you are interested you can look at it later in the project repository.</p>
 <p>Now, how to &ldquo;get&rdquo; all that from C++ to QML, i.e. how frontend would know about any of this? Well, first, we need to determine what exactly do we want to pass between frontend and backend.</p>
 <p>Let&rsquo;s take the case of the client application (as it is a more interesting one). Here&rsquo;s how it looks like:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/qml-client.png" alt="QML client"/>
 
-</div>
+    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/qml-client.png" alt="QML client">
+
 
 <p>So, that&rsquo;s what we need:</p>
 <ol>
@@ -126,11 +120,10 @@ Today I want to revisit the subject and provide a more sophisticated example - t
 <p>As you can see, we let the backend to handle the core functionality (establishing connections, sending/reading the data, etc), and we only need it to provide an interface for getting the things listed above.</p>
 <p>Buttons <code>onClick</code> events are merely C++ function/methods calls (that was described in the previous article), and notifications are done via <a href="http://doc.qt.io/qt-5/qtqml-cppintegration-exposecppattributes.html#exposing-properties">Q_PROPERTY</a> and hooking up to <a href="https://doc.qt.io/qt-5.10/qtqml-cppintegration-exposecppattributes.html#exposing-signals">signals</a>. Schematically all that can be represented like this:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/cpp-qml-interaction.png" alt="C&#43;&#43; QML interaction"/>
 
-</div>
+    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/cpp-qml-interaction.png" alt="C&#43;&#43; QML interaction">
+
 
 <p>And below you can see all these slots, signal and functions in the actual code fragments.</p>
 <p><a href="https://github.com/retifrav/client-server/blob/master/client-server-qml/clientPart/backend.h">C++ backend</a>:</p>
@@ -220,11 +213,10 @@ signals:
 </code></pre></div>
 <p>Here we declare for QML side that the Backend object will have a property named <code>currentStatus</code>. But just declaring its name is not enough, because there should be also a <code>READ</code> method for getting its value from C++ side and a <code>NOTIFY</code> signal for notifying QML side when it changes:</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/qproperty.png" alt="Q_PROPERTY"/>
 
-</div>
+    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/qproperty.png" alt="Q_PROPERTY">
+
 
 <p>If you won&rsquo;t have those, then your frontend won&rsquo;t know when the <code>currentStatus</code> changes and to what value. In our case, depending on this C++ property value, QML label <code>status</code> changes its text (<em>CONNECTED</em>, <em>DISCONNECTED</em>) and background color (<em>green</em>, <em>red</em>).</p>
 <p>To show you the final result, I made video of both client and server applications at work:</p>
@@ -232,19 +224,17 @@ signals:
 <p>By the way, I created almost the same demo about 5 years ago with Qt Widgets, so for me it was even more interesting to &ldquo;port&rdquo; it to Qt Quick - splitting it into frontend and backend.</p>
 <p>When you work with Qt Widgets everything is in C++ already, so there is no need to do this QML-C++ interactions via injected backend objects. That actually begs the question: why even bother, why not to do every project with Qt Widgets, because after all it is easier that way? Well, a bit easier, yes, but take a look on the following screenshots and tell me, which GUI you like more, this one (Qt Widgets):</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/widgets-client-server.png" alt="Qt Widgets"/>
 
-</div>
+    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/widgets-client-server.png" alt="Qt Widgets">
+
 
 <p>or this one (Qt Quick/QML):</p>
 
-<div >
 
-    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/qml-client-server.png" alt="Qt Quick QML"/>
 
-</div>
+    <img class="image-post" src="/blog/2018/03/08/qt-client-server-qml/images/qml-client-server.png" alt="Qt Quick QML">
+
 
 <p>Yeah, I know, the second one is almost the state of art. And Qt Quick/QML applications can be <a href="https://github.com/retifrav/cinematic-experience">much fancier</a>, which definitely is not the case with Qt Widgets. I can&rsquo;t even begin to estimate the amount of work that needs to be done with Qt Widgets in order to get something as nice looking.</p>
 <p>The full source code for both Qt Quick/QML and Qt Widgets demos is available <a href="https://github.com/retifrav/client-server">here</a>.</p>
@@ -399,11 +389,11 @@ signals:
                   
                   <li><a href="/tags/movies">movies (15)</a></li>
                   
+                  <li><a href="/tags/tractor">tractor (13)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (12)</a></li>
+                  
                   <li><a href="/tags/telegram">telegram (12)</a></li>
-                  
-                  <li><a href="/tags/tractor">tractor (12)</a></li>
-                  
-                  <li><a href="/tags/norway">norway (11)</a></li>
                   
                   <li><a href="/tags/python">python (10)</a></li>
                   
