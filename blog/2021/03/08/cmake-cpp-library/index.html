@@ -187,14 +187,15 @@ To clarify, this will be about so-called normal kind of library." />
 </span><span style="color:#960050;background-color:#1e0010"></span>endif()</code></pre></div>
 <p>Why even bother with this? Because later we will be setting certain properties for the <a href="#target">target</a> (<em>our library</em>). And I saw in lots of places how people copy-paste project name value to every command, which I believe is just a bad idea - it is much better to use already defined <code>PROJECT_NAME</code> variable instead, innit.</p>
 <h3 id="target">Target</h3>
-<p>Here go library sources and the library <a href="https://cmake.org/cmake/help/latest/manual/cmake-buildsystem.7.html#introduction">target</a> itself:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp">set(sources
-    src<span style="color:#f92672">/</span>some.cpp
-)
-
-<span style="color:#75715e"># here you can see how instead of writing &#34;SomeLibrary&#34;
+<p>Here go the library <a href="https://cmake.org/cmake/help/latest/manual/cmake-buildsystem.7.html#introduction">target</a> and its sources:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e"># here you can see how instead of writing &#34;SomeLibrary&#34;
 </span><span style="color:#75715e"># we can just use the PROJECT_NAME variable
-</span><span style="color:#75715e"></span>add_library(<span style="color:#960050;background-color:#1e0010">$</span>{PROJECT_NAME} STATIC <span style="color:#960050;background-color:#1e0010">$</span>{sources})
+</span><span style="color:#75715e"></span>add_library(<span style="color:#960050;background-color:#1e0010">$</span>{PROJECT_NAME} STATIC)
+
+target_sources(<span style="color:#960050;background-color:#1e0010">$</span>{PROJECT_NAME}
+    PRIVATE
+        src<span style="color:#f92672">/</span>some.cpp
+)
 </code></pre></div>
 <p>Here the library is defined as <code>STATIC</code>, but there will be a section about <a href="#static-vs-shared">shared</a> libraries too.</p>
 <h3 id="include-directories">Include directories</h3>
@@ -389,12 +390,13 @@ $ tree .
 </span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># the rest will be taken care of by CMake
 </span><span style="color:#75715e"></span>find_package(<span style="color:#e6db74">SomeLibrary</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">sources</span>
-    <span style="color:#e6db74">main.cpp</span>
-)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># it is an application
-</span><span style="color:#75715e"></span>add_executable(<span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#f92672">${</span>sources<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#75715e"></span>add_executable(<span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>target_sources(<span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>
+    <span style="color:#e6db74">PRIVATE</span>
+        <span style="color:#e6db74">main.cpp</span>
+)<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># linking to the library, here you need to provide the namespace too
 </span><span style="color:#75715e"></span>target_link_libraries(<span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#e6db74">PRIVATE</span> <span style="color:#e6db74">some::SomeLibrary</span>)</code></pre></div>
@@ -437,11 +439,12 @@ $ tree .
 </span><span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010"></span>add_subdirectory(<span style="color:#e6db74">libraries</span>)<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">sources</span>
-    <span style="color:#e6db74">main.cpp</span>
-)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>add_executable(<span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>add_executable(<span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#f92672">${</span>sources<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>target_sources(<span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>
+    <span style="color:#e6db74">PRIVATE</span>
+        <span style="color:#e6db74">main.cpp</span>
+)<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010"></span>target_link_libraries(<span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#e6db74">PRIVATE</span> <span style="color:#e6db74">SomeLibrary</span>)</code></pre></div>
 <p>Yes, it is all the same as with <a href="#from-external-project">external project</a> - we just need to link to the library. No crazy relative paths, just the very same <code>target_link_libraries</code>.</p>
@@ -549,7 +552,7 @@ Call Stack <span style="color:#f92672">(</span>most recent call first<span style
 <p>And indeed, there is no <code>SomeLibrary.lib</code> in <code>install/lib/</code>, only <code>SomeLibrary.dll</code> in <code>install/bin/</code>. That is because a <a href="https://en.wikipedia.org/wiki/Dynamic-link_library">DLL on Windows</a> needs an explicit listing of all the symbols that it will export, and apparently this is what <code>SomeLibrary.lib</code> is supposed to be.</p>
 <p>As I understood, in order to produce it, in past it was required to add <code>__declspec</code> compiler directives to every public single class or function declaration in your library sources, which is quite a bummer, especially if you have a lot of those. Here&rsquo;s <a href="https://cmake.org/pipermail/cmake/2008-August/023194.html">one example</a> of how this is done.</p>
 <p>Fortunately, starting with CMake 3.4, this is <a href="https://blog.kitware.com/create-dlls-on-windows-without-declspec-using-new-cmake-export-all-feature/">no longer required</a>. Instead you can just set the <a href="https://cmake.org/cmake/help/latest/prop_tgt/WINDOWS_EXPORT_ALL_SYMBOLS.html">CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS</a> option when configuring the library:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cmake -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS<span style="color:#f92672">=</span>True ..</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cmake -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS<span style="color:#f92672">=</span>TRUE ..</code></pre></div>
 <p>If you haven&rsquo;t set <code>SHARED</code> in <code>add_library</code> and it also doesn&rsquo;t explicitly state <code>STATIC</code>, then you can also set <code>-DBUILD_SHARED_LIBS=TRUE</code> option to make that library <code>SHARED</code>.</p>
 <p>Either way, now you can build and install the library as usual. However, if you are using Visual Studio <a href="https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html">CMake generator</a>, then <code>-DCMAKE_BUILD_TYPE</code> won&rsquo;t work, because you need to specify configuration on build step:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cmake --build . --target install --config Release</code></pre></div>
