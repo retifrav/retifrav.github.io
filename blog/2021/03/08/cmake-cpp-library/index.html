@@ -61,7 +61,7 @@ To clarify, this will be about so-called normal kind of library." />
 </svg> 2021-03-08 20:41:56 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 16 min read</div>
+</svg> 17 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -106,9 +106,14 @@ To clarify, this will be about so-called normal kind of library." />
         </li>
       </ul>
     </li>
-    <li><a href="#static-vs-shared">STATIC vs SHARED</a>
+    <li><a href="#going-deeper">Going deeper</a>
       <ul>
-        <li><a href="#shared-dll-on-windows">SHARED DLL on Windows</a></li>
+        <li><a href="#package-version">Package version</a></li>
+        <li><a href="#static-vs-shared">STATIC vs SHARED</a>
+          <ul>
+            <li><a href="#shared-dll-on-windows">SHARED DLL on Windows</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
     <li><a href="#final-words-and-repository">Final words and repository</a></li>
@@ -507,7 +512,37 @@ $ cmake --install ./libraries/SomeLibrary
 -- Installing: /Users/YOURNAME/code/cpp/cmake-library-example/internal-project/install/cmake/SomeLibraryConfig.cmake
 -- Installing: /Users/YOURNAME/code/cpp/cmake-library-example/internal-project/install/cmake/SomeLibraryConfig-debug.cmake</code></pre></div>
 <p>Here you can also see how you can install a single target with <code>--install</code> option - by pointing it to the target folder inside <code>build</code> folder. Also note that install folder is now on the project&rsquo;s source tree root level, not in the library&rsquo;s nested source folder.</p>
-<h1 id="static-vs-shared">STATIC vs SHARED</h1>
+<h1 id="going-deeper">Going deeper</h1>
+<h2 id="package-version">Package version</h2>
+<p>You can set a version for your library (<code>cmake-library-example/internal-project/libraries/SomeLibrary/CMakeLists.txt</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">project(<span style="color:#e6db74">&#34;SomeLibrary&#34;</span> <span style="color:#e6db74">DESCRIPTION</span> <span style="color:#e6db74">&#34;Some library&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">version</span> <span style="color:#e6db74">0.9.1</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>include(<span style="color:#e6db74">CMakePackageConfigHelpers</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>write_basic_package_version_file(
+    <span style="color:#e6db74">&#34;${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake&#34;</span>
+    <span style="color:#e6db74">VERSION</span> <span style="color:#e6db74">&#34;${version}&#34;</span>
+    <span style="color:#e6db74">COMPATIBILITY</span> <span style="color:#e6db74">AnyNewerVersion</span>
+)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>install(<span style="color:#e6db74">FILES</span>
+    <span style="color:#e6db74">&#34;${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake&#34;</span>
+    <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">cmake</span>
+)</code></pre></div>
+<p>As a result you will get one more CMake config file in the <code>install</code> folder: <code>SomeLibraryConfigVersion.cmake</code>.</p>
+<p>If you now try to find the package in external project (<code>cmake-library-example/external-project/CMakeLists.txt</code>) like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">find_package(<span style="color:#e6db74">SomeLibrary</span> <span style="color:#e6db74">0.9.2</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)</code></pre></div>
+<p>then you will get the following error on configuration:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">CMake Error at CMakeLists.txt:9 <span style="color:#f92672">(</span>find_package<span style="color:#f92672">)</span>:
+  Could not find a configuration file <span style="color:#66d9ef">for</span> package <span style="color:#e6db74">&#34;SomeLibrary&#34;</span> that is
+  compatible with requested version <span style="color:#e6db74">&#34;0.9.2&#34;</span>.
+
+  The following configuration files were considered but not accepted:
+
+    /Users/YOURNAME/code/cpp/cmake-library-example/internal-project/install/cmake/SomeLibraryConfig.cmake, version: 0.9.1</code></pre></div>
+<h2 id="static-vs-shared">STATIC vs SHARED</h2>
 <p>Hopefully, you already know the difference between static and shared libraries. If not, then, <a href="/blog/2018/02/17/build-qt-statically/#why-build-qt-statically">to put it simple</a>, static libraries are &ldquo;bundled&rdquo; into your binaries, and shared libraries are separate files which need to be discoverable by your binaries in order for the latter to work.</p>
 <p>A little practical example: let&rsquo;s build our library as static, link to it from external project, then build it as shared and link to that one.</p>
 <p>To make our library shared, simply replace <code>STATIC</code> with <code>SHARED</code> in <code>add_library</code> statement (<em>in the library&rsquo;s <code>CMakeLists.txt</code></em>).</p>
@@ -529,7 +564,7 @@ Abort trap: <span style="color:#ae81ff">6</span></code></pre></div>
 <p>So in case of a shared library on Mac OS or Linux it has to either stay available in its installation path, or be placed into the one of the system libraries paths. Be aware that simply copying it to the same folder with executable won&rsquo;t work, unless you set the <code>LD_LIBRARY_PATH</code> variable on Linux (<em>or <code>DYLD_FALLBACK_LIBRARY_PATH</code>/<code>DYLD_LIBRARY_PATH</code> on Mac OS</em>) before running the application:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ LD_LIBRARY_PATH<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;.&#34;</span> ./another-application</code></pre></div>
 <p>And on Windows it will fail even if you haven&rsquo;t touched the library in its install folder, however you can just copy it to the same folder where executable is, but more on that below.</p>
-<h2 id="shared-dll-on-windows">SHARED DLL on Windows</h2>
+<h3 id="shared-dll-on-windows">SHARED DLL on Windows</h3>
 <p>Shared libraries on Windows are a special thing. There it is not enough just to replace <code>STATIC</code> with <code>SHARED</code> in <code>add_library</code> statement.</p>
 <p>If you build and install it having done nothing else, then you will get this error trying to configure a project that needs to link to it:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">CMake Error at C:/code/cmake-library-example/internal-project/libraries/SomeLibrary/install/cmake/SomeLibraryConfig.cmake:72 <span style="color:#f92672">(</span>message<span style="color:#f92672">)</span>:
