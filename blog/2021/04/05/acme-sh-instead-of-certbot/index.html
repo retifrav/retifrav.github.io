@@ -61,7 +61,7 @@ On top of that, last month Electronic Frontier Foundation (creators of Certbot) 
 </svg> 2021-04-05 13:08:02 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 12 min read</div>
+</svg> 13 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -86,7 +86,8 @@ On top of that, last month Electronic Frontier Foundation (creators of Certbot) 
         <li><a href="#getting-lets-encrypt-certificate">Getting Let&rsquo;s Encrypt certificate</a></li>
       </ul>
     </li>
-    <li><a href="#adding-certificate-to-nginx">Adding certificate to NGINX</a></li>
+    <li><a href="#how-to-use-certificate-with-nginx">How to use certificate with NGINX</a></li>
+    <li><a href="#open-443-port">Open 443 port</a></li>
   </ul>
 </nav>
 <h1 id="your-domain-and-dns-settings">Your domain and DNS settings</h1>
@@ -268,7 +269,7 @@ drwx------ <span style="color:#ae81ff">7</span> USERNAME USERNAME 4.0K Apr  <spa
 -rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME  <span style="color:#ae81ff">206</span> Apr  <span style="color:#ae81ff">3</span> 21:05 domain.dev.csr.conf
 -rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME 1.7K Apr  <span style="color:#ae81ff">3</span> 20:52 domain.dev.key
 -rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME 3.4K Apr  <span style="color:#ae81ff">3</span> 21:05 fullchain.cer</code></pre></div>
-<h1 id="adding-certificate-to-nginx">Adding certificate to NGINX</h1>
+<h1 id="how-to-use-certificate-with-nginx">How to use certificate with NGINX</h1>
 <p>You could simply use files from <code>~/.acme.sh/domain.dev/</code>, but documentation explicitly says not to do so. Instead you should &ldquo;install&rdquo; the certificate into some other folder, for example:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ mkdir -p ~/certs/domain.dev
 $ acme.sh --install-cert -d domain.dev <span style="color:#ae81ff">\
@@ -314,13 +315,64 @@ $ acme.sh --install-cert -d domain.dev <span style="color:#ae81ff">\
 </li>
 <li>Have <code>ssl_certificate</code> and <code>ssl_certificate_key</code> variables set to paths of your certificate and key</li>
 </ol>
-<p>Coming back to the <code>install-cert</code> command, at first I was confused, because the <code>cron</code> job is only set to renew the certificate when it expires, but there is no job to run <code>install-cert</code>, so who does that? Then I reckoned that after I ran the initial <code>install-cert</code>, it did something else aside from just copying certificate files to <code>~/certs/domain.dev</code>, and indeed, the <code>~/.acme.sh/domain.dev/domain.dev.conf</code> file seems to have relevant changes:</p>
+<p>Coming back to the <code>install-cert</code> command, at first I was confused, because the <code>cron</code> job is only set to renew the certificate when it expires, but there is no job to run <code>install-cert</code>, so who will do that? Then I reckoned that after I ran the initial <code>install-cert</code>, it did something else aside from just copying certificate files to <code>~/certs/domain.dev</code>, and indeed, the <code>~/.acme.sh/domain.dev/domain.dev.conf</code> file seems to have relevant changes:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#a6e22e">Le_Domain</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;domain.dev&#39;</span>
 <span style="color:#a6e22e">...</span>
 <span style="color:#a6e22e">Le_RealKeyPath</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/home/USERNAME/certs/domain.dev/key.pem&#39;</span>
 <span style="color:#a6e22e">Le_ReloadCmd</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;__ACME_BASE64__START_c3VkbyBzeXN0ZW1jdGwgcmVzdGFydCBuZ2lueC5zZXJ2aWNl__ACME_BASE64__END_&#39;</span>
 <span style="color:#a6e22e">Le_RealFullChainPath</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/home/USERNAME/certs/domain.dev/fullchain.pem&#39;</span></code></pre></div>
 <p>So it should be all good then, though I am still confused about the fact that reload command is present both in this config and in the <code>cron</code> job. But okay, I guess, I&rsquo;ll see how it is in a couple of months or so.</p>
+<h1 id="open-443-port">Open 443 port</h1>
+<p>If your website is still not available via HTTPS, it could be that your host doesn&rsquo;t accept connections on <code>443</code> port. There could be two reasons why.</p>
+<p>First, if you are using Oracle Cloud, Microsoft Azure or similar cloud provider, then those have a very limited amount of ports open in their virtual networks by default. In fact, you might need to explicitly open even <code>80</code> port. For example, here&rsquo;s how it looks in my Oracle Cloud panel now:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/04/05/acme-sh-instead-of-certbot/images/oracle-cloud-ports.png" alt="Oracle Cloud ports">
+
+
+<p>As you see, I needed to add both <code>80</code> and <code>443</code>.</p>
+<p>Another reason of blocked <code>443</code> port could be that it is not allowed in firewall rules on the host. Here&rsquo;s what I had:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo iptables -L
+...
+Chain IN_public_allow <span style="color:#f92672">(</span><span style="color:#ae81ff">1</span> references<span style="color:#f92672">)</span>
+target     prot opt source               destination
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:ssh ctstate NEW,UNTRACKED
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:http ctstate NEW,UNTRACKED
+...</code></pre></div>
+<p>So I needed to add a rule for HTTPS too:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo iptables -A IN_public_allow -p tcp --dport <span style="color:#ae81ff">443</span> -j ACCEPT -m conntrack --ctstate NEW,UNTRACKED
+
+$ sudo netfilter-persistent save
+$ sudo netfilter-persistent reload
+
+$ sudo iptables -L
+...
+Chain IN_public_allow <span style="color:#f92672">(</span><span style="color:#ae81ff">1</span> references<span style="color:#f92672">)</span>
+target     prot opt source               destination
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:ssh ctstate NEW,UNTRACKED
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:http ctstate NEW,UNTRACKED
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:https ctstate NEW,UNTRACKED</code></pre></div>
+<p>To diagnose, which one of these two reasons is causing problems, you can use <code>cURL</code>.</p>
+<p>If you get this output after some time of cURL trying to send the request:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl -I https://domain.dev
+curl: <span style="color:#f92672">(</span>7<span style="color:#f92672">)</span> Failed to connect to domain.dev port 443: Operation timed out</code></pre></div>
+<p>&hellip;then the port is likely not allowed in your cloud provider network settings.</p>
+<p>If you get this output right away:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl -I https://domain.dev
+curl: <span style="color:#f92672">(</span>7<span style="color:#f92672">)</span> Failed to connect to domain.dev port 443: Connection refused</code></pre></div>
+<p>&hellip;then it means that you need to allow connections to this port in firewall rules on the host.</p>
+<p>And successful request would look like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl -I https://domain.dev
+HTTP/1.1 <span style="color:#ae81ff">200</span> OK
+Server: nginx/1.18.0 <span style="color:#f92672">(</span>Ubuntu<span style="color:#f92672">)</span>
+Date: Mon, <span style="color:#ae81ff">05</span> Apr <span style="color:#ae81ff">2021</span> 11:48:07 GMT
+Content-Type: text/html
+Content-Length: <span style="color:#ae81ff">391</span>
+Last-Modified: Mon, <span style="color:#ae81ff">05</span> Apr <span style="color:#ae81ff">2021</span> 09:43:18 GMT
+Connection: keep-alive
+ETag: <span style="color:#e6db74">&#34;606adbb6-187&#34;</span>
+Accept-Ranges: bytes</code></pre></div>
       </div>
     </article>
     <div><div id="tags">
