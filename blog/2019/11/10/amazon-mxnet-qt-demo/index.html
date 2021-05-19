@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <title>Amazon, MXNet and Qt - The Great Robot Arm challenge | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2019/11/10/amazon-mxnet-qt-demo/" />
 
-    <meta name="generator" content="Hugo 0.82.0" />
+    <meta name="generator" content="Hugo 0.83.1" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -226,8 +227,7 @@ $ make -j4 install</code></pre></div>
             <span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span>        }
     }
-}
-</code></pre></div>
+}</code></pre></div>
 <p>Which gives the following more or less responsive result:</p>
 
 
@@ -292,8 +292,7 @@ $ make -j4 install</code></pre></div>
     {
         <span style="color:#a6e22e">nextWindow</span>(<span style="color:#e6db74">&#34;challenge.qml&#34;</span>);
     }
-}
-</code></pre></div>
+}</code></pre></div>
 <h3 id="virtual-keyboard">Virtual Keyboard</h3>
 <p>The Challenge application has a text input, so participants could enter their names. And since the demo setup had a touchscreen with no physical keyboard, we added a <a href="https://doc.qt.io/qt-5/qtvirtualkeyboard-index.html">Virtual Keyboard</a> support.</p>
 <p>We also enabled the <a href="https://doc.qt.io/qt-5/qml-qtquick-virtualkeyboard-settings-virtualkeyboardsettings.html#fullScreenMode-prop">fullscreen mode</a> for it - when user touches the input field, the rest of the GUI &ldquo;disappears&rdquo;: the top half of the screen is taken by the input field and the bottom half is taken by the Virtual Keyboard:</p>
@@ -326,8 +325,7 @@ $ make -j4 install</code></pre></div>
 <span style="color:#a6e22e">VideoOutput</span> {
 <span style="display:block;width:100%;background-color:#3c3d38">    <span style="color:#a6e22e">source</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">videoWrapper</span><span style="color:#75715e">//camera
 </span></span><span style="color:#75715e"></span>    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}
-</code></pre></div>
+</span><span style="color:#75715e"></span>}</code></pre></div>
 <h3 id="grabbing-video-frames-on-the-fly">Grabbing video frames on the fly</h3>
 <p>The most interesting part of the video wrapper for us was the <a href="https://doc.qt.io/qt-5/qabstractvideosurface.html#present">present()</a> method as that&rsquo;s where you can grab the frames:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">bool</span> VideoWrapper<span style="color:#f92672">::</span>present(<span style="color:#66d9ef">const</span> QVideoFrame <span style="color:#f92672">&amp;</span>frame)
@@ -343,8 +341,7 @@ $ make -j4 install</code></pre></div>
     emit <span style="color:#a6e22e">gotNewFrameImage</span>(shot);
 
     <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}
-</code></pre></div>
+</span><span style="color:#75715e"></span>}</code></pre></div>
 <p>So we grab a copy of a frame (<a href="https://doc.qt.io/qt-5/qvideoframe.html">QVideoFrame</a>) and convert it to <a href="https://doc.qt.io/qt-5/qimage.html">QImage</a>.</p>
 <p>It&rsquo;s worth to mention that <code>qt_imageFromVideoFrame()</code> function is not available in the public API (<em><a href="https://bugreports.qt.io/browse/QTBUG-58292">here</a> you can vote for it</em>), so the private header needs to be included:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#66d9ef">#</span>include <span style="color:#e6db74">&#34;private/qvideoframe_p.h&#34;</span></code></pre></div>
@@ -426,8 +423,7 @@ $ make -j4 install</code></pre></div>
 </span><span style="color:#75715e"></span>    _frames.remove(reqID);
 
     emit <span style="color:#a6e22e">requestDone</span>(data);
-}
-</code></pre></div>
+}</code></pre></div>
 <p>The full source is available <a href="https://github.com/retifrav/amazon-mxnet-qt/blob/master/qml-camera-mxnet/backend.cpp">here</a>. However, it doesn&rsquo;t have everything as I had to remove quite a lot of code from the actual implementation - more on that in the <a href="#sources">results</a> section.</p>
 <p>As you can see, aside from sending frames we also save them in memory (<em>the <code>_frames</code> object</em>) for further processing. The reason for that is this: after MXNet replies back with coordinates of the person pose (<em>head, shoulders, palms, etc</em>), we need to crop the palms regions from the original frame and send those (<em>two requests - one per palm</em>) again to MXNet but this time to a different endpoint - to the one that analyses if the palm is closed or open.</p>
 <p>Admittedly, that is a very unfortunate design as we lose a lot resources because of that. Everything should happen within a single round trip: MXNet receives the frame, finds the pose coordinates and predicts the palms states. But sadly we didn&rsquo;t think about it at the beginning of the project and had absolutely no time to re-do that later.</p>
@@ -529,8 +525,7 @@ $ make -j4 install</code></pre></div>
     }
 
     <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}
-</code></pre></div>
+</span><span style="color:#75715e"></span>}</code></pre></div>
 <p>Here&rsquo;s how we can check if a user with given username already exists in the database:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">bool</span> Backend<span style="color:#f92672">::</span>checkUserName(QString username)
 {
@@ -542,8 +537,7 @@ $ make -j4 install</code></pre></div>
     query.first();
     <span style="color:#66d9ef">if</span> (query.value(<span style="color:#ae81ff">0</span>).toBool()) { <span style="color:#66d9ef">return</span> true; }
     <span style="color:#66d9ef">else</span> { <span style="color:#66d9ef">return</span> false; }
-}
-</code></pre></div>
+}</code></pre></div>
 <p>And here&rsquo;s how we fetch the list of scores to show on the leaderboard:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">void</span> Backend<span style="color:#f92672">::</span>fetchDataFromDB()
 {
@@ -567,8 +561,7 @@ $ make -j4 install</code></pre></div>
         _challengeScores<span style="color:#f92672">-&gt;</span>addScore(score);
     }
     emit <span style="color:#a6e22e">countChanged</span>(_challengeScores<span style="color:#f92672">-&gt;</span>rowCount());
-}
-</code></pre></div>
+}</code></pre></div>
 <p>To show the data in QML view, we used a <a href="https://doc.qt.io/qt-5/qml-qtquick-listview.html">ListView</a> binded to a <a href="https://github.com/retifrav/amazon-mxnet-qt/blob/master/leaderboard/scores.h">backend model</a>:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">ListView</span> {
     <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">scoresList</span>
@@ -614,8 +607,7 @@ $ make -j4 install</code></pre></div>
         }
         <span style="color:#a6e22e">highlighted</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">hovered</span>
     }
-}
-</code></pre></div>
+}</code></pre></div>
 <h3 id="sqlite-behind-qthttpserver">SQLite behind QtHttpServer</h3>
 <p>As the Challenge application alone occupied the entire display, we needed another display for the Leaderboard application, which also meant another host to run it - a Raspberry Pi device. But since Challenge and Leaderboard applications are on different hosts, we also needed a network communication between them - to save and read the challenge results.</p>
 <p>In case of MySQL we would have a server component out-of-the-box, but how to expose an SQLite database over the network?</p>
@@ -673,8 +665,7 @@ $ make -j4 install</code></pre></div>
     });
 
     <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}
-</code></pre></div>
+</span><span style="color:#75715e"></span>}</code></pre></div>
 <p>It works like a proper REST API, so we called it right from QML using <code>XmlHttpRequest</code>.</p>
 <p>Overall, QtHttpServer has proved to be such nice and useful component, so I&rsquo;ll write a separate article about it: how to build it from sources, how to add it to project and so on.</p>
 <p>Thanks a lot to <a href="https://codereview.qt-project.org/q/owner:mikhail.svetkin">Mikhail Svetkin</a> for creating QtHttpServer in the first place and for helping us to use it in our project.</p>

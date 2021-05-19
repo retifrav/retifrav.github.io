@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <title>C# / .NET Core Identity with MySQL | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2018/03/20/csharp-dotnet-core-identity-mysql/" />
 
-    <meta name="generator" content="Hugo 0.82.0" />
+    <meta name="generator" content="Hugo 0.83.1" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -134,19 +135,18 @@ Microsoft .NET Core Shared Framework Host
             <span style="color:#66d9ef">base</span>.OnModelCreating(builder);
         }
     }
-}
-</code></pre></div>
+}</code></pre></div>
 <p>I did not create my own <code>ApplicationUser</code> class, because I decided to take the default <code>IdentityUser</code>, so I replaced it in views <code>Login.cshtml</code> and <code>_LoginPartial.cshtml</code> and also changed the <code>AccountController</code> (and <code>ManageController</code>) constructor as follows:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">namespace</span> YOUR-PROJECT-NAMESPACE.Controllers
 {
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AccountController</span> : Controller
     {
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> UserManager&lt;IdentityUser&gt; _userManager;
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> RoleManager&lt;IdentityRole&gt; _roleManager;
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> SignInManager&lt;IdentityUser&gt; _signInManager;
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> ILogger _logger;
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IdentityContext _context;
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IConfiguration _configuration;
+        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> UserManager&lt;IdentityUser&gt; <span style="color:#ae81ff">_</span>userManager;
+        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> RoleManager&lt;IdentityRole&gt; <span style="color:#ae81ff">_</span>roleManager;
+        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> SignInManager&lt;IdentityUser&gt; <span style="color:#ae81ff">_</span>signInManager;
+        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> ILogger <span style="color:#ae81ff">_l</span>ogger;
+        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IdentityContext <span style="color:#ae81ff">_</span>context;
+        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IConfiguration <span style="color:#ae81ff">_</span>configuration;
 
         <span style="color:#66d9ef">public</span> AccountController(
             UserManager&lt;IdentityUser&gt; userManager,
@@ -157,18 +157,17 @@ Microsoft .NET Core Shared Framework Host
             IConfiguration configuration
             )
         {
-            _userManager = userManager;
-            _roleManager = roleManager;
-            _signInManager = signInManager;
-            _logger = loggerFactory.CreateLogger&lt;AccountController&gt;();
-            _context = context;
-            _configuration = configuration;
+            <span style="color:#ae81ff">_</span>userManager = userManager;
+            <span style="color:#ae81ff">_</span>roleManager = roleManager;
+            <span style="color:#ae81ff">_</span>signInManager = signInManager;
+            <span style="color:#ae81ff">_l</span>ogger = loggerFactory.CreateLogger&lt;AccountController&gt;();
+            <span style="color:#ae81ff">_</span>context = context;
+            <span style="color:#ae81ff">_</span>configuration = configuration;
         }
 
         <span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span>    }
-}
-</code></pre></div>
+}</code></pre></div>
 <p>Enable <code>Identity</code> authentication/authorization in <code>Startup.cs</code>:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> ConfigureServices(IServiceCollection services)
 {
@@ -232,8 +231,7 @@ Microsoft .NET Core Shared Framework Host
     app.UseAuthentication();
 
     <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}
-</code></pre></div>
+</span><span style="color:#75715e"></span>}</code></pre></div>
 <p>Couple of (lame) words about Entity Framework. <code>Identity</code> can use various storages for its users/passwords/roles/whatever information. Here we use a MySQL database. And by using so-called <strong>code-first</strong> approach Entity Framework generates SQL statements from <code>Identity</code> internal C# models (tables for users, roles, etc and relations between them). The process of generating these statements and applying them to database is called <strong>migration</strong>. At least that&rsquo;s how I understand the process, so better read some books on the subject.</p>
 <p>We have our <code>Identity</code> models ready for migration, so let&rsquo;s perform one. Make sure that you have <code>dotnet</code> version <code>2.x.x</code> and not <code>1.x.x</code>, and also that you are in the directory with <code>YOUR-PROJECT.csproj</code>. Run this command:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dotnet ef migrations add InitialCreate</code></pre></div>
@@ -329,8 +327,7 @@ Done. To undo this action, use <span style="color:#e6db74">&#39;ef migrations re
       builder.Entity&lt;IdentityUserClaim&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.UserId).HasMaxLength(<span style="color:#ae81ff">85</span>));
       builder.Entity&lt;IdentityRoleClaim&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.Id).HasMaxLength(<span style="color:#ae81ff">85</span>));
       builder.Entity&lt;IdentityRoleClaim&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.RoleId).HasMaxLength(<span style="color:#ae81ff">85</span>));
-}
-</code></pre></div>
+}</code></pre></div>
 <p>Now you can finally run <code>dotnet ef database update</code> and it will create all the necessary tables with no problems (at least, it did for me). Here&rsquo;re the tables you should get:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mysql&gt; show tables;
 +------------------------+
@@ -358,8 +355,7 @@ The type or namespace name <span style="color:#e6db74">&#39;IdentityUser&#39;</s
 @using YOUR-PROJECT-NAMESPACE.Models.AccountViewModels
 @using YOUR-PROJECT-NAMESPACE.Models.ManageViewModels
 @using Microsoft.AspNetCore.Identity
-@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-</code></pre></div>
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers</code></pre></div>
 <p>Now everything should be fine.</p>
 <p>So, how to use it?</p>
 <p>You already are using it. All the actions of your controllers now require user to be logged-in.</p>
@@ -371,8 +367,7 @@ The type or namespace name <span style="color:#e6db74">&#39;IdentityUser&#39;</s
     {
         <span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span>    }
-}
-</code></pre></div>
+}</code></pre></div>
 <p>Same goes for the <code>Login</code> actions of <code>AccountController</code>, otherwise no-one will be able to login to your website. In order to do so, add <code>[AllowAnonymous]</code> attribute to the actions, so they would be available for anonymous users:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">namespace</span> YOUR-PROJECT-NAMESPACE.Controllers
 {
@@ -396,8 +391,7 @@ The type or namespace name <span style="color:#e6db74">&#39;IdentityUser&#39;</s
 
         <span style="color:#75715e">// ...
 </span><span style="color:#75715e"></span>    }
-}
-</code></pre></div>
+}</code></pre></div>
 <p>And when user tries to open a page that requires him to authenticate himself (actions without <code>[AllowAnonymous]</code> attribute), your application will show him login page:</p>
 
 
@@ -410,8 +404,7 @@ The type or namespace name <span style="color:#e6db74">&#39;IdentityUser&#39;</s
 <span style="color:#66d9ef">public</span> ActionResult DeleteUser(<span style="color:#66d9ef">string</span> email)
 {
     <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}
-</code></pre></div>
+</span><span style="color:#75715e"></span>}</code></pre></div>
 <p>And thanks to <code>Identity</code>, you are provided with everything you need to manage roles. For instance, if you open <code>/Account/Index</code> (or just <code>/Account</code>) page in your browser, you&rsquo;ll see something like this:</p>
 
 
@@ -496,8 +489,7 @@ dotnet ef database update</code></pre></div>
         .AddEntityFrameworkStores&lt;ApplicationDbContext&gt;();
 
     <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}
-</code></pre></div>
+</span><span style="color:#75715e"></span>}</code></pre></div>
 <p>And that&rsquo;s it, there is no even need to override <code>OnModelCreating()</code> with those weird data types customization - everything just works out of the box.</p>
 <hr class="updates-divider"/>
 <div class="alert alert-info"><strong>[17.10.2020] Update:</strong> .NET 5 and PostgreSQL</div>

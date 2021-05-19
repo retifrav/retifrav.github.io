@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <title>Обработка ошибок в ASP.NET MVC | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2015/05/03/error-handling-in-asp-dot-mvc/" />
 
-    <meta name="generator" content="Hugo 0.82.0" />
+    <meta name="generator" content="Hugo 0.83.1" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -75,8 +76,7 @@
 {
     <span style="color:#75715e">// пишем в журнал
 </span><span style="color:#75715e"></span>    write2log(<span style="color:#66d9ef">string</span>.Format(<span style="color:#e6db74">&#34;Произошла неизвестная ошибка. {0}&#34;</span>, Server.GetLastError().Message));
-}
-</code></pre></div>
+}</code></pre></div>
 <p>Но я захотел возвращать также свои представления, а не стандартные &ldquo;жёлтые&rdquo; страницы ошибок. И вот что для этого нужно было сделать.</p>
 <p>Во-первых, в <code>web.config</code>&lsquo;е я ничего не правил. В некоторых статьях пишут, что нужно добавить секции обработки кастомных ошибок, но мне это не понадобилось.</p>
 <p>Вот какие файлы/классы потребовалось изменить (и создать):</p>
@@ -113,8 +113,7 @@
     	<span style="color:#75715e">// представление всех остальных кодов HTTP
 </span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> View(<span style="color:#e6db74">&#34;HttpError&#34;</span>);
     }
-}
-</code></pre></div>
+}</code></pre></div>
 <h1 id="представления">Представления</h1>
 <p>Как видно, всего у меня 4 представления, но все я описывать не буду, хватит и одного. Возьмём представление по умолчанию для исключений, выбрасываемых по моей вине - это дефолтное <code>Views/Error/Index.cshtml</code>. Я изменил его следующим образом (оригинал взял из ответа на вопрос <a href="http://stackoverflow.com/a/13905859/1688203">How to make custom error pages work in ASP.NET MVC 4</a>):</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">@{
@@ -205,8 +204,7 @@
 
     controller.ViewData.Model = <span style="color:#66d9ef">new</span> HandleErrorInfo(ex, currentController, currentAction);
     ((IController)controller).Execute(<span style="color:#66d9ef">new</span> RequestContext(<span style="color:#66d9ef">new</span> HttpContextWrapper(httpContext), routeData));
-}
-</code></pre></div>
+}</code></pre></div>
 <p>Ну и всё. Теперь если где-то я пропущу исключение, оно попадёт в этот метод, он определит подходящий метод контроллера ошибок и вызовет его, а тот вернёт нужное представление.</p>
 <p>Например, у меня есть некий контроллер <code>Controllers/UniversalController.cs</code>, а в нём в методе <code>fail</code> специально допущено деление на нуль. Если я его вызову, то мне вернётся следующее представление:</p>
 

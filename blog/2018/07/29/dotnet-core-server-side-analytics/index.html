@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <title>Server-side analytics in .NET Core | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2018/07/29/dotnet-core-server-side-analytics/" />
 
-    <meta name="generator" content="Hugo 0.82.0" />
+    <meta name="generator" content="Hugo 0.83.1" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -117,8 +118,7 @@ More reliable way to analyze your visitors would be a server-side analytics." />
 </span><span style="color:#75715e"></span>    app.UseStatusCodePages(); <span style="color:#75715e">// middleware #2
 </span><span style="color:#75715e"></span>    app.UseAuthentication(); <span style="color:#75715e">// middleware #3
 </span><span style="color:#75715e"></span>    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}
-</code></pre></div>
+</span><span style="color:#75715e"></span>}</code></pre></div>
 <p>These <code>app.UseSOMETHING()</code> are middlewares. Their order is important, so <code>UseStaticFiles()</code> middleware gets the request first, then <code>UseStatusCodePages()</code>, then <code>UseAuthentication()</code>, and so on.</p>
 <p>So where should we put our middleware? Of course, in the very beginning of this chain/queue, so every request is counted:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> Configure(
@@ -133,17 +133,16 @@ More reliable way to analyze your visitors would be a server-side analytics." />
 </span><span style="color:#75715e"></span>    app.UseStatusCodePages(); <span style="color:#75715e">// middleware #3
 </span><span style="color:#75715e"></span>    app.UseAuthentication(); <span style="color:#75715e">// middleware #4
 </span><span style="color:#75715e"></span>    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}
-</code></pre></div>
+</span><span style="color:#75715e"></span>}</code></pre></div>
 <p>Now we need to actually implement it. Create the <code>Middleware/AnalyticsMiddleware.cs</code> file in your project:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">namespace</span> YOUR-PROJECT.Middleware
 {
     <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AnalyticsMiddleware</span>
     {
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> RequestDelegate _next;
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> ILogger _logger;
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">string</span> _connectionString { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IConfiguration _configuration;
+        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> RequestDelegate <span style="color:#ae81ff">_</span>next;
+        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> ILogger <span style="color:#ae81ff">_l</span>ogger;
+        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>connectionString { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IConfiguration <span style="color:#ae81ff">_</span>configuration;
 
         <span style="color:#66d9ef">public</span> AnalyticsMiddleware(
             RequestDelegate next,
@@ -151,10 +150,10 @@ More reliable way to analyze your visitors would be a server-side analytics." />
             IConfiguration configuration
             )
         {
-            _next = next;
-            _logger = loggerFactory.CreateLogger&lt;AnalyticsMiddleware&gt;();
-            _configuration = configuration;
-            _connectionString = _configuration.GetConnectionString(<span style="color:#e6db74">&#34;DefaultConnection&#34;</span>);
+            <span style="color:#ae81ff">_</span>next = next;
+            <span style="color:#ae81ff">_l</span>ogger = loggerFactory.CreateLogger&lt;AnalyticsMiddleware&gt;();
+            <span style="color:#ae81ff">_</span>configuration = configuration;
+            <span style="color:#ae81ff">_</span>connectionString = <span style="color:#ae81ff">_</span>configuration.GetConnectionString(<span style="color:#e6db74">&#34;DefaultConnection&#34;</span>);
         }
 
         <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task InvokeAsync(HttpContext context)
@@ -167,15 +166,15 @@ More reliable way to analyze your visitors would be a server-side analytics." />
                 info.Append(<span style="color:#e6db74">$&#34;- query string: {context.Request.QueryString}{Environment.NewLine}&#34;</span>);
                 info.Append(<span style="color:#e6db74">$&#34;- [headers] ua: {context.Request.Headers[HeaderNames.UserAgent]}{Environment.NewLine}&#34;</span>);
                 info.Append(<span style="color:#e6db74">$&#34;- [headers] referer: {context.Request.Headers[HeaderNames.Referer]}{Environment.NewLine}&#34;</span>);
-                _logger.LogWarning(info.ToString());
+                <span style="color:#ae81ff">_l</span>ogger.LogWarning(info.ToString());
             }
             <span style="color:#66d9ef">catch</span> (Exception ex)
             {
                 <span style="color:#75715e">// we don&#39;t care much about exceptions in analytics
-</span><span style="color:#75715e"></span>                _logger.LogError(<span style="color:#e6db74">$&#34;Some error in analytics middleware. {ex.Message}&#34;</span>);
+</span><span style="color:#75715e"></span>                <span style="color:#ae81ff">_l</span>ogger.LogError(<span style="color:#e6db74">$&#34;Some error in analytics middleware. {ex.Message}&#34;</span>);
             }
 
-            <span style="color:#66d9ef">await</span> _next(context);
+            <span style="color:#66d9ef">await</span> <span style="color:#ae81ff">_</span>next(context);
         }
     }
 
@@ -186,8 +185,7 @@ More reliable way to analyze your visitors would be a server-side analytics." />
             <span style="color:#66d9ef">return</span> builder.UseMiddleware&lt;AnalyticsMiddleware&gt;();
         }
     }
-}
-</code></pre></div>
+}</code></pre></div>
 <p>Now every time your server (<em>website</em>) gets a request, you&rsquo;ll see the following in your log:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs">WARN  [<span style="color:#ae81ff">2018</span>-<span style="color:#ae81ff">07</span>-<span style="color:#ae81ff">27</span> <span style="color:#ae81ff">21</span>:<span style="color:#ae81ff">13</span>:<span style="color:#ae81ff">19</span>] Got a visitor
 ---
@@ -198,7 +196,7 @@ More reliable way to analyze your visitors would be a server-side analytics." />
 - [headers] referer: http:<span style="color:#75715e">//some-source
 </span></code></pre></div>
 <p>But such a log-wall is rather hard to analyze, better to store this data in a database instead:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">using</span> (MySqlConnection sqlConn = <span style="color:#66d9ef">new</span> MySqlConnection(_connectionString))
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">using</span> (MySqlConnection sqlConn = <span style="color:#66d9ef">new</span> MySqlConnection(<span style="color:#ae81ff">_</span>connectionString))
 {
     sqlConn.Open();
 
@@ -210,8 +208,7 @@ More reliable way to analyze your visitors would be a server-side analytics." />
     cmd.Parameters.AddWithValue(<span style="color:#e6db74">&#34;@referer&#34;</span>, context.Request.Headers[HeaderNames.Referer]);
     cmd.Parameters.AddWithValue(<span style="color:#e6db74">&#34;@ua&#34;</span>, context.Request.Headers[HeaderNames.UserAgent]);
     cmd.ExecuteNonQuery();
-}
-</code></pre></div>
+}</code></pre></div>
 <p>And here&rsquo;s the table for that:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#f92672">`</span>analytics<span style="color:#f92672">`</span> (
   <span style="color:#f92672">`</span>id<span style="color:#f92672">`</span> bigint(<span style="color:#ae81ff">11</span>) unsigned <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> AUTO_INCREMENT,
@@ -270,8 +267,7 @@ More reliable way to analyze your visitors would be a server-side analytics." />
     ))
 {
     <span style="color:#75715e">// only requests for &#34;good&#34; resources get processed here
-</span><span style="color:#75715e"></span>}
-</code></pre></div>
+</span><span style="color:#75715e"></span>}</code></pre></div>
 <p>Second type of requests (<em>robots</em>) cannot be filtered out reliably enough. The only thing you can do about here is to check the <code>User-Agent</code>, but that is not reliable as you cannot know all the possible values for crawlers, and on top of that users can modify <code>User-Agent</code> value in their browsers. So you can only approximately assume that if this value contains <code>/bot</code> substring, then likely it is a bot:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">if</span> (Regex.IsMatch(
     context.Request.Headers[HeaderNames.UserAgent],
@@ -280,8 +276,7 @@ More reliable way to analyze your visitors would be a server-side analytics." />
     ))
 {
     <span style="color:#75715e">// do something with it, or actually simply don&#39;t analyze such requests
-</span><span style="color:#75715e"></span>}
-</code></pre></div>
+</span><span style="color:#75715e"></span>}</code></pre></div>
 <p>I decided to save and analyze those anyway. For instance, in my view for analytics I just mark such requests with a different color:</p>
 
 
@@ -362,8 +357,7 @@ More reliable way to analyze your visitors would be a server-side analytics." />
     });
 
     <span style="color:#66d9ef">await</span> next();
-});
-</code></pre></div>
+});</code></pre></div>
 <p>Note, however, that if you have a reverse proxy web-server, then most likely it will send its name in the <code>Server</code> header anyway (<em>so you need to change it there</em>).</p>
       </div>
     </article>

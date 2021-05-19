@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <title>Creating a C&#43;&#43; library with CMake | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2021/03/08/cmake-cpp-library/" />
 
-    <meta name="generator" content="Hugo 0.82.0" />
+    <meta name="generator" content="Hugo 0.83.1" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -156,13 +157,11 @@ To clarify, this will be about so-called normal kind of library." />
             std<span style="color:#f92672">::</span>cout <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;ololo, &#34;</span> <span style="color:#f92672">&lt;&lt;</span> someString <span style="color:#f92672">&lt;&lt;</span> std<span style="color:#f92672">::</span>endl;
         }
     }
-}
-</code></pre></div>
+}</code></pre></div>
 <p>As you can see, this function just prints a message to standard output. The <code>someString</code> variable comes from internal header <code>src/things.h</code>:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;string&gt;</span><span style="color:#75715e">
 </span><span style="color:#75715e"></span>
-<span style="color:#66d9ef">const</span> std<span style="color:#f92672">::</span>string someString <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;some string&#34;</span>;
-</code></pre></div>
+<span style="color:#66d9ef">const</span> std<span style="color:#f92672">::</span>string someString <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;some string&#34;</span>;</code></pre></div>
 <h2 id="cmakelists">CMakeLists</h2>
 <p>Making a library with CMake is not that different from making an application - instead of <a href="https://cmake.org/cmake/help/latest/command/add_executable.html">add_executable</a> you call <a href="https://cmake.org/cmake/help/latest/command/add_library.html">add_library</a>. But doing just that would be too easy, wouldn&rsquo;t it.</p>
 <p>Here are some of the things you need to take care of:</p>
@@ -202,8 +201,7 @@ To clarify, this will be about so-called normal kind of library." />
 target_sources(<span style="color:#960050;background-color:#1e0010">$</span>{PROJECT_NAME}
     PRIVATE
         src<span style="color:#f92672">/</span>some.cpp
-)
-</code></pre></div>
+)</code></pre></div>
 <p>Here the library is defined as <code>STATIC</code>, but there will be a section about <a href="#static-vs-shared">shared</a> libraries too.</p>
 <h3 id="include-directories">Include directories</h3>
 <p>Setting include directories correctly with <a href="https://cmake.org/cmake/help/latest/command/target_include_directories.html">target_include_directories</a> is very important:</p>
@@ -387,8 +385,7 @@ $ tree .
     std<span style="color:#f92672">::</span>cout <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;base application message&#34;</span> <span style="color:#f92672">&lt;&lt;</span> std<span style="color:#f92672">::</span>endl;
     <span style="color:#75715e">// here we call a function from the library
 </span><span style="color:#75715e"></span>    sm<span style="color:#f92672">::</span>lbr<span style="color:#f92672">::</span>printSomething();
-}
-</code></pre></div>
+}</code></pre></div>
 <p>The project file:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">project(<span style="color:#e6db74">&#34;another-application&#34;</span> <span style="color:#e6db74">VERSION</span> <span style="color:#e6db74">0.9</span> <span style="color:#e6db74">DESCRIPTION</span> <span style="color:#e6db74">&#34;A project with external library&#34;</span>)<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010">
@@ -468,8 +465,7 @@ $ tree .
 {
     std<span style="color:#f92672">::</span>cout <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;base application message&#34;</span> <span style="color:#f92672">&lt;&lt;</span> std<span style="color:#f92672">::</span>endl;
     sm<span style="color:#f92672">::</span>lbr<span style="color:#f92672">::</span>printSomething();
-}
-</code></pre></div>
+}</code></pre></div>
 <p>While the code here is the same as the one from external project, there is one notable difference - <code>some.h</code> is not prepended with <code>SomeLibrary/</code> in the <code>#include</code> statement.</p>
 <p>Why is that, why is it different from the way in was included in external project? Well, it is because that is how this header is placed in the library&rsquo;s source <code>include</code> folder - there is no <code>SomeLibrary</code> folder nested there. But when you install the library, then there is <code>SomeLibrary</code> folder inside <code>include</code> in the installation folder, so in that case you need to add <code>SomeLibrary/</code> to <code>#include</code> statement.</p>
 <p>I wasn&rsquo;t sure if that is really how things are, so I went and asked about this on <a href="https://stackoverflow.com/questions/66507441/library-name-to-prefix-headers-names-in-include-statements">StackOverflow</a>, hoping that there is perhaps some way to handle this in a unified way, but the answer was:</p>

@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <title>NGINX, uWSGI and Python scripts | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2019/11/03/nginx-uwsgi-python-scripts/" />
 
-    <meta name="generator" content="Hugo 0.82.0" />
+    <meta name="generator" content="Hugo 0.83.1" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -170,8 +171,7 @@ $ which uwsgi
 <p>Opening <code>http://localhost/any.py</code> in a web-browser will get you a web-page with this line of text (<em>&ldquo;Ololo!&quot;</em>). Note that you will get it by opening absolutely any request to localhost that ends with <code>.py</code>.</p>
 <p>If you are getting an empty response body, make sure you have <code>.encode(&quot;utf-8&quot;)</code> in the returned value. At first I didn&rsquo;t have it there and I was pretty puzzled by getting the right response status (<code>200 damn</code>) but not getting a response body. <a href="https://serverfault.com/a/612273/410288">This answer</a> and <a href="https://uwsgi-docs.readthedocs.io/en/latest/Python.html#python-3">documentation</a> revealed the reason.</p>
 <p>If you are getting <code>502 Bad Gateway</code> error, then check if NGINX user (<code>www-data</code>) has access to <code>/var/www/html/cgi-bin/wsgi.sock</code>, and obviously uWSGI user also has to have access to it (<em>or you can just run it from <code>www-data</code> user too</em>):</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp">sudo chown <span style="color:#f92672">-</span>R www<span style="color:#f92672">-</span>data:www<span style="color:#f92672">-</span>data <span style="color:#f92672">/</span>var<span style="color:#f92672">/</span>www<span style="color:#f92672">/</span>html
-</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp">sudo chown <span style="color:#f92672">-</span>R www<span style="color:#f92672">-</span>data:www<span style="color:#f92672">-</span>data <span style="color:#f92672">/</span>var<span style="color:#f92672">/</span>www<span style="color:#f92672">/</span>html</code></pre></div>
 <p>So returning a simple line of text works. Let&rsquo;s now try to generate a proper HTML document with some useful information, for instance a list of uWSGI parameters (<em><code>environ</code> variable</em>) passed from NGINX:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">application</span>(environ, start_response):
     htmlResponse <span style="color:#f92672">=</span> [ <span style="color:#e6db74">&#34;&lt;!DOCTYPE html&gt;&#34;</span> ]

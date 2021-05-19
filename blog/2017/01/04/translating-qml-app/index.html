@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <title>How to translate a QML application | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2017/01/04/translating-qml-app/" />
 
-    <meta name="generator" content="Hugo 0.82.0" />
+    <meta name="generator" content="Hugo 0.83.1" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -141,8 +142,7 @@ QString Trans<span style="color:#f92672">::</span>getEmptyString()
 </span><span style="color:#75715e"></span>    qApp<span style="color:#f92672">-&gt;</span>installTranslator(translator);
 
     emit <span style="color:#a6e22e">languageChanged</span>();
-}
-</code></pre></div></p>
+}</code></pre></div></p>
 <p><u>main.cpp</u>:
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;trans.h&#34;</span><span style="color:#75715e">
 </span><span style="color:#75715e"></span>
@@ -165,8 +165,7 @@ engine.load(QUrl(QLatin1String(<span style="color:#e6db74">&#34;qrc:/main.qml&#3
 
     <span style="color:#a6e22e">ToolTip</span>.<span style="color:#a6e22e">visible</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">pressed</span>
     <span style="color:#a6e22e">ToolTip</span>.<span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">qsTr</span>(<span style="color:#e6db74">&#34;Some tooltip&#34;</span>) <span style="color:#f92672">+</span> <span style="color:#a6e22e">trans</span>.<span style="color:#a6e22e">emptyString</span>
-}
-</code></pre></div>
+}</code></pre></div>
 <p>As you can see, every string is not only processed by <code>qsTr()</code> function, but also has this <code>+ trans.emptyString</code> expression. That&rsquo;s the trick itself - it forces <strong>QmlEngine</strong> to re-evaluate the text, and without this expression it won&rsquo;t happen. It looks like a dirty trick, and I consider it dirty as well, but apparently so far that&rsquo;s the only way to do the dynamic language switching in QML application, because <a href="https://bugreports.qt.io/browse/QTBUG-15602">related bug</a> was reported in motherfucking 2010 and has not yet been fixed - that&rsquo;s more than 6 (six) years for the moment, for fuck&rsquo;s sake.</p>
 <p>Ok, save <code>main.qml</code>. Now we need to generate a translation file. For that purpose there is an utility <code>lupdate</code>. Create a <code>i18n</code> folder in your project directory and execute the following command:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span><span style="color:#a6e22e">Qt</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5.7</span><span style="color:#f92672">/</span>clang_64<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>lupdate main<span style="color:#f92672">.</span>qml <span style="color:#f92672">-</span>ts i18n<span style="color:#f92672">/</span>translating<span style="color:#f92672">-</span>qml_ru<span style="color:#f92672">.</span>ts</code></pre></div>
@@ -207,8 +206,7 @@ engine.load(QUrl(QLatin1String(<span style="color:#e6db74">&#34;qrc:/main.qml&#3
 <p>Now back to code. You need some button or menu item that will trigger <code>selectLanguage()</code> function with corresponding language. For example:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">onClicked</span><span style="color:#f92672">:</span> {
     <span style="color:#a6e22e">onClicked</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">trans</span>.<span style="color:#a6e22e">selectLanguage</span>(<span style="color:#e6db74">&#34;ru&#34;</span>);
-}
-</code></pre></div>
+}</code></pre></div>
 <p>After you&rsquo;ll have some UI with translations ready to test, you need to deploy the <code>.qm</code> files. Move them into the folder with your application binaries (the build folder)). In our case, it is again the <code>i18n</code> folder as we specified in <code>trans.cpp</code>, for example: <code>build-translating-qml-Desktop_Qt_5_7_1_clang_64bit-Debug/i18n/</code>.</p>
 <p>For Mac OS it&rsquo;s a bit different, because there applications are bundled into the <code>.app</code> package, so you need to open <em>Package Contents</em> and place <code>i18n</code> folder with <code>.qm</code> files into the <code>translating-qml.app/Contents/MacOS/i18n</code>:</p>
 
@@ -242,8 +240,7 @@ qApp<span style="color:#f92672">-&gt;</span>installTranslator(_translator);
 _engine<span style="color:#f92672">-&gt;</span>retranslate();
 
 emit <span style="color:#a6e22e">languageChanged</span>();
-...
-</code></pre></div>
+...</code></pre></div>
 <p>I&rsquo;ve <a href="https://github.com/retifrav/translating-qml/commit/1b53a6ee221cdacbd1528f2501d4991d2f6ea514">updated</a> my demo application.</p>
       </div>
     </article>
