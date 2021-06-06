@@ -67,7 +67,7 @@ So the main website and the origin is now on https://decovar.dev/, and https://r
 </svg> 2021-05-30 18:32:54 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 14 min read</div>
+</svg> 15 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -89,6 +89,7 @@ So the main website and the origin is now on https://decovar.dev/, and https://r
         <li><a href="#system-user-config-and-systemd-service">System user, config and systemd service</a></li>
         <li><a href="#nginx-config-and-certificate">NGINX config and certificate</a></li>
         <li><a href="#adding-remark42-to-hugo">Adding remark42 to Hugo</a></li>
+        <li><a href="#styling">Styling</a></li>
         <li><a href="#import-from-disqus">Import from Disqus</a></li>
         <li><a href="#authentication">Authentication</a></li>
         <li><a href="#api">API</a></li>
@@ -383,7 +384,53 @@ comments: true
 {{ define &#34;AddToBottom&#34; }}
     {{ partial &#34;comments.html&#34; $ }}
 {{ end }}
-</code></pre></div><h2 id="import-from-disqus">Import from Disqus</h2>
+</code></pre></div><h2 id="styling">Styling</h2>
+<p><a href="https://github.com/umputun/remark42/issues/5">At the moment</a> remark42 commenting form and comments tree are added to the page via <code>iframe</code>, so setting a custom CSS would not be a very trivial task. One possible <a href="https://maxmastalerz.com/blog/how-to-customize-remark42-css-via-a-proxy-workaround">workaround</a> for that is overwriting or rather redirecting requests to CSS files.</p>
+<p>But actually I am totally fine with the &ldquo;stock&rdquo; styles for both comment form and comments tree. What I did want to customize though was the latest comments widget, and that one is not an <code>iframe</code> but a regular <code>div</code>, so here it cometh in <code>comments.scss</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scss" data-lang="scss"><span style="color:#f92672">div</span><span style="color:#a6e22e">.remark42__last-comments</span> {
+    <span style="color:#f92672">margin</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">30px</span> <span style="color:#f92672">0</span> <span style="color:#f92672">20px</span>;
+    <span style="color:#f92672">padding-left</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">30px</span>;
+
+    <span style="color:#f92672">article</span><span style="color:#a6e22e">.comment</span> {
+        <span style="color:#f92672">padding</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">0</span>;
+        <span style="color:#f92672">margin</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">0</span> <span style="color:#f92672">0</span> <span style="color:#f92672">25px</span>;
+
+        <span style="color:#f92672">div</span><span style="color:#a6e22e">.comment__body</span> {
+            <span style="color:#f92672">padding-left</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">0</span>;
+            <span style="color:#f92672">font-family</span><span style="color:#a6e22e">:</span> <span style="color:#e6db74">&#34;Verdana&#34;</span>;
+            <span style="color:#f92672">font-size</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">14px</span>;
+
+            <span style="color:#a6e22e">.comment__title</span> {
+                <span style="color:#f92672">margin-bottom</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">5px</span>;
+                <span style="color:#f92672">color</span><span style="color:#a6e22e">:</span> #1E8449;
+                <span style="color:#f92672">font-size</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">1</span><span style="color:#a6e22e">.2em</span>;
+                <span style="color:#f92672">font-weight</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">bold</span>;
+            }
+            <span style="color:#a6e22e">.comment__title</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">a</span> {
+                <span style="color:#f92672">color</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">inherit</span>;
+            }
+
+            <span style="color:#a6e22e">.comment__info</span><span style="color:#a6e22e">::after</span> {
+                <span style="color:#f92672">content</span><span style="color:#a6e22e">:</span> <span style="color:#e6db74">&#34;: &#34;</span>;
+            }
+
+            <span style="color:#a6e22e">.comment__text</span> {
+                <span style="color:#f92672">font-style</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">italic</span>;
+            }
+        }
+    }
+    <span style="color:#f92672">article</span><span style="color:#a6e22e">.comment</span><span style="color:#a6e22e">:last-of-type</span> {
+        <span style="color:#f92672">margin-bottom</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">0</span>;
+    }
+}
+</code></pre></div><p>And here&rsquo;re before/after screenshots:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/05/30/new-server-and-remark42-comments/images/remark42-last-comments-styling.png" alt="Styling remark42 last comments widget">
+
+
+<h2 id="import-from-disqus">Import from Disqus</h2>
 <p>Another nice thing about remark42 is that it supports importing comments from Disqus. In the very beginning I was using exactly Disqus, before I switched to GitHub issue-based comments, and so it was nice to be able to move over at least the comments from Disqus.</p>
 <p>To do so, go to <a href="https://waspenterprises.disqus.com/admin/discussions/export/">Export</a> page (<em>but first try to find it yourself in the Disqus admin panel</em>) and request an export. Some time later you will receive an e-mail with the link to your exported comments. Having the link, go to your host, download the archive, unpack and import to remark42:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cd /home/remark42/downloads
