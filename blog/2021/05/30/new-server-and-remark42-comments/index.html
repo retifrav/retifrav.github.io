@@ -175,12 +175,12 @@ XDEBUG_SESSION_START
 </span><span style="color:#ae81ff"></span>    | sudo -u www-data goaccess - -o /var/www/decovar.dev/admin/analytics.html
 </code></pre></div><p>However, this way you are risking to accidentally <em>blacklist</em> some routes which you don&rsquo;t have now, but might have in future, so an even better solution would be to first <em>whitelist</em> all the known routes of your website and then optionally <em>blacklist</em> some sub-routes.</p>
 <p>In my case, here&rsquo;s what I whitelisted in <code>requests-whitelisted.txt</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">GET <span style="color:#ae81ff">\/</span>projects<span style="color:#ae81ff">\/</span>
-GET <span style="color:#ae81ff">\/</span>stuff<span style="color:#ae81ff">\/</span>
-GET <span style="color:#ae81ff">\/</span>about<span style="color:#ae81ff">\/</span>
-GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>
-GET <span style="color:#ae81ff">\/</span>etc<span style="color:#ae81ff">\/</span>
-GET <span style="color:#ae81ff">\/</span>top<span style="color:#ae81ff">\/</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">GET <span style="color:#ae81ff">\/</span>projects<span style="color:#f92672">(</span><span style="color:#ae81ff">\/</span>|$<span style="color:#f92672">)</span>
+GET <span style="color:#ae81ff">\/</span>stuff<span style="color:#f92672">(</span><span style="color:#ae81ff">\/</span>|$<span style="color:#f92672">)</span>
+GET <span style="color:#ae81ff">\/</span>about<span style="color:#f92672">(</span><span style="color:#ae81ff">\/</span>|$<span style="color:#f92672">)</span>
+GET <span style="color:#ae81ff">\/</span>blog<span style="color:#f92672">(</span><span style="color:#ae81ff">\/</span>|$<span style="color:#f92672">)</span>
+GET <span style="color:#ae81ff">\/</span>etc<span style="color:#f92672">(</span><span style="color:#ae81ff">\/</span>|$<span style="color:#f92672">)</span>
+GET <span style="color:#ae81ff">\/</span>top<span style="color:#f92672">(</span><span style="color:#ae81ff">\/</span>|$<span style="color:#f92672">)</span>
 </code></pre></div><p>I don&rsquo;t see much point in counting requests with methods other than <code>GET</code>, especially for a static website, so I explicitly whitelisted only requests with <code>GET</code> method.</p>
 <p>Just in case, if you don&rsquo;t understand why my rules are like this, take a look at any request in NGINX access log, such as this one:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">36.233.31.141 - - <span style="color:#f92672">[</span>30/May/2021:05:39:47 +0000<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /blog/2017/09/29/virtual-box-on-mac-os/images/virtualbox-host-only-network-adapter.png HTTP/1.1&#34;</span> <span style="color:#ae81ff">200</span> <span style="color:#ae81ff">210740</span> <span style="color:#e6db74">&#34;https://decovar.dev/blog/2017/09/29/virtual-box-on-mac-os/&#34;</span> <span style="color:#e6db74">&#34;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36&#34;</span>
@@ -188,15 +188,15 @@ GET <span style="color:#ae81ff">\/</span>top<span style="color:#ae81ff">\/</span
 <p>I could&rsquo;ve also added <code>GET \/ HTTP</code> and maybe also <code>GET \/css\/</code> and <code>GET \/js\/</code> rules, but they add pretty much useless noise in reports, so I haven&rsquo;t.</p>
 <p>Anyway, having added this list to the pipe, I almost completely eliminated trash requests from report. Almost - because there were still some, which did not belong to my website, so I modified the file with blacklisted requests like so:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#ae81ff">\.</span><span style="color:#f92672">(</span>jar|jsp|php|asp|aspx|cgi|pl|cfm|htm|nsf<span style="color:#f92672">)</span>
-GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>skin<span style="color:#ae81ff">\/</span>
-GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>bad397<span style="color:#ae81ff">\/</span>
-GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>pivot<span style="color:#ae81ff">\/</span>
-GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>guestbook_entries<span style="color:#ae81ff">\/</span>
-GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>administrator<span style="color:#ae81ff">\/</span>
-GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>core<span style="color:#ae81ff">\/</span>
-GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>wp<span style="color:#ae81ff">\-</span>links/
-GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>modules<span style="color:#ae81ff">\/</span>
-GET <span style="color:#ae81ff">\/</span>etc<span style="color:#ae81ff">\/</span>shadow
+GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>skin<span style="color:#ae81ff">\/</span>?
+GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>bad397<span style="color:#ae81ff">\/</span>?
+GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>pivot<span style="color:#ae81ff">\/</span>?
+GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>guestbook_entries<span style="color:#ae81ff">\/</span>?
+GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>administrator<span style="color:#ae81ff">\/</span>?
+GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>core<span style="color:#ae81ff">\/</span>?
+GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>wp-links<span style="color:#ae81ff">\/</span>?
+GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>modules<span style="color:#ae81ff">\/</span>?
+GET <span style="color:#ae81ff">\/</span>etc<span style="color:#ae81ff">\/</span>shadow<span style="color:#ae81ff">\/</span>?
 </code></pre></div><p>And the updated pipe for generating GoAccess report now looks like this:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ zcat -f /var/log/nginx/access.log* <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    | egrep -f /path/to/requests-whitelisted.txt <span style="color:#ae81ff">\
@@ -389,20 +389,19 @@ comments: true
 <p>But actually I am totally fine with the &ldquo;stock&rdquo; styles for both comment form and comments tree. What I did want to customize though was the latest comments widget, and that one is not an <code>iframe</code> but a regular <code>div</code>, so here it cometh in <code>comments.scss</code>:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scss" data-lang="scss"><span style="color:#f92672">div</span><span style="color:#a6e22e">.remark42__last-comments</span> {
     <span style="color:#f92672">margin</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">30px</span> <span style="color:#f92672">0</span> <span style="color:#f92672">20px</span>;
-    <span style="color:#f92672">padding-left</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">30px</span>;
 
     <span style="color:#f92672">article</span><span style="color:#a6e22e">.comment</span> {
         <span style="color:#f92672">padding</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">0</span>;
-        <span style="color:#f92672">margin</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">0</span> <span style="color:#f92672">0</span> <span style="color:#f92672">25px</span>;
+        <span style="color:#f92672">margin</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">0</span> <span style="color:#f92672">0</span> <span style="color:#f92672">10px</span>;
 
         <span style="color:#f92672">div</span><span style="color:#a6e22e">.comment__body</span> {
-            <span style="color:#f92672">padding-left</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">0</span>;
-            <span style="color:#f92672">font-family</span><span style="color:#a6e22e">:</span> <span style="color:#e6db74">&#34;Verdana&#34;</span>;
-            <span style="color:#f92672">font-size</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">14px</span>;
+            <span style="color:#f92672">padding</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">15px</span>;
+            <span style="color:#f92672">border</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">1px</span> <span style="color:#f92672">dashed</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#f92672">color-dimmed</span>;
+            <span style="color:#f92672">font-family</span><span style="color:#a6e22e">:</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#f92672">font-primary</span>;
 
             <span style="color:#a6e22e">.comment__title</span> {
                 <span style="color:#f92672">margin-bottom</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">5px</span>;
-                <span style="color:#f92672">color</span><span style="color:#a6e22e">:</span> #1E8449;
+                <span style="color:#f92672">color</span><span style="color:#a6e22e">:</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#f92672">color-primary</span>;
                 <span style="color:#f92672">font-size</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">1</span><span style="color:#a6e22e">.2em</span>;
                 <span style="color:#f92672">font-weight</span><span style="color:#a6e22e">:</span> <span style="color:#f92672">bold</span>;
             }
