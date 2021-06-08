@@ -67,7 +67,7 @@ So the main website and the origin is now on https://decovar.dev/, and https://r
 </svg> 2021-05-30 18:32:54 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 15 min read</div>
+</svg> 16 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -93,6 +93,7 @@ So the main website and the origin is now on https://decovar.dev/, and https://r
         <li><a href="#import-from-disqus">Import from Disqus</a></li>
         <li><a href="#authentication">Authentication</a></li>
         <li><a href="#api">API</a></li>
+        <li><a href="#telegram-notifications">Telegram notifications</a></li>
       </ul>
     </li>
     <li><a href="#canonical-url">Canonical URL</a></li>
@@ -218,9 +219,10 @@ GET <span style="color:#ae81ff">\/</span>etc<span style="color:#ae81ff">\/</span
 <li>it does not require a PostgreSQL/MySQL database</li>
 <li>it is quite lightweight</li>
 <li>it has good Markdown support</li>
+<li>it supports anonymous users, OAuth and e-mail authentication</li>
 <li>there is a voting system</li>
-<li>users can subscribe to RSS feed</li>
-<li>there is even an API</li>
+<li>there is RSS, e-mail and Telegram notifications</li>
+<li>and there is even an API</li>
 </ul>
 <p>So here&rsquo;s how I added it to my website.</p>
 <h2 id="system-user-config-and-systemd-service">System user, config and systemd service</h2>
@@ -451,6 +453,7 @@ $ sudo -u remark42 remark42.linux-amd64 import -p disqus <span style="color:#ae8
 <p>After the remapping all the old Disqus comments magically appeared under the posts on my new website. Shortly after I went to Disqus admin panel and deleted all the comments from the old website there.</p>
 <h2 id="authentication">Authentication</h2>
 <p>You can enable several authentication methods for users and you can also allow anonymous comments. I did the latter and also enabled <a href="https://github.com/umputun/remark42#github-auth-provider">GitHub authentication</a>. Facebook and Twitter are for retards, so I won&rsquo;t enable those, and others I will think about, perhaps I will at least enable Microsoft too.</p>
+<p><a href="https://remark42.com/docs/latest/email/">E-mail authentication</a> is also supported, and most likely I will enable that one too.</p>
 <p>Speaking about anonymous comments, at the moment there is no pre-moderation functionality, although it <a href="https://github.com/umputun/remark42/discussions/1019">might be added</a> soon enough.</p>
 <h2 id="api">API</h2>
 <p>There is a REST API, and to use it for administration purposes you need to be logged-in via either of authentication methods and to have your <a href="https://github.com/umputun/remark42#admin-users">user ID</a> added to the <code>ADMIN_SHARED_ID</code> parameter in the config.</p>
@@ -465,7 +468,25 @@ $ sudo -u remark42 remark42.linux-amd64 import -p disqus <span style="color:#ae8
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    -X <span style="color:#e6db74">&#34;DELETE&#34;</span> <span style="color:#e6db74">&#34;https://comments.decovar.dev/api/v1/admin/comment/COMMENT-ID?site=decovar.dev&amp;url=https:%2F%2Fdecovar.dev%2Fsome%2Fpage.html&#34;</span> <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#39;X-JWT: HERE-GOES-JWT&#39;</span>
-</code></pre></div><h1 id="canonical-url">Canonical URL</h1>
+</code></pre></div><h2 id="telegram-notifications">Telegram notifications</h2>
+<p>You can enable <a href="https://remark42.com/docs/latest/telegram/">Telegram notifications</a> in a minute or so. Get a <a href="https://core.telegram.org/bots#creating-a-new-bot">token</a> from <a href="https://t.me/botfather">BotFather</a> (<em>or reuse one of your existing bots</em>) and add the following to the remark42 config:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">NOTIFY_TYPE<span style="color:#f92672">=</span>telegram
+NOTIFY_TELEGRAM_CHAN<span style="color:#f92672">=</span>YOUR-ID
+NOTIFY_TELEGRAM_TOKEN<span style="color:#f92672">=</span>YOUR-BOT-TOKEN
+</code></pre></div><p>Despite documentation saying that <code>NOTIFY_TELEGRAM_CHAN</code> is for a channel ID, this value can actually be set to either of the following:</p>
+<ul>
+<li>your own ID (<em>numerical value, or perhaps <code>@</code>-name also works</em>), so the bot will be sending notifications directly to you. It might be that you need to send <code>/start</code> to the bot first, as bots cannot message users by default (<em>but maybe bots can always reach their owner</em>)</li>
+<li>channel ID. That can be either private (<em>numerical value</em>) or public (<em><code>@</code>-name</em>) channel. The channel needs to be created first and the bot needs to be added to that channel as an admin</li>
+<li>group chat ID (<em>negative numerical value</em>). The bot needs to be added to the group</li>
+</ul>
+<p>Here&rsquo;s an example of a notification sent directly to me:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/05/30/new-server-and-remark42-comments/images/telegram-notification.jpg" alt="remark42 Telegram notification" style="border:1px solid black;">
+
+
+<h1 id="canonical-url">Canonical URL</h1>
 <p>Something what I was curious about for quite some time: how search engines such as Google handle the same content published on several websites and/or how can one specify which is the main website and which are just mirrors.</p>
 <p>Apparently, this is what <a href="https://en.wikipedia.org/wiki/Canonical_link_element">canonical url</a> is (<em>partly</em>) for. So you just need to add it to <code>&lt;head&gt;</code> on your mirrors, pointing to the main website.</p>
 <p>However, Google can still <a href="https://developers.google.com/search/docs/advanced/crawling/consolidate-duplicate-urls#how-googlebot-indexes-and-chooses-the-canonical-url">decide on its own</a>, which page is the origin and which is a mirror, despite your explicit intention. Classic Google.</p>
