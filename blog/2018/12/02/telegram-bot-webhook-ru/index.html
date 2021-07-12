@@ -1,0 +1,429 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Telegram бот через webhook | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2018/12/02/telegram-bot-webhook-ru/" />
+
+    <meta name="generator" content="Hugo 0.84.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Telegram бот через webhook" />
+<meta property="og:description" content="Я тогда давно написал статью про создание Telegram бота, и обещал дополнить её описанием настройки работы через webhook, но так и не дополнил. Вот только сейчас дошли руки.
+
+
+
+    
+
+
+This article in english 🇺🇸." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2018/12/02/telegram-bot-webhook-ru/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2018-12-02T06:42:42-10:00" />
+<meta property="article:modified_time" content="2018-12-02T06:42:42-10:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2018/12/02/telegram-bot-webhook-ru/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Telegram бот через webhook</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2018-12-02 06:42:42 -1000</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 5 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>Я тогда давно написал <a href="/blog/2015/10/24/telegram-bot/">статью</a> про создание Telegram бота, и обещал дополнить её описанием настройки работы через webhook, но так и не дополнил. Вот только сейчас дошли руки.</p>
+
+
+
+    <img class="image-post" src="/blog/2018/12/02/telegram-bot-webhook-ru/images/telegram-webhook.png" alt="Telegram bot webhook">
+
+
+<p>This article <a href="/blog/2018/12/04/telegram-bot-webhook/">in english 🇺🇸</a>.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#что-это-такое">Что это такое</a></li>
+    <li><a href="#как-настроить">Как настроить</a>
+      <ul>
+        <li><a href="#сертификат">Сертификат</a></li>
+        <li><a href="#серверная-часть">Серверная часть</a></li>
+        <li><a href="#регистрация">Регистрация</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h1 id="что-это-такое">Что это такое</h1>
+<p>Как пишут в <a href="https://core.telegram.org/bots/webhooks">документации</a>, общаться с серверами Telegram бот может двумя способами:</p>
+<ol>
+<li><a href="https://core.telegram.org/bots/api#getupdates">getUpdates</a> - pull: ваш бот постоянно дёргает сервер Telegram и проверяет есть ли новые сообщения;</li>
+<li><a href="https://core.telegram.org/bots/api#setwebhook">setWebhook</a> - push: по мере поступления новых сообщений сервер Telegram отправляет их вашему боту.</li>
+</ol>
+<p>Разницу можно изобразить следующим образом:</p>
+
+
+
+    <img class="image-post" src="/blog/2018/12/02/telegram-bot-webhook-ru/images/telegram-getupdates-vs-setwebhook.png" alt="Telegram bot, getUpdates vs setWebhook">
+
+
+<p>Очевидно, что второй способ (<code>setWebhook</code>) рациональнее для всех участников процесса. Однако в нём присутствует неявная сложность: кто-то должен принимать сообщения от Telegram на стороне бота, то есть необходим веб-сервер или его эквивалент.</p>
+<h1 id="как-настроить">Как настроить</h1>
+<p>Что нужно сделать:</p>
+<ol>
+<li>Заиметь доменное имя для сервера и получить на него сертификат (например, от <a href="https://letsencrypt.org">Let’s Encrypt</a>). Документация также говорит, что в случае самоподписанного сертификата можно обойтись и просто IP адресом, но этого я не пробовал;</li>
+<li>Запилить серверную часть на стороне бота (куда будет ломиться Telegram);</li>
+<li>Зарегистрировать адрес серверной части в Telegram (зацепить webhook на endpoint), чтобы Telegram знал, куда ломиться с сообщениями.</li>
+</ol>
+<h2 id="сертификат">Сертификат</h2>
+<p>С доменом и сертификатом просто. Домен у меня уже был, а сертификат я получил по <a href="https://certbot.eff.org/lets-encrypt/ubuntubionic-other">этой инструкции</a>.</p>
+<p>Вариант с самоподписанным сертификатом на прямой IP адрес я оставляю вам на самостоятельное изучение.</p>
+<h2 id="серверная-часть">Серверная часть</h2>
+<p>Серверная часть чуть посложнее. Я переделал текущую реализацию бота на <a href="https://github.com/eternnoir/pyTelegramBotAPI">pyTelegramBotAPI</a>, используя <a href="https://github.com/eternnoir/pyTelegramBotAPI/blob/master/examples/webhook_examples/webhook_aiohttp_echo_bot.py">пример</a> для <a href="https://aiohttp.readthedocs.io/">AIOHTTP</a>.</p>
+<p>Ставим необходимые пакеты:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">pip install pyTelegramBotAPI
+pip install aiohttp
+pip install cchardet
+pip install aiodns</code></pre></div>
+<p>И сокращённо код бота теперь такой:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> config
+<span style="color:#f92672">import</span> telebot
+<span style="color:#f92672">from</span> aiohttp <span style="color:#f92672">import</span> web
+<span style="color:#f92672">import</span> ssl
+
+WEBHOOK_LISTEN <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;0.0.0.0&#34;</span>
+WEBHOOK_PORT <span style="color:#f92672">=</span> <span style="color:#ae81ff">8443</span>
+
+WEBHOOK_SSL_CERT <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/etc/letsencrypt/live/YOUR.DOMAIN/fullchain.pem&#34;</span>
+WEBHOOK_SSL_PRIV <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/etc/letsencrypt/live/YOUR.DOMAIN/privkey.pem&#34;</span>
+
+API_TOKEN <span style="color:#f92672">=</span> config<span style="color:#f92672">.</span>token
+bot <span style="color:#f92672">=</span> telebot<span style="color:#f92672">.</span>TeleBot(API_TOKEN)
+
+app <span style="color:#f92672">=</span> web<span style="color:#f92672">.</span>Application()
+
+<span style="color:#75715e"># process only requests with correct bot token</span>
+<span style="color:#66d9ef">async</span> <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">handle</span>(request):
+    <span style="color:#66d9ef">if</span> request<span style="color:#f92672">.</span>match_info<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;token&#34;</span>) <span style="color:#f92672">==</span> bot<span style="color:#f92672">.</span>token:
+        request_body_dict <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> request<span style="color:#f92672">.</span>json()
+        update <span style="color:#f92672">=</span> telebot<span style="color:#f92672">.</span>types<span style="color:#f92672">.</span>Update<span style="color:#f92672">.</span>de_json(request_body_dict)
+        bot<span style="color:#f92672">.</span>process_new_updates([update])
+        <span style="color:#66d9ef">return</span> web<span style="color:#f92672">.</span>Response()
+    <span style="color:#66d9ef">else</span>:
+        <span style="color:#66d9ef">return</span> web<span style="color:#f92672">.</span>Response(status<span style="color:#f92672">=</span><span style="color:#ae81ff">403</span>)
+
+app<span style="color:#f92672">.</span>router<span style="color:#f92672">.</span>add_post(<span style="color:#e6db74">&#34;/</span><span style="color:#e6db74">{token}</span><span style="color:#e6db74">/&#34;</span>, handle)
+
+help_string <span style="color:#f92672">=</span> []
+help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;*Some bot* - just a bot.</span><span style="color:#ae81ff">\n\n</span><span style="color:#e6db74">&#34;</span>)
+help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/start - greetings</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
+help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/help - shows this help&#34;</span>)
+
+<span style="color:#75715e"># - - - messages</span>
+
+<span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;start&#34;</span>])
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_welcome</span>(message):
+    bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;Ololo, I am a bot&#34;</span>)
+
+<span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;help&#34;</span>])
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_help</span>(message):
+    bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join(help_string), parse_mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Markdown&#34;</span>)
+
+<span style="color:#75715e"># - - -</span>
+
+context <span style="color:#f92672">=</span> ssl<span style="color:#f92672">.</span>SSLContext(ssl<span style="color:#f92672">.</span>PROTOCOL_TLSv1_2)
+context<span style="color:#f92672">.</span>load_cert_chain(WEBHOOK_SSL_CERT, WEBHOOK_SSL_PRIV)
+
+<span style="color:#75715e"># start aiohttp server (our bot)</span>
+web<span style="color:#f92672">.</span>run_app(
+    app,
+    host<span style="color:#f92672">=</span>WEBHOOK_LISTEN,
+    port<span style="color:#f92672">=</span>WEBHOOK_PORT,
+    ssl_context<span style="color:#f92672">=</span>context,
+)</code></pre></div>
+<p>Что здесь происходит: мы запускаем мини-веб-сервер, который слушает порт 8443 и отвечает на запросы через определённый endpoint, который образован токеном бота. Токен используется здесь как достаточно уникальный идентификатор, чтобы какой-нибудь мимокрокодил из интернета не навызывал бота и не натворил дел. Полный адрес endpoint&rsquo;а будет выглядеть вот так: <code>https://YOUR.DOMAIN:8443/YOUR-TOKEN/</code>.</p>
+<p>Обратите также внимание на отличия от стандартного примера из репозитория:</p>
+<ul>
+<li>в качестве файла сертификата указан <code>fullchain.pem</code>, а не <code>cert.pem</code>;</li>
+<li>удалён код снятия и установки webhook&rsquo;а.</li>
+</ul>
+<p>Так как бота я запускаю не из-под root&rsquo;а, сервис начал валиться с такой ошибкой:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>: Traceback <span style="color:#f92672">(</span>most recent call last<span style="color:#f92672">)</span>:
+python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>:   File <span style="color:#e6db74">&#34;/usr/local/bin/bot/bot.py&#34;</span>, line 142, in &lt;module&gt;
+python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>:     context.load_cert_chain<span style="color:#f92672">(</span>WEBHOOK_SSL_CERT, WEBHOOK_SSL_PRIV<span style="color:#f92672">)</span>
+python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>: PermissionError: <span style="color:#f92672">[</span>Errno 13<span style="color:#f92672">]</span> Permission denied
+systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: telegram-bot.service: Main process exited, code<span style="color:#f92672">=</span>exited, status<span style="color:#f92672">=</span>1/FAILURE
+systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: telegram-bot.service: Failed with result <span style="color:#e6db74">&#39;exit-code&#39;</span>.</code></pre></div>
+<p>То есть, у пользователя, из-под которого выполняется скрипт, нет доступа к <code>/etc/letsencrypt/</code>, чтобы открыть файл сертификата. Я попытался дать доступ к каталогу для новой группы, включив в неё этого пользователя:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">groupadd letsencrypt
+usermod -a -G letsencrypt userforbot
+chgrp -R letsencrypt /etc/letsencrypt/</code></pre></div>
+<p>Но он один фиг не мог открыть файлы оттуда, даже простой <code>ls</code> выдавал ошибку доступа. В общем, или мои познания Linux полный отстой, или одно из двух. Пришлось тупо назначить его владельцем:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">chown -R userforbot:letsencrypt /etc/letsencrypt/</code></pre></div>
+<p>Тогда сервис запустился нормально.</p>
+<h2 id="регистрация">Регистрация</h2>
+<p>Теперь осталось самое, как оказалось, сложное - зарегистрировать endpoint бота в Telegram. Сложности возникли потому, что я сначала неправильно понял принцип составления endpoint&rsquo;а, а также из-за проблем с проверкой сертификата.</p>
+<p>Для установки/регистрации webhook&rsquo;а нужно выполнить следующий HTTP запрос (можно просто открыть этот URL в браузере):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/setWebhook?url</span><span style="color:#f92672">=</span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//YOUR.DOMAIN:</span><span style="color:#960050;background-color:#1e0010">8443</span><span style="color:#66d9ef">/YOUR-TOKEN/</span></code></pre></div>
+<p>Пока я экспериментировал и разбирался с форматом endpoint&rsquo;а, Telegram возвращал мне нормальный результат:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Webhook was set&#34;</span>,
+    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">true</span>,
+    <span style="color:#f92672">&#34;result&#34;</span>: <span style="color:#66d9ef">true</span>
+}</code></pre></div>
+<p>Но потом я его видимо задолбал, и он стал возвращать мне следующее:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">false</span>,
+    <span style="color:#f92672">&#34;error_code&#34;</span>: <span style="color:#ae81ff">504</span>,
+    <span style="color:#f92672">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Gateway Timeout&#34;</span>
+}</code></pre></div>
+<p>Но оказалось, что это ни на что не влияет, и webhook нормально устанавливается, так что можно даже не дожидаться таймаута, а просто отменять запрос через пару секунд.</p>
+<p>Проверить статус webhook&rsquo;а можно таким запросом:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/getWebhookInfo</span></code></pre></div>
+<p>Если всё нормально, должно вернуть такое:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">true</span>,
+    <span style="color:#f92672">&#34;result&#34;</span>: {
+        <span style="color:#f92672">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;https://YOUR.DOMAIN:8443/YOUR-TOKEN/&#34;</span>,
+        <span style="color:#f92672">&#34;has_custom_certificate&#34;</span>: <span style="color:#66d9ef">false</span>,
+        <span style="color:#f92672">&#34;pending_update_count&#34;</span>: <span style="color:#ae81ff">0</span>,
+        <span style="color:#f92672">&#34;max_connections&#34;</span>: <span style="color:#ae81ff">40</span>
+    }
+}</code></pre></div>
+<p>Как видим, в поле <code>url</code> стоит наш endpoint.</p>
+<p>Однако, мне оно сейчас возвращает такое:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#f92672">{</span>
+    <span style="color:#e6db74">&#34;ok&#34;</span>: true,
+    <span style="color:#e6db74">&#34;result&#34;</span>: <span style="color:#f92672">{</span>
+        <span style="color:#e6db74">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;https://YOUR.DOMAIN:8443/YOUR-TOKEN/&#34;</span>,
+        <span style="color:#e6db74">&#34;has_custom_certificate&#34;</span>: false,
+        <span style="color:#e6db74">&#34;pending_update_count&#34;</span>: 0,
+        <span style="color:#e6db74">&#34;last_error_date&#34;</span>: 1543762687,
+        <span style="color:#e6db74">&#34;last_error_message&#34;</span>: <span style="color:#e6db74">&#34;SSL error {error:1416F086:SSL routines:tls_process_server_certificate:certificate verify failed}&#34;</span>,
+        <span style="color:#e6db74">&#34;max_connections&#34;</span>: <span style="color:#ae81ff">40</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span></code></pre></div>
+<p>Что указывает на некие проблемы с сертификатом. При этом бот работает нормально, то есть эта ошибка ни на что не влияет. Однако, если вместо <code>fullchain.pem</code> оставить <code>cert.pem</code> (как было указано в примере), то бот работать перестанет.</p>
+<p>Стоит также отметить, что если вы установили webhook, то опрос Telegram через <code>getUpdates</code> работать больше будет. Чтобы снять webhook, надо отправить тот же самый запрос, что и для установки, но на этот раз без параметра <code>url</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/setWebhook</span></code></pre></div>
+<p>В ответ придёт:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">true</span>,
+    <span style="color:#f92672">&#34;result&#34;</span>: <span style="color:#66d9ef">true</span>,
+    <span style="color:#f92672">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Webhook was deleted&#34;</span>
+}</code></pre></div>
+<p>Ну и всё, не так уж и сложно. Если бы в документации (и сторонних манулах из интернетов) была указана такая простая вещь, что для webhook&rsquo;а всего-то нужен лишь веб-сервер на стороне бота, я бы это сделал уже сто лет назад. Конечно, продвинутым чувакам это скорее всего было очевидно сразу, но мнe - нет.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/telegram/">telegram</a><a class="tag" href="https://retifrav.github.io/tags/linux/">linux</a><a class="tag" href="https://retifrav.github.io/tags/python/">python</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2021,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/297" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (60)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (38)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (31)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (21)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (20)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (13)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (5)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

@@ -1,0 +1,523 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>The fuck is this CORS and how do I send my bloody request | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2019/10/10/the-fuck-is-this-cors/" />
+
+    <meta name="generator" content="Hugo 0.84.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="The fuck is this CORS and how do I send my bloody request" />
+<meta property="og:description" content="So I was working on some web view and I needed to send an XMLHttpRequest using JS. Usually I was working with my own backend, but this time it was a different remote host (our YouTrack instance), and my request failed with the following error:
+
+
+
+    
+
+
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://some.host?params=ololo. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing).
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://some.host?params=ololo. (Reason: CORS request did not succeed).
+That&rsquo;s how I learnt about the existence of CORS, as it turned out I never sent cross-origin requests before." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2019/10/10/the-fuck-is-this-cors/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2019-10-10T18:42:34&#43;02:00" />
+<meta property="article:modified_time" content="2019-10-10T18:42:34&#43;02:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2019/10/10/the-fuck-is-this-cors/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">The fuck is this CORS and how do I send my bloody request</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2019-10-10 18:42:34 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 6 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>So I was working on some web view and I needed to send an <a href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest">XMLHttpRequest</a> using JS. Usually I was working with my own backend, but this time it was a different remote host (<em>our <a href="https://www.jetbrains.com/youtrack/">YouTrack</a> instance</em>), and my request failed with the following error:</p>
+
+
+
+    <img class="image-post" src="/blog/2019/10/10/the-fuck-is-this-cors/images/firefox-cors-missing-header.png" alt="Firefox, missing CORS header">
+
+
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">Cross</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Origin</span> <span style="color:#a6e22e">Request</span> <span style="color:#a6e22e">Blocked</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">The</span> <span style="color:#66d9ef">Same</span> <span style="color:#66d9ef">Origin</span> <span style="color:#66d9ef">Policy</span> <span style="color:#66d9ef">disallows</span> <span style="color:#66d9ef">reading</span> <span style="color:#66d9ef">the</span> <span style="color:#66d9ef">remote</span> <span style="color:#66d9ef">resource</span> <span style="color:#66d9ef">at</span> <span style="color:#66d9ef">http://some.host?params</span><span style="color:#f92672">=</span>ololo<span style="color:#f92672">.</span> <span style="color:#f92672">(</span><span style="color:#a6e22e">Reason</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">CORS</span> <span style="color:#66d9ef">header</span> <span style="color:#960050;background-color:#1e0010">‘</span><span style="color:#66d9ef">Access-Control-Allow-Origin</span><span style="color:#960050;background-color:#1e0010">’</span> <span style="color:#66d9ef">missing</span><span style="color:#f92672">).</span>
+<span style="color:#a6e22e">Cross</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Origin</span> <span style="color:#a6e22e">Request</span> <span style="color:#a6e22e">Blocked</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">The</span> <span style="color:#66d9ef">Same</span> <span style="color:#66d9ef">Origin</span> <span style="color:#66d9ef">Policy</span> <span style="color:#66d9ef">disallows</span> <span style="color:#66d9ef">reading</span> <span style="color:#66d9ef">the</span> <span style="color:#66d9ef">remote</span> <span style="color:#66d9ef">resource</span> <span style="color:#66d9ef">at</span> <span style="color:#66d9ef">http://some.host?params</span><span style="color:#f92672">=</span>ololo<span style="color:#f92672">.</span> <span style="color:#f92672">(</span><span style="color:#a6e22e">Reason</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">CORS</span> <span style="color:#66d9ef">request</span> <span style="color:#66d9ef">did</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">succeed</span><span style="color:#f92672">).</span></code></pre></div>
+<p>That&rsquo;s how I learnt about the existence of CORS, as it turned out I never sent cross-origin requests before.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#what-is-cors">What is CORS</a>
+      <ul>
+        <li><a href="#but-first-what-is-sop">But first, what is SOP</a></li>
+        <li><a href="#and-now-about-cors">And now about CORS</a></li>
+      </ul>
+    </li>
+    <li><a href="#blockers">Blockers</a></li>
+    <li><a href="#requests-implementation">Requests implementation</a>
+      <ul>
+        <li><a href="#js">JS</a></li>
+        <li><a href="#c">C#</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h1 id="what-is-cors">What is CORS</h1>
+<h2 id="but-first-what-is-sop">But first, what is SOP</h2>
+<p>Before CORS one should know about <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy">Same Origin Policy</a> (SOP). It&rsquo;s a mechanism that prevents JS scripts from accessing resources (<em>such as REST API</em>) on other websites.</p>
+<p>And it is a very nice to have security measure. Let&rsquo;s say you&rsquo;ve logged-in to your online bank, did something there, and then went to watch some pron. Sadly, you landed on a cheeky website, which contained certain JS-script that probes every visitor for authentication cookies from the most common banks, and your bank is among those. So this script can now call your bank&rsquo;s API via XMLHttpRequest using your authentication cookie and perform some operations, which you are unlikely to like.</p>
+<p>But actually it can&rsquo;t do that - exactly because of the SOP. Since it&rsquo;s your web-browser who executes the JS scripts, it will prevent the execution of this particular XMLHttpRequest because the <a href="https://developer.mozilla.org/en-US/docs/Glossary/origin">origin</a> of your bank website is different from the origin of this pron website, which tries to send the request.</p>
+<p>So you can now see how retarded is the idea of disabling SOP in your browser. Nevertheless, some forums actually suggest to do that in order to &ldquo;fix&rdquo; the &ldquo;problem&rdquo; with CORS.</p>
+<h2 id="and-now-about-cors">And now about CORS</h2>
+<p>CORS stands for <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">Cross-Origin Resource Sharing</a>. And it&rsquo;s a quite common misunderstanding that CORS is also a security mechanism that prevents XMLHttpRequests from being executed.</p>
+<p>Actually, it&rsquo;s the other way around - CORS makes it possible to weaken the SOP (<em>or, rather, make exceptions</em>) by allowing trusted origins to access resources on certain origin, in particular to send XMLHttpRequests to it. Here&rsquo;s a <a href="https://dzone.com/articles/do-you-really-know-cors">good article</a> about that.</p>
+<p>Now coming back to our problem. So, okay, the scenario from above is about malicious scripts, but in our case we are merely want to call API of some service (<em>YouTrack instance</em>), so how to &ldquo;enable&rdquo; this CORS to allow the requests?</p>
+<p>And here&rsquo;s answer - <strong>you cannot do anything on the client side</strong> (<em>JS-script on your page</em>) to make your XMLHttpRequests reach the target host of a different origin. There is nothing wrong with your JS code, you didn&rsquo;t forget to enable some flag, you cannot whitelist target domain - nothing, there is nothing to do about the issue on the client side. Don&rsquo;t waste your time googling possible solutions and don&rsquo;t even think about disabling SOP in your browser, as not only it is retarded, but also it would mean that all your users would need to do that as well (<em>which brings it from retarded to super-retarded level</em>).</p>
+<p>Here&rsquo;s why: <strong>trusted origins are set on the server side</strong>, and it&rsquo;s a web-server or application who returns a special <code>Access-Control-Allow-Origin</code> header, which should contain the origin (<em>and preferably not a wildcard <code>*</code></em>) from which you are allowed to reach them.</p>
+<p>In my case it was simple - YouTrack has a setting exactly for this purpose:</p>
+
+
+
+    <img class="image-post" src="/blog/2019/10/10/the-fuck-is-this-cors/images/youtrack-allowed-origins.png" alt="YouTrack allowed origins">
+
+
+<p>So I allowed my <code>http://localhost:5000</code> origin, and requests started to work. Obviously, you&rsquo;ll also need to add the origin of your actual domain from where your scripts will run in production.</p>
+<p>If other cases it might be a similar setting somewhere in the service settings, or a corresponding line in NGINX/Apache/etc config.</p>
+<p>Here&rsquo;s how a successful XMLHttpRequest looks like:</p>
+
+
+
+    <img class="image-post" src="/blog/2019/10/10/the-fuck-is-this-cors/images/firefox-xmlhttprequest-headers.png" alt="Firefox XMLHttpRequest headers">
+
+
+<p>As you can see, the browser added <code>Origin: http://localhost:5000</code> header (<em>browser does it by itself for all cross-origin requests</em>), and server returned <code>Access-Control-Allow-Origin: http://localhost:5000</code> header, which means that the request is allowed to be sent.</p>
+<p>There is more to it, as requests can be <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#Simple_requests">simple</a> and <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#Preflighted_requests">preflighted</a>. The <a href="https://dzone.com/articles/do-you-really-know-cors">same article</a> has a shorter explanation.</p>
+<h1 id="blockers">Blockers</h1>
+<p>I said that requests started to work after I added my origin to the list of allowed origins on server. And they did, but not right away.</p>
+<p>At first they were still failing, and <a href="https://stackoverflow.com/a/56970532">the reason</a> for that was my <a href="https://github.com/gorhill/uMatrix">uMatrix</a> browser extension:</p>
+
+
+
+    <img class="image-post" src="/blog/2019/10/10/the-fuck-is-this-cors/images/umatrix-blocking-xhr.png" alt="uMatrix blocking XHR">
+
+
+<p>That&rsquo;s totally my fault because I should have thought about that. Enabling XHR solved the issue.</p>
+<h1 id="requests-implementation">Requests implementation</h1>
+<p>As a bonus, here&rsquo;s an implementation of querying YouTrack API for getting a list of issues.</p>
+<h2 id="js">JS</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">getIssues</span>()
+{
+    <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">xhr</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">XMLHttpRequest</span>();
+    <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">params</span> <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74">&#34;filter&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;project: SomeProject State: -Fixed, -{Can&#39;t Reproduce}, -Duplicate, -{Won&#39;t fix}, -Incomplete, -Obsolete, -{Not a bug} Stable release: SomeRelease&#34;</span>,
+        <span style="color:#e6db74">&#34;max&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;500&#34;</span>,
+        <span style="color:#e6db74">&#34;with&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;id&#34;</span>,
+        <span style="color:#e6db74">&#34;with&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;summary&#34;</span>
+    };
+    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">open</span>(
+        <span style="color:#e6db74">&#34;GET&#34;</span>,
+        <span style="color:#e6db74">&#34;http://youtrack.some.host&#34;</span>.<span style="color:#a6e22e">concat</span>(<span style="color:#e6db74">&#34;/rest/issue&#34;</span>, <span style="color:#a6e22e">formatParams</span>(<span style="color:#a6e22e">params</span>))
+        );
+    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">setRequestHeader</span>(<span style="color:#e6db74">&#34;Accept&#34;</span>, <span style="color:#e6db74">&#34;application/json&#34;</span>);
+    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">setRequestHeader</span>(
+        <span style="color:#e6db74">&#34;Authorization&#34;</span>,
+        <span style="color:#e6db74">&#34;Basic &#34;</span>.<span style="color:#a6e22e">concat</span>(<span style="color:#a6e22e">btoa</span>(<span style="color:#e6db74">&#34;user:password&#34;</span>))
+        );
+    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">send</span>();
+    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">onload</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
+    {
+        <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">status</span> <span style="color:#f92672">!=</span> <span style="color:#ae81ff">200</span>)
+        {
+            <span style="color:#a6e22e">alert</span>(<span style="color:#e6db74">&#34;[ERROR] Couldn&#39;t get issues&#34;</span>);
+        }
+        <span style="color:#66d9ef">else</span>
+        {
+            <span style="color:#75715e">// parse xhr.response
+</span><span style="color:#75715e"></span>        }
+    };
+    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">onerror</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
+    {
+        <span style="color:#a6e22e">alert</span>(<span style="color:#e6db74">&#34;[ERROR] Couldn&#39;t send a request for issues&#34;</span>);
+    };
+}
+
+<span style="color:#66d9ef">function</span> <span style="color:#a6e22e">formatParams</span>(<span style="color:#a6e22e">params</span>)
+{
+    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;?&#34;</span>.<span style="color:#a6e22e">concat</span>(
+        Object
+            .<span style="color:#a6e22e">keys</span>(<span style="color:#a6e22e">params</span>)
+            .<span style="color:#a6e22e">map</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">key</span>)
+            {
+                <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">key</span>.<span style="color:#a6e22e">concat</span>(<span style="color:#e6db74">&#34;=&#34;</span>, encodeURIComponent(<span style="color:#a6e22e">params</span>[<span style="color:#a6e22e">key</span>]))
+            })
+            .<span style="color:#a6e22e">join</span>(<span style="color:#e6db74">&#34;&amp;&#34;</span>)
+    )
+}</code></pre></div>
+<p>With a properly set CORS policy (<em>allow your origin on the target server</em>), it will work just fine. There is, however, a drawback - everyone can see credentials for your YouTrack instance in the page&rsquo;s HTML source.</p>
+<h2 id="c">C#</h2>
+<p>Here&rsquo;s another solution for the CORS/SOP problems - don&rsquo;t send requests from JS frontend! SOP exists only in web-browsers, remember? So send them from backend, and give JS frontend only result data. That way you will also avoid exposing your YouTrack credentials in the page&rsquo;s HTML source.</p>
+<p>I am using .NET Core application, so here&rsquo;s a C# implementation:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> IActionResult Issues(<span style="color:#66d9ef">string</span> releaseName)
+{
+    Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; issuesList = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt;();
+                    
+    <span style="color:#66d9ef">var</span> filter = <span style="color:#66d9ef">new</span> StringBuilder(<span style="color:#e6db74">&#34;project: SomeProject &#34;</span>)
+        .Append(<span style="color:#e6db74">&#34;State: -Fixed, -{Can&#39;t Reproduce}, -Duplicate, -{Won&#39;t fix}, &#34;</span>)
+        .Append(<span style="color:#e6db74">&#34;-Incomplete, -Obsolete, -{Not a bug} &#34;</span>)
+        .Append(<span style="color:#e6db74">$&#34;Stable release: SomeRelease&#34;</span>);
+
+    <span style="color:#66d9ef">try</span> <span style="color:#75715e">// get the list of issues
+</span><span style="color:#75715e"></span>    {
+        <span style="color:#66d9ef">var</span> parameters = <span style="color:#66d9ef">new</span> List&lt;KeyValuePair&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt;&gt; {
+            <span style="color:#66d9ef">new</span> KeyValuePair&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt;(<span style="color:#e6db74">&#34;filter&#34;</span>, filter.ToString()),
+            <span style="color:#66d9ef">new</span> KeyValuePair&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt;(<span style="color:#e6db74">&#34;with&#34;</span>, <span style="color:#e6db74">&#34;id&#34;</span>),
+            <span style="color:#66d9ef">new</span> KeyValuePair&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt;(<span style="color:#e6db74">&#34;with&#34;</span>, <span style="color:#e6db74">&#34;summary&#34;</span>),
+            <span style="color:#66d9ef">new</span> KeyValuePair&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt;(<span style="color:#e6db74">&#34;max&#34;</span>, <span style="color:#e6db74">&#34;500&#34;</span>)
+        };
+        <span style="color:#66d9ef">var</span> results = QueryYouTrack(
+            HttpMethod.Get,
+            <span style="color:#e6db74">&#34;/rest/issue&#34;</span>,
+            parameters
+            );
+        <span style="color:#66d9ef">if</span> (results.Item1 != <span style="color:#ae81ff">200</span>)
+        {
+            <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> Exception(
+                <span style="color:#e6db74">$&#34;YouTrack response: {results.Item1} - {results.Item2}&#34;</span>
+                );
+        }
+        <span style="color:#66d9ef">else</span>
+        {
+            <span style="color:#66d9ef">var</span> rezJson = JObject.Parse(results.Item2);
+            <span style="color:#66d9ef">foreach</span> (<span style="color:#66d9ef">var</span> issue <span style="color:#66d9ef">in</span> rezJson[<span style="color:#e6db74">&#34;issue&#34;</span>])
+            {
+                issuesList.Add(
+                    issue[<span style="color:#e6db74">&#34;id&#34;</span>].Value&lt;<span style="color:#66d9ef">string</span>&gt;(),
+                    issue[<span style="color:#e6db74">&#34;field&#34;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#34;value&#34;</span>].Value&lt;<span style="color:#66d9ef">string</span>&gt;()
+                    );
+            }
+        }
+    }
+    <span style="color:#66d9ef">catch</span> (Exception ex)
+    {
+        <span style="color:#ae81ff">_l</span>ogger.LogError(<span style="color:#e6db74">$&#34;Couldn&#39;t get YouTrack issues. {ex.Message}&#34;</span>);
+    }
+
+    ViewData[<span style="color:#e6db74">&#34;IssuesList&#34;</span>] = issuesList;
+    <span style="color:#66d9ef">return</span> View();
+}
+
+<span style="color:#66d9ef">private</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt; QueryYouTrack(
+    HttpMethod method,
+    <span style="color:#66d9ef">string</span> query,
+    List&lt;KeyValuePair&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt;&gt; parameters
+    )
+{
+    <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
+    {
+        httpClient.BaseAddress = <span style="color:#66d9ef">new</span> Uri(
+            <span style="color:#ae81ff">_</span>configuration.GetSection(<span style="color:#e6db74">&#34;YouTrack:Host&#34;</span>).Value
+            );
+        httpClient.DefaultRequestHeaders.Add(<span style="color:#e6db74">&#34;Accept&#34;</span>, <span style="color:#e6db74">&#34;application/json&#34;</span>);
+        httpClient.DefaultRequestHeaders.Authorization =
+            <span style="color:#66d9ef">new</span> AuthenticationHeaderValue(
+                <span style="color:#e6db74">&#34;Basic&#34;</span>,
+                Convert.ToBase64String(
+                    Encoding.Default.GetBytes(
+                        <span style="color:#ae81ff">_</span>configuration.GetSection(<span style="color:#e6db74">&#34;YouTrack:Credentials&#34;</span>).Value
+                    )
+                )
+            );
+
+        HttpRequestMessage request = <span style="color:#66d9ef">new</span> HttpRequestMessage(
+            method,
+            <span style="color:#e6db74">$&#34;{query}?{new FormDataCollection(parameters).ReadAsNameValueCollection().ToString()}&#34;</span>
+        );
+        
+        <span style="color:#66d9ef">var</span> httpResponse = httpClient.SendAsync(request).Result;
+        <span style="color:#66d9ef">var</span> httpContent = httpResponse.Content.ReadAsStringAsync().Result;
+        
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;((<span style="color:#66d9ef">int</span>)httpResponse.StatusCode, httpContent);
+    }
+}</code></pre></div>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/web/">web</a><a class="tag" href="https://retifrav.github.io/tags/javascript/">javascript</a><a class="tag" href="https://retifrav.github.io/tags/dotnet/">dotnet</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <script>
+  var id =  34 ;
+
+  if (id)
+  {
+    let url = "https://github.com/retifrav/retifrav.github.io/issues/".concat(id);
+    let api_url = "https://api.github.com/repos/retifrav/retifrav.github.io/issues/".concat(id, "/comments");
+    
+    var commentsDiv = document.getElementById("comments");
+
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", api_url);
+    xhr.setRequestHeader("Accept", "application/vnd.github.v3.html+json");
+    xhr.send();
+
+    xhr.onload = function()
+    {
+      if (xhr.status != 200)
+      {
+        let errorText = document.createElement("p");
+        errorText.innerHTML = "<i>Comments for this post yet are not opened yet (or you have GitHub scripts disabled).</i>";
+        commentsDiv.appendChild(errorText);
+      }
+      else
+      {
+        let comments = xhr.response;
+
+        let mainHeader = document.createElement("h2");
+        mainHeader.innerHTML = "Comments: ".concat(comments.length);
+        commentsDiv.appendChild(mainHeader);
+
+        let issueLink = document.createElement("p");
+        issueLink.innerHTML = "<i>You can leave a comment using this <a href='".concat(url, "'>GitHub issue</a>.</i>");
+        commentsDiv.appendChild(issueLink);
+        
+        comments.forEach(function(comment)
+        {
+            let commentContent = document.createElement("div");
+            commentContent.setAttribute('class', 'gh-comment')
+            commentContent.innerHTML = "".concat(
+                "<div class='gh-header'>",
+                  "<img src='", comment.user.avatar_url, "' />",
+                  "<div style='margin:auto 0;'>",
+                    "<b><a class='gh-username' href='", comment.user.html_url, "'>", comment.user.login, "</a></b>",
+                    " commented at <em>", new Date(comment.created_at), "</em>",
+                  "</div>",
+                "</div>",
+                "<div class='gh-body'>",
+                  comment.body_html,
+                "</div>"
+            );
+            commentsDiv.appendChild(commentContent);
+        });
+      }
+    };
+
+    xhr.onerror = function()
+    {
+      let errorText = document.createElement("p");
+      errorText.innerHTML = "<i>Some error loading comments.</i>";
+      commentsDiv.appendChild(errorText);
+    };
+  }
+</script>
+
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2021,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/297" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (60)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (38)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (31)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (21)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (20)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (13)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (5)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

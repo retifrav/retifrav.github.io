@@ -1,0 +1,355 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>How to block Apple TV updates | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2021/07/11/appletv-how-to-block-updates/" />
+
+    <meta name="generator" content="Hugo 0.84.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="How to block Apple TV updates" />
+<meta property="og:description" content="Apparently, Apple thought that we will be delighted to get fullscreen update prompts on Apple TV like this one from time time but mostly when you expect them the least:
+
+
+
+    
+
+
+They just show up randomly on system start or simply on top of an application, if you leave it unattended for some time. And there is no setting in system preferences which would allow you to disable those.
+You can, however, blacklist Apple update servers with firewall or DNS, and that will stop these prompts from showing up." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2021/07/11/appletv-how-to-block-updates/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2021-07-11T15:47:46&#43;02:00" />
+<meta property="article:modified_time" content="2021-07-11T15:47:46&#43;02:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2021/07/11/appletv-how-to-block-updates/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">How to block Apple TV updates</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2021-07-11 15:47:46 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 5 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>Apparently, Apple thought that we will be delighted to get <em>fullscreen</em> update prompts on Apple TV like this one from time time but mostly when you expect them the least:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/07/11/appletv-how-to-block-updates/images/apple-tv-fullscreen-update-prompt.jpg" alt="Apple TV fullscreen update prompt">
+
+
+<p>They just show up randomly on system start or simply on top of an application, if you leave it unattended for some time. And there is no setting in system preferences which would allow you to disable those.</p>
+<p>You can, however, blacklist Apple update servers with firewall or DNS, and that will stop these prompts from showing up.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#why-would-you-want-to-block-apple-tv-updates">Why would you want to block Apple TV updates</a></li>
+    <li><a href="#cant-you-just-disable-automatic-updates">Can&rsquo;t you just disable automatic updates</a></li>
+    <li><a href="#apple-update-domains">Apple update domains</a></li>
+    <li><a href="#blocking-domains-with-pi-hole">Blocking domains with Pi-hole</a>
+      <ul>
+        <li><a href="#installation">Installation</a></li>
+        <li><a href="#static-ip-and-dns">Static IP and DNS</a></li>
+        <li><a href="#adding-domains-to-blacklist">Adding domains to blacklist</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h1 id="why-would-you-want-to-block-apple-tv-updates">Why would you want to block Apple TV updates</h1>
+<p>Because with any next update you can get a bumped requirement for Xcode version, which in turn might require the next Mac OS version, which you might not want or be ready to update to.</p>
+<p>That happened to me twice(!) before. At some point I got a new tvOS version installed, and all of the sudden it started to require the next Xcode version, which was available only on Catalina, while I was on Mojave with no intention to update my Mac OS. What a nice surprise that was.</p>
+<p>After that I disabled automatic updates on my Apple TV, but what would you know, some time later my Apple TV somehow installed a new version again! Motherfucking piece of shit. And this time it started to require Xcode version that was only available in Big Sur, which I had even less desire to update to.</p>
+<p>So I very much would like to avoid any &ldquo;unexpected&rdquo; Apple TV updates in future. When I&rsquo;d want to install one, I will do that explicitly myself.</p>
+<h1 id="cant-you-just-disable-automatic-updates">Can&rsquo;t you just disable automatic updates</h1>
+<p>Yeah, like I said, I did disable automatic updates:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/07/11/appletv-how-to-block-updates/images/apple-tv-disabled-automatic-updates.jpg" alt="Apple TV disabled automatic updates">
+
+
+<p>But still I get these wretched update prompts. And it is rather easy to accidentally click on the pre-selected option, which will also enable automatic updates.</p>
+<p>What the hell, Apple, can you fucking not?</p>
+<h1 id="apple-update-domains">Apple update domains</h1>
+<p>I&rsquo;ve discovered these ones:</p>
+<ul>
+<li><code>mesu.apple.com</code></li>
+<li><code>appldnld.apple.com</code></li>
+<li><code>swscan.apple.com</code></li>
+<li><code>xp.apple.com</code></li>
+<li><code>gdmf.apple.com</code></li>
+</ul>
+<p>Initially there were only 2 domains in this list, but then some time ago Apple added 3 more. And it is quite possible that more domains will be added in future, so I&rsquo;ll try to keep updating the list. Hopefully, Apple won&rsquo;t reuse some of actually useful ones like <code>icloud.com</code> for this purpose.</p>
+<p>Now the question is how to block those for Apple TV.</p>
+<p>If you have a proper router, it likely has some firewall in it, so you&rsquo;ll be able to blacklist these domains for your Apple TV. I have quite a non-advanced specific router from my ISP, and it doesn&rsquo;t have this functionality, unfortunately. But fortunately enough recently I&rsquo;ve installed a <a href="https://pi-hole.net/">Pi-hole</a> in my home network, and so I just blacklisted these domains there.</p>
+<h1 id="blocking-domains-with-pi-hole">Blocking domains with Pi-hole</h1>
+<h2 id="installation">Installation</h2>
+<p>I run Pi-hole on a <a href="https://www.raspberrypi.org/products/raspberry-pi-zero-w/">Raspberry Pi Zero W</a> with <a href="https://www.raspberrypi.org/software/operating-systems/">Raspberry Pi OS Lite</a>. Don&rsquo;t forget to change the default password, enable SSH, generate and add your key and <a href="https://github.com/retifrav/scraps/blob/master/_linux/ssh.md#disable-ssh-passwords">disable</a> password authentication.</p>
+<p>You can of course install it on a regular desktop/server too, but due to the changes it does do the network settings I decided that it would be better to run it on a dedicated host such as Raspberry device.</p>
+<p><a href="https://docs.pi-hole.net/main/basic-install/#alternative-1-clone-our-repository-and-run">Installation</a> procedure is just one script that does a bunch of things, and that is another reason for not installing it into a &ldquo;normal&rdquo; system - god knows what is happening in that script (<em>although its ~3000 lines <a href="https://github.com/pi-hole/pi-hole/blob/master/automated%20install/basic-install.sh">are available</a> for your inspection</em>). The script is trustworthy enough to not contain malicious things, but I certainly don&rsquo;t trust it not to mess with my system settings, so dedicated Raspberry it is.</p>
+<h2 id="static-ip-and-dns">Static IP and DNS</h2>
+<p>You need to reserve static IP address for your Pi-hole host. Most of the routers support that functionality (<em>based on the MAC address of the network interface</em>), even my silly ISP box has it. I chose <code>192.168.1.77</code>, but that of course doesn&rsquo;t matter, any other available address is fine.</p>
+<p>Now, go to Apple TV settings and set the DNS value to <code>192.168.1.77</code> (<em>or whichever you reserved for Pi-hole</em>):</p>
+
+
+
+    <img class="image-post" src="/blog/2021/07/11/appletv-how-to-block-updates/images/apple-tv-dns-setting.jpg" alt="Apple TV DNS setting">
+
+
+<h2 id="adding-domains-to-blacklist">Adding domains to blacklist</h2>
+<p>Simply adding <a href="#apple-update-domains">Apple update domains</a> to the global blacklist would be enough, but that way all your iDevices that are using Pi-hole will stop getting updates. To block updates only for Apple TV, you need to create a new group and add those domains to that group only.</p>
+<p>Open your Pi-hole web admin interface and go to <strong>Group management</strong> (<code>/admin/groups.php</code>). Add a new group there, for example <code>apple-updates</code>:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/07/11/appletv-how-to-block-updates/images/pi-hole-new-group.png" alt="Pi-hole new group">
+
+
+<p>Now go to <strong>Client group management</strong> (<code>/admin/groups-clients.php</code>), add your Apple TV client and assign this new <code>apple-updates</code> group to it (<em>in addition to <code>Default</code> group</em>):</p>
+
+
+
+    <img class="image-post" src="/blog/2021/07/11/appletv-how-to-block-updates/images/pi-hole-client-groups.png" alt="Pi-hole client groups">
+
+
+<p>This way Apple update domains will be blacklisted only for the Apple TV client.</p>
+<p>Finally, add the domains to blacklist on <strong>Domain management</strong> page (<code>/admin/groups-domains.php</code>) and don&rsquo;t forget to choose the <code>apple-updates</code> group for each:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/07/11/appletv-how-to-block-updates/images/pi-hole-domain-management.png" alt="Pi-hole domain management">
+
+
+<p>This is it. If you now try to manually check for updates on your Apple TV, it should fail, so you&rsquo;ll only get this endless spinning indicator:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/07/11/appletv-how-to-block-updates/images/apple-tv-cannot-get-update.jpg" alt="Apple TV cannot get update">
+
+
+<p>And here&rsquo;s how it looks in Pi-hole log:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/07/11/appletv-how-to-block-updates/images/pi-hole-blocked-apple-updates.png" alt="Pi-hole blocked Apple updates">
+
+
+<p>Fuck yeah! And I never had those nagging fullscreen update prompts since then.</p>
+<p>It might be worth mentioning that some of those <a href="#apple-update-domains">blacklisted domains</a> could be used by Apple for something else other than just updates (<em>as having more than one domain for such purpose is a bit of an overkill, don&rsquo;t you think</em>), so there is a non-zero probability that something else on your Apple TV will stop working too. But you <a href="/blog/2019/12/26/appletv-kodi-network-share/">didn&rsquo;t</a> buy Apple TV for using Apple services, did you?</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/apple/">apple</a><a class="tag" href="https://retifrav.github.io/tags/tvos/">tvos</a><a class="tag" href="https://retifrav.github.io/tags/fail/">fail</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2021,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/297" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (60)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (38)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (31)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (21)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (20)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (13)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (5)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

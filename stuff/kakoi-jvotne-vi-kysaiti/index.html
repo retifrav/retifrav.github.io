@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <title>КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</title>
+    <link rel="canonical" href="https://decovar.dev/stuff/kakoi-jvotne-vi-kysaiti/index.html" />
+
+    <link rel="stylesheet" href="style.css" />
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+</head>
+
+<body>
+    <header>
+        <h1 id="header">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</h1>
+    </header>
+    <main>
+        <article id="content">
+            <p id="results">УЗНАЙТИ КАКОИ ЖВОТНЕ ВЫ ДОСТОЙНЫ КУСАТ</p>
+            <div id="question" style="display:none;">
+                <h2>Варианты ответов:</h2>
+                <table role="presentation"><tbody id="options"></tbody></table>
+            </div>
+        </article>
+        <button id="mainButton" type="button" class="btn" onclick="startTest();">Пройти тест!</button>
+    </main>
+    <footer>
+        Авторство не моё, вытащил (и очистил от рекламы) из какого-то сборника тестов где-то на просторах.
+    </footer>
+
+    <script type="text/javascript" src="settings.js"></script>
+</body>
+</html>
+
+<script>
+    var optionsTable = document.getElementById("options");
+    var mainButton = document.getElementById("mainButton");
+    var resultsBlock = document.getElementById("results");
+    var mainHeader = document.getElementById("header");
+    var theQuestion = document.getElementById("question");
+
+    var currentQuestion = 0;
+
+    function startTest()
+    {
+        resultsBlock.style.display = "none";
+        theQuestion.style.display = "block";
+        mainButton.textContent = "Далее >>";
+        nextQuestion(1);
+    }
+
+    function nextQuestion(questionNumber)
+    {
+        while (optionsTable.firstChild)
+        {
+            optionsTable.removeChild(optionsTable.firstChild);
+        }
+
+        if ((questionNumber < 1 || questionNumber > 10) && questionNumber !== 11)
+        {
+            resultsBlock.style.display = "none";
+            theQuestion.style.display = "none";
+            mainHeader.textContent = "ПРОИЗОШЛА ОШИБКА ПОТОМУШТО ВЫ НЕ ДОЛЖНЫ БЫЛИ ОЧУТИСТА ЗДЕС";
+            mainButton.textContent = "ПРОЙТИ ВНАЧАЛО";
+            mainButton.onclick = function () { startTest(); };
+            mainButton.disabled = false;
+            return;
+        }
+
+        mainButton.disabled = true;
+
+        if (questionNumber === 11)
+        {
+            theQuestion.style.display = "none";
+
+            mainHeader.textContent = "КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?";
+            resultsBlock.innerHTML = `<h2>Результат</h2>
+                ${results[Math.floor(Math.random() * results.length)]}`;
+            resultsBlock.style.display = "block";
+
+            mainButton.textContent = "ПРОЙТИ ТЕСТ ИЩО РАС";
+            mainButton.onclick = function () { startTest(); };
+            mainButton.disabled = false;
+            return;
+        }
+
+        currentQuestion = questionNumber;
+        mainHeader.textContent = questions[currentQuestion].question;
+
+        for (let o in questions[currentQuestion].options)
+        {
+            let tr = `<tr>
+                <td><input type="radio" name="opt" id="${o}" onclick="mainButton.disabled = false;"></td>
+                <td><label for="${o}">${questions[currentQuestion].options[o]}</label></td>
+                </tr>`;
+            optionsTable.appendChild(htmlToElement(tr));
+        }
+
+        mainButton.onclick = function () { nextQuestion(currentQuestion + 1); };
+    }
+
+    function htmlToElement(html)
+    {
+        let template = document.createElement("template");
+        html = html.trim();
+        template.innerHTML = html;
+        return template.content.firstChild;
+    }
+</script>

@@ -1,0 +1,1720 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>At last, let&#39;s build Qt statically | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2018/02/17/build-qt-statically/" />
+
+    <meta name="generator" content="Hugo 0.84.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="At last, let&#39;s build Qt statically" />
+<meta property="og:description" content="For quite a long time statically built Qt was kind of a mystery to me. I always used dynamic builds and had lots of involuntary sexual intercourses with macdeployqt/windeployqt (perhaps I should write about this too).
+But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed and managed to build Qt statically.
+
+
+
+    " />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2018/02/17/build-qt-statically/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2018-02-17T20:52:06&#43;01:00" />
+<meta property="article:modified_time" content="2018-02-17T20:52:06&#43;01:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2018/02/17/build-qt-statically/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">At last, let&#39;s build Qt statically</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2018-02-17 20:52:06 &#43;0100</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 42 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>For quite a long time statically built Qt was kind of a mystery to me. I always used dynamic builds and had lots of involuntary sexual intercourses with <code>macdeployqt</code>/<code>windeployqt</code> (<em>perhaps I should write about this too</em>).</p>
+<p>But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed and managed to build Qt statically.</p>
+
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/qt-configure.png" alt="Qt configure">
+
+
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#why-build-qt-statically">Why build Qt statically</a>
+      <ul>
+        <li><a href="#about-open-source-licenses-compliance">About Open Source licenses compliance</a></li>
+      </ul>
+    </li>
+    <li><a href="#how-to-build-qt-statically">How to build Qt statically</a>
+      <ul>
+        <li>
+          <ul>
+            <li><a href="#optimisation-options">Optimisation options</a></li>
+            <li><a href="#cleaning-the-build-directory">Cleaning the build directory</a></li>
+          </ul>
+        </li>
+        <li><a href="#mac-os">Mac OS</a></li>
+        <li><a href="#linux">Linux</a></li>
+        <li><a href="#windows">Windows</a>
+          <ul>
+            <li><a href="#qt-5101-windows-10-and-mingw-x32">Qt 5.10.1, Windows 10 and MinGW x32</a></li>
+            <li><a href="#qt-5111-windows-7-and-msvc2015-x64">Qt 5.11.1, Windows 7 and MSVC2015 x64</a></li>
+            <li><a href="#qt-5111-windows-10-and-msvc2017-x64">Qt 5.11.1, Windows 10 and MSVC2017 x64</a></li>
+            <li><a href="#qt-5112-windows-10-and-mingw-x32">Qt 5.11.2, Windows 10 and MinGW x32</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#how-to-use-static-qt">How to use static Qt</a></li>
+    <li><a href="#how-exactly-static-build-is-different">How exactly static build is different</a>
+      <ul>
+        <li><a href="#no-more-shared-libraries">No more shared libraries</a>
+          <ul>
+            <li><a href="#mac-os-1">Mac OS</a></li>
+            <li><a href="#linux-1">Linux</a></li>
+            <li><a href="#windows-1">Windows</a></li>
+          </ul>
+        </li>
+        <li><a href="#smaller-builds">Smaller builds</a></li>
+        <li><a href="#less-ram">Less RAM</a></li>
+        <li><a href="#slower-building">Slower building</a></li>
+      </ul>
+    </li>
+    <li><a href="#problems">Problems</a>
+      <ul>
+        <li><a href="#shadow-builds">Shadow builds</a></li>
+        <li><a href="#trailing-backslash-in-prefix">Trailing backslash in prefix</a></li>
+        <li><a href="#fonts">Fonts</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h1 id="why-build-qt-statically">Why build Qt statically</h1>
+<p>There are 3 main reasons:</p>
+<ol>
+<li>Easier deployment;</li>
+<li>Smaller binaries size;</li>
+<li>Better security.</li>
+</ol>
+<p>Deployment of dynamically linked Qt applications always was (is) not a trivial task. While everything works on your development machine, being deployed on another machine your applications most likely will complain about all sorts of missing libraries.</p>
+<p>What I did in the past - I just copied the entire set of Qt libraries to the application directory and then application started working. But, first of all, copying just Qt libraries is not enough, there are some other libraries that need to be deployed along, and secondly, the final size of the deployed application can easily exceed a couple of hundreds of megabytes, which is not really okay even for desktop targets, not to say about embedded devices with quite a limited space available.</p>
+<p>Having built your application statically linked, you get everything all-in-one - a single executable file which is very easy to deploy and it will have a smaller size comparing with its dynamically linked equivalent.</p>
+<p>However, if your deployment target has several Qt-based applications, then static linking is not that attractive in terms of saving space, because in case of dynamic linking every Qt-based application can use the same set of shared Qt libraries, which you need to deploy only once. Here&rsquo;s a simplified picture about it:</p>
+
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/dynamic-vs-static.png" alt="Qt static vs dynamic">
+
+
+<p>As you can see, even though 1 statically linked application takes less space than 1 dynamically linked, but when you have 4 applications, then you can save more space on your disk by using dynamic linking: 620 - 220 = 400 MB of space saved. Not bad indeed, but again - this is just a simplified example, and real numbers probably won&rsquo;t be that exciting.</p>
+<p>Speaking about security - that one usually references to the fact that application relying on shared libraries is easier to hack (because you can replace libraries with the modified ones). But I am not sure if it&rsquo;s really the case, because if shared libraries are exposed for hacking then it probably means that the whole OS is compromised, so there is no much point to fight the fire in the ashtray when entire building is on fire. And also as far as I know it is possible to sign shared libraries and perform checks before actually calling them.</p>
+<h2 id="about-open-source-licenses-compliance">About Open Source licenses compliance</h2>
+<p>Be aware, that if you are using Qt under LGPL, then using static linking might make it harder for you to comply with the license terms and keep your code private at the same time.</p>
+<p>But if you are using Qt under GPL, then it doesn&rsquo;t matter to you anyway as your code already belongs to community.</p>
+<p>Please note, that I am not a lawyer, and this is just my interpretation of the license text, so don&rsquo;t make business decisions based only on my comments - consult with a proper legal specialist.</p>
+<h1 id="how-to-build-qt-statically">How to build Qt statically</h1>
+<p>It is actually embarrassingly easy. You only need to run the <code>configure</code> utility with the right set of parameters.</p>
+<p>I&rsquo;ll describe the process for Mac OS (<em>works like a charm</em>), Linux (<em>there are some tiny problems</em>) and Windows (<del><em>doesn&rsquo;t fucking work</em></del> <em>lots of problems</em>).</p>
+<p>The first step is the same for all platforms: create a folder for <a href="http://doc.qt.io/qtcreator/creator-glossary.html#glossary-shadow-build">shadow build</a> and run <code>configure</code> command from there:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">/path/to/qt/src/configure -static -release -ltcg -optimize-size -no-pch -prefix <span style="color:#e6db74">&#34;/path/to/qt/510-static&#34;</span> -skip webengine -nomake tools -nomake tests -nomake examples</code></pre></div>
+<p>Here&rsquo;s a description for the options I used:</p>
+<ul>
+<li><code>-static</code> - this one tells to build exactly a static version;</li>
+<li><code>-release</code> - because I need static build only for publishing my apps, therefore there is no need in static debug build, so it can be skipped. For debugging/profiling I&rsquo;ll keep using dynamic build;</li>
+<li><code>-ltcg</code> - Link-Time Code Generation, optimizes something. I took it from <a href="https://youtu.be/mbs3-XE0HNE">here</a>. I don&rsquo;t recommend to use it on Windows (<em>you&rsquo;ll see later why</em>);</li>
+<li><code>-optimize-size</code> - optimizes release builds for size instead of speed. I am after smaller builds, so;</li>
+<li><code>-no-pch</code> - no precompiled headers, meaning that all the header files (<code>.h</code>) will not be precompiled, so you&rsquo;ll get all the benefits from <code>#ifdef</code>. Moreover, for some platforms Qt won&rsquo;t even build with precompiled headers turned on;</li>
+<li><code>-prefix &quot;/path/to/qt/510-static&quot;</code> - where to put the result;</li>
+<li><code>-skip webengine</code> - I don&rsquo;t need WebEngine;</li>
+<li><code>-nomake tools</code> - I don&rsquo;t need static tools (Qt Creator, Designer, etc);</li>
+<li><code>-nomake tests</code> - I don&rsquo;t need tests;</li>
+<li><code>-nomake examples</code> - I don&rsquo;t need examples.</li>
+</ul>
+<p>The set of options can differ from platform to platform. In my case it was the same for <a href="#mac">Mac</a> and <a href="#linux">Linux</a>, but for <a href="#windows">Windows</a> I had to add two additional ones.</p>
+<p>Full list of all possible options you can find in the <a href="http://doc.qt.io/qt-5/configure-options.html">documentation</a>. Or you can get it from <code>configure</code> itself. Here&rsquo;s an output from Qt 5.11.1 on Mac OS:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ /path/to/qt/5.11.1/Src/configure -h
++ cd qtbase
++ /path/to/qt/5.11.1/Src/qtbase/configure -top-level -h
+Usage:  configure <span style="color:#f92672">[</span>options<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>assignments<span style="color:#f92672">]</span>
+
+Configure understands variable assignments like VAR<span style="color:#f92672">=</span>value on the command line.
+Each uppercased library name <span style="color:#f92672">(</span>obtainable with -list-libraries<span style="color:#f92672">)</span> supports the
+suffixes _INCDIR, _LIBDIR, _PREFIX <span style="color:#f92672">(</span>INCDIR<span style="color:#f92672">=</span>PREFIX/include, LIBDIR<span style="color:#f92672">=</span>PREFIX/lib<span style="color:#f92672">)</span>,
+_LIBS, and - on Windows and Darwin - _LIBS_DEBUG and _LIBS_RELEASE. E.g.,
+ICU_PREFIX<span style="color:#f92672">=</span>/opt/icu42 ICU_LIBS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;-licui18n -licuuc -licudata&#34;</span>.
+
+It is also possible to manipulate any QMAKE_* variable, to amend the values
+from the mkspec <span style="color:#66d9ef">for</span> the build of Qt itself, e.g., QMAKE_CXXFLAGS<span style="color:#f92672">+=</span>-g3.
+
+Note that the *_LIBS* and QMAKE_* assignments manipulate lists, so items
+containing meta characters <span style="color:#f92672">(</span>spaces in particular<span style="color:#f92672">)</span> need to be quoted according
+to qmake rules. On top of that, the assignments as a whole need to be quoted
+according to shell rules. It is recommended to use single quotes <span style="color:#66d9ef">for</span> the inner
+quoting and double quotes <span style="color:#66d9ef">for</span> the outer quoting.
+
+Top-level installation directories:
+  -prefix &lt;dir&gt; ...... The deployment directory, as seen on the target device.
+                       <span style="color:#f92672">[</span>/usr/local/Qt-$QT_VERSION, $PWD <span style="color:#66d9ef">if</span> -developer-build<span style="color:#f92672">]</span>
+  -extprefix &lt;dir&gt; ... The installation directory, as seen on the host machine.
+                       <span style="color:#f92672">[</span>SYSROOT/PREFIX<span style="color:#f92672">]</span>
+  -hostprefix <span style="color:#f92672">[</span>dir<span style="color:#f92672">]</span> .. The installation directory <span style="color:#66d9ef">for</span> build tools running on
+                       the host machine. If <span style="color:#f92672">[</span>dir<span style="color:#f92672">]</span> is not given, the current
+                       build directory will be used. <span style="color:#f92672">[</span>EXTPREFIX<span style="color:#f92672">]</span>
+  -external-hostbindir &lt;path&gt; ... Path to Qt tools built <span style="color:#66d9ef">for</span> this machine.
+                       Use this when -platform does not match the current
+                       system, i.e., to make a Canadian Cross Build.
+
+Fine tuning of installation directory layout. Note that all directories
+except -sysconfdir should be located under -prefix/-hostprefix:
+
+  -bindir &lt;dir&gt; ......... Executables <span style="color:#f92672">[</span>PREFIX/bin<span style="color:#f92672">]</span>
+  -headerdir &lt;dir&gt; ...... Header files <span style="color:#f92672">[</span>PREFIX/include<span style="color:#f92672">]</span>
+  -libdir &lt;dir&gt; ......... Libraries <span style="color:#f92672">[</span>PREFIX/lib<span style="color:#f92672">]</span>
+  -archdatadir &lt;dir&gt; .... Arch-dependent data <span style="color:#f92672">[</span>PREFIX<span style="color:#f92672">]</span>
+  -plugindir &lt;dir&gt; ...... Plugins <span style="color:#f92672">[</span>ARCHDATADIR/plugins<span style="color:#f92672">]</span>
+  -libexecdir &lt;dir&gt; ..... Helper programs <span style="color:#f92672">[</span>ARCHDATADIR/bin on Windows,
+                          ARCHDATADIR/libexec otherwise<span style="color:#f92672">]</span>
+  -importdir &lt;dir&gt; ...... QML1 imports <span style="color:#f92672">[</span>ARCHDATADIR/imports<span style="color:#f92672">]</span>
+  -qmldir &lt;dir&gt; ......... QML2 imports <span style="color:#f92672">[</span>ARCHDATADIR/qml<span style="color:#f92672">]</span>
+  -datadir &lt;dir&gt; ........ Arch-independent data <span style="color:#f92672">[</span>PREFIX<span style="color:#f92672">]</span>
+  -docdir &lt;dir&gt; ......... Documentation <span style="color:#f92672">[</span>DATADIR/doc<span style="color:#f92672">]</span>
+  -translationdir &lt;dir&gt; . Translations <span style="color:#f92672">[</span>DATADIR/translations<span style="color:#f92672">]</span>
+  -sysconfdir &lt;dir&gt; ..... Settings used by Qt programs <span style="color:#f92672">[</span>PREFIX/etc/xdg<span style="color:#f92672">]</span>
+  -examplesdir &lt;dir&gt; .... Examples <span style="color:#f92672">[</span>PREFIX/examples<span style="color:#f92672">]</span>
+  -testsdir &lt;dir&gt; ....... Tests <span style="color:#f92672">[</span>PREFIX/tests<span style="color:#f92672">]</span>
+
+  -hostbindir &lt;dir&gt; ..... Host executables <span style="color:#f92672">[</span>HOSTPREFIX/bin<span style="color:#f92672">]</span>
+  -hostlibdir &lt;dir&gt; ..... Host libraries <span style="color:#f92672">[</span>HOSTPREFIX/lib<span style="color:#f92672">]</span>
+  -hostdatadir &lt;dir&gt; .... Data used by qmake <span style="color:#f92672">[</span>HOSTPREFIX<span style="color:#f92672">]</span>
+
+Conventions <span style="color:#66d9ef">for</span> the remaining options: When an option<span style="color:#e6db74">&#39;s description is
+</span><span style="color:#e6db74">followed by a list of values in brackets, the interpretation is as follows:
+</span><span style="color:#e6db74">&#39;</span>yes<span style="color:#e6db74">&#39; represents the bare option; all other values are possible prefixes to
+</span><span style="color:#e6db74">the option, e.g., -no-gui. Alternatively, the value can be assigned, e.g.,
+</span><span style="color:#e6db74">--gui=yes. Values are listed in the order they are tried if not specified;
+</span><span style="color:#e6db74">&#39;</span>auto<span style="color:#e6db74">&#39; is a shorthand for &#39;</span>yes/no<span style="color:#e6db74">&#39;. Solitary &#39;</span>yes<span style="color:#e6db74">&#39; and &#39;</span>no<span style="color:#e6db74">&#39; represent binary
+</span><span style="color:#e6db74">options without auto-detection.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">Configure meta:
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -help, -h ............ Display this help screen
+</span><span style="color:#e6db74">  -verbose, -v ......... Print verbose messages during configuration
+</span><span style="color:#e6db74">  -continue ............ Continue configure despite errors
+</span><span style="color:#e6db74">  -redo ................ Re-configure with previously used options.
+</span><span style="color:#e6db74">                         Additional options may be passed, but will not be
+</span><span style="color:#e6db74">                         saved for later use by -redo.
+</span><span style="color:#e6db74">  -recheck [test,...] .. Discard cached negative configure test results.
+</span><span style="color:#e6db74">                         Use this after installing missing dependencies.
+</span><span style="color:#e6db74">                         Alternatively, if tests are specified, only their
+</span><span style="color:#e6db74">                         results are discarded.
+</span><span style="color:#e6db74">  -recheck-all ......... Discard all cached configure test results.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -feature-&lt;feature&gt; ... Enable &lt;feature&gt;
+</span><span style="color:#e6db74">  -no-feature-&lt;feature&gt;  Disable &lt;feature&gt; [none]
+</span><span style="color:#e6db74">  -list-features ....... List available features. Note that some features
+</span><span style="color:#e6db74">                         have dedicated command line options as well.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -list-libraries ...... List possible external dependencies.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">Build options:
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -opensource .......... Build the Open-Source Edition of Qt
+</span><span style="color:#e6db74">  -commercial .......... Build the Commercial Edition of Qt
+</span><span style="color:#e6db74">  -confirm-license ..... Automatically acknowledge the license
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -release ............. Build Qt with debugging turned off [yes]
+</span><span style="color:#e6db74">  -debug ............... Build Qt with debugging turned on [no]
+</span><span style="color:#e6db74">  -debug-and-release ... Build two versions of Qt, with and without
+</span><span style="color:#e6db74">                         debugging turned on [yes] (Apple and Windows only)
+</span><span style="color:#e6db74">  -optimize-debug ...... Enable debug-friendly optimizations in debug builds
+</span><span style="color:#e6db74">                         [auto] (Not supported with MSVC or Clang toolchains)
+</span><span style="color:#e6db74">  -optimize-size ....... Optimize release builds for size instead of speed [no]
+</span><span style="color:#e6db74">  -optimized-tools ..... Build optimized host tools even in debug build [no]
+</span><span style="color:#e6db74">  -force-debug-info .... Create symbol files for release builds [no]
+</span><span style="color:#e6db74">  -separate-debug-info . Split off debug information to separate files [no]
+</span><span style="color:#e6db74">  -gdb-index ........... Index the debug info to speed up GDB
+</span><span style="color:#e6db74">                         [no; auto if -developer-build with debug info]
+</span><span style="color:#e6db74">  -strip ............... Strip release binaries of unneeded symbols [yes]
+</span><span style="color:#e6db74">  -force-asserts ....... Enable Q_ASSERT even in release builds [no]
+</span><span style="color:#e6db74">  -developer-build ..... Compile and link Qt for developing Qt itself
+</span><span style="color:#e6db74">                         (exports for auto-tests, extra checks, etc.) [no]
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -shared .............. Build shared Qt libraries [yes] (no for UIKit)
+</span><span style="color:#e6db74">  -static .............. Build static Qt libraries [no] (yes for UIKit)
+</span><span style="color:#e6db74">  -framework ........... Build Qt framework bundles [yes] (Apple only)
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -platform &lt;target&gt; ... Select host mkspec [detected]
+</span><span style="color:#e6db74">  -xplatform &lt;target&gt; .. Select target mkspec when cross-compiling [PLATFORM]
+</span><span style="color:#e6db74">  -device &lt;name&gt; ....... Cross-compile for device &lt;name&gt;
+</span><span style="color:#e6db74">  -device-option &lt;key=value&gt; ... Add option for the device mkspec
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -appstore-compliant .. Disable code that is not allowed in platform app stores.
+</span><span style="color:#e6db74">                         This is on by default for platforms which require distribution
+</span><span style="color:#e6db74">                         through an app store by default, in particular Android,
+</span><span style="color:#e6db74">                         iOS, tvOS, watchOS, and Universal Windows Platform. [auto]
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -qtnamespace &lt;name&gt; .. Wrap all Qt library code in &#39;</span>namespace &lt;name&gt; <span style="color:#f92672">{</span>...<span style="color:#f92672">}</span><span style="color:#e6db74">&#39;.
+</span><span style="color:#e6db74">  -qtlibinfix &lt;infix&gt; .. Rename all libQt5*.so to libQt5*&lt;infix&gt;.so.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -testcocoon .......... Instrument with the TestCocoon code coverage tool [no]
+</span><span style="color:#e6db74">  -gcov ................ Instrument with the GCov code coverage tool [no]
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -trace [backend] ..... Enable instrumentation with tracepoints.
+</span><span style="color:#e6db74">                         Currently supported backends are &#39;</span>etw<span style="color:#e6db74">&#39; (Windows) and
+</span><span style="color:#e6db74">                         &#39;</span>lttng<span style="color:#e6db74">&#39; (Linux), or &#39;</span>yes<span style="color:#e6db74">&#39; for auto-detection. [no]
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -sanitize {address|thread|memory|undefined}
+</span><span style="color:#e6db74">                         Instrument with the specified compiler sanitizer.
+</span><span style="color:#e6db74">                         Note that some sanitizers cannot be combined;
+</span><span style="color:#e6db74">                         for example, -sanitize address cannot be combined with
+</span><span style="color:#e6db74">                         -sanitize thread.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -c++std &lt;edition&gt; .... Select C++ standard &lt;edition&gt; [c++1z/c++14/c++11]
+</span><span style="color:#e6db74">                         (Not supported with MSVC)
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -sse2 ................ Use SSE2 instructions [auto]
+</span><span style="color:#e6db74">  -sse3/-ssse3/-sse4.1/-sse4.2/-avx/-avx2/-avx512
+</span><span style="color:#e6db74">                         Enable use of particular x86 instructions [auto]
+</span><span style="color:#e6db74">                         Enabled ones are still subject to runtime detection.
+</span><span style="color:#e6db74">  -mips_dsp/-mips_dspr2  Use MIPS DSP/rev2 instructions [auto]
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -qreal &lt;type&gt; ........ typedef qreal to the specified type. [double]
+</span><span style="color:#e6db74">                         Note: this affects binary compatibility.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -R &lt;string&gt; .......... Add an explicit runtime library path to the Qt
+</span><span style="color:#e6db74">                         libraries. Supports paths relative to LIBDIR.
+</span><span style="color:#e6db74">  -rpath ............... Link Qt libraries and executables using the library
+</span><span style="color:#e6db74">                         install path as a runtime library path. Similar to
+</span><span style="color:#e6db74">                         -R LIBDIR. On Apple platforms, disabling this implies
+</span><span style="color:#e6db74">                         using absolute install names (based in LIBDIR) for
+</span><span style="color:#e6db74">                         dynamic libraries and frameworks. [auto]
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -reduce-exports ...... Reduce amount of exported symbols [auto]
+</span><span style="color:#e6db74">  -reduce-relocations .. Reduce amount of relocations [auto] (Unix only)
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -plugin-manifests .... Embed manifests into plugins [no] (Windows only)
+</span><span style="color:#e6db74">  -static-runtime ...... With -static, use static runtime [no] (Windows only)
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -pch ................. Use precompiled headers [auto]
+</span><span style="color:#e6db74">  -ltcg ................ Use Link Time Code Generation [no]
+</span><span style="color:#e6db74">  -use-gold-linker ..... Use the GNU gold linker [auto]
+</span><span style="color:#e6db74">  -incredibuild-xge .... Use the IncrediBuild XGE [no] (Windows only)
+</span><span style="color:#e6db74">  -ccache .............. Use the ccache compiler cache [no] (Unix only)
+</span><span style="color:#e6db74">  -make-tool &lt;tool&gt; .... Use &lt;tool&gt; to build qmake [nmake] (Windows only)
+</span><span style="color:#e6db74">  -mp .................. Use multiple processors for compilation (MSVC only)
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -warnings-are-errors . Treat warnings as errors [no; yes if -developer-build]
+</span><span style="color:#e6db74">  -silent .............. Reduce the build output so that warnings and errors
+</span><span style="color:#e6db74">                         can be seen more easily
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">Build environment:
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -sysroot &lt;dir&gt; ....... Set &lt;dir&gt; as the target sysroot
+</span><span style="color:#e6db74">  -gcc-sysroot ......... With -sysroot, pass --sysroot to the compiler [yes]
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -pkg-config .......... Use pkg-config [auto] (Unix only)
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -D &lt;string&gt; .......... Pass additional preprocessor define
+</span><span style="color:#e6db74">  -I &lt;string&gt; .......... Pass additional include path
+</span><span style="color:#e6db74">  -L &lt;string&gt; .......... Pass additional library path
+</span><span style="color:#e6db74">  -F &lt;string&gt; .......... Pass additional framework path (Apple only)
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">  -sdk &lt;sdk&gt; ........... Build Qt using Apple provided SDK &lt;sdk&gt;. The argument
+</span><span style="color:#e6db74">                         should be one of the available SDKs as listed by
+</span><span style="color:#e6db74">                         &#39;</span>xcodebuild -showsdks<span style="color:#960050;background-color:#1e0010">&#39;</span>.
+                         Note that the argument applies only to Qt libraries
+                         and applications built using the target mkspec - not
+                         host tools such as qmake, moc, rcc, etc.
+
+  -android-sdk path .... Set Android SDK root path <span style="color:#f92672">[</span>$ANDROID_SDK_ROOT<span style="color:#f92672">]</span>
+  -android-ndk path .... Set Android NDK root path <span style="color:#f92672">[</span>$ANDROID_NDK_ROOT<span style="color:#f92672">]</span>
+  -android-ndk-platform  Set Android platform
+  -android-ndk-host .... Set Android NDK host <span style="color:#f92672">(</span>linux-x86, linux-x86_64, etc.<span style="color:#f92672">)</span>
+                         <span style="color:#f92672">[</span>$ANDROID_NDK_HOST<span style="color:#f92672">]</span>
+  -android-arch ........ Set Android architecture <span style="color:#f92672">(</span>armeabi, armeabi-v7a,
+                         arm64-v8a, x86, x86_64, mips, mips64<span style="color:#f92672">)</span>
+  -android-toolchain-version ... Set Android toolchain version
+  -android-style-assets  Automatically extract style assets from the device at
+                         run time. This option makes the Android style behave
+                         correctly, but also makes the Android platform plugin
+                         incompatible with the LGPL2.1. <span style="color:#f92672">[</span>yes<span style="color:#f92672">]</span>
+
+Component selection:
+
+  -skip &lt;repo&gt; ......... Exclude an entire repository from the build.
+  -make &lt;part&gt; ......... Add &lt;part&gt; to the list of parts to be built.
+                         Specifying this option clears the default list first.
+                         <span style="color:#f92672">[</span>libs and examples, also tools <span style="color:#66d9ef">if</span> not cross-building,
+                         also tests <span style="color:#66d9ef">if</span> -developer-build<span style="color:#f92672">]</span>
+  -nomake &lt;part&gt; ....... Exclude &lt;part&gt; from the list of parts to be built.
+  -compile-examples .... When unset, install only the sources of examples <span style="color:#f92672">[</span>yes<span style="color:#f92672">]</span>
+  -gui ................. Build the Qt GUI module and dependencies <span style="color:#f92672">[</span>yes<span style="color:#f92672">]</span>
+  -widgets ............. Build the Qt Widgets module and dependencies <span style="color:#f92672">[</span>yes<span style="color:#f92672">]</span>
+  -no-dbus ............. Do not build the Qt D-Bus module
+                         <span style="color:#f92672">[</span>default on Android and Windows<span style="color:#f92672">]</span>
+  -dbus-linked ......... Build Qt D-Bus and link to libdbus-1 <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+  -dbus-runtime ........ Build Qt D-Bus and dynamically load libdbus-1 <span style="color:#f92672">[</span>no<span style="color:#f92672">]</span>
+  -accessibility ....... Enable accessibility support <span style="color:#f92672">[</span>yes<span style="color:#f92672">]</span>
+                         Note: Disabling accessibility is not recommended.
+
+Qt comes with bundled copies of some 3rd party libraries. These are used
+by default <span style="color:#66d9ef">if</span> auto-detection of the respective system library fails.
+
+Core options:
+
+  -doubleconversion .... Select used double conversion library <span style="color:#f92672">[</span>system/qt/no<span style="color:#f92672">]</span>
+                         No implies use of sscanf_l and snprintf_l <span style="color:#f92672">(</span>imprecise<span style="color:#f92672">)</span>.
+  -glib ................ Enable Glib support <span style="color:#f92672">[</span>no; auto on Unix<span style="color:#f92672">]</span>
+  -eventfd ............. Enable eventfd support
+  -inotify ............. Enable inotify support
+  -iconv ............... Enable iconv<span style="color:#f92672">(</span>3<span style="color:#f92672">)</span> support <span style="color:#f92672">[</span>posix/sun/gnu/no<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Unix only<span style="color:#f92672">)</span>
+  -icu ................. Enable ICU support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+  -pcre ................ Select used libpcre2 <span style="color:#f92672">[</span>system/qt<span style="color:#f92672">]</span>
+  -pps ................. Enable PPS support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>QNX only<span style="color:#f92672">)</span>
+  -zlib ................ Select used zlib <span style="color:#f92672">[</span>system/qt<span style="color:#f92672">]</span>
+
+  Logging backends:
+    -journald .......... Enable journald support <span style="color:#f92672">[</span>no<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Unix only<span style="color:#f92672">)</span>
+    -syslog ............ Enable syslog support <span style="color:#f92672">[</span>no<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Unix only<span style="color:#f92672">)</span>
+    -slog2 ............. Enable slog2 support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>QNX only<span style="color:#f92672">)</span>
+
+Network options:
+
+  -ssl ................. Enable either SSL support method <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+  -no-openssl .......... Do not use OpenSSL <span style="color:#f92672">[</span>default on Apple and WinRT<span style="color:#f92672">]</span>
+  -openssl-linked ...... Use OpenSSL and link to libssl <span style="color:#f92672">[</span>no<span style="color:#f92672">]</span>
+  -openssl-runtime ..... Use OpenSSL and dynamically load libssl <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+  -securetransport ..... Use SecureTransport <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Apple only<span style="color:#f92672">)</span>
+
+  -sctp ................ Enable SCTP support <span style="color:#f92672">[</span>no<span style="color:#f92672">]</span>
+
+  -libproxy ............ Enable use of libproxy <span style="color:#f92672">[</span>no<span style="color:#f92672">]</span>
+  -system-proxies ...... Use system network proxies by default <span style="color:#f92672">[</span>yes<span style="color:#f92672">]</span>
+
+Gui, printing, widget options:
+
+  -cups ................ Enable CUPS support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Unix only<span style="color:#f92672">)</span>
+
+  -fontconfig .......... Enable Fontconfig support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Unix only<span style="color:#f92672">)</span>
+  -freetype ............ Select used FreeType <span style="color:#f92672">[</span>system/qt/no<span style="color:#f92672">]</span>
+  -harfbuzz ............ Select used HarfBuzz-NG <span style="color:#f92672">[</span>system/qt/no<span style="color:#f92672">]</span>
+                         <span style="color:#f92672">(</span>Not auto-detected on Apple and Windows<span style="color:#f92672">)</span>
+
+  -gtk ................. Enable GTK platform theme support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+
+  -lgmon ............... Enable lgmon support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>QNX only<span style="color:#f92672">)</span>
+
+  -no-opengl ........... Disable OpenGL support
+  -opengl &lt;api&gt; ........ Enable OpenGL support. Supported APIs:
+                         es2 <span style="color:#f92672">(</span>default on Windows<span style="color:#f92672">)</span>, desktop <span style="color:#f92672">(</span>default on Unix<span style="color:#f92672">)</span>,
+                         dynamic <span style="color:#f92672">(</span>Windows only<span style="color:#f92672">)</span>
+  -opengles3 ........... Enable OpenGL ES 3.x support instead of ES 2.x <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+  -angle ............... Use bundled ANGLE to support OpenGL ES 2.0 <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+                         <span style="color:#f92672">(</span>Windows only<span style="color:#f92672">)</span>
+  -combined-angle-lib .. Merge LibEGL and LibGLESv2 into LibANGLE <span style="color:#f92672">(</span>Windows only<span style="color:#f92672">)</span>
+
+  -qpa &lt;name&gt; .......... Select default QPA backend<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>e.g., xcb, cocoa, windows<span style="color:#f92672">)</span>
+                         A prioritized list separated by semi-colons.
+  -xcb-xlib............. Enable Xcb-Xlib support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+
+  Platform backends:
+    -direct2d .......... Enable Direct2D support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Windows only<span style="color:#f92672">)</span>
+    -directfb .......... Enable DirectFB support <span style="color:#f92672">[</span>no<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Unix only<span style="color:#f92672">)</span>
+    -eglfs ............. Enable EGLFS support <span style="color:#f92672">[</span>auto; no on Android and Windows<span style="color:#f92672">]</span>
+    -gbm ............... Enable backends <span style="color:#66d9ef">for</span> GBM <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Linux only<span style="color:#f92672">)</span>
+    -kms ............... Enable backends <span style="color:#66d9ef">for</span> KMS <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Linux only<span style="color:#f92672">)</span>
+    -linuxfb ........... Enable Linux Framebuffer support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Linux only<span style="color:#f92672">)</span>
+    -mirclient ......... Enable Mir client support <span style="color:#f92672">[</span>no<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Linux only<span style="color:#f92672">)</span>
+    -xcb ............... Select used xcb-* libraries <span style="color:#f92672">[</span>system/qt/no<span style="color:#f92672">]</span>
+                         <span style="color:#f92672">(</span>-qt-xcb still uses system version of libxcb itself<span style="color:#f92672">)</span>
+
+  Input backends:
+    -libudev............ Enable udev support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+    -evdev ............. Enable evdev support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+    -imf ............... Enable IMF support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>QNX only<span style="color:#f92672">)</span>
+    -libinput .......... Enable libinput support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+    -mtdev ............. Enable mtdev support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+    -tslib ............. Enable tslib support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+    -xinput2 ........... Enable XInput2 support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+    -xkbcommon-x11 ..... Select xkbcommon used in combination with xcb
+                         <span style="color:#f92672">[</span>system/qt/no<span style="color:#f92672">]</span>
+    -xkbcommon-evdev ... Enable X-less xkbcommon in combination with libinput
+                         <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+
+  Image formats:
+    -gif ............... Enable reading support <span style="color:#66d9ef">for</span> GIF <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+    -ico ............... Enable support <span style="color:#66d9ef">for</span> ICO <span style="color:#f92672">[</span>yes<span style="color:#f92672">]</span>
+    -libpng ............ Select used libpng <span style="color:#f92672">[</span>system/qt/no<span style="color:#f92672">]</span>
+    -libjpeg ........... Select used libjpeg <span style="color:#f92672">[</span>system/qt/no<span style="color:#f92672">]</span>
+
+Database options:
+
+  -sql-&lt;driver&gt; ........ Enable SQL &lt;driver&gt; plugin. Supported drivers:
+                         db2 ibase mysql oci odbc psql sqlite2 sqlite tds
+                         <span style="color:#f92672">[</span>all auto<span style="color:#f92672">]</span>
+  -sqlite .............. Select used sqlite3 <span style="color:#f92672">[</span>system/qt<span style="color:#f92672">]</span>
+
+Qt3D options:
+
+  -assimp .............. Select used assimp library <span style="color:#f92672">[</span>system/qt/no<span style="color:#f92672">]</span>
+  -qt3d-profile-jobs ... Enable jobs profiling <span style="color:#f92672">[</span>no<span style="color:#f92672">]</span>
+  -qt3d-profile-gl ..... Enable OpenGL profiling <span style="color:#f92672">[</span>no<span style="color:#f92672">]</span>
+  -qt3d-simd ........... Select level of SIMD support <span style="color:#f92672">[</span>no/sse2/avx2<span style="color:#f92672">]</span>
+  -qt3d-render ......... Enable the Qt3D Render aspect <span style="color:#f92672">[</span>yes<span style="color:#f92672">]</span>
+  -qt3d-input .......... Enable the Qt3D Input aspect <span style="color:#f92672">[</span>yes<span style="color:#f92672">]</span>
+  -qt3d-logic .......... Enable the Qt3D Logic aspect <span style="color:#f92672">[</span>yes<span style="color:#f92672">]</span>
+  -qt3d-extras ......... Enable the Qt3D Extras aspect <span style="color:#f92672">[</span>yes<span style="color:#f92672">]</span>
+  -qt3d-animation....... Enable the Qt3D Animation aspect <span style="color:#f92672">[</span>yes<span style="color:#f92672">]</span>
+
+Multimedia options:
+
+  -pulseaudio .......... Enable PulseAudio support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Unix only<span style="color:#f92672">)</span>
+  -alsa ................ Enable ALSA support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Unix only<span style="color:#f92672">)</span>
+  -no-gstreamer ........ Disable support <span style="color:#66d9ef">for</span> GStreamer
+  -gstreamer <span style="color:#f92672">[</span>version<span style="color:#f92672">]</span> . Enable GStreamer support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+                         With no parameter, 1.0 is tried first, <span style="color:#66d9ef">then</span> 0.10.
+  -mediaplayer-backend &lt;name&gt; ... Select media player backend <span style="color:#f92672">(</span>Windows only<span style="color:#f92672">)</span>
+                                  Supported backends: directshow <span style="color:#f92672">(</span>default<span style="color:#f92672">)</span>, wmf
+
+Webengine options:
+  -webengine-alsa ................ Enable ALSA support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>Linux only<span style="color:#f92672">)</span>
+  -webengine-pulseaudio .......... Enable PulseAudio support <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+                                   <span style="color:#f92672">(</span>Linux only<span style="color:#f92672">)</span>
+  -webengine-embedded-build ...... Enable Linux embedded build <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+                                   <span style="color:#f92672">(</span>Linux only<span style="color:#f92672">)</span>
+  -webengine-icu ................. Use system ICU libraries <span style="color:#f92672">[</span>system/qt<span style="color:#f92672">]</span>
+                                   <span style="color:#f92672">(</span>Linux only<span style="color:#f92672">)</span>
+  -webengine-ffmpeg .............. Use system FFmpeg libraries <span style="color:#f92672">[</span>system/qt<span style="color:#f92672">]</span>
+                                   <span style="color:#f92672">(</span>Linux only<span style="color:#f92672">)</span>
+  -webengine-opus ................ Use system Opus libraries <span style="color:#f92672">[</span>system/qt<span style="color:#f92672">]</span>
+                                   <span style="color:#f92672">(</span>Linux only<span style="color:#f92672">)</span>
+  -webengine-webp ................ Use system WebP libraries <span style="color:#f92672">[</span>system/qt<span style="color:#f92672">]</span>
+                                   <span style="color:#f92672">(</span>Linux only<span style="color:#f92672">)</span>
+  -webengine-pepper-plugins ...... Enable use of Pepper Flash and Widevine
+                                   plugins <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+  -webengine-printing-and-pdf .... Enable use of printing and output to PDF
+                                   <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span>
+  -webengine-proprietary-codecs .. Enable support <span style="color:#66d9ef">for</span> proprietary codecs <span style="color:#f92672">[</span>no<span style="color:#f92672">]</span>
+  -webengine-spellchecker ........ Enable support <span style="color:#66d9ef">for</span> spellchecker <span style="color:#f92672">[</span>yes<span style="color:#f92672">]</span>
+  -webengine-native-spellchecker . Enable support <span style="color:#66d9ef">for</span> native spellchecker <span style="color:#f92672">[</span>no<span style="color:#f92672">]</span>
+                                   <span style="color:#f92672">(</span>macOS only<span style="color:#f92672">)</span>
+  -webengine-webrtc .............. Enable support <span style="color:#66d9ef">for</span> WebRTC <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span></code></pre></div>
+<p>Core options section refers to <a href="http://doc.qt.io/qt-5/configure-options.html#third-party-libraries">3rd-party libraries</a>, and quite often I see in different places people putting options like <code>-qt-zlib</code>, <code>-qt-libpng</code> and so on for <code>configure</code>. Although, if you won&rsquo;t set them, it doesn&rsquo;t mean that you won&rsquo;t have those libraries in your build - they just will be included with default values: some with Qt implementations and some with system ones. You can check which ones exactly are set in the <code>configure</code> summary output (after you run it).</p>
+<h3 id="optimisation-options">Optimisation options</h3>
+<p>At some point I decided to configure Qt without <code>-ltcg</code> and <code>-optimize-size</code> options to see the actual &ldquo;optimisation&rdquo;.</p>
+<p>So I built Qt 5.12.3 on Mac OS twice, first time with those options:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">configure <span style="color:#f92672">-</span>static <span style="color:#f92672">-</span>release <span style="color:#f92672">-</span>ltcg <span style="color:#f92672">-</span>optimize<span style="color:#f92672">-</span>size <span style="color:#f92672">-</span>no<span style="color:#f92672">-</span>pch <span style="color:#f92672">-</span>prefix <span style="color:#e6db74">&#34;/path/to/qt/5123-static&#34;</span> <span style="color:#f92672">-</span>skip webengine <span style="color:#f92672">-</span>nomake tools <span style="color:#f92672">-</span>nomake tests <span style="color:#f92672">-</span>nomake examples</code></pre></div>
+<p>and second time without them:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">configure <span style="color:#f92672">-</span>static <span style="color:#f92672">-</span>release <span style="color:#f92672">-</span>no<span style="color:#f92672">-</span>pch <span style="color:#f92672">-</span>prefix <span style="color:#e6db74">&#34;/path/to/qt/5123-static&#34;</span> <span style="color:#f92672">-</span>skip webengine <span style="color:#f92672">-</span>nomake tools <span style="color:#f92672">-</span>nomake tests <span style="color:#f92672">-</span>nomake examples</code></pre></div>
+<p>Results are here:</p>
+<div style="overflow-x:auto;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Qt<br/>build<br/>time</th>
+        <th>Qt<br/>build<br/>size</th>
+        <th>Qt<br/>installation<br/>size</th>
+        <th>Application<br/>build<br/>time</th>
+        <th>Application<br/>size</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>With</b> optimisation options</td>
+        <td><span style="color:red;">00:31:53</span></td>
+        <td><span style="color:red;">1.15 GB</span></td>
+        <td><span style="color:red;">519.3 MB</span></td>
+        <td><span style="color:red;">00:03:28</span></td>
+        <td><span style="color:green;">27.0 MB</span></td>
+      </tr>
+      <tr>
+        <td><b>Without</b> optimisation options</td>
+        <td><span style="color:green;">00:21:35</span></td>
+        <td><span style="color:green;">835.7 MB</span></td>
+        <td><span style="color:green;">381.5 MB</span></td>
+        <td><span style="color:green;">00:00:04</span></td>
+        <td><span style="color:red;">31.2 MB</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p>So, indeed, <code>-ltcg</code> (<em>I actually don&rsquo;t know what role does that one play here</em>) and <code>-optimize-size</code> configuration options do provide smaller application binaries, but at the same time you lose in Qt build time, its size and also applications build time.</p>
+<h3 id="cleaning-the-build-directory">Cleaning the build directory</h3>
+<p>Note, that if you were building Qt before, then you should clean out the old build first:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">make -j8 distclean</code></pre></div>
+<p>In case of shadow build it is enough to simply delete the &ldquo;shadow&rdquo; folder (and the one you&rsquo;ve set with <code>-prefix</code>).</p>
+<h2 id="mac-os">Mac OS</h2>
+<p>So, you ran <code>configure</code> and now it asks you which edition you would like to build and also if you accept the license (these two are also available as options for <code>configure</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Creating qmake...
+.Done.
+
+Selecting Qt Edition.
+
+Type <span style="color:#e6db74">&#39;c&#39;</span> <span style="color:#66d9ef">if</span> you want to use the Commercial Edition.
+Type <span style="color:#e6db74">&#39;o&#39;</span> <span style="color:#66d9ef">if</span> you want to use the Open Source Edition.
+
+Which edition of Qt <span style="color:#66d9ef">do</span> you want to use? c
+This is the Qt Enterprise Edition.
+
+You are licensed to use this software under the terms of following license<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span>:
+Qt Enterprise License Agreement
+
+Type <span style="color:#e6db74">&#39;?&#39;</span> to view the license offer.
+Type <span style="color:#e6db74">&#39;y&#39;</span> to accept this license offer.
+Type <span style="color:#e6db74">&#39;n&#39;</span> to decline this license offer.
+
+Do you accept the terms of the license<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span>?
+y</code></pre></div>
+<p>After that it will generate configuration summary and perform some checks:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Running configuration tests...
+Done running configuration tests.
+
+Configure summary:
+
+Build type: macx-clang <span style="color:#f92672">(</span>x86_64, CPU features: cx16 mmx sse sse2 sse3 ssse3<span style="color:#f92672">)</span>
+Configuration: sse2 aesni sse3 ssse3 sse4_1 sse4_2 avx avx2 avx512f avx512bw avx512cd avx512dq avx512er avx512ifma avx512pf avx512vbmi avx512vl compile_examples f16c largefile ltcg optimize_size rdrnd shani release c++11 c++14 c++1z concurrent dbus no-pkg-config reduce_exports static stl
+Build options:
+  Mode ................................... release
+  Optimize release build <span style="color:#66d9ef">for</span> size ........ yes
+  Building shared libraries .............. no
+  Using C++ standard ..................... C++1z
+  Using ccache ........................... no
+  Using gold linker ...................... no
+  Using precompiled headers .............. no
+  Using LTCG ............................. yes
+  Target compiler supports:
+    SSE .................................. SSE2 SSE3 SSSE3 SSE4.1 SSE4.2
+    AVX .................................. AVX AVX2
+    AVX512 ............................... F ER CD PF DQ BW VL IFMA VBMI
+    Other x86 ............................ AES F16C RDRAND SHA
+  Build parts ............................ libs
+  App store compliance ................... no
+Qt modules and options:
+  Qt Concurrent .......................... yes
+  Qt D-Bus ............................... yes
+  Qt D-Bus directly linked to libdbus .... no
+  Qt Gui ................................. yes
+  Qt Network ............................. yes
+  Qt Sql ................................. yes
+  Qt Testlib ............................. yes
+  Qt Widgets ............................. yes
+  Qt Xml ................................. yes
+Support enabled <span style="color:#66d9ef">for</span>:
+  Using pkg-config ....................... no
+  QML debugging .......................... yes
+  udev ................................... no
+  Using system zlib ...................... yes
+Qt Core:
+  DoubleConversion ....................... yes
+    Using system DoubleConversion ........ no
+  GLib ................................... no
+  iconv .................................. no
+  ICU .................................... no
+  Logging backends:
+    journald ............................. no
+    syslog ............................... no
+    slog2 ................................ no
+  Using system PCRE2 ..................... no
+Qt Network:
+  CoreWLan ............................... yes
+  getifaddrs<span style="color:#f92672">()</span> ........................... yes
+  IPv6 ifname ............................ yes
+  libproxy ............................... no
+  SecureTransport ........................ yes
+  OpenSSL ................................ no
+    Qt directly linked to OpenSSL ........ no
+  SCTP ................................... no
+  Use system proxies ..................... yes
+Qt Gui:
+  Accessibility .......................... yes
+  FreeType ............................... yes
+    Using system FreeType ................ no
+  HarfBuzz ............................... yes
+    Using system HarfBuzz ................ no
+  Fontconfig ............................. no
+  Image formats:
+    GIF .................................. yes
+    ICO .................................. yes
+    JPEG ................................. yes
+      Using system libjpeg ............... no
+    PNG .................................. yes
+      Using system libpng ................ no
+  EGL .................................... no
+  OpenVG ................................. no
+  OpenGL:
+    Desktop OpenGL ....................... yes
+    OpenGL ES 2.0 ........................ no
+    OpenGL ES 3.0 ........................ no
+    OpenGL ES 3.1 ........................ no
+    OpenGL ES 3.2 ........................ no
+  Vulkan ................................. no
+  Session Management ..................... yes
+Features used by QPA backends:
+  evdev .................................. no
+  libinput ............................... no
+  INTEGRITY HID .......................... no
+  mtdev .................................. no
+  tslib .................................. no
+  xkbcommon-evdev ........................ no
+QPA backends:
+  DirectFB ............................... no
+  EGLFS .................................. no
+  LinuxFB ................................ no
+  VNC .................................... no
+  Mir client ............................. no
+Qt Widgets:
+  GTK+ ................................... no
+  Styles ................................. Fusion macOS Windows
+Qt PrintSupport:
+  CUPS ................................... yes
+Qt Sql:
+  DB2 <span style="color:#f92672">(</span>IBM<span style="color:#f92672">)</span> .............................. no
+  InterBase .............................. no
+  MySql .................................. no
+  OCI <span style="color:#f92672">(</span>Oracle<span style="color:#f92672">)</span> ........................... no
+  ODBC ................................... no
+  PostgreSQL ............................. no
+  SQLite2 ................................ no
+  SQLite ................................. yes
+    Using system provided SQLite ......... no
+  TDS <span style="color:#f92672">(</span>Sybase<span style="color:#f92672">)</span> ........................... no
+Qt SerialBus:
+  Socket CAN ............................. no
+  Socket CAN FD .......................... no
+QtXmlPatterns:
+  XML schema support ..................... yes
+Qt QML:
+  QML interpreter ........................ yes
+  QML network support .................... yes
+Qt Quick:
+  Direct3D <span style="color:#ae81ff">12</span> ............................ no
+  AnimatedImage item ..................... yes
+  Canvas item ............................ yes
+  Support <span style="color:#66d9ef">for</span> Qt Quick Designer .......... yes
+  Flipable item .......................... yes
+  GridView item .......................... yes
+  ListView item .......................... yes
+  Path support ........................... yes
+  PathView item .......................... yes
+  Positioner items ....................... yes
+  ShaderEffect item ...................... yes
+  Sprite item ............................ yes
+Qt Gamepad:
+  SDL2 ................................... no
+Qt 3D:
+  Assimp ................................. yes
+  System Assimp .......................... no
+  Output Qt3D Job traces ................. no
+  Output Qt3D GL traces .................. no
+  Use SSE2 instructions .................. yes
+  Use AVX2 instructions .................. no
+  Aspects:
+    Render aspect ........................ yes
+    Input aspect ......................... yes
+    Logic aspect ......................... yes
+    Animation aspect ..................... yes
+    Extras aspect ........................ yes
+Qt 3D GeometryLoaders:
+  Autodesk FBX ........................... no
+Qt Wayland Client ........................ no
+Qt Wayland Compositor .................... no
+Qt Bluetooth:
+  BlueZ .................................. no
+  BlueZ Low Energy ....................... no
+  Linux Crypto API ....................... no
+  WinRT Bluetooth API <span style="color:#f92672">(</span>desktop &amp; UWP<span style="color:#f92672">)</span> .... no
+Qt Sensors:
+  sensorfw ............................... no
+Qt Quick Controls 2:
+  Styles ................................. Default Fusion Imagine Material Universal
+Qt Quick Templates 2:
+  Hover support .......................... yes
+  Multi-touch support .................... yes
+Qt Positioning:
+  Gypsy GPS Daemon ....................... no
+  WinRT Geolocation API .................. no
+Qt Location:
+  Geoservice plugins:
+    OpenStreetMap ........................ yes
+    HERE ................................. yes
+    Esri ................................. yes
+    Mapbox ............................... yes
+    MapboxGL ............................. yes
+    Itemsoverlay ......................... yes
+Qt Multimedia:
+  ALSA ................................... no
+  GStreamer 1.0 .......................... no
+  GStreamer 0.10 ......................... no
+  Video <span style="color:#66d9ef">for</span> Linux ........................ no
+  OpenAL ................................. yes
+  PulseAudio ............................. no
+  Resource Policy <span style="color:#f92672">(</span>libresourceqt5<span style="color:#f92672">)</span> ....... no
+  AVFoundation ........................... yes
+  Windows Audio Services ................. no
+  DirectShow ............................. no
+  Windows Media Foundation ............... no
+
+Note: Using static linking will disable the use of dynamically
+loaded plugins. Make sure to import all needed static plugins,
+or compile needed modules into the library.
+
+Note: No wayland-egl support detected. Cross-toolkit compatibility disabled.
+
+Qt is now configured <span style="color:#66d9ef">for</span> building. Just run <span style="color:#e6db74">&#39;make&#39;</span>.
+Once everything is built, you must run <span style="color:#e6db74">&#39;make install&#39;</span>.
+Qt will be installed into <span style="color:#e6db74">&#39;/path/to/qt/510-static&#39;</span>.
+
+Prior to reconfiguration, make sure you remove any leftovers from
+the previous build.</code></pre></div>
+<p>Now you need to actually build it. It is done by running <code>make</code> command, and it is important to note that it will be doing it for ages, because by default it doesn&rsquo;t parallelize the process. So, if you, like me, have 8 cores in your CPU (4 physical and 4 logical), you can run it like that:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">make -j8</code></pre></div>
+<p>With <code>-j8</code> provided, it took <strong>32 minutes</strong> to build Qt statically on my MacBookPro with 2.8 GHz Intel Core i7.</p>
+<p>However, if there will be any error, the only output you&rsquo;ll get will be:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">make<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: *** <span style="color:#f92672">[</span>sub-src-make_first<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">2</span>
+make: *** <span style="color:#f92672">[</span>module-qtbase-make_first<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">2</span></code></pre></div>
+<p>And to see the errors you&rsquo;ll have to run <code>make</code> without <code>-j8</code>.</p>
+<p>Last step is to &ldquo;install&rdquo; your new static Qt:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">make -j8 install</code></pre></div>
+<p>That will take couple more minutes, and then you can go to <code>/path/to/qt/510-static</code> to see the result.</p>
+<h2 id="linux">Linux</h2>
+<p>All the same as for Mac OS, but I encountered 2 problems.</p>
+<p>First one was missing <code>g++</code>, which is fixed by installing build tools:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">apt-get install build-essential</code></pre></div>
+<p>Second one was this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ERROR The OpenGL functionality tests failed</code></pre></div>
+<p>Which is fixed by installing Mesa libraries:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">apt-get install libgl1-mesa-dev</code></pre></div>
+<p>And actually <a href="http://doc.qt.io/qt-5/linux.html#requirements-for-development-host">documentation</a> says about that, but I didn&rsquo;t notice at first.</p>
+<p>Note here, that even after you install the missing stuff, <code>configure</code> won&rsquo;t know about it, because it performs all the checks only once, and after that it relies on the generated <code>config.cache</code>, so every time you change something - delete <code>config.cache</code> before launching <code>configure</code> again.</p>
+<p>I have Linux on Lenovo T540p laptop with 2.5 GHz Intel Core i7, and there it takes <strong>43 minutes</strong> (with <code>make -j8</code>) to built Qt statically.</p>
+<p>After executing the last step (<code>make -j8 install</code>) you will get your static Qt in the folder specified with <code>prefix</code> parameter.</p>
+<h2 id="windows">Windows</h2>
+<p>I was trying to build Qt on Windows from time to time, and usually it fails, but sometimes it actually does build.</p>
+<h3 id="qt-5101-windows-10-and-mingw-x32">Qt 5.10.1, Windows 10 and MinGW x32</h3>
+<p>I have Windows 10 running on the same Lenovo laptop, and there I use Qt (<code>d:\Programs\Qt</code>) with <strong>MinGW</strong> (you should have <code>\path\to\Qt\Tools\mingw530_32\bin</code> in your <code>PATH</code>).</p>
+<p>First I tried to do it with Qt 5.10, but it failed with some error about dummy platforms. I wanted to investigate that, but then suddenly Qt 5.10.1 was released, so I tried with this version and this time it didn&rsquo;t give me that error.</p>
+<p>But I got another error anyway, and it was about OpenGL:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">WARNING: Using OpenGL ES 2.0 on Windows without ANGLE.
+The build will most likely fail.
+Specify -opengl desktop to use regular OpenGL.</code></pre></div>
+<p>So I added <code>-opengl desktop</code> to the list of <code>configure</code> options. In addition to that, in some article I read about the option <code>-platform win32-g++</code>, which apparently would have fixed the dummy platform error. So, the final command line now looks like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">configure.bat -release -static -ltcg -no-pch -optimize-size -opengl desktop -platform win32-g++ -prefix <span style="color:#e6db74">&#34;\path\to\Qt\510-static&#34;</span> -skip webengine -nomake tools -nomake tests -nomake examples</code></pre></div>
+<p>I executed it and after a while (like, 10 times slower than on Linux) I got the following output:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Running configuration tests...
+Checking <span style="color:#66d9ef">for</span> valid makespec... yes
+Checking <span style="color:#66d9ef">for</span> target architecture... i386
+Checking <span style="color:#66d9ef">for</span> SSE2 instructions... yes
+Checking <span style="color:#66d9ef">for</span> AES new instructions... yes
+Checking <span style="color:#66d9ef">for</span> alloca<span style="color:#f92672">()</span> in alloca.h... no
+Checking <span style="color:#66d9ef">for</span> alloca<span style="color:#f92672">()</span> in malloc.h... yes
+Checking <span style="color:#66d9ef">for</span> SSE3 instructions... yes
+Checking <span style="color:#66d9ef">for</span> SSSE3 instructions... yes
+Checking <span style="color:#66d9ef">for</span> SSE4.1 instructions... yes
+Checking <span style="color:#66d9ef">for</span> SSE4.2 instructions... yes
+Checking <span style="color:#66d9ef">for</span> AVX instructions... yes
+Checking <span style="color:#66d9ef">for</span> AVX2 instructions... yes
+Checking <span style="color:#66d9ef">for</span> AVX512 F instructions... yes
+Checking <span style="color:#66d9ef">for</span> AVX512 BW instructions... yes
+Checking <span style="color:#66d9ef">for</span> AVX512 CD instructions... yes
+Checking <span style="color:#66d9ef">for</span> AVX512 DQ instructions... yes
+Checking <span style="color:#66d9ef">for</span> AVX512 ER instructions... yes
+Checking <span style="color:#66d9ef">for</span> AVX512 IFMA instructions... yes
+Checking <span style="color:#66d9ef">for</span> AVX512 PF instructions... yes
+Checking <span style="color:#66d9ef">for</span> AVX512 VBMI instructions... yes
+Checking <span style="color:#66d9ef">for</span> AVX512 VL instructions... yes
+Checking <span style="color:#66d9ef">for</span> C++14 support... yes
+Checking <span style="color:#66d9ef">for</span> C++1z support... yes
+Checking <span style="color:#66d9ef">for</span> D-Bus &gt;<span style="color:#f92672">=</span> 1.2... no
+Checking <span style="color:#66d9ef">for</span> F16C instructions... yes
+Checking <span style="color:#66d9ef">for</span> D-Bus &gt;<span style="color:#f92672">=</span> 1.2 <span style="color:#f92672">(</span>host<span style="color:#f92672">)</span>... yes
+Checking <span style="color:#66d9ef">for</span> IncrediBuild... no
+Checking <span style="color:#66d9ef">for</span> udev... no
+Checking <span style="color:#66d9ef">for</span> POSIX fallocate<span style="color:#f92672">()</span>... no
+Checking <span style="color:#66d9ef">for</span> RDRAND instruction... yes
+Checking <span style="color:#66d9ef">for</span> SHA new instructions... yes
+Checking <span style="color:#66d9ef">for</span> STL compatibility... yes
+Checking <span style="color:#66d9ef">for</span> zlib... yes
+Checking <span style="color:#66d9ef">for</span> C++11 &lt;future&gt;... yes
+Checking <span style="color:#66d9ef">for</span> eventfd... no
+Checking <span style="color:#66d9ef">for</span> inotify... no
+Checking <span style="color:#66d9ef">for</span> slog2... no
+Checking <span style="color:#66d9ef">for</span> <span style="color:#ae81ff">64</span> bit atomics... yes
+Checking <span style="color:#66d9ef">for</span> DoubleConversion... no
+Checking <span style="color:#66d9ef">for</span> PCRE2... no
+Checking <span style="color:#66d9ef">for</span> O_CLOEXEC... no
+Checking <span style="color:#66d9ef">for</span> C++11 &lt;random&gt;... yes
+Checking <span style="color:#66d9ef">for</span> working std::atomic <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">function</span> pointers... yes
+Checking <span style="color:#66d9ef">for</span> getifaddrs<span style="color:#f92672">()</span>... no
+Checking <span style="color:#66d9ef">for</span> IPv6 ifname... no
+Checking <span style="color:#66d9ef">for</span> OpenSSL Headers... no
+Checking <span style="color:#66d9ef">for</span> OpenSSL v. 1.1 support... no
+Checking <span style="color:#66d9ef">for</span> XCB &gt;<span style="color:#f92672">=</span> 1.5 <span style="color:#f92672">(</span>core<span style="color:#f92672">)</span>... no
+Checking <span style="color:#66d9ef">for</span> Direct 2D... no
+Checking <span style="color:#66d9ef">for</span> DirectWrite... yes
+Checking <span style="color:#66d9ef">for</span> DirectWrite 2... no
+Checking <span style="color:#66d9ef">for</span> Desktop OpenGL... yes
+Checking <span style="color:#66d9ef">for</span> EGL... no
+Checking <span style="color:#66d9ef">for</span> evdev... no
+Checking <span style="color:#66d9ef">for</span> GBM... no
+Checking <span style="color:#66d9ef">for</span> KMS... no
+Checking <span style="color:#66d9ef">for</span> LinuxFB... no
+Checking <span style="color:#66d9ef">for</span> mtdev... no
+Checking <span style="color:#66d9ef">for</span> OpenVG... no
+Checking <span style="color:#66d9ef">for</span> default QPA platform... windows
+Checking <span style="color:#66d9ef">for</span> libjpeg... no
+Checking <span style="color:#66d9ef">for</span> libpng... no
+Checking <span style="color:#66d9ef">for</span> tslib... no
+Checking <span style="color:#66d9ef">for</span> Vulkan... no
+Checking <span style="color:#66d9ef">for</span> xkbcommon... no
+Checking <span style="color:#66d9ef">for</span> XLib... no
+Checking <span style="color:#66d9ef">for</span> uxtheme.h... yes
+Checking <span style="color:#66d9ef">for</span> CUPS... no
+Checking <span style="color:#66d9ef">for</span> DB2 <span style="color:#f92672">(</span>IBM<span style="color:#f92672">)</span>... no
+Checking <span style="color:#66d9ef">for</span> InterBase... no
+Checking <span style="color:#66d9ef">for</span> MySQL... no
+Checking <span style="color:#66d9ef">for</span> OCI <span style="color:#f92672">(</span>Oracle<span style="color:#f92672">)</span>... no
+Checking <span style="color:#66d9ef">for</span> ODBC... yes
+Checking <span style="color:#66d9ef">for</span> PostgreSQL... no
+Checking <span style="color:#66d9ef">for</span> SQLite <span style="color:#f92672">(</span>version 2<span style="color:#f92672">)</span>... no
+Checking <span style="color:#66d9ef">for</span> TDS <span style="color:#f92672">(</span>Sybase<span style="color:#f92672">)</span>... no
+Checking <span style="color:#66d9ef">for</span> Direct3D 12... no
+Checking <span style="color:#66d9ef">for</span> SDL2... no
+Checking <span style="color:#66d9ef">for</span> Assimp... no
+Checking <span style="color:#66d9ef">for</span> Autodesk FBX... no
+Checking <span style="color:#66d9ef">for</span> Wayland EGL library... no
+Checking <span style="color:#66d9ef">for</span> BlueZ... no
+Checking <span style="color:#66d9ef">for</span> WinRT Bluetooth API... no
+Checking <span style="color:#66d9ef">for</span> sensorfw... no
+Checking <span style="color:#66d9ef">for</span> Gypsy... no
+Checking <span style="color:#66d9ef">for</span> WinRT Geolocation API... no
+Checking <span style="color:#66d9ef">for</span> DirectShow... yes
+Checking <span style="color:#66d9ef">for</span> evr.h... yes
+Checking <span style="color:#66d9ef">for</span> GStreamer 1.0... no
+Checking <span style="color:#66d9ef">for</span> GStreamer 0.10... no
+Checking <span style="color:#66d9ef">for</span> OpenAL... no
+Checking <span style="color:#66d9ef">for</span> libresourceqt5... no
+Checking <span style="color:#66d9ef">for</span> Windows Audio Services... no
+Checking <span style="color:#66d9ef">for</span> WMF... no
+Checking <span style="color:#66d9ef">for</span> wmsdk.h... no
+Checking <span style="color:#66d9ef">for</span> WShellItem... yes
+Done running configuration tests.
+
+Configure summary:
+
+Build type: win32-g++ <span style="color:#f92672">(</span>i386, CPU features: &lt;none&gt;<span style="color:#f92672">)</span>
+Configuration: sse2 aesni sse3 ssse3 sse4_1 sse4_2 avx avx2 avx512f avx512bw avx512cd avx512dq avx512er avx512ifma avx512pf avx512vbmi avx512vl compile_examples f16c largefile ltcg optimize_size rdrnd shani release c++11 c++14 c++1z concurrent dbus no-pkg-config static stl
+Build options:
+  Mode ................................... release
+  Optimize release build <span style="color:#66d9ef">for</span> size ........ yes
+  Building shared libraries .............. no
+  Using C++ standard ..................... C++1z
+  Using gold linker ...................... no
+  Using precompiled headers .............. no
+  Using LTCG ............................. yes
+  Target compiler supports:
+    SSE .................................. SSE2 SSE3 SSSE3 SSE4.1 SSE4.2
+    AVX .................................. AVX AVX2
+    AVX512 ............................... F ER CD PF DQ BW VL IFMA VBMI
+    Other x86 ............................ AES F16C RDRAND SHA
+  Build parts ............................ libs
+  App store compliance ................... no
+Qt modules and options:
+  Qt Concurrent .......................... yes
+  Qt D-Bus ............................... yes
+  Qt D-Bus directly linked to libdbus .... no
+  Qt Gui ................................. yes
+  Qt Network ............................. yes
+  Qt Sql ................................. yes
+  Qt Testlib ............................. yes
+  Qt Widgets ............................. yes
+  Qt Xml ................................. yes
+Support enabled <span style="color:#66d9ef">for</span>:
+  Using pkg-config ....................... no
+  QML debugging .......................... yes
+  udev ................................... no
+  Using system zlib ...................... yes
+Qt Core:
+  DoubleConversion ....................... yes
+    Using system DoubleConversion ........ no
+  GLib ................................... no
+  iconv .................................. no
+  ICU .................................... no
+  Logging backends:
+    journald ............................. no
+    syslog ............................... no
+    slog2 ................................ no
+  Using system PCRE2 ..................... no
+Qt Network:
+  getifaddrs<span style="color:#f92672">()</span> ........................... no
+  IPv6 ifname ............................ no
+  libproxy ............................... no
+  OpenSSL ................................ no
+    Qt directly linked to OpenSSL ........ no
+  SCTP ................................... no
+  Use system proxies ..................... yes
+Qt Gui:
+  Accessibility .......................... yes
+  FreeType ............................... yes
+    Using system FreeType ................ no
+  HarfBuzz ............................... yes
+    Using system HarfBuzz ................ no
+  Fontconfig ............................. no
+  Image formats:
+    GIF .................................. yes
+    ICO .................................. yes
+    JPEG ................................. yes
+      Using system libjpeg ............... no
+    PNG .................................. yes
+      Using system libpng ................ no
+  EGL .................................... no
+  OpenVG ................................. no
+  OpenGL:
+    ANGLE ................................ no
+    Desktop OpenGL ....................... yes
+    Dynamic OpenGL ....................... no
+    OpenGL ES 2.0 ........................ no
+    OpenGL ES 3.0 ........................ no
+    OpenGL ES 3.1 ........................ no
+    OpenGL ES 3.2 ........................ no
+  Vulkan ................................. no
+  Session Management ..................... yes
+Features used by QPA backends:
+  evdev .................................. no
+  libinput ............................... no
+  INTEGRITY HID .......................... no
+  mtdev .................................. no
+  tslib .................................. no
+  xkbcommon-evdev ........................ no
+QPA backends:
+  DirectFB ............................... no
+  EGLFS .................................. no
+  LinuxFB ................................ no
+  VNC .................................... no
+  Mir client ............................. no
+  Windows:
+    Direct 2D ............................ no
+    DirectWrite .......................... yes
+    DirectWrite <span style="color:#ae81ff">2</span> ........................ no
+Qt Widgets:
+  GTK+ ................................... no
+  Styles ................................. Fusion Windows WindowsVista
+Qt PrintSupport:
+  CUPS ................................... no
+Qt Sql:
+  DB2 <span style="color:#f92672">(</span>IBM<span style="color:#f92672">)</span> .............................. no
+  InterBase .............................. no
+  MySql .................................. no
+  OCI <span style="color:#f92672">(</span>Oracle<span style="color:#f92672">)</span> ........................... no
+  ODBC ................................... yes
+  PostgreSQL ............................. no
+  SQLite2 ................................ no
+  SQLite ................................. yes
+    Using system provided SQLite ......... no
+  TDS <span style="color:#f92672">(</span>Sybase<span style="color:#f92672">)</span> ........................... no
+Qt SerialBus:
+  Socket CAN ............................. no
+  Socket CAN FD .......................... no
+QtXmlPatterns:
+  XML schema support ..................... yes
+Qt QML:
+  QML interpreter ........................ yes
+  QML network support .................... yes
+Qt Quick:
+  Direct3D <span style="color:#ae81ff">12</span> ............................ no
+  AnimatedImage item ..................... yes
+  Canvas item ............................ yes
+  Support <span style="color:#66d9ef">for</span> Qt Quick Designer .......... yes
+  Flipable item .......................... yes
+  GridView item .......................... yes
+  ListView item .......................... yes
+  Path support ........................... yes
+  PathView item .......................... yes
+  Positioner items ....................... yes
+  ShaderEffect item ...................... yes
+  Sprite item ............................ yes
+Qt Gamepad:
+  SDL2 ................................... no
+Qt 3D:
+  Assimp ................................. yes
+  System Assimp .......................... no
+  Output Qt3D Job traces ................. no
+  Output Qt3D GL traces .................. no
+  Use SSE2 instructions .................. no
+  Use AVX2 instructions .................. no
+  Aspects:
+    Render aspect ........................ yes
+    Input aspect ......................... yes
+    Logic aspect ......................... yes
+    Animation aspect ..................... yes
+    Extras aspect ........................ yes
+Qt 3D GeometryLoaders:
+  Autodesk FBX ........................... no
+Qt Wayland Client ........................ no
+Qt Wayland Compositor .................... no
+Qt Bluetooth:
+  BlueZ .................................. no
+  BlueZ Low Energy ....................... no
+  Linux Crypto API ....................... no
+  WinRT Bluetooth API <span style="color:#f92672">(</span>desktop &amp; UWP<span style="color:#f92672">)</span> .... no
+Qt Sensors:
+  sensorfw ............................... no
+Qt Quick Controls 2:
+  Styles ................................. Default Fusion Imagine Material Universal
+Qt Quick Templates 2:
+  Hover support .......................... yes
+  Multi-touch support .................... yes
+Qt Positioning:
+  Gypsy GPS Daemon ....................... no
+  WinRT Geolocation API .................. no
+Qt Location:
+  Geoservice plugins:
+    OpenStreetMap ........................ yes
+    HERE ................................. yes
+    Esri ................................. yes
+    Mapbox ............................... yes
+    MapboxGL ............................. yes
+    Itemsoverlay ......................... yes
+Qt Multimedia:
+  ALSA ................................... no
+  GStreamer 1.0 .......................... no
+  GStreamer 0.10 ......................... no
+  Video <span style="color:#66d9ef">for</span> Linux ........................ no
+  OpenAL ................................. no
+  PulseAudio ............................. no
+  Resource Policy <span style="color:#f92672">(</span>libresourceqt5<span style="color:#f92672">)</span> ....... no
+  Windows Audio Services ................. no
+  DirectShow ............................. yes
+  Windows Media Foundation ............... no
+  Media player backend ................... DirectShow
+
+Note: Using static linking will disable the use of dynamically
+loaded plugins. Make sure to import all needed static plugins,
+or compile needed modules into the library.
+
+Note: No wayland-egl support detected. Cross-toolkit compatibility disabled.
+
+Qt is now configured <span style="color:#66d9ef">for</span> building. Just run <span style="color:#e6db74">&#39;mingw32-make&#39;</span>.
+Once everything is built, you must run <span style="color:#e6db74">&#39;mingw32-make install&#39;</span>.
+Qt will be installed into <span style="color:#e6db74">&#39;D:\programs\Qt\510-static&#39;</span>.
+
+Prior to reconfiguration, make sure you remove any leftovers from
+the previous build.</code></pre></div>
+<p>Next step was to run <code>make</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mingw32-make -j8</code></pre></div>
+<p>But it failed:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">...
+<span style="color:#ae81ff">\c</span>cUClyLX.ltrans22.ltrans.o:&lt;artificial&gt;:<span style="color:#f92672">(</span>.text+0x20d<span style="color:#f92672">)</span>: undefined reference to <span style="color:#e6db74">`</span>QByteArray::QByteArray<span style="color:#f92672">(</span>int, Qt::Initialization<span style="color:#f92672">)</span><span style="color:#e6db74">&#39;
+</span><span style="color:#e6db74">\ccUClyLX.ltrans22.ltrans.o:&lt;artificial&gt;:(.text+0x244): undefined reference to `QByteArray::resize(int)&#39;</span>
+collect2.exe: error: ld returned <span style="color:#ae81ff">1</span> exit status
+Makefile.Release:86: recipe <span style="color:#66d9ef">for</span> target <span style="color:#e6db74">&#39;..\..\..\bin\moc.exe&#39;</span> failed
+mingw32-make<span style="color:#f92672">[</span>4<span style="color:#f92672">]</span>: *** <span style="color:#f92672">[</span>..<span style="color:#ae81ff">\.</span>.<span style="color:#ae81ff">\.</span>.<span style="color:#ae81ff">\b</span>in<span style="color:#ae81ff">\m</span>oc.exe<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">1</span>
+mingw32-make<span style="color:#f92672">[</span>4<span style="color:#f92672">]</span>: Leaving directory <span style="color:#e6db74">&#39;d:/programs/Qt/5.10.1/Src/qtbase/src/tools/moc&#39;</span>
+Makefile:36: recipe <span style="color:#66d9ef">for</span> target <span style="color:#e6db74">&#39;release&#39;</span> failed
+mingw32-make<span style="color:#f92672">[</span>3<span style="color:#f92672">]</span>: *** <span style="color:#f92672">[</span>release<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">2</span>
+mingw32-make<span style="color:#f92672">[</span>3<span style="color:#f92672">]</span>: Leaving directory <span style="color:#e6db74">&#39;d:/programs/Qt/5.10.1/Src/qtbase/src/tools/moc&#39;</span>
+Makefile:93: recipe <span style="color:#66d9ef">for</span> target <span style="color:#e6db74">&#39;sub-moc-make_first&#39;</span> failed
+mingw32-make<span style="color:#f92672">[</span>2<span style="color:#f92672">]</span>: *** <span style="color:#f92672">[</span>sub-moc-make_first<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">2</span>
+mingw32-make<span style="color:#f92672">[</span>2<span style="color:#f92672">]</span>: Leaving directory <span style="color:#e6db74">&#39;d:/programs/Qt/5.10.1/Src/qtbase/src&#39;</span>
+Makefile:44: recipe <span style="color:#66d9ef">for</span> target <span style="color:#e6db74">&#39;sub-src-make_first&#39;</span> failed
+mingw32-make<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: *** <span style="color:#f92672">[</span>sub-src-make_first<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">2</span>
+mingw32-make<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: Leaving directory <span style="color:#e6db74">&#39;d:/programs/Qt/5.10.1/Src/qtbase&#39;</span>
+Makefile:78: recipe <span style="color:#66d9ef">for</span> target <span style="color:#e6db74">&#39;module-qtbase-make_first&#39;</span> failed
+mingw32-make: *** <span style="color:#f92672">[</span>module-qtbase-make_first<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">2</span></code></pre></div>
+<p>I tried setting flags in <code>qmake.conf</code> like it is said <a href="http://dimitris.apeiro.gr/2015/06/24/build-a-static-qt5-for-windows-by-compiling/">here</a>, but that didn&rsquo;t help (<em>I found the actual reason <a href="#qt-5112-windows-10-and-mingw-x32">later</a></em>).</p>
+<p>Okay then, let&rsquo;s try another computer - who knows, maybe my environment is messed up somehow. So I installed Qt to another machine with Windows and tried to perform <code>configure</code>. There it gave me a different type of error:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Cannot detect host toolchain. Please use -platform. Aborting.</code></pre></div>
+<p>Okay, I provided <code>-platform win32-g++</code> (and <code>-opengl desktop</code>) and relaunched <code>configure</code>. It asked me about edition, I chose commercial, and&hellip;</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Which edition of Qt <span style="color:#66d9ef">do</span> you want to use? c
+Error: Insufficient command line arguments <span style="color:#66d9ef">for</span> licheck <span style="color:#f92672">(</span>configure<span style="color:#f92672">)</span>
+ERROR: You are not licensed to use this software.</code></pre></div>
+<p>But I do have a commercial license! And the license file is where it should be. But okay, let&rsquo;s try Open Source option:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Which edition of Qt <span style="color:#66d9ef">do</span> you want to use? o
+Running configuration tests...
+Checking <span style="color:#66d9ef">for</span> valid makespec... ERROR: Cannot compile a minimal program. The toolchain or QMakeSpec is broken.</code></pre></div>
+<p>Yeah, fuck this shit.</p>
+<h3 id="qt-5111-windows-7-and-msvc2015-x64">Qt 5.11.1, Windows 7 and MSVC2015 x64</h3>
+<p>After quite a while I gave it another shot as I needed to build static Qt for Windows 7 with MSVC2015.</p>
+<p>So, here are the steps.</p>
+<p>Install <a href="https://www.microsoft.com/en-us/download/details.aspx?id=35">DirectX</a> and <a href="https://www.microsoft.com/en-us/download/details.aspx?id=6812">DirectX SDK</a>. Most likely it is not required, but I would do it just in case;</p>
+<p>Install <a href="https://www.python.org/downloads/windows/">Python</a> (<em>I took 3.7</em>), <a href="http://strawberryperl.com/">Perl</a> and make sure that both are added to PATH. Thank you, Qt documentation, for not mentioning Python and Perl at all, because I discovered it by getting the following error:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Makefile <span style="color:#f92672">[</span>module-qtdeclarative-install_subtargets<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">3</span></code></pre></div>
+<p>Which does not explain anything, but having googled it, I found out that it&rsquo;s exactly due to the missing Python and Perl.</p>
+<p>Install <a href="https://www.microsoft.com/en-us/download/details.aspx?id=48130">.NET 4.6</a>, which is needed for <a href="https://visualstudio.microsoft.com/downloads/">Visual Studio</a> installer. Choose the following components from VS:</p>
+
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/visual-studio-installer.png" alt="Visual Studio Installer">
+
+
+<p>Yes, even though you&rsquo;re on Windows 7, install Windows 8.1 SDK. Although, it could be that only UCRT component is needed.</p>
+<p>Now install Qt:</p>
+
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/install-qt-msvc.png" alt="Qt installer">
+
+
+<p>It is actually not required to install pre-built MSVC Qt (you only need <code>Sources</code>), but I wanted to compare dynamic with static, so I installed it.</p>
+<p>Get <a href="https://wiki.qt.io/Jom">jom</a> and add it to PATH. If you won&rsquo;t do this, Qt will be built with <code>nmake</code>, which will take ages as it cannot use more than one CPU core (<em>no <code>-j</code> option</em>).</p>
+<p>Create a folder for shadow build, launch <code>VS2015 x64 Native Tools Command Prompt</code> from your Start menu and go to this folder. Then build Qt from there:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">configure.bat -release -static -no-pch -optimize-size -opengl desktop -platform win32-msvc -prefix <span style="color:#e6db74">&#34;C:\Qt\511-static&#34;</span> -skip webengine -nomake tools -nomake tests -nomake examples
+time /t &gt;&gt; time.txt &amp; jom -j8 &amp; time /t &gt;&gt; time.txt
+jom -j8 install</code></pre></div>
+<p>It took <strong>35 minutes</strong> (<em>on the same Lenovo laptop</em>) to build 487 MB of binaries, and then it took a <strong>1 hour and 40 minutes</strong> to perform <code>install</code>, which resulted in 560 MB. I don&rsquo;t know why it takes so long to perform <code>install</code>, but what&rsquo;s more amusing is that <em>sometimes</em> it takes just a couple of minutes as it should - no idea what Windows &ldquo;magic&rdquo; is behind that.</p>
+<p>Note that I don&rsquo;t have <code>-ltcg</code> option this time. I actually had it, but it resulted in something ridiculous: the build itself occupied <strong>fucking 46 GB</strong> of space, and after <code>install</code> command I got another <strong>22 GB</strong>. What is the actual fuck. Apparently, it has something to do with the compiler (<em>hello, Microsoft</em>), because the <code>.lib</code> files were matching the <code>.obj</code> folder (<em>someone told me that, I&rsquo;ve no idea what it means</em>).</p>
+<p>During both build and install phases I got several occasional freezes of my PC when it became totally unresponsive so I had to hard-reset the machine and start over. Windows is definitely my favorite development platform.</p>
+<p>But okay, most importantly thing is that it has successfully built and that it works.</p>
+<p>Also note, that I haven&rsquo;t set any special flags which you can find being mentioned all over the internet (<em><code>QMAKE_CFLAGS_X</code> and others</em>) and didn&rsquo;t edit any configs - everything just builds as it is with out-of-the-box configuration.</p>
+<h3 id="qt-5111-windows-10-and-msvc2017-x64">Qt 5.11.1, Windows 10 and MSVC2017 x64</h3>
+<p>Just in case I decided to try Windows 10 and MSVC2017.</p>
+<p>Again, it&rsquo;s all the same: Python and Perl in your PATH, Visual Studio installed but this time with MSVC2017, you launched <code>VS2017 x64 Native Tools Command Prompt</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">configure.bat -release -static -no-pch -optimize-size -opengl desktop -platform win32-msvc -prefix <span style="color:#e6db74">&#34;\path\to\Qt\511-static&#34;</span> -skip webengine -nomake tools -nomake tests -nomake examples
+time /t &gt;&gt; time.txt &amp; jom -j8 &amp; time /t &gt;&gt; time.txt
+jom -j8 install</code></pre></div>
+<p>And again, with <code>-ltcg</code> option it produced <strong>14.5 GB</strong> after build, then increased that to <strong>52.6 GB</strong>, having installed <strong>25.7 GB</strong> of static Qt. Compilation took <strong>18 minutes</strong>, and installation was going for <strong>59 minutes</strong>.</p>
+<p>Without <code>-ltcg</code> it produced <strong>480 MB</strong> after build, increased that to <strong>1.34 GB</strong> and installed <strong>606 MB</strong> of static Qt. Compilation took <strong>15 minutes</strong>, and installation was going for <strong>44 minutes</strong>.</p>
+<h3 id="qt-5112-windows-10-and-mingw-x32">Qt 5.11.2, Windows 10 and MinGW x32</h3>
+<p>After I succeeded building Qt with MSVC, I decided to try MinGW again with just released Qt 5.11.2.</p>
+<p>It&rsquo;s all the same as for <a href="#qt-5111-windows-7-and-msvc2015-x64">Windows 7</a>, except for installed Python and Perl.</p>
+<p>Configuration went okay, but <code>mingw32-make</code> failed literally within a couple of minutes:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">C:<span style="color:#ae81ff">\U</span>sers<span style="color:#ae81ff">\v</span>asya<span style="color:#ae81ff">\A</span>ppData<span style="color:#ae81ff">\L</span>ocal<span style="color:#ae81ff">\T</span>emp<span style="color:#ae81ff">\c</span>cj6NtVh.ltrans2.ltrans.o:&lt;artificial&gt;:<span style="color:#f92672">(</span>.text+0x232a<span style="color:#f92672">)</span>: undefined reference to
+ <span style="color:#e6db74">`</span>QMapDataBase::recalcMostLeftNode<span style="color:#f92672">()</span><span style="color:#e6db74">&#39;
+</span><span style="color:#e6db74">C:\Users\vasya\AppData\Local\Temp\ccj6NtVh.ltrans2.ltrans.o:&lt;artificial&gt;:(.text.unlikely+0x21): undefined refer
+</span><span style="color:#e6db74">ence to `QAbstractConcatenable::appendLatin1To(char const*, int, QChar*)&#39;</span>
+C:<span style="color:#ae81ff">\U</span>sers<span style="color:#ae81ff">\v</span>asya<span style="color:#ae81ff">\A</span>ppData<span style="color:#ae81ff">\L</span>ocal<span style="color:#ae81ff">\T</span>emp<span style="color:#ae81ff">\c</span>cj6NtVh.ltrans2.ltrans.o:&lt;artificial&gt;:<span style="color:#f92672">(</span>.text$_ZN8SubArrayC4EPKc.lto_priv.53.
+lto_priv.106<span style="color:#f92672">[</span>_ZN8SubArrayC4EPKc.lto_priv.53.lto_priv.106<span style="color:#f92672">]</span>+0xd<span style="color:#f92672">)</span>: undefined reference to <span style="color:#e6db74">`</span>QByteArray::QByteArray<span style="color:#f92672">(</span>
+char const*, int<span style="color:#f92672">)</span><span style="color:#e6db74">&#39;
+</span><span style="color:#e6db74">C:\Users\vasya\AppData\Local\Temp\ccj6NtVh.ltrans2.ltrans.o:&lt;artificial&gt;:(.text$_ZN11FunctionDefC4ERKS_.lto_pri
+</span><span style="color:#e6db74">v.67.lto_priv.128[_ZN11FunctionDefC4ERKS_.lto_priv.67.lto_priv.128]+0xbb): undefined reference to `QArrayData::
+</span><span style="color:#e6db74">allocate(unsigned long long, unsigned long long, unsigned long long, QFlags&lt;QArrayData::AllocationOption&gt;)&#39;</span>
+C:<span style="color:#ae81ff">\U</span>sers<span style="color:#ae81ff">\v</span>asya<span style="color:#ae81ff">\A</span>ppData<span style="color:#ae81ff">\L</span>ocal<span style="color:#ae81ff">\T</span>emp<span style="color:#ae81ff">\c</span>cj6NtVh.ltrans2.ltrans.o:&lt;artificial&gt;:<span style="color:#f92672">(</span>.text$_ZN11FunctionDefC4ERKS_.lto_pri
+v.67.lto_priv.128<span style="color:#f92672">[</span>_ZN11FunctionDefC4ERKS_.lto_priv.67.lto_priv.128<span style="color:#f92672">]</span>+0xdb<span style="color:#f92672">)</span>: undefined reference to <span style="color:#e6db74">`</span>QArrayData::
+allocate<span style="color:#f92672">(</span>unsigned long long, unsigned long long, unsigned long long, QFlags&lt;QArrayData::AllocationOption&gt;<span style="color:#f92672">)</span><span style="color:#e6db74">&#39;
+</span><span style="color:#e6db74">C:\Users\vasya\AppData\Local\Temp\ccj6NtVh.ltrans2.ltrans.o:&lt;artificial&gt;:(.text$_ZN7QVectorI11FunctionDefEC4ERK
+</span><span style="color:#e6db74">S1_.lto_priv.65.lto_priv.132[_ZN7QVectorI11FunctionDefEC4ERKS1_.lto_priv.65.lto_priv.132]+0x46): undefined refe
+</span><span style="color:#e6db74">rence to `QArrayData::allocate(unsigned long long, unsigned long long, unsigned long long, QFlags&lt;QArrayData::A
+</span><span style="color:#e6db74">llocationOption&gt;)&#39;</span>
+C:<span style="color:#ae81ff">\U</span>sers<span style="color:#ae81ff">\v</span>asya<span style="color:#ae81ff">\A</span>ppData<span style="color:#ae81ff">\L</span>ocal<span style="color:#ae81ff">\T</span>emp<span style="color:#ae81ff">\c</span>cj6NtVh.ltrans2.ltrans.o:&lt;artificial&gt;:<span style="color:#f92672">(</span>.text$_ZN7QVectorI11FunctionDefEC4ERK
+S1_.lto_priv.65.lto_priv.132<span style="color:#f92672">[</span>_ZN7QVectorI11FunctionDefEC4ERKS1_.lto_priv.65.lto_priv.132<span style="color:#f92672">]</span>+0x65<span style="color:#f92672">)</span>: undefined refe
+rence to <span style="color:#e6db74">`</span>QArrayData::allocate<span style="color:#f92672">(</span>unsigned long long, unsigned long long, unsigned long long, QFlags&lt;QArrayData::A
+llocationOption&gt;<span style="color:#f92672">)</span><span style="color:#e6db74">&#39;
+</span><span style="color:#e6db74">collect2.exe: error: ld returned 1 exit status
+</span><span style="color:#e6db74">Makefile.Release:86: recipe for target &#39;</span>..<span style="color:#ae81ff">\.</span>.<span style="color:#ae81ff">\.</span>.<span style="color:#ae81ff">\b</span>in<span style="color:#ae81ff">\m</span>oc.exe<span style="color:#e6db74">&#39; failed
+</span><span style="color:#e6db74">mingw32-make[4]: *** [..\..\..\bin\moc.exe] Error 1
+</span><span style="color:#e6db74">mingw32-make[4]: Leaving directory &#39;</span>c:/Qt/5.11.1/5111/qtbase/src/tools/moc<span style="color:#e6db74">&#39;
+</span><span style="color:#e6db74">Makefile:36: recipe for target &#39;</span>release<span style="color:#e6db74">&#39; failed
+</span><span style="color:#e6db74">mingw32-make[3]: *** [release] Error 2
+</span><span style="color:#e6db74">mingw32-make[3]: Leaving directory &#39;</span>c:/Qt/5.11.1/5111/qtbase/src/tools/moc<span style="color:#e6db74">&#39;
+</span><span style="color:#e6db74">Makefile:92: recipe for target &#39;</span>sub-moc-make_first<span style="color:#e6db74">&#39; failed
+</span><span style="color:#e6db74">mingw32-make[2]: *** [sub-moc-make_first] Error 2
+</span><span style="color:#e6db74">mingw32-make[2]: Leaving directory &#39;</span>c:/Qt/5.11.1/5111/qtbase/src<span style="color:#e6db74">&#39;
+</span><span style="color:#e6db74">Makefile:44: recipe for target &#39;</span>sub-src-make_first<span style="color:#e6db74">&#39; failed
+</span><span style="color:#e6db74">mingw32-make[1]: *** [sub-src-make_first] Error 2
+</span><span style="color:#e6db74">mingw32-make[1]: Leaving directory &#39;</span>c:/Qt/5.11.1/5111/qtbase<span style="color:#e6db74">&#39;
+</span><span style="color:#e6db74">Makefile:78: recipe for target &#39;</span>module-qtbase-make_first<span style="color:#960050;background-color:#1e0010">&#39;</span> failed
+mingw32-make: *** <span style="color:#f92672">[</span>module-qtbase-make_first<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">2</span></code></pre></div>
+<p>I almost cursed everything forever, but then suddenly I decided to&hellip; try without <code>-ltcg</code> option. And it fucking worked! Hallelujah.</p>
+<p>Although, in case of MinGW there is one more thing you should know about - its runtime doesn&rsquo;t link statically by default. Surprise! So having deployed your statically linked Qt application to some other computer, you can get the following error:</p>
+
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/win-libgcc.png" alt="Qt, missing MinGW runtime">
+
+
+<p>In order to link MinGW runtime too, you need to set yet another option: <code>-static-runtime</code>.</p>
+<p>So, the final <code>configure</code> options for building static Qt with MinGW on Windows is the following:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">configure.bat -release -static -static-runtime -no-pch -optimize-size -opengl desktop -platform win32-g++ -prefix <span style="color:#e6db74">&#34;\path\to\qt\511-static&#34;</span> -skip webengine -nomake tools -nomake tests -nomake examples</code></pre></div>
+<p>Building took <strong>1 hour and 14 minutes</strong> and <strong>1.02 GB</strong>. Installing took <strong>8 minutes</strong> and resulted in <strong>460 MB</strong>.</p>
+<p>Now I can finally state that MinGW static builds of Qt do actually work. By the way, contrary to many manuals from the internet, I haven&rsquo;t used any additional scripts or <a href="http://www.mingw.org/wiki/msys">MSYS</a> environment - everything just works within regular <code>cmd</code>.</p>
+<p><em>Ну что сказать. Я просто труба тех шатал, кто писал документацию на тему. Ни хера нормально не расписано, пердолься сам до посинения, собирай инфу по кусочкам со всего интернета, может чего и получится. Понятно, что Шиндошс не в почёте, и реальные пацаны сидят на Линупсе, но это же документация коммерческого продукта, можно наверное ради такого дела отодвинуть ненадолго в сторону свою оконную непереносимость? Пиздец.</em></p>
+<h1 id="how-to-use-static-qt">How to use static Qt</h1>
+<p>You need to add static Qt in your <strong>Qt Creator</strong> settings:</p>
+<p>
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/qt-creator-versions.png" alt="Qt Creator, versions">
+
+
+<br/>
+
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/qt-creator-kits.png" alt="Qt Creator, kits">
+
+</p>
+<p>After that you just need to add this kit to your existing project and build with it:</p>
+
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/qt-creator-build.png" alt="Qt Creator, build target">
+
+
+<h1 id="how-exactly-static-build-is-different">How exactly static build is different</h1>
+<p>Let&rsquo;s see how to use static Qt in your projects and also let&rsquo;s compare some metrics between dynamic and static builds. I took <a href="https://github.com/retifrav/cinematic-experience">Cinematic Experience</a> demo for experiments.</p>
+<h2 id="no-more-shared-libraries">No more shared libraries</h2>
+<p>You can see for yourself that dynamically linked applications have dependency on Qt shared libraries and statically linked ones do not.</p>
+<h3 id="mac-os-1">Mac OS</h3>
+<p>Dynamic:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">otool -L cinematic-demo.app/Contents/MacOS/cinematic-demo
+
+cinematic-demo.app/Contents/MacOS/cinematic-demo:
+  @rpath/QtQuick.framework/Versions/5/QtQuick <span style="color:#f92672">(</span>compatibility version 5.10.0, current version 5.10.1<span style="color:#f92672">)</span>
+  @rpath/QtQml.framework/Versions/5/QtQml <span style="color:#f92672">(</span>compatibility version 5.10.0, current version 5.10.1<span style="color:#f92672">)</span>
+  @rpath/QtNetwork.framework/Versions/5/QtNetwork <span style="color:#f92672">(</span>compatibility version 5.10.0, current version 5.10.1<span style="color:#f92672">)</span>
+  @rpath/QtCore.framework/Versions/5/QtCore <span style="color:#f92672">(</span>compatibility version 5.10.0, current version 5.10.1<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/DiskArbitration.framework/Versions/A/DiskArbitration <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 1.0.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/IOKit.framework/Versions/A/IOKit <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 275.0.0<span style="color:#f92672">)</span>
+  @rpath/QtGui.framework/Versions/5/QtGui <span style="color:#f92672">(</span>compatibility version 5.10.0, current version 5.10.1<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/OpenGL.framework/Versions/A/OpenGL <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 1.0.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/AGL.framework/Versions/A/AGL <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 1.0.0<span style="color:#f92672">)</span>
+  /usr/lib/libc++.1.dylib <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 400.9.0<span style="color:#f92672">)</span>
+  /usr/lib/libSystem.B.dylib <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 1252.0.0<span style="color:#f92672">)</span></code></pre></div>
+<p>Static:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">otool -L cinematic-demo.app/Contents/MacOS/cinematic-demo
+
+cinematic-demo.app/Contents/MacOS/cinematic-demo:
+  /System/Library/Frameworks/AppKit.framework/Versions/C/AppKit <span style="color:#f92672">(</span>compatibility version 45.0.0, current version 1561.20.106<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/Carbon.framework/Versions/A/Carbon <span style="color:#f92672">(</span>compatibility version 2.0.0, current version 158.0.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/IOKit.framework/Versions/A/IOKit <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 275.0.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/QuartzCore.framework/Versions/A/QuartzCore <span style="color:#f92672">(</span>compatibility version 1.2.0, current version 1.11.0<span style="color:#f92672">)</span>
+  /usr/lib/libcups.2.dylib <span style="color:#f92672">(</span>compatibility version 2.0.0, current version 2.12.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/DiskArbitration.framework/Versions/A/DiskArbitration <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 1.0.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/Foundation.framework/Versions/C/Foundation <span style="color:#f92672">(</span>compatibility version 300.0.0, current version 1450.15.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 822.19.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/ApplicationServices.framework/Versions/A/ApplicationServices <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 50.0.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation <span style="color:#f92672">(</span>compatibility version 150.0.0, current version 1450.15.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/CoreGraphics.framework/Versions/A/CoreGraphics <span style="color:#f92672">(</span>compatibility version 64.0.0, current version 1129.5.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/OpenGL.framework/Versions/A/OpenGL <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 1.0.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/AGL.framework/Versions/A/AGL <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 1.0.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/CoreText.framework/Versions/A/CoreText <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 1.0.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/ImageIO.framework/Versions/A/ImageIO <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 1.0.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/Security.framework/Versions/A/Security <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 58286.31.2<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/SystemConfiguration.framework/Versions/A/SystemConfiguration <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 963.30.1<span style="color:#f92672">)</span>
+  /usr/lib/libSystem.B.dylib <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 1252.0.0<span style="color:#f92672">)</span>
+  /usr/lib/libz.1.dylib <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 1.2.11<span style="color:#f92672">)</span>
+  /usr/lib/libc++.1.dylib <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 400.9.0<span style="color:#f92672">)</span>
+  /System/Library/Frameworks/CFNetwork.framework/Versions/A/CFNetwork <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 893.13.1<span style="color:#f92672">)</span>
+  /usr/lib/libobjc.A.dylib <span style="color:#f92672">(</span>compatibility version 1.0.0, current version 228.0.0<span style="color:#f92672">)</span></code></pre></div>
+<p>I&rsquo;ve no idea why why it has a much longer list of some other stuff.</p>
+<h3 id="linux-1">Linux</h3>
+<p>On Linux it makes more sense.</p>
+<p>Dynamic:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ldd cinematic-demo
+
+  linux-vdso.so.1 <span style="color:#f92672">=</span>&gt;  <span style="color:#f92672">(</span>0x00007ffff63e3000<span style="color:#f92672">)</span>
+  libQt5Gui.so.5 <span style="color:#f92672">=</span>&gt; /path/to/qt/5.10.1/gcc_64/lib/libQt5Gui.so.5 <span style="color:#f92672">(</span>0x00007f54fbd1f000<span style="color:#f92672">)</span>
+  libQt5Qml.so.5 <span style="color:#f92672">=</span>&gt; /path/to/qt/5.10.1/gcc_64/lib/libQt5Qml.so.5 <span style="color:#f92672">(</span>0x00007f54fb6ee000<span style="color:#f92672">)</span>
+  libQt5Core.so.5 <span style="color:#f92672">=</span>&gt; /path/to/qt/5.10.1/gcc_64/lib/libQt5Core.so.5 <span style="color:#f92672">(</span>0x00007f54faf9e000<span style="color:#f92672">)</span>
+  libstdc++.so.6 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libstdc++.so.6 <span style="color:#f92672">(</span>0x00007f54fabff000<span style="color:#f92672">)</span>
+  libgcc_s.so.1 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libgcc_s.so.1 <span style="color:#f92672">(</span>0x00007f54fa9e9000<span style="color:#f92672">)</span>
+  libc.so.6 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libc.so.6 <span style="color:#f92672">(</span>0x00007f54fa61f000<span style="color:#f92672">)</span>
+  libpthread.so.0 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libpthread.so.0 <span style="color:#f92672">(</span>0x00007f54fa401000<span style="color:#f92672">)</span>
+  libGL.so.1 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/mesa/libGL.so.1 <span style="color:#f92672">(</span>0x00007f54fa18e000<span style="color:#f92672">)</span>
+  libz.so.1 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libz.so.1 <span style="color:#f92672">(</span>0x00007f54f9f74000<span style="color:#f92672">)</span>
+  libm.so.6 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libm.so.6 <span style="color:#f92672">(</span>0x00007f54f9c6a000<span style="color:#f92672">)</span>
+  libQt5Network.so.5 <span style="color:#f92672">=</span>&gt; /path/to/qt/5.10.1/gcc_64/lib/libQt5Network.so.5 <span style="color:#f92672">(</span>0x00007f54f98d4000<span style="color:#f92672">)</span>
+  librt.so.1 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/librt.so.1 <span style="color:#f92672">(</span>0x00007f54f96cc000<span style="color:#f92672">)</span>
+  libicui18n.so.56 <span style="color:#f92672">=</span>&gt; /path/to/qt/5.10.1/gcc_64/lib/libicui18n.so.56 <span style="color:#f92672">(</span>0x00007f54f9232000<span style="color:#f92672">)</span>
+  libicuuc.so.56 <span style="color:#f92672">=</span>&gt; /path/to/qt/5.10.1/gcc_64/lib/libicuuc.so.56 <span style="color:#f92672">(</span>0x00007f54f8e7a000<span style="color:#f92672">)</span>
+  libicudata.so.56 <span style="color:#f92672">=</span>&gt; /path/to/qt/5.10.1/gcc_64/lib/libicudata.so.56 <span style="color:#f92672">(</span>0x00007f54f7496000<span style="color:#f92672">)</span>
+  libdl.so.2 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libdl.so.2 <span style="color:#f92672">(</span>0x00007f54f7292000<span style="color:#f92672">)</span>
+  libgthread-2.0.so.0 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libgthread-2.0.so.0 <span style="color:#f92672">(</span>0x00007f54f7090000<span style="color:#f92672">)</span>
+  libglib-2.0.so.0 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libglib-2.0.so.0 <span style="color:#f92672">(</span>0x00007f54f6d7f000<span style="color:#f92672">)</span>
+  /lib64/ld-linux-x86-64.so.2 <span style="color:#f92672">(</span>0x0000562cf8cce000<span style="color:#f92672">)</span>
+  libexpat.so.1 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libexpat.so.1 <span style="color:#f92672">(</span>0x00007f54f6b55000<span style="color:#f92672">)</span>
+  libxcb-dri3.so.0 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0 <span style="color:#f92672">(</span>0x00007f54f6952000<span style="color:#f92672">)</span>
+  libxcb-present.so.0 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libxcb-present.so.0 <span style="color:#f92672">(</span>0x00007f54f674e000<span style="color:#f92672">)</span>
+  libxcb-sync.so.1 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libxcb-sync.so.1 <span style="color:#f92672">(</span>0x00007f54f6547000<span style="color:#f92672">)</span>
+  libxshmfence.so.1 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libxshmfence.so.1 <span style="color:#f92672">(</span>0x00007f54f6344000<span style="color:#f92672">)</span>
+  libglapi.so.0 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libglapi.so.0 <span style="color:#f92672">(</span>0x00007f54f6113000<span style="color:#f92672">)</span>
+  libXext.so.6 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libXext.so.6 <span style="color:#f92672">(</span>0x00007f54f5f01000<span style="color:#f92672">)</span>
+  libXdamage.so.1 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libXdamage.so.1 <span style="color:#f92672">(</span>0x00007f54f5cfe000<span style="color:#f92672">)</span>
+  libXfixes.so.3 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libXfixes.so.3 <span style="color:#f92672">(</span>0x00007f54f5af7000<span style="color:#f92672">)</span>
+  libX11-xcb.so.1 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libX11-xcb.so.1 <span style="color:#f92672">(</span>0x00007f54f58f5000<span style="color:#f92672">)</span>
+  libX11.so.6 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libX11.so.6 <span style="color:#f92672">(</span>0x00007f54f55bb000<span style="color:#f92672">)</span>
+  libxcb-glx.so.0 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libxcb-glx.so.0 <span style="color:#f92672">(</span>0x00007f54f53a1000<span style="color:#f92672">)</span>
+  libxcb-dri2.so.0 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libxcb-dri2.so.0 <span style="color:#f92672">(</span>0x00007f54f519c000<span style="color:#f92672">)</span>
+  libxcb.so.1 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libxcb.so.1 <span style="color:#f92672">(</span>0x00007f54f4f7a000<span style="color:#f92672">)</span>
+  libXxf86vm.so.1 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libXxf86vm.so.1 <span style="color:#f92672">(</span>0x00007f54f4d73000<span style="color:#f92672">)</span>
+  libdrm.so.2 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libdrm.so.2 <span style="color:#f92672">(</span>0x00007f54f4b62000<span style="color:#f92672">)</span>
+  libpcre.so.3 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libpcre.so.3 <span style="color:#f92672">(</span>0x00007f54f48f1000<span style="color:#f92672">)</span>
+  libXau.so.6 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libXau.so.6 <span style="color:#f92672">(</span>0x00007f54f46ed000<span style="color:#f92672">)</span>
+  libXdmcp.so.6 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libXdmcp.so.6 <span style="color:#f92672">(</span>0x00007f54f44e6000<span style="color:#f92672">)</span></code></pre></div>
+<p>Static:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ldd cinematic-demo
+
+  linux-vdso.so.1 <span style="color:#f92672">=</span>&gt;  <span style="color:#f92672">(</span>0x00007ffda1b9f000<span style="color:#f92672">)</span>
+  libstdc++.so.6 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libstdc++.so.6 <span style="color:#f92672">(</span>0x00007f9b02744000<span style="color:#f92672">)</span>
+  libgcc_s.so.1 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libgcc_s.so.1 <span style="color:#f92672">(</span>0x00007f9b0252e000<span style="color:#f92672">)</span>
+  libc.so.6 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libc.so.6 <span style="color:#f92672">(</span>0x00007f9b02164000<span style="color:#f92672">)</span>
+  libxcb-glx.so.0 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libxcb-glx.so.0 <span style="color:#f92672">(</span>0x00007f9b01f4a000<span style="color:#f92672">)</span>
+  libX11-xcb.so.1 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libX11-xcb.so.1 <span style="color:#f92672">(</span>0x00007f9b01d48000<span style="color:#f92672">)</span>
+  libX11.so.6 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libX11.so.6 <span style="color:#f92672">(</span>0x00007f9b01a0e000<span style="color:#f92672">)</span>
+  libxcb.so.1 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libxcb.so.1 <span style="color:#f92672">(</span>0x00007f9b017eb000<span style="color:#f92672">)</span>
+  libdl.so.2 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libdl.so.2 <span style="color:#f92672">(</span>0x00007f9b015e7000<span style="color:#f92672">)</span>
+  libGL.so.1 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/mesa/libGL.so.1 <span style="color:#f92672">(</span>0x00007f9b01374000<span style="color:#f92672">)</span>
+  libpthread.so.0 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libpthread.so.0 <span style="color:#f92672">(</span>0x00007f9b01156000<span style="color:#f92672">)</span>
+  libm.so.6 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libm.so.6 <span style="color:#f92672">(</span>0x00007f9b00e4d000<span style="color:#f92672">)</span>
+  /lib64/ld-linux-x86-64.so.2 <span style="color:#f92672">(</span>0x00005583c34ae000<span style="color:#f92672">)</span>
+  libXau.so.6 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libXau.so.6 <span style="color:#f92672">(</span>0x00007f9b00c49000<span style="color:#f92672">)</span>
+  libXdmcp.so.6 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libXdmcp.so.6 <span style="color:#f92672">(</span>0x00007f9b00a42000<span style="color:#f92672">)</span>
+  libexpat.so.1 <span style="color:#f92672">=</span>&gt; /lib/x86_64-linux-gnu/libexpat.so.1 <span style="color:#f92672">(</span>0x00007f9b00819000<span style="color:#f92672">)</span>
+  libxcb-dri3.so.0 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0 <span style="color:#f92672">(</span>0x00007f9b00616000<span style="color:#f92672">)</span>
+  libxcb-present.so.0 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libxcb-present.so.0 <span style="color:#f92672">(</span>0x00007f9b00412000<span style="color:#f92672">)</span>
+  libxcb-sync.so.1 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libxcb-sync.so.1 <span style="color:#f92672">(</span>0x00007f9b0020b000<span style="color:#f92672">)</span>
+  libxshmfence.so.1 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libxshmfence.so.1 <span style="color:#f92672">(</span>0x00007f9b00008000<span style="color:#f92672">)</span>
+  libglapi.so.0 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libglapi.so.0 <span style="color:#f92672">(</span>0x00007f9affdd7000<span style="color:#f92672">)</span>
+  libXext.so.6 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libXext.so.6 <span style="color:#f92672">(</span>0x00007f9affbc5000<span style="color:#f92672">)</span>
+  libXdamage.so.1 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libXdamage.so.1 <span style="color:#f92672">(</span>0x00007f9aff9c2000<span style="color:#f92672">)</span>
+  libXfixes.so.3 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libXfixes.so.3 <span style="color:#f92672">(</span>0x00007f9aff7bb000<span style="color:#f92672">)</span>
+  libxcb-dri2.so.0 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libxcb-dri2.so.0 <span style="color:#f92672">(</span>0x00007f9aff5b6000<span style="color:#f92672">)</span>
+  libXxf86vm.so.1 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libXxf86vm.so.1 <span style="color:#f92672">(</span>0x00007f9aff3b0000<span style="color:#f92672">)</span>
+  libdrm.so.2 <span style="color:#f92672">=</span>&gt; /usr/lib/x86_64-linux-gnu/libdrm.so.2 <span style="color:#f92672">(</span>0x00007f9aff19e000<span style="color:#f92672">)</span></code></pre></div>
+<h3 id="windows-1">Windows</h3>
+<p>On Windows there is no out of the box tool to track dependencies, so I used <a href="http://www.dependencywalker.com">Dependency Walker</a>.</p>
+<p>And it&rsquo;s worth to mention that MSVC and MinGW builds have different set of dependencies.</p>
+<p>Dynamic MSVC:</p>
+
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/dependency-walker-dynamic-msvc.png" alt="Dependency Walker, MSVC dynamic Qt build">
+
+
+<p>Static MSVC:</p>
+
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/dependency-walker-static-msvc.png" alt="Dependency Walker, MSVC static Qt build">
+
+
+<p>Dynamic MinGW:</p>
+
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/dependency-walker-dynamic-mingw.png" alt="Dependency Walker, MinGW dynamic Qt build">
+
+
+<p>Oh, by the way, in case of dynamic linking it&rsquo;s not a trivial task to gather all the required Qt libraries based on what <strong>Dependency Walker</strong> shows you. For instance, here we can see that only <strong>3</strong> Qt libraries are required, but after I deployed those, my application complained about one more, and when I added that one, it stopped complaining, however having launched it I never saw its window, even though application was present among the running processes at <strong>Task Manager</strong>. And only after a set of tests and trials I&rsquo;ve managed to collect the full pack:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">release
+├── Qt5Core.dll
+├── Qt5Gui.dll
+├── Qt5Network.dll
+├── Qt5Qml.dll
+├── Qt5Quick.dll
+├── Qt5QuickControls2.dll
+├── Qt5QuickParticles.dll
+├── Qt5QuickTemplates2.dll
+├── Qt5QuickWidgets.dll
+├── cinematic-demo.exe
+├── libgcc_s_dw2-1.dll
+├── libstdc++-6.dll
+└── libwinpthread-1.dll</code></pre></div>
+<p>From that perspective MinGW static linking on Windows is really a savior:</p>
+
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/dependency-walker-static-mingw.png" alt="Dependency Walker, MinGW static Qt build">
+
+
+<p>If you are confused by longer list for static builds - this whole bunch of system libraries is actually from the <code>SHELL32.DLL</code> tree, and you can find them in dynamic build too by expanding its node. What matters is that there are no Qt libraries (<em>and no MinGW runtime</em>) among dependencies anymore.</p>
+<h2 id="smaller-builds">Smaller builds</h2>
+<p>Naturally, static build gives you smaller size for your application binary.</p>
+<p>On Mac OS:</p>
+<ul>
+<li>dynamic (<em>with all required Qt libraries</em>): 33.4 MB;</li>
+<li>static: 26.1 MB.</li>
+</ul>
+<p>On Windows (<em>MinGW</em>):</p>
+<ul>
+<li>dynamic (<em>with all required Qt libraries and MinGW runtime</em>): 28.2 MB;</li>
+<li>static: 19.9 MB.</li>
+</ul>
+<h2 id="less-ram">Less RAM</h2>
+<p>I saw people claiming that RAM consumption is different too. On Mac it&rsquo;s not really the case:</p>
+<ul>
+<li>dynamic: 118.7 MB;</li>
+<li>static: 116.8 MB.</li>
+</ul>
+
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/static-vs-dynamic-ram-mac.png" alt="Qt static vs dynamic, RAM, Mac OS">
+
+
+<p>Windows (<em>MinGW</em>) has some difference, but not that big:</p>
+<ul>
+<li>dynamic: 168.9 MB;</li>
+<li>static: 160.7 MB.</li>
+</ul>
+
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/static-vs-dynamic-ram-windows.png" alt="Qt static vs dynamic, RAM, Windows">
+
+
+<p>And there is some notable difference on Linux:</p>
+<ul>
+<li>dynamic: 141.0 MB;</li>
+<li>static: 115.2 MB.</li>
+</ul>
+
+
+
+    <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/static-vs-dynamic-ram-linux.png" alt="Qt static vs dynamic, RAM, Linux">
+
+
+<h2 id="slower-building">Slower building</h2>
+<p>But there is also a trade-off in terms of compilation time (<em>measured on Mac OS</em>):</p>
+<ul>
+<li>dynamic: 5 seconds;</li>
+<li>static: 210 seconds.</li>
+</ul>
+<h1 id="problems">Problems</h1>
+<p>There could be all sorts of problems along the road. And those are not necessarily your fault - on the contrary, in most cases it will be Qt bugs, which you should definitely report at <a href="http://bugreports.qt.io/">Qt&rsquo;s bug-tracker</a>. Seriously, do that, because they give highest priority to that kind of issues (<em>especially if it&rsquo;s reported against a pre-release version</em>) and fix those pretty fast.</p>
+<p>Now about the problems I&rsquo;ve encountered myself.</p>
+<h2 id="shadow-builds">Shadow builds</h2>
+<p>Sometimes, shadow builds are broken &ldquo;by default&rdquo; - meaning that it is impossible to built a particular Qt version using shadow build, so you have to do it from the <code>Src</code> directory. Report that at bug-tracker, but as most likely it will be fixed only for the next version, you&rsquo;ll have to build the one you have without shadow build.</p>
+<h2 id="trailing-backslash-in-prefix">Trailing backslash in prefix</h2>
+<p>Having a trailing <code>\</code> in prefix on Windows can cause the following problem:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Running configuration tests...
+Checking <span style="color:#66d9ef">for</span> valid makespec... ERROR: Cannot compile a minimal program. The toolchain or QMakeSpec is broken.
+
+Check config.log <span style="color:#66d9ef">for</span> details.</code></pre></div>
+<p>Remove the trailing <code>\</code> and try again. So:</p>
+<ul>
+<li><code>-prefix &quot;d:\programs\qt\5122-static\&quot;</code> - <span style="color:red;">fails</span>;</li>
+<li><code>-prefix &quot;d:\programs\qt\5122-static&quot;</code> - <span style="color:green;">works</span>.</li>
+</ul>
+<h2 id="fonts">Fonts</h2>
+<p>One of the issues you might encounter with your applications built with static Qt is the absent of fonts for your GUI. Literally, all the text controls will have no text at all. The reason might be that path to system fonts is lost somehow.</p>
+<p>One way to fix this is to embed fonts into your application: add font file into resources and &ldquo;activate&rdquo; it in <code>main.cpp</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp">...
+<span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QFontDatabase&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QFont&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">int</span> main(<span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>argv[])
+{
+    QGuiApplication <span style="color:#a6e22e">app</span>(argc, argv);
+
+    <span style="color:#66d9ef">int</span> id <span style="color:#f92672">=</span> QFontDatabase<span style="color:#f92672">::</span>addApplicationFont(<span style="color:#e6db74">&#34;:/fonts/TitilliumWeb-Regular.ttf&#34;</span>);
+    app.setFont(QFont(QFontDatabase<span style="color:#f92672">::</span>applicationFontFamilies(id).at(<span style="color:#ae81ff">0</span>)));
+
+    ...
+}</code></pre></div>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/qt/">qt</a><a class="tag" href="https://retifrav.github.io/tags/devops/">devops</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2021,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/297" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (60)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (38)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (31)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (21)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (20)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (13)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (5)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

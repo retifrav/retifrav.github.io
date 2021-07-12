@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+
+<head>
+
+  <meta charset="utf-8">
+  <title>Escape HTML</title>
+  <meta name="author" content="retif">
+
+  <meta name="description" content="Escaping special symbols with HTML codes for highlighting">
+  
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <link href="/favicon.png" rel="icon">
+
+  <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+  <!-- Optional theme -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+
+  <style>
+    .input-group-addon, .form-control, .btn {
+  		height: 34px;
+  	}
+  	.input-group-addon {
+  		font-size: 16px;
+  	}
+    textarea {
+        font-size: 16px !important;
+        font-family: Courier;
+    }
+  </style>
+  
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag("js", new Date());
+    gtag("config", "UA-53340325-1");
+  </script>
+</head>
+
+<body style="font-family:verdana; font-size:17px;">
+
+<div class="container" style="width:80%;">
+
+<div class="jumbotron" style="margin-bottom:20px;">
+  <h1>Escape HTML</h1>
+  <p>Escaping special symbols with HTML codes for highlighting</p>
+</div>
+
+<noscript>
+	<div class="alert alert-danger" role="alert">You need JavaScript for that.</div>
+</noscript>
+
+<p>
+	When you are trying to highlight some code that contains special characters, this can mess up your markup. So you need to escape some characters first, for example replace all <code>&lt;</code> and <code>&gt;</code> with <code>&amp;lt;</code> and <code>&amp;gt;</code>.
+</p>
+
+<p style="margin-bottom:20px;">
+	Paste the source code to the left area and escaped result will appear in the right area automatically.
+</p>
+
+<div style="margin-bottom:15px;">
+    <button type="button" id="btn_advanced" class="btn btn-default" onclick="show_advanced();">
+        Advanced settings
+    </button>
+    <div id="dv_regexp" style="display:none; min-width:100%;">
+        <p><span class="label label-info">You can change the searching RegEx here</span>
+        </p>
+        <div class="input-group" style="min-width:100%;">
+            <span class="input-group-addon">RegEx</span>
+            <input type="text" id="regexp_val" class="form-control" value="<[^>]*>|{{[^%]*}}|{%[^%]*%}|{.*}" />
+            <span class="input-group-addon">/g</span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+
+    <div class="col-md-5" style="padding-right:0px;">
+        <span class="label label-primary">The source code</span>
+        <div style="margin:auto; margin-bottom:20px;">
+            <textarea id="source" class="form-control" rows="20">
+<div id="main">
+    <!-- start -->
+    <div id="sidebar">
+        <!-- content -->
+    </div>
+    <!-- end -->
+    <div id="content">
+        {% raw %}{{ content | expand_urls: root_url }}{% endraw %}
+    </div>
+</div>
+            </textarea>
+        </div>
+    </div>
+
+    <div class="col-md-1" style="margin: auto; padding-top:30px;">
+    <button type="button" class="btn btn-default" onclick="escapeAgain();" title="Escape the result again" style="min-width:100%">&larr;</button>
+    </div>
+
+    <div class="col-md-6" style="padding-left:0px;">
+        <span class="label label-success">Escaped result</span>
+        <div style="margin:auto; margin-bottom:20px;">
+            <textarea id="escaped" readonly class="form-control" rows="20">
+
+            </textarea>
+        </div>
+    </div>
+    
+</div>
+
+<div style="margin-top:20px;">
+    <p class="text-muted credit pull-right" style="font-size:12px;">
+        This page was created in addition to post in <strong><a target="_blank" href="/blog/2016/07/12/escape-html/" class="text-muted credit">Declaration of VAR</a></strong>
+    </p>
+</div>
+
+<script type="text/javascript">
+
+    $(document).ready(function() {
+      doTheShit($("#source").val());
+    });
+
+    $("#source").on("change keyup paste", function() {        
+        doTheShit($(this).val());
+    });
+
+    function doTheShit(smth) {
+      function fixTime(match) {
+            return match.replace("<", "&lt;").replace(">", "&gt;").replace("{{", "&#123;&#123;").replace("}}", "&#125;&#125;").replace("{", "&#123;").replace("}", "&#125;");
+        }
+        $("#escaped").val(smth.replace(
+            new RegExp(
+                $("#regexp_val").val().trim(),
+                "g"
+                ),
+            fixTime
+            ));
+    }
+    
+    function show_advanced() {
+        $("#btn_advanced").css("display", "none");
+        $("#dv_regexp").css("display", "table");
+    }
+
+    function escapeAgain() {
+        $("#source").val($("#escaped").val());
+        doTheShit($("#source").val());
+    }
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,681 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Gollum - Git-based Markdown wiki | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2021/01/07/gollum-markdown-wiki/" />
+
+    <meta name="generator" content="Hugo 0.84.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Gollum - Git-based Markdown wiki" />
+<meta property="og:description" content="We needed to create an internal knowledge base, preferably based on a wiki-engine. The requirements were:
+
+in-house hosting
+simple maintenance
+no vendor-lock - ideally, storing articles as plain-text files
+customization and styling
+not overloaded with gigabytes of fancy JS-frameworks
+version control
+Markdown markup
+
+From my own researching and evaluating, there are very few wikis that meet all the requirements, and out of those Gollum seems to be the best.
+
+
+
+    
+
+
+Even though it has its own installation guide, for me that wasn&rsquo;t enough, so here are my guides for Linux and Mac OS, plus some customizing and tweaking." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2021/01/07/gollum-markdown-wiki/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2021-01-07T13:30:42&#43;01:00" />
+<meta property="article:modified_time" content="2021-01-07T13:30:42&#43;01:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2021/01/07/gollum-markdown-wiki/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Gollum - Git-based Markdown wiki</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2021-01-07 13:30:42 &#43;0100</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 11 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>We needed to create an internal knowledge base, preferably based on a wiki-engine. The requirements were:</p>
+<ul>
+<li>in-house hosting</li>
+<li>simple maintenance</li>
+<li>no vendor-lock - ideally, storing articles as plain-text files</li>
+<li>customization and styling</li>
+<li>not overloaded with gigabytes of fancy JS-frameworks</li>
+<li>version control</li>
+<li>Markdown markup</li>
+</ul>
+<p>From my own researching and evaluating, there are very few wikis that meet all the requirements, and out of those <a href="https://en.wikipedia.org/wiki/Gollum_Wiki">Gollum</a> seems to be the best.</p>
+
+
+
+    <img class="image-post" src="/blog/2021/01/07/gollum-markdown-wiki/images/gollum-markdown.png" alt="Gollum wiki (original picture: https://www.deviantart.com/aronimo717/art/Hobbit-Gollum-431742580)">
+
+
+<p>Even though it has its own <a href="https://github.com/gollum/gollum/wiki/Installation">installation guide</a>, for me that wasn&rsquo;t enough, so here are my guides for Linux and Mac OS, plus some customizing and tweaking.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#installation">Installation</a>
+      <ul>
+        <li><a href="#linux">Linux</a>
+          <ul>
+            <li><a href="#packages">Packages</a></li>
+            <li><a href="#user-and-repository">User and repository</a></li>
+            <li><a href="#templates">Templates</a></li>
+            <li><a href="#config">Config</a></li>
+            <li><a href="#systemd">systemd</a></li>
+            <li><a href="#nginx">NGINX</a></li>
+          </ul>
+        </li>
+        <li><a href="#mac-os">Mac OS</a></li>
+      </ul>
+    </li>
+    <li><a href="#editing">Editing</a>
+      <ul>
+        <li><a href="#web-ui">Web UI</a></li>
+        <li><a href="#local-editing">Local editing</a>
+          <ul>
+            <li><a href="#establish-ssh-connection-to-the-wiki-host">Establish SSH connection to the wiki host</a></li>
+            <li><a href="#clone-the-wiki-repository">Clone the wiki repository</a></li>
+            <li><a href="#run-gollum">Run Gollum</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#customization">Customization</a>
+      <ul>
+        <li><a href="#css-and-js">CSS and JS</a></li>
+        <li><a href="#header-footer-sidebar">Header, footer, sidebar</a></li>
+      </ul>
+    </li>
+    <li><a href="#a-bit-about-features">A bit about features</a></li>
+  </ul>
+</nav>
+<p>At first, before discovering Gollum, I actually decided to create my own wiki-engine, as I didn&rsquo;t like any of the wikis I found by that moment, and even started prototyping it with <a href="https://docs.microsoft.com/en-us/aspnet/core/blazor/">.NET Core Blazor</a> (<em>server-side variant</em>). But then I took a closer look at Gollum and abandoned the idea.</p>
+<p><a href="https://github.com/gollum/gollum">Gollum</a> has it all:</p>
+<ul>
+<li>no mandatory &ldquo;cloud&rdquo;, host it anywhere you want, even locally</li>
+<li>very simple maintenance, especially comparing to Confluence, Redmine, MediaWiki and similar ones that require a database</li>
+<li>articles source is plain-text files, so you own your knowledge base and free to migrate to something else</li>
+<li>good customization, including custom CSS and JS</li>
+<li>version control is in its nature, as content lives in a Git repository</li>
+<li>Markdown (<em>and <a href="https://github.com/gollum/gollum#markups">additional markups</a></em>)</li>
+</ul>
+<p>By the way, Gollum is what is running wikis on GitHub and GitLab, so you can actually clone wikis from there and run them locally on your machine.</p>
+<h1 id="installation">Installation</h1>
+<h2 id="linux">Linux</h2>
+<p>The goal is to run Gollum behind NGINX as a reverse proxy, available at <a href="http://wiki.your.host">http://wiki.your.host</a>.</p>
+<h3 id="packages">Packages</h3>
+<p>Install required packages:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo apt install ruby ruby<span style="color:#f92672">-</span>dev make zlib1g<span style="color:#f92672">-</span>dev libicu<span style="color:#f92672">-</span>dev build<span style="color:#f92672">-</span>essential git cmake
+$ sudo apt install zlib1g zlib1g<span style="color:#f92672">-</span>dev libicu<span style="color:#f92672">-</span>dev
+$ sudo apt install pkg<span style="color:#f92672">-</span>config
+$ sudo apt install libssl<span style="color:#f92672">-</span>dev</code></pre></div>
+<p>and then Gollum gem itself:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo gem install gollum</code></pre></div>
+<h3 id="user-and-repository">User and repository</h3>
+<p>Create a user to run the wiki from:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo adduser --shell /bin/bash --gecos <span style="color:#e6db74">&#39;Gollum application&#39;</span> gollum</code></pre></div>
+<p>Login as this user and create the wiki folder, initialize the Git repository and set the default commits author:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo <span style="color:#f92672">--</span>login <span style="color:#f92672">--</span>user gollum
+$ mkdir wiki
+$ cd wiki
+$ git init <span style="color:#f92672">--</span>bare <span style="color:#f92672">.</span>
+$ git config user<span style="color:#f92672">.</span>name <span style="color:#e6db74">&#34;birdperson&#34;</span>
+$ git config user<span style="color:#f92672">.</span>email <span style="color:#e6db74">&#34;birdperson@your.host&#34;</span>
+$ exit</code></pre></div>
+<p>Note the <code>--bare</code> option - it is required for users to be able to use this repository as a remote for their local cloned repository, so they could push their commits to it.</p>
+<h3 id="templates">Templates</h3>
+<p>Gollum uses <a href="https://mustache.github.io/">Mustache</a> system for templating. If you&rsquo;d like to customize default wiki layouts by modifying Gollum&rsquo;s base templates, don&rsquo;t edit the default ones - make a copy and work with the copies instead:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ mkdir -p /usr/local/share/gollum/templates
+$ cp -r /var/lib/gems/2.7.0/gems/gollum-VERSION/lib/gollum/templates/* /usr/local/share/gollum/templates/
+$ sudo chown -R gollum:gollum /usr/local/share/gollum</code></pre></div>
+<p>You&rsquo;ll also need to set this path in the <a href="#config">config</a>.</p>
+<h3 id="config">Config</h3>
+<p>Create the wiki config:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo mkdir <span style="color:#f92672">-</span>p <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>gollum
+$ sudo nano <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>gollum<span style="color:#f92672">/</span>config<span style="color:#f92672">.</span>rb</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#75715e"># define the wiki options</span>
+wiki_options <span style="color:#f92672">=</span> {
+  <span style="color:#e6db74">:h1_title</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">false</span>,
+  <span style="color:#e6db74">:user_icons</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;gravatar&#39;</span>,
+  <span style="color:#e6db74">:live_preview</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">false</span>,
+  <span style="color:#e6db74">:allow_uploads</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">true</span>,
+  <span style="color:#e6db74">:per_page_uploads</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">true</span>,
+  <span style="color:#e6db74">:allow_editing</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">true</span>,
+  <span style="color:#e6db74">:css</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">true</span>,
+  <span style="color:#e6db74">:js</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">true</span>,
+  <span style="color:#e6db74">:mathjax</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">true</span>,
+  <span style="color:#e6db74">:emoji</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">true</span>,
+  <span style="color:#e6db74">:show_all</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">true</span>,
+  <span style="color:#e6db74">:template_dir</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;/usr/local/share/gollum/templates&#39;</span> <span style="color:#75715e"># if you have custom templates</span>
+}
+
+<span style="color:#75715e"># pass wiki options to the Gollum app</span>
+<span style="color:#66d9ef">Precious</span><span style="color:#f92672">::</span><span style="color:#66d9ef">App</span><span style="color:#f92672">.</span>set(<span style="color:#e6db74">:wiki_options</span>, wiki_options)
+
+<span style="color:#75715e"># if present, undefine the :FORMAT_NAMES constant to avoid the</span>
+<span style="color:#75715e"># &#34;already initialized constant FORMAT_NAMES&#34; warning</span>
+<span style="color:#66d9ef">Gollum</span><span style="color:#f92672">::</span><span style="color:#66d9ef">Page</span><span style="color:#f92672">.</span>send <span style="color:#e6db74">:remove_const</span>, <span style="color:#e6db74">:FORMAT_NAMES</span> <span style="color:#66d9ef">if</span> defined? <span style="color:#66d9ef">Gollum</span><span style="color:#f92672">::</span><span style="color:#66d9ef">Page</span><span style="color:#f92672">::</span><span style="color:#66d9ef">FORMAT_NAMES</span>
+<span style="color:#75715e"># redefine the :FORMAT_NAMES constant to limit the available</span>
+<span style="color:#75715e"># formats on the editor to only markdown</span>
+<span style="color:#66d9ef">Gollum</span><span style="color:#f92672">::</span><span style="color:#66d9ef">Page</span><span style="color:#f92672">::</span><span style="color:#66d9ef">FORMAT_NAMES</span> <span style="color:#f92672">=</span> { <span style="color:#e6db74">:markdown</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#34;Markdown&#34;</span> }</code></pre></div>
+<h3 id="systemd">systemd</h3>
+<p>Create a systemd service:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo nano <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>systemd<span style="color:#f92672">/</span>system<span style="color:#f92672">/</span>gollum<span style="color:#f92672">.</span>service</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[Unit]</span>
+<span style="color:#a6e22e">Description</span><span style="color:#f92672">=</span><span style="color:#e6db74">Gollum wiki</span>
+<span style="color:#a6e22e">After</span><span style="color:#f92672">=</span><span style="color:#e6db74">network.target</span>
+
+<span style="color:#66d9ef">[Service]</span>
+<span style="color:#a6e22e">Type</span><span style="color:#f92672">=</span><span style="color:#e6db74">simple</span>
+<span style="color:#a6e22e">User</span><span style="color:#f92672">=</span><span style="color:#e6db74">gollum</span>
+<span style="color:#a6e22e">Group</span><span style="color:#f92672">=</span><span style="color:#e6db74">gollum</span>
+<span style="color:#a6e22e">WorkingDirectory</span><span style="color:#f92672">=</span><span style="color:#e6db74">/home/gollum/wiki</span>
+<span style="color:#a6e22e">ExecStart</span><span style="color:#f92672">=</span><span style="color:#e6db74">/usr/local/bin/gollum --config &#34;/etc/gollum/config.rb&#34; --host localhost</span>
+<span style="color:#a6e22e">Restart</span><span style="color:#f92672">=</span><span style="color:#e6db74">on-abort</span>
+
+<span style="color:#66d9ef">[Install]</span>
+<span style="color:#a6e22e">WantedBy</span><span style="color:#f92672">=</span><span style="color:#e6db74">multi-user.target</span></code></pre></div>
+<p>Why localhost? You guessed it right - because we&rsquo;ll be running it behind a proper reverse-proxy, such as NGINX, so we don&rsquo;t want Gollum to expose its port to the network.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo systemctl enable gollum<span style="color:#f92672">.</span>service
+$ sudo systemctl start gollum<span style="color:#f92672">.</span>service</code></pre></div>
+<p>Verify that it&rsquo;s bound to <code>127.0.0.1</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo ss <span style="color:#f92672">-</span>lntup
+
+<span style="color:#f92672">...</span>
+tcp    <span style="color:#a6e22e">LISTEN</span>  <span style="color:#ae81ff">0</span>       <span style="color:#ae81ff">4096</span>          <span style="color:#ae81ff">127.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0.1</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">4567</span>          <span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">:*</span>      <span style="color:#66d9ef">users:</span><span style="color:#f92672">((</span><span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">gollum</span><span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#f92672">,</span><span style="color:#66d9ef">pid</span><span style="color:#f92672">=</span><span style="color:#960050;background-color:#1e0010">33932</span><span style="color:#f92672">,</span>fd<span style="color:#66d9ef">=</span><span style="color:#ae81ff">5</span><span style="color:#f92672">))</span>
+<span style="color:#f92672">...</span></code></pre></div>
+<p>You can also try to open <a href="http://your.host:4567">http://your.host:4567</a> - it should fail.</p>
+<h3 id="nginx">NGINX</h3>
+<p>Install and setup NGINX as a reverse proxy:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo apt install nginx
+$ sudo rm <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/</span>sites<span style="color:#f92672">-</span>enabled<span style="color:#f92672">/</span>default
+$ sudo nano <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/</span>sites<span style="color:#f92672">-</span>available<span style="color:#f92672">/</span>wiki<span style="color:#f92672">.</span>your<span style="color:#f92672">.</span>host</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">server</span> {
+        <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span> <span style="color:#e6db74">default_server</span>;
+        <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span> <span style="color:#e6db74">default_server</span>;
+
+        <span style="color:#f92672">server_name</span> <span style="color:#e6db74">_</span>;
+
+        <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+                <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Host</span> $host;
+                <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-For</span> $proxy_add_x_forwarded_for;
+                <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-Proto</span> $scheme;
+                <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Scheme</span> $scheme;
+                <span style="color:#f92672">proxy_redirect</span> <span style="color:#66d9ef">off</span>;
+                <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://localhost:4567</span>;
+        }
+}</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo ln <span style="color:#f92672">-</span>s <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/</span>sites<span style="color:#f92672">-</span>available<span style="color:#f92672">/</span>wiki<span style="color:#f92672">.</span>your<span style="color:#f92672">.</span>host <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/</span>sites<span style="color:#f92672">-</span>enabled<span style="color:#f92672">/</span>
+$ sudo systemctl restart nginx<span style="color:#f92672">.</span>service</code></pre></div>
+<p>Now your wiki should be available at <a href="http://wiki.your.host">http://wiki.your.host</a>. Obviously, first you&rsquo;d need to add a record for <code>wiki.your.host</code> in your local DNS server or at your hoster control panel (<em>assuming you already have <code>your.host</code> domain registered</em>).</p>
+<p>In our case we host wiki in the internal network only, so it&rsquo;s not exposed to the internet, and there is no real need to restrict access to it. However, in your case you might want to protect it with <a href="https://github.com/retifrav/scraps/blob/master/_Linux/linux.md#basic-authentication">Basic authentication</a>.</p>
+<h2 id="mac-os">Mac OS</h2>
+<p>Here the goal is to simply run Gollum locally on demand - to preview your local changes before pushing them to the main repository on server.</p>
+<p>Install required packages:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ brew install icu4c
+$ brew install pkg<span style="color:#f92672">-</span>config
+$ brew install ruby</code></pre></div>
+<p>Since Mac OS already has system Ruby, you&rsquo;ll need to &ldquo;overwrite&rdquo; it in your <code>~/.bash_profile</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">export PATH<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/usr/local/opt/ruby/bin:</span>$PATH<span style="color:#e6db74">&#34;</span>
+export LDFLAGS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;-L/usr/local/opt/ruby/lib&#34;</span>
+export CPPFLAGS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;-I/usr/local/opt/ruby/include&#34;</span>
+export PKG_CONFIG_PATH<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/usr/local/opt/ruby/lib/pkgconfig&#34;</span></code></pre></div>
+<p>Update the environment:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ source <span style="color:#f92672">~/.</span>bash_profile</code></pre></div>
+<p>and check the versions:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ ruby <span style="color:#f92672">--</span>version
+ruby <span style="color:#ae81ff">3.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span>p0 <span style="color:#f92672">(</span><span style="color:#ae81ff">2020</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">25</span> revision <span style="color:#ae81ff">95</span>aff21468<span style="color:#f92672">)</span> <span style="color:#f92672">[</span><span style="color:#66d9ef">x86_64-darwin19</span><span style="color:#f92672">]</span>
+
+$ gem <span style="color:#f92672">--</span>version
+<span style="color:#ae81ff">3.2</span><span style="color:#f92672">.</span><span style="color:#ae81ff">3</span></code></pre></div>
+<p>Try to install Gollum now. In my case it failed:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ gem install gollum
+
+<span style="color:#a6e22e">Building</span> native extensions<span style="color:#f92672">.</span> <span style="color:#a6e22e">This</span> could take a <span style="color:#66d9ef">while</span><span style="color:#f92672">...</span>
+<span style="color:#a6e22e">ERROR</span><span style="color:#66d9ef">:</span>  <span style="color:#66d9ef">Error</span> <span style="color:#66d9ef">installing</span> <span style="color:#66d9ef">gollum:</span>
+    <span style="color:#a6e22e">ERROR</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Failed</span> <span style="color:#66d9ef">to</span> <span style="color:#66d9ef">build</span> <span style="color:#66d9ef">gem</span> <span style="color:#66d9ef">native</span> <span style="color:#66d9ef">extension.</span>
+
+    <span style="color:#66d9ef">current</span> <span style="color:#66d9ef">directory:</span> <span style="color:#66d9ef">/usr/local/lib/ruby/gems/</span><span style="color:#960050;background-color:#1e0010">3</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">/gems/ffi-</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">14</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">/ext/ffi_c</span>
+<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>opt<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>ruby <span style="color:#f92672">-</span>I <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span><span style="color:#a6e22e">Cellar</span><span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span><span style="color:#ae81ff">3.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span>_1<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span><span style="color:#ae81ff">3.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span> <span style="color:#f92672">-</span>r <span style="color:#f92672">./</span>siteconf20210104<span style="color:#f92672">-</span><span style="color:#ae81ff">30597</span><span style="color:#f92672">-</span>m0yzw0<span style="color:#f92672">.</span>rb extconf<span style="color:#f92672">.</span>rb
+checking <span style="color:#66d9ef">for</span> ffi_prep_closure_loc<span style="color:#f92672">()</span> in <span style="color:#f92672">-</span>lffi<span style="color:#f92672">...</span> yes
+checking <span style="color:#66d9ef">for</span> ffi_prep_cif_var<span style="color:#f92672">()...</span> yes
+checking <span style="color:#66d9ef">for</span> ffi_raw_call<span style="color:#f92672">()...</span> yes
+checking <span style="color:#66d9ef">for</span> ffi_prep_raw_closure<span style="color:#f92672">()...</span> yes
+creating extconf<span style="color:#f92672">.</span>h
+creating <span style="color:#a6e22e">Makefile</span>
+
+current directory<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">/usr/local/lib/ruby/gems/</span><span style="color:#960050;background-color:#1e0010">3</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">/gems/ffi-</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">14</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">/ext/ffi_c</span>
+make <span style="color:#e6db74">&#34;DESTDIR=&#34;</span> clean
+
+current directory<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">/usr/local/lib/ruby/gems/</span><span style="color:#960050;background-color:#1e0010">3</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">/gems/ffi-</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">14</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">/ext/ffi_c</span>
+make <span style="color:#e6db74">&#34;DESTDIR=&#34;</span>
+compiling <span style="color:#a6e22e">AbstractMemory</span><span style="color:#f92672">.</span>c
+compiling <span style="color:#a6e22e">ArrayType</span><span style="color:#f92672">.</span>c
+compiling <span style="color:#a6e22e">Buffer</span><span style="color:#f92672">.</span>c
+compiling <span style="color:#a6e22e">Call</span><span style="color:#f92672">.</span>c
+compiling <span style="color:#a6e22e">ClosurePool</span><span style="color:#f92672">.</span>c
+compiling <span style="color:#a6e22e">DynamicLibrary</span><span style="color:#f92672">.</span>c
+compiling <span style="color:#a6e22e">Function</span><span style="color:#f92672">.</span>c
+<span style="color:#a6e22e">Function</span><span style="color:#f92672">.</span>c<span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">847</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">17</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">error:</span> <span style="color:#66d9ef">implicit</span> <span style="color:#66d9ef">declaration</span> <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">function</span> <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#66d9ef">ffi_prep_closure_loc</span><span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">invalid</span> <span style="color:#66d9ef">in</span> <span style="color:#66d9ef">C99</span> <span style="color:#f92672">[</span><span style="color:#66d9ef">-Werror</span>,<span style="color:#66d9ef">-Wimplicit-function-declaration</span><span style="color:#f92672">]</span>
+    ffiStatus <span style="color:#66d9ef">=</span> ffi_prep_closure_loc<span style="color:#f92672">(</span>closure<span style="color:#f92672">-&gt;</span>pcl<span style="color:#f92672">,</span> <span style="color:#f92672">&amp;</span>fnInfo<span style="color:#f92672">-&gt;</span>ffi_cif<span style="color:#f92672">,</span> callback_invoke<span style="color:#f92672">,</span> closure<span style="color:#f92672">,</span> code<span style="color:#f92672">);</span>
+                <span style="color:#f92672">^</span>
+<span style="color:#a6e22e">Function</span><span style="color:#f92672">.</span>c<span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">847</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">17</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">note:</span> <span style="color:#66d9ef">did</span> <span style="color:#66d9ef">you</span> <span style="color:#66d9ef">mean</span> <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#66d9ef">ffi_prep_closure</span><span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#66d9ef">?</span>
+<span style="color:#f92672">/</span><span style="color:#a6e22e">Library</span><span style="color:#f92672">/</span><span style="color:#a6e22e">Developer</span><span style="color:#f92672">/</span><span style="color:#a6e22e">CommandLineTools</span><span style="color:#f92672">/</span><span style="color:#a6e22e">SDKs</span><span style="color:#f92672">/</span><span style="color:#a6e22e">MacOSX10</span><span style="color:#f92672">.</span><span style="color:#ae81ff">14.</span>sdk<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>include<span style="color:#f92672">/</span>ffi<span style="color:#f92672">/</span>ffi<span style="color:#f92672">.</span>h<span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">269</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">note:</span> <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#66d9ef">ffi_prep_closure</span><span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#66d9ef">declared</span> <span style="color:#66d9ef">here</span>
+ffi_prep_closure<span style="color:#f92672">(</span>
+<span style="color:#f92672">^</span>
+<span style="color:#ae81ff">1</span> error generated<span style="color:#f92672">.</span>
+make<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">***</span> <span style="color:#f92672">[</span><span style="color:#66d9ef">Function.o</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Error</span> <span style="color:#ae81ff">1</span>
+
+make failed<span style="color:#f92672">,</span> exit code <span style="color:#ae81ff">2</span></code></pre></div>
+<p>Here this error is caused by the <a href="https://github.com/ffi/ffi/issues/791#issuecomment-645594873">obsolete libffi library</a>. To fix it, force the required gem, and this time Gollum should install fine:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ gem install ffi <span style="color:#f92672">--</span> <span style="color:#f92672">--</span>disable<span style="color:#f92672">-</span>system<span style="color:#f92672">-</span>libffi
+$ gem install gollum</code></pre></div>
+<p>Make a symlink for Gollum executable somewhere in your <code>PATH</code>, for example:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ ln <span style="color:#f92672">-</span>s <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span>gems<span style="color:#f92672">/</span><span style="color:#ae81ff">3.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span><span style="color:#f92672">/</span>gems<span style="color:#f92672">/</span>gollum<span style="color:#f92672">-</span><span style="color:#a6e22e">VERSION</span><span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>gollum <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span></code></pre></div>
+<p>Now do the steps described in <a href="#local-editing">local editing</a> and try to run your wiki. It might fail with the following error:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>the<span style="color:#f92672">/</span>clonned<span style="color:#f92672">/</span>wiki<span style="color:#f92672">/</span>repository
+$ gollum <span style="color:#f92672">--</span>config config<span style="color:#f92672">.</span>rb <span style="color:#f92672">--</span>host localhost
+<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span>gems<span style="color:#f92672">/</span><span style="color:#ae81ff">3.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span><span style="color:#f92672">/</span>gems<span style="color:#f92672">/</span>sinatra<span style="color:#f92672">-</span><span style="color:#ae81ff">2.1</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span><span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>sinatra<span style="color:#f92672">/</span>base<span style="color:#f92672">.</span>rb<span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">1755</span><span style="color:#66d9ef">:in</span> <span style="color:#66d9ef">`detect_rack_handler&#39;: Server handler (thin,puma,reel,HTTP,webrick) not found. (RuntimeError)
+</span><span style="color:#66d9ef">    from /usr/local/lib/ruby/gems/3.0.0/gems/sinatra-2.1.0/lib/sinatra/base.rb:1493:in `run!</span><span style="color:#960050;background-color:#1e0010">&#39;</span>
+    <span style="color:#66d9ef">from</span> <span style="color:#66d9ef">/Users/YOURNAME/bin/gollum:</span><span style="color:#960050;background-color:#1e0010">286</span><span style="color:#66d9ef">:in</span> <span style="color:#960050;background-color:#1e0010">`</span><span style="color:#66d9ef">&lt;main&gt;</span><span style="color:#960050;background-color:#1e0010">&#39;</span></code></pre></div>
+<p>That means that you have no web-server in your Ruby. Install some, for example <a href="https://github.com/ruby/webrick">webrick</a>, and then you&rsquo;ll be able to run the wiki:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ gem install webrick
+
+$ gollum <span style="color:#f92672">--</span>config config<span style="color:#f92672">.</span>rb <span style="color:#f92672">--</span>host localhost
+<span style="color:#f92672">[</span><span style="color:#960050;background-color:#1e0010">2021</span><span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">01</span><span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">04</span> <span style="color:#960050;background-color:#1e0010">16</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">40</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">58</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">INFO</span>  <span style="color:#a6e22e">WEBrick</span> <span style="color:#ae81ff">1.7</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span>
+<span style="color:#f92672">[</span><span style="color:#960050;background-color:#1e0010">2021</span><span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">01</span><span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">04</span> <span style="color:#960050;background-color:#1e0010">16</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">40</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">58</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">INFO</span>  ruby <span style="color:#ae81ff">3.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span> <span style="color:#f92672">(</span><span style="color:#ae81ff">2020</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">25</span><span style="color:#f92672">)</span> <span style="color:#f92672">[</span><span style="color:#66d9ef">x86_64-darwin19</span><span style="color:#f92672">]</span>
+<span style="color:#f92672">==</span> <span style="color:#a6e22e">Sinatra</span> <span style="color:#f92672">(</span>v2<span style="color:#f92672">.</span><span style="color:#ae81ff">1.0</span><span style="color:#f92672">)</span> has taken the stage on <span style="color:#ae81ff">4567</span> <span style="color:#66d9ef">for</span> production <span style="color:#66d9ef">with</span> backup from <span style="color:#a6e22e">WEBrick</span>
+<span style="color:#f92672">[</span><span style="color:#960050;background-color:#1e0010">2021</span><span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">01</span><span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">04</span> <span style="color:#960050;background-color:#1e0010">16</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">40</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">58</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">INFO</span>  <span style="color:#a6e22e">WEBrick</span><span style="color:#66d9ef">:</span><span style="color:#66d9ef">:HTTPServer</span><span style="color:#66d9ef">#</span><span style="color:#66d9ef">start:</span> <span style="color:#66d9ef">pid</span><span style="color:#f92672">=</span><span style="color:#ae81ff">38628</span> port<span style="color:#66d9ef">=</span><span style="color:#ae81ff">4567</span></code></pre></div>
+<p>The wiki is now available on <a href="http://localhost:4567">http://localhost:4567</a>.</p>
+<h1 id="editing">Editing</h1>
+<h2 id="web-ui">Web UI</h2>
+<p>Gollum has a web UI for editing, and that would be the easiest option in most cases.</p>
+<p>Sadly, there is no authentication out of the box, which is a minor issue in our case, but for others this could be a serious disadvantage. Although, it seems to be possible to <a href="https://github.com/gollum/gollum/wiki/Gollum-via-Rack-and-CAS-SSO">hack it in</a>.</p>
+<p>So, by default all the changes made via web UI will be authored by the default user from <a href="#user-and-repository">Git repository config</a> on server.</p>
+<h2 id="local-editing">Local editing</h2>
+<p>But why edit wiki in web UI, when its content is just plain-text Markdown files in a Git repository? You can work with it as with any other Git repository!</p>
+<p>So, every team member can have a local copy of the wiki, author (<em>and <a href="https://withblue.ink/2020/05/17/how-and-why-to-sign-git-commits.html#why-to-sign-git-commits">sign</a></em>) their commits and push them to the main repository via SSH. You can even disable editing via web UI, so Git and SSH would be the only way to edit the wiki. How awesome is that.</p>
+<h3 id="establish-ssh-connection-to-the-wiki-host">Establish SSH connection to the wiki host</h3>
+<p>Create an SSH key on your machine:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cd <span style="color:#f92672">~/.</span>ssh
+$ ssh<span style="color:#f92672">-</span>keygen <span style="color:#f92672">-</span>o <span style="color:#f92672">-</span>t rsa <span style="color:#f92672">-</span>b <span style="color:#ae81ff">4096</span> <span style="color:#f92672">-</span>C <span style="color:#e6db74">&#34;your-name@your.host&#34;</span></code></pre></div>
+<p>Add the wiki host to your SSH config (<code>~/.ssh/config</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">Host</span> wiki<span style="color:#f92672">.</span>your<span style="color:#f92672">.</span>host
+<span style="color:#a6e22e">HostName</span> wiki<span style="color:#f92672">.</span>your<span style="color:#f92672">.</span>host
+<span style="color:#a6e22e">User</span> gollum
+<span style="color:#a6e22e">IdentityFile</span> <span style="color:#f92672">~/.</span>ssh<span style="color:#f92672">/</span><span style="color:#a6e22e">NAME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">OF</span><span style="color:#f92672">-</span><span style="color:#a6e22e">THE</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PRIVATE</span><span style="color:#f92672">-</span><span style="color:#a6e22e">KEY</span><span style="color:#f92672">-</span><span style="color:#a6e22e">FILE</span><span style="color:#f92672">-</span><span style="color:#a6e22e">YOU</span><span style="color:#f92672">-</span><span style="color:#a6e22e">JUST</span><span style="color:#f92672">-</span><span style="color:#a6e22e">CREATED</span></code></pre></div>
+<p>Go the wiki host and add your public key to <code>/home/gollum/.ssh/authorized_keys</code>.</p>
+<h3 id="clone-the-wiki-repository">Clone the wiki repository</h3>
+<p>Now you should be able to clone the wiki repository via SSH. On your local machine go to some <code>/path/to/your/documents/or/whatever</code> and clone the wiki like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ git clone gollum@wiki.your.host:wiki/.git wiki.your.host</code></pre></div>
+<p>Make sure that you have meaningful username and e-mail in your Git config (<em>these values will be used for authoring your changes in the wiki</em>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cd wiki<span style="color:#f92672">.</span>your<span style="color:#f92672">.</span>host
+$ git config user<span style="color:#f92672">.</span>name
+$ git config user<span style="color:#f92672">.</span>email</code></pre></div>
+<p>The rest is as with any other Git repository: you do some changes, commit them and push to remote.</p>
+<h3 id="run-gollum">Run Gollum</h3>
+<p>To run Gollum locally, first <a href="#installation">install it</a> on your machine, create a <a href="#config">config</a> in the root of the wiki repository that you&rsquo;ve just cloned (<em>no need to commit the local config, and actually add it to <code>.gitignore</code></em>) and then:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>wiki<span style="color:#f92672">.</span>your<span style="color:#f92672">.</span>host
+$ gollum <span style="color:#f92672">--</span>config config<span style="color:#f92672">.</span>rb <span style="color:#f92672">--</span>host localhost</code></pre></div>
+<p>Now you can open <a href="http://localhost:4567">http://localhost:4567</a> in your browser. Note that it will only render what&rsquo;s already committed, so if you don&rsquo;t see changes you&rsquo;ve made, check if you&rsquo;ve committed them.</p>
+<p>The main purpose of running Gollum locally is to preview your changes and <a href="https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History#_git_amend">amend</a> local commits <em>before pushing</em> to remote. For example, you&rsquo;ve committed some changes (<em>did not push them yet</em>), previewed them in browser and decided to do some more changes. To preview new changes you&rsquo;ll need to commit them too, but instead of making a new commit you can just do this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ git add <span style="color:#f92672">.</span> <span style="color:#f92672">&amp;&amp;</span> git commit <span style="color:#f92672">--</span>amend <span style="color:#f92672">--</span>no<span style="color:#f92672">-</span>edit</code></pre></div>
+<p>That will update your last commit (<code>--amend</code>), preserving the original commit message (<code>--no-edit</code>). You can amend your commit countless number of times and push it to the main repository only when you are completely satisfied with the changes.</p>
+<h1 id="customization">Customization</h1>
+<p>As already mentioned, you can customize default wiki layouts by editing Gollum <a href="#templates">templates</a>.</p>
+<h2 id="css-and-js">CSS and JS</h2>
+<p>Aside from templates, you can also add your customs CSS and JS. To enable those, make sure your <a href="#config">wiki config</a> has the following lines:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">...</span>
+<span style="color:#66d9ef">:</span><span style="color:#66d9ef">css</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">,</span>
+<span style="color:#66d9ef">:</span><span style="color:#66d9ef">js</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">,</span>
+<span style="color:#f92672">...</span></code></pre></div>
+<p>Then create <code>custom.css</code> and <code>custom.js</code> files in the wiki root. Now you can either write your custom CSS and JS right there, or use them as &ldquo;importing points&rdquo; - for example here&rsquo;s my <code>custom.css</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-css" data-lang="css">@<span style="color:#66d9ef">import</span> <span style="color:#f92672">url</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;site.css&#34;</span><span style="color:#f92672">)</span>;
+@<span style="color:#66d9ef">import</span> <span style="color:#f92672">url</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;site-tablet.css&#34;</span><span style="color:#f92672">)</span>;
+@<span style="color:#66d9ef">import</span> <span style="color:#f92672">url</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;site-phone.css&#34;</span><span style="color:#f92672">)</span>;
+@<span style="color:#66d9ef">import</span> <span style="color:#f92672">url</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;homepage.css&#34;</span><span style="color:#f92672">)</span>;</code></pre></div>
+<p>and then I do the actual styling in those files.</p>
+<p>By the way, even though the pages markup is Markdown, you can just as well use raw HTML blocks. And you can also assign CSS classes to Markdown elements, such as images:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-md" data-lang="md">![](/files/some-image.png){:class=&#34;some-css-class&#34;}</code></pre></div>
+<p>As an example, our main page is mostly done with raw HTML. And thanks to injected custom styles, it nicely adapts to mobile screens:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/01/07/gollum-markdown-wiki/images/styling-main.png" alt="Gollum wiki, main page" style="border:1px solid black;">
+
+
+<p>Also, default Gollum styles define some rather ugly margins for ToC, headers, paragraphs and so on, but you can easily customize that into something nicer like this:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/01/07/gollum-markdown-wiki/images/styling-article.png" alt="Gollum wiki, article" style="border:1px solid black;">
+
+
+<p>Note that by default both <code>custom.css</code> and <code>custom.js</code> are included in the <code>&lt;head&gt;</code>. If you would like to move your JS code to the end of <code>&lt;body&gt;</code>, you can do it by modifying the following template: <code>/path/to/gems/gollum-VERSION/lib/gollum/templates/layout.mustache</code> (<em>or rather a <a href="#templates">copy of it</a> that you made earlier</em>).</p>
+<h2 id="header-footer-sidebar">Header, footer, sidebar</h2>
+<p>There are certain special files (<em>subpages</em>) that get injected into pages - you can guess where exactly on a page by looking at their names:</p>
+<ul>
+<li><code>_Header.md</code></li>
+<li><code>_Sidebar.md</code></li>
+<li><code>_Footer.md</code></li>
+</ul>
+<p>You can use them for injecting some common blocks, such as table of contents (ToC). Here&rsquo;s my <code>_Header.md</code>, for instance:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-md" data-lang="md">[[_TOC_]]</code></pre></div>
+<p>These blocks affect all the pages in the current and nested folders, unless they are &ldquo;overwritten&rdquo; on lower levels. For example, I have an <code>archive</code> folder with its own <code>_Header.md</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">├──</span> <span style="color:#a6e22e">_Header</span><span style="color:#f92672">.</span>md
+<span style="color:#f92672">├──</span> some<span style="color:#f92672">-</span>article<span style="color:#f92672">.</span>md
+<span style="color:#f92672">├──</span> archive
+<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">_Header</span><span style="color:#f92672">.</span>md
+<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> some<span style="color:#f92672">-</span>old<span style="color:#f92672">-</span>article<span style="color:#f92672">.</span>md
+<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> some<span style="color:#f92672">-</span>other<span style="color:#f92672">-</span>old<span style="color:#f92672">-</span>article<span style="color:#f92672">.</span>md
+<span style="color:#f92672">...</span></code></pre></div>
+<p>and it has different contents:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-md" data-lang="md">![](/files/archived.png){:class=&#34;archived-banner&#34;}
+
+[[_TOC_]]</code></pre></div>
+<p>so, aside from ToC, all the pages in the <code>archive</code> folder (<em>and nested folders</em>) will also have a special banner.</p>
+<h1 id="a-bit-about-features">A bit about features</h1>
+<p>Gollum has quite a number of <a href="https://github.com/gollum/gollum/wiki">features</a>, and I won&rsquo;t describe all of them, but I would like to highlight some, as they are easy to overlook:</p>
+<ul>
+<li><strong>RSS feed</strong> - available at <a href="http://wiki.your.host/gollum/feed/">http://wiki.your.host/gollum/feed/</a> (<em>note the trailing slash</em>)</li>
+<li><strong>TeX math equations via MathJax</strong></li>
+<li><strong>YAML frontmatter</strong> - much like in Jekyll or Octopress. You can use it to set the page title (<em>and other metadata</em>)</li>
+<li><strong>Overview</strong> - a service page that allows you to navigate the wiki directory tree. Available at <a href="http://wiki.your.host/gollum/overview">http://wiki.your.host/gollum/overview</a></li>
+<li><strong>Macros</strong> (<em>full list is <a href="https://github.com/gollum/gollum/wiki/Standard-Macros">here</a></em>), including <a href="https://github.com/gollum/gollum/wiki#custom-macros">custom macros</a>
+<ul>
+<li><strong>Global ToC</strong> - you can add <code>&lt;&lt;GlobalTOC()&gt;&gt;</code> macros to the main page and that will generate a list of all the wiki pages (<em>unlike Overview, this will list only content pages</em>)</li>
+</ul>
+</li>
+</ul>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/web/">web</a><a class="tag" href="https://retifrav.github.io/tags/linux/">linux</a><a class="tag" href="https://retifrav.github.io/tags/macos/">macos</a><a class="tag" href="https://retifrav.github.io/tags/devops/">devops</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <script>
+  var id =  57 ;
+
+  if (id)
+  {
+    let url = "https://github.com/retifrav/retifrav.github.io/issues/".concat(id);
+    let api_url = "https://api.github.com/repos/retifrav/retifrav.github.io/issues/".concat(id, "/comments");
+    
+    var commentsDiv = document.getElementById("comments");
+
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", api_url);
+    xhr.setRequestHeader("Accept", "application/vnd.github.v3.html+json");
+    xhr.send();
+
+    xhr.onload = function()
+    {
+      if (xhr.status != 200)
+      {
+        let errorText = document.createElement("p");
+        errorText.innerHTML = "<i>Comments for this post yet are not opened yet (or you have GitHub scripts disabled).</i>";
+        commentsDiv.appendChild(errorText);
+      }
+      else
+      {
+        let comments = xhr.response;
+
+        let mainHeader = document.createElement("h2");
+        mainHeader.innerHTML = "Comments: ".concat(comments.length);
+        commentsDiv.appendChild(mainHeader);
+
+        let issueLink = document.createElement("p");
+        issueLink.innerHTML = "<i>You can leave a comment using this <a href='".concat(url, "'>GitHub issue</a>.</i>");
+        commentsDiv.appendChild(issueLink);
+        
+        comments.forEach(function(comment)
+        {
+            let commentContent = document.createElement("div");
+            commentContent.setAttribute('class', 'gh-comment')
+            commentContent.innerHTML = "".concat(
+                "<div class='gh-header'>",
+                  "<img src='", comment.user.avatar_url, "' />",
+                  "<div style='margin:auto 0;'>",
+                    "<b><a class='gh-username' href='", comment.user.html_url, "'>", comment.user.login, "</a></b>",
+                    " commented at <em>", new Date(comment.created_at), "</em>",
+                  "</div>",
+                "</div>",
+                "<div class='gh-body'>",
+                  comment.body_html,
+                "</div>"
+            );
+            commentsDiv.appendChild(commentContent);
+        });
+      }
+    };
+
+    xhr.onerror = function()
+    {
+      let errorText = document.createElement("p");
+      errorText.innerHTML = "<i>Some error loading comments.</i>";
+      commentsDiv.appendChild(errorText);
+    };
+  }
+</script>
+
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2021,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/297" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (60)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (38)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (31)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (21)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (20)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (13)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (5)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

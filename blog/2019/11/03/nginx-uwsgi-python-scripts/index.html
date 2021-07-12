@@ -1,0 +1,629 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>NGINX, uWSGI and Python scripts | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2019/11/03/nginx-uwsgi-python-scripts/" />
+
+    <meta name="generator" content="Hugo 0.84.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="NGINX, uWSGI and Python scripts" />
+<meta property="og:description" content="You have a static HTML page with a form on it. And you want this form to be processed by a Python script when submitted. And you serve your page with NGINX. To make all that work you will also need an application server such as uWSGI.
+
+
+
+    
+
+
+Let&rsquo;s see, how it&rsquo;s done." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2019/11/03/nginx-uwsgi-python-scripts/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2019-11-03T16:14:07&#43;01:00" />
+<meta property="article:modified_time" content="2019-11-03T16:14:07&#43;01:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2019/11/03/nginx-uwsgi-python-scripts/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">NGINX, uWSGI and Python scripts</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2019-11-03 16:14:07 &#43;0100</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 10 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>You have a static HTML page with a form on it. And you want this form to be processed by a Python script when submitted. And you serve your page with NGINX. To make all that work you will also need an application server such as <a href="https://uwsgi-docs.readthedocs.io/en/latest/">uWSGI</a>.</p>
+
+
+
+    <img class="image-post" src="/blog/2019/11/03/nginx-uwsgi-python-scripts/images/nginx-uwsgi.png" alt="NGINX and uWSGI">
+
+
+<p>Let&rsquo;s see, how it&rsquo;s done.</p>
+<div class="unsolved"><b>Unsolved:</b> I couldn&#39;t make the CGI-mode work</div>
+
+<p>As you might know, web-servers usually cannot run scripts themselves, so they pass such requests to some other backend server. I think, the most common example of that would be PHP-based CMSes like <a href="https://wordpress.com">WordPress</a>.</p>
+<p>In our case, we don&rsquo;t have a full-blown CMS - we merely want to hook a Python script to some simple HTML form. And as I mentioned in the beginning, with NGINX such a setup can be implemented using uWSGI.</p>
+<p>uWSGI is exactly a kind of &ldquo;backend server&rdquo; I mentioned above. It can process requests, which NGINX will pass to it, and execute your Python scripts.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#environment">Environment</a></li>
+    <li><a href="#nginx-server-config">NGINX server config</a></li>
+    <li><a href="#uwsgi">uWSGI</a>
+      <ul>
+        <li><a href="#a-simple-script">A simple script</a></li>
+        <li><a href="#a-script-behind-an-html-form">A script behind an HTML form</a></li>
+        <li><a href="#cgi-mode">CGI mode</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<p>For initial understanding of bare grounds I used <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-uwsgi-and-nginx-to-serve-python-apps-on-ubuntu-14-04">this article</a>. It has nice explanations for most of the steps.</p>
+<h1 id="environment">Environment</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ lsb_release <span style="color:#f92672">-</span>d
+<span style="color:#a6e22e">Description</span><span style="color:#66d9ef">:</span>	<span style="color:#66d9ef">Linux</span> <span style="color:#66d9ef">Mint</span> <span style="color:#960050;background-color:#1e0010">19</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span> <span style="color:#66d9ef">Tina</span>
+
+$ apt install python3 python3<span style="color:#f92672">-</span>dev python3<span style="color:#f92672">-</span>pip
+$ pip install setuptools
+$ pip install uwsgi
+
+$ python <span style="color:#f92672">--</span>version
+<span style="color:#a6e22e">Python</span> <span style="color:#ae81ff">3.6</span><span style="color:#f92672">.</span><span style="color:#ae81ff">8</span>
+
+$ pip <span style="color:#f92672">--</span>version
+pip <span style="color:#ae81ff">9.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">1</span> from <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>python3<span style="color:#f92672">/</span>dist<span style="color:#f92672">-</span>packages <span style="color:#f92672">(</span>python <span style="color:#ae81ff">3.6</span><span style="color:#f92672">)</span>
+
+$ uwsgi <span style="color:#f92672">--</span>version
+<span style="color:#ae81ff">2.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">18</span>
+
+$ which uwsgi
+<span style="color:#f92672">/</span>home<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/.</span>local<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>uwsgi</code></pre></div>
+<p>&ldquo;Website&rdquo; structure:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>www<span style="color:#f92672">/</span>html<span style="color:#f92672">/</span>
+<span style="color:#f92672">├──</span> cgi<span style="color:#f92672">-</span>bin
+<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> info<span style="color:#f92672">.</span>py
+<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> some<span style="color:#f92672">.</span>py
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> uwsgi<span style="color:#f92672">.</span>ini
+<span style="color:#f92672">└──</span> index<span style="color:#f92672">.</span>html</code></pre></div>
+<h1 id="nginx-server-config">NGINX server config</h1>
+<p>Our server config (<code>/etc/nginx/sites-available/default</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">server</span> {
+    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span> <span style="color:#e6db74">default_server</span>;
+    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span> <span style="color:#e6db74">default_server</span>;
+
+    <span style="color:#f92672">root</span> <span style="color:#e6db74">/var/www/html</span>;
+
+    <span style="color:#f92672">index</span> <span style="color:#e6db74">index.html</span>;
+
+    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">_</span>;
+
+    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+        <span style="color:#f92672">try_files</span> $uri $uri/ =<span style="color:#ae81ff">404</span>;
+    }
+
+    <span style="color:#75715e"># any request ending with .py will go here
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">location</span> ~ <span style="color:#e6db74">\.py$</span> {
+        <span style="color:#75715e"># the full list is in /etc/nginx/uwsgi_params
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">include</span>    <span style="color:#e6db74">uwsgi_params</span>;
+        <span style="color:#75715e"># where requests will be passed - a socket shared with uWSGI
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">uwsgi_pass</span> <span style="color:#e6db74">unix:/var/www/html/cgi-bin/wsgi.sock</span>;
+    }
+}</code></pre></div>
+<h1 id="uwsgi">uWSGI</h1>
+<p>uWSGI can be run with a bitch-ass-long line of arguments, or you can put those into a config file (<code>/var/www/html/cgi-bin/uwsgi.ini</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[uwsgi]</span>
+<span style="color:#a6e22e">module</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">info:application</span>
+
+<span style="color:#a6e22e">master</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">true</span>
+<span style="color:#a6e22e">processes</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">5</span>
+
+<span style="color:#a6e22e">socket</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">wsgi.sock</span>
+<span style="color:#a6e22e">chmod-socket</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">664</span>
+<span style="color:#a6e22e">vacuum</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">true</span>
+
+<span style="color:#a6e22e">die-on-term</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">true</span></code></pre></div>
+<p>Here <code>info:application</code> means that uWSGI will be looking for <code>info.py</code> file and function named <code>application</code> inside it.</p>
+<p>And <code>socket</code> points to the socket, which will be used for communicating with NGINX. If you are running uWSGI from <code>/var/www/html/cgi-bin/</code> folder, then you don&rsquo;t need to specify the full path.</p>
+<p>Now you can run uWSGI like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">sudo <span style="color:#f92672">-</span>u www<span style="color:#f92672">-</span>data uwsgi <span style="color:#f92672">--</span>ini uwsgi<span style="color:#f92672">.</span>ini <span style="color:#f92672">--</span>need<span style="color:#f92672">-</span>app</code></pre></div>
+<p>The <code>--need-app</code> option is here just to make the application fail if it won&rsquo;t find the script or function to call. I&rsquo;ve put it here so you could immediately see if your configuration is fine.</p>
+<p>Most likely you&rsquo;ll want to create a (<code>systemd</code>) service for that, as naturally uWSGI will need to be running all the time in order for NGINX to reach it.</p>
+<h2 id="a-simple-script">A simple script</h2>
+<p>First let&rsquo;s test that it all works. Create a simple script (<code>/var/www/html/cgi-bin/info.py</code>)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">application</span>(environ, start_response):
+    start_response(<span style="color:#e6db74">&#39;200 damn&#39;</span>, [(<span style="color:#e6db74">&#39;Content-Type&#39;</span>, <span style="color:#e6db74">&#39;text/html&#39;</span>)])
+    <span style="color:#66d9ef">return</span> [ <span style="color:#e6db74">&#34;Ololo!&#34;</span><span style="color:#f92672">.</span>encode(<span style="color:#e6db74">&#34;utf-8&#34;</span>) ]</code></pre></div>
+<p>Parameters <code>environ</code> and <code>start_response</code> come from the <a href="https://www.python.org/dev/peps/pep-0333/#specification-details">specification</a>.</p>
+<p>Opening <code>http://localhost/any.py</code> in a web-browser will get you a web-page with this line of text (<em>&ldquo;Ololo!&quot;</em>). Note that you will get it by opening absolutely any request to localhost that ends with <code>.py</code>.</p>
+<p>If you are getting an empty response body, make sure you have <code>.encode(&quot;utf-8&quot;)</code> in the returned value. At first I didn&rsquo;t have it there and I was pretty puzzled by getting the right response status (<code>200 damn</code>) but not getting a response body. <a href="https://serverfault.com/a/612273/410288">This answer</a> and <a href="https://uwsgi-docs.readthedocs.io/en/latest/Python.html#python-3">documentation</a> revealed the reason.</p>
+<p>If you are getting <code>502 Bad Gateway</code> error, then check if NGINX user (<code>www-data</code>) has access to <code>/var/www/html/cgi-bin/wsgi.sock</code>, and obviously uWSGI user also has to have access to it (<em>or you can just run it from <code>www-data</code> user too</em>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp">sudo chown <span style="color:#f92672">-</span>R www<span style="color:#f92672">-</span>data:www<span style="color:#f92672">-</span>data <span style="color:#f92672">/</span>var<span style="color:#f92672">/</span>www<span style="color:#f92672">/</span>html</code></pre></div>
+<p>So returning a simple line of text works. Let&rsquo;s now try to generate a proper HTML document with some useful information, for instance a list of uWSGI parameters (<em><code>environ</code> variable</em>) passed from NGINX:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">application</span>(environ, start_response):
+    htmlResponse <span style="color:#f92672">=</span> [ <span style="color:#e6db74">&#34;&lt;!DOCTYPE html&gt;&#34;</span> ]
+    htmlResponse<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;&lt;html&gt;&#34;</span>)
+    htmlResponse<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;&lt;body&gt;&#34;</span>)
+    htmlResponse<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;&lt;h1&gt;environ variables&lt;/h1&gt;&#34;</span>)
+    <span style="color:#66d9ef">for</span> k, v <span style="color:#f92672">in</span> environ<span style="color:#f92672">.</span>items():
+        htmlResponse<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;&lt;p&gt;environ[</span><span style="color:#e6db74">{}</span><span style="color:#e6db74">] = </span><span style="color:#e6db74">{}</span><span style="color:#e6db74">&lt;/p&gt;&#34;</span><span style="color:#f92672">.</span>format(k, v))
+    htmlResponse<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;&lt;/body&gt;&#34;</span>)
+    htmlResponse<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;&lt;/html&gt;&#34;</span>)
+    start_response(<span style="color:#e6db74">&#39;200 OK&#39;</span>, [(<span style="color:#e6db74">&#39;Content-Type&#39;</span>, <span style="color:#e6db74">&#39;text/html&#39;</span>)])
+    <span style="color:#66d9ef">return</span> [ line<span style="color:#f92672">.</span>encode(<span style="color:#e6db74">&#34;utf-8&#34;</span>) <span style="color:#66d9ef">for</span> line <span style="color:#f92672">in</span> htmlResponse ]</code></pre></div>
+<p>Opening a <code>.py</code> page now will give you the following:</p>
+
+
+
+    <img class="image-post" src="/blog/2019/11/03/nginx-uwsgi-python-scripts/images/uwsgi-environ-variables.png" alt="uWSGI environ variables">
+
+
+<h2 id="a-script-behind-an-html-form">A script behind an HTML form</h2>
+<p>Since simple scripts work, which means that NGINX and uWSGI can communicate with each other, we can now proceed with calling a Python script when submitting a web-form.</p>
+<p>So, here&rsquo;s a page (<code>/var/www/html/index.html</code>) with a form:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html"><span style="color:#75715e">&lt;!DOCTYPE html&gt;</span>
+&lt;<span style="color:#f92672">html</span>&gt;
+    &lt;<span style="color:#f92672">body</span>&gt;
+        &lt;<span style="color:#f92672">h1</span>&gt;Some form&lt;/<span style="color:#f92672">h1</span>&gt;
+        <span style="color:#75715e">&lt;!-- that&#39;s where the form will be submitted to --&gt;</span>
+        &lt;<span style="color:#f92672">form</span> <span style="color:#a6e22e">action</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/cgi-bin/some.py&#34;</span> <span style="color:#a6e22e">method</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;POST&#34;</span>&gt;
+            &lt;<span style="color:#f92672">label</span>&gt;Enter some value&lt;/<span style="color:#f92672">label</span>&gt;
+            <span style="color:#75715e">&lt;!-- &#34;name&#34; attribute marks the variable --&gt;</span>
+            &lt;<span style="color:#f92672">input</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text&#34;</span> <span style="color:#a6e22e">name</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;someVal&#34;</span> /&gt;
+            <span style="color:#75715e">&lt;!-- by default buttons have &#34;submit&#34; role --&gt;</span>
+            &lt;<span style="color:#f92672">button</span>&gt;Send&lt;/<span style="color:#f92672">button</span>&gt;
+        &lt;/<span style="color:#f92672">form</span>&gt;
+    &lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;</code></pre></div>
+<p>And here&rsquo;s the script (<code>/var/www/html/cgi-bin/some.py</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> cgi <span style="color:#f92672">import</span> parse_qs, escape
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">application</span>(environ, start_response):
+    <span style="color:#66d9ef">try</span>:
+        request_body_size <span style="color:#f92672">=</span> int(environ<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;CONTENT_LENGTH&#39;</span>, <span style="color:#ae81ff">0</span>))
+    <span style="color:#66d9ef">except</span> (<span style="color:#a6e22e">ValueError</span>):
+        request_body_size <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+
+    request_body <span style="color:#f92672">=</span> environ[<span style="color:#e6db74">&#39;wsgi.input&#39;</span>]<span style="color:#f92672">.</span>read(request_body_size)
+    vals <span style="color:#f92672">=</span> parse_qs(request_body)
+
+    <span style="color:#75715e">#print(vals)</span>
+
+    <span style="color:#75715e"># escape user unput</span>
+    someVal <span style="color:#f92672">=</span> vals<span style="color:#f92672">.</span>get(<span style="color:#e6db74">b</span><span style="color:#e6db74">&#34;someVal&#34;</span>, [<span style="color:#e6db74">b</span><span style="color:#e6db74">&#34;[ you haven&#39;t entered shit ]&#34;</span>])[<span style="color:#ae81ff">0</span>]
+    someVal <span style="color:#f92672">=</span> escape(someVal<span style="color:#f92672">.</span>decode(<span style="color:#e6db74">&#34;utf-8&#34;</span>))
+
+    htmlResponse <span style="color:#f92672">=</span> [ <span style="color:#e6db74">&#34;&lt;!DOCTYPE html&gt;&#34;</span> ]
+    htmlResponse<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;&lt;html&gt;&#34;</span>)
+    htmlResponse<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;&lt;body&gt;&#34;</span>)
+    htmlResponse<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;&lt;h1&gt;Result&lt;/h1&gt;&#34;</span>)
+    htmlResponse<span style="color:#f92672">.</span>append(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;&lt;p&gt;Your value: &lt;span style=&#39;color:blue;&#39;&gt;</span><span style="color:#e6db74">{</span>someVal<span style="color:#e6db74">}</span><span style="color:#e6db74">&lt;/span&gt;&lt;/p&gt;&#34;</span>)
+    htmlResponse<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;&lt;/body&gt;&#34;</span>)
+    htmlResponse<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;&lt;/html&gt;&#34;</span>)
+    start_response(<span style="color:#e6db74">&#34;200&#34;</span>, [(<span style="color:#e6db74">&#34;Content-Type&#34;</span>, <span style="color:#e6db74">&#34;text/html&#34;</span>)])
+    <span style="color:#66d9ef">return</span> [ line<span style="color:#f92672">.</span>encode(<span style="color:#e6db74">&#34;utf-8&#34;</span>) <span style="color:#66d9ef">for</span> line <span style="color:#f92672">in</span> htmlResponse ]</code></pre></div>
+<p>Modify <code>/var/www/html/cgi-bin/uwsgi.ini</code> for uWSGI to use <code>some.py</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[uwsgi]</span>
+<span style="color:#a6e22e">module</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">some:application</span>
+<span style="color:#a6e22e">...</span></code></pre></div>
+<p>And run/restart it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">sudo <span style="color:#f92672">-</span>u www<span style="color:#f92672">-</span>data uwsgi <span style="color:#f92672">--</span>ini uwsgi<span style="color:#f92672">.</span>ini</code></pre></div>
+<p>Now open the form:</p>
+
+
+
+    <img class="image-post" src="/blog/2019/11/03/nginx-uwsgi-python-scripts/images/html-form.png" alt="HTML form">
+
+
+<p>Enter some value and submit it:</p>
+
+
+
+    <img class="image-post" src="/blog/2019/11/03/nginx-uwsgi-python-scripts/images/html-form-input.png" alt="HTML form input">
+
+
+<p>Here&rsquo;s the result:</p>
+
+
+
+    <img class="image-post" src="/blog/2019/11/03/nginx-uwsgi-python-scripts/images/html-form-result.png" alt="HTML form result">
+
+
+<p>So, web-form submits <code>someVal</code> value to <code>/cgi-bin/some.py</code> endpoint, which gets caught by NGINX and passed to uWSGI, which in turn calls the <code>some.py</code> script, and there we finally get the <code>someVal</code> value.</p>
+<p>In this particular example the form&rsquo;s <code>action</code> can have - you guessed it right - absolutely any path, as long as it ends with <code>.py</code>. But below you will find a <a href="#cgi-mode">CGI example</a>, in which the path actually matters.</p>
+<h2 id="cgi-mode">CGI mode</h2>
+<p>CGI is more powerful than running a single script. Shortly saying, running uWSGI in CGI mode allows you to have a whole bunch of Python scripts, which are called depending on the path requested.</p>
+<p>Sadly, I couldn&rsquo;t make it work. Nevertheless, I&rsquo;ll share my attempts, and hopefully someone will point me in the right direction.</p>
+<p>To enable CGI you need to have uWSGI with CGI plugin. As I understood, by default (<em>being installed with <code>pip</code></em>) it comes without this plugin. Following <a href="https://uwsgi-docs.readthedocs.io/en/latest/CGI.html#enabling-the-plugin">instruction</a> from the documentation I did the following:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl http://uwsgi.it/install | bash -s cgi /tmp/uwsgi
+$ sudo mv /tmp/uwsgi /usr/bin</code></pre></div>
+<p>So now I have two uWSGI binaries in the system:</p>
+<ol>
+<li><code>~/.local/bin/uwsgi</code> - installed from pip;</li>
+<li><code>/usr/bin/uwsgi</code> - installed from script.</li>
+</ol>
+<p>First thing I noticed is that the new one (<em>installed from script</em>) cannot run with a single application/module.</p>
+<p>Here&rsquo;s the output from uWSGI installed with <code>pip</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ sudo -u www-data ~/.local/bin/uwsgi --ini uwsgi.ini --need-app
+<span style="color:#f92672">[</span>uWSGI<span style="color:#f92672">]</span> getting INI configuration from uwsgi.ini
+*** Starting uWSGI 2.0.18 <span style="color:#f92672">(</span>64bit<span style="color:#f92672">)</span> on <span style="color:#f92672">[</span>Sun Oct <span style="color:#ae81ff">20</span> 16:14:09 2019<span style="color:#f92672">]</span> ***
+compiled with version: 7.4.0 on <span style="color:#ae81ff">20</span> October <span style="color:#ae81ff">2019</span> 14:07:07
+os: Linux-4.15.0-65-generic <span style="color:#75715e">#74-Ubuntu SMP Tue Sep 17 17:06:04 UTC 2019</span>
+nodename: vasya-Parallels
+machine: x86_64
+clock source: unix
+pcre jit disabled
+detected number of CPU cores: <span style="color:#ae81ff">4</span>
+current working directory: /var/www/html
+detected binary path: /home/vasya/.local/bin/uwsgi
+your processes number limit is <span style="color:#ae81ff">15501</span>
+your memory page size is <span style="color:#ae81ff">4096</span> bytes
+detected max file descriptor number: <span style="color:#ae81ff">1024</span>
+lock engine: pthread robust mutexes
+thunder lock: disabled <span style="color:#f92672">(</span>you can enable it with --thunder-lock<span style="color:#f92672">)</span>
+uwsgi socket <span style="color:#ae81ff">0</span> bound to UNIX address wsgi.sock fd <span style="color:#ae81ff">3</span>
+Python version: 3.6.8 <span style="color:#f92672">(</span>default, Oct  <span style="color:#ae81ff">7</span> 2019, 12:59:55<span style="color:#f92672">)</span>  <span style="color:#f92672">[</span>GCC 8.3.0<span style="color:#f92672">]</span>
+*** Python threads support is disabled. You can enable it with --enable-threads ***
+Python main interpreter initialized at 0x560fd8ee5a60
+your server socket listen backlog is limited to <span style="color:#ae81ff">100</span> connections
+your mercy <span style="color:#66d9ef">for</span> graceful operations on workers is <span style="color:#ae81ff">60</span> seconds
+mapped <span style="color:#ae81ff">437424</span> bytes <span style="color:#f92672">(</span><span style="color:#ae81ff">427</span> KB<span style="color:#f92672">)</span> <span style="color:#66d9ef">for</span> <span style="color:#ae81ff">5</span> cores
+*** Operational MODE: preforking ***
+WSGI app <span style="color:#ae81ff">0</span> <span style="color:#f92672">(</span>mountpoint<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span><span style="color:#f92672">)</span> ready in <span style="color:#ae81ff">0</span> seconds on interpreter 0x560fd8ee5a60 pid: <span style="color:#ae81ff">28714</span> <span style="color:#f92672">(</span>default app<span style="color:#f92672">)</span>
+*** uWSGI is running in multiple interpreter mode ***
+spawned uWSGI master process <span style="color:#f92672">(</span>pid: 28714<span style="color:#f92672">)</span>
+spawned uWSGI worker <span style="color:#ae81ff">1</span> <span style="color:#f92672">(</span>pid: 28715, cores: 1<span style="color:#f92672">)</span>
+spawned uWSGI worker <span style="color:#ae81ff">2</span> <span style="color:#f92672">(</span>pid: 28716, cores: 1<span style="color:#f92672">)</span>
+spawned uWSGI worker <span style="color:#ae81ff">3</span> <span style="color:#f92672">(</span>pid: 28717, cores: 1<span style="color:#f92672">)</span>
+spawned uWSGI worker <span style="color:#ae81ff">4</span> <span style="color:#f92672">(</span>pid: 28718, cores: 1<span style="color:#f92672">)</span>
+spawned uWSGI worker <span style="color:#ae81ff">5</span> <span style="color:#f92672">(</span>pid: 28719, cores: 1<span style="color:#f92672">)</span></code></pre></div>
+<p>And here&rsquo;s the output from uWSGI installed from script:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ sudo -u www-data /usr/bin/uwsgi --ini uwsgi.ini --need-app
+<span style="color:#f92672">[</span>uWSGI<span style="color:#f92672">]</span> getting INI configuration from uwsgi.ini
+*** Starting uWSGI 2.0.18 <span style="color:#f92672">(</span>64bit<span style="color:#f92672">)</span> on <span style="color:#f92672">[</span>Sun Oct <span style="color:#ae81ff">20</span> 16:13:30 2019<span style="color:#f92672">]</span> ***
+compiled with version: 7.4.0 on <span style="color:#ae81ff">18</span> October <span style="color:#ae81ff">2019</span> 12:14:16
+os: Linux-4.15.0-65-generic <span style="color:#75715e">#74-Ubuntu SMP Tue Sep 17 17:06:04 UTC 2019</span>
+nodename: vasya-Parallels
+machine: x86_64
+clock source: unix
+pcre jit disabled
+detected number of CPU cores: <span style="color:#ae81ff">4</span>
+current working directory: /var/www/html
+detected binary path: /usr/bin/uwsgi
+your processes number limit is <span style="color:#ae81ff">15501</span>
+your memory page size is <span style="color:#ae81ff">4096</span> bytes
+detected max file descriptor number: <span style="color:#ae81ff">1024</span>
+lock engine: pthread robust mutexes
+thunder lock: disabled <span style="color:#f92672">(</span>you can enable it with --thunder-lock<span style="color:#f92672">)</span>
+uwsgi socket <span style="color:#ae81ff">0</span> bound to UNIX address wsgi.sock fd <span style="color:#ae81ff">3</span>
+your server socket listen backlog is limited to <span style="color:#ae81ff">100</span> connections
+your mercy <span style="color:#66d9ef">for</span> graceful operations on workers is <span style="color:#ae81ff">60</span> seconds
+mapped <span style="color:#ae81ff">437424</span> bytes <span style="color:#f92672">(</span><span style="color:#ae81ff">427</span> KB<span style="color:#f92672">)</span> <span style="color:#66d9ef">for</span> <span style="color:#ae81ff">5</span> cores
+*** Operational MODE: preforking ***
+*** no app loaded. GAME OVER ***
+VACUUM: unix socket wsgi.sock removed.</code></pre></div>
+<p>But okay, that&rsquo;s not what we&rsquo;re after anyway, so let&rsquo;s just ignore it.</p>
+<p>Running uWSGI in CGI mode requires NGINX site config to have <code>uwsgi_modifier1 9</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">location</span> ~ <span style="color:#e6db74">\.py$</span> {
+    <span style="color:#f92672">include</span>         <span style="color:#e6db74">uwsgi_params</span>;
+<span style="display:block;width:100%;background-color:#3c3d38">    <span style="color:#f92672">uwsgi_modifier1</span> <span style="color:#ae81ff">9</span>;
+</span>    <span style="color:#f92672">uwsgi_pass</span>      <span style="color:#e6db74">unix:/var/www/html/cgi-bin/wsgi.sock</span>;
+}</code></pre></div>
+<p>You also need to make the following modifications in the uWSGI config (<code>/var/www/html/cgi-bin/uwsgi.ini</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[uwsgi]</span>
+<span style="color:#a6e22e">plugin-dir</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">/usr/lib/uwsgi/plugins</span>
+<span style="color:#a6e22e">plugins</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">cgi</span>
+<span style="color:#a6e22e">cgi</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">/var/www/html/cgi-bin</span>
+<span style="color:#a6e22e">cgi-allowed-ext</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">.py</span>
+<span style="color:#a6e22e">cgi-helper</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">.py=python</span>
+
+<span style="color:#a6e22e">master</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">true</span>
+<span style="color:#a6e22e">processes</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">5</span>
+
+<span style="color:#a6e22e">socket</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">wsgi.sock</span>
+<span style="color:#a6e22e">chmod-socket</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">664</span>
+<span style="color:#a6e22e">vacuum</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">true</span>
+
+<span style="color:#a6e22e">die-on-term</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">true</span></code></pre></div>
+<p>Note that even though this new uWSGI from script is supposed to be having CGI plugin, I had to explicitly specify where to find it (<code>/usr/lib/uwsgi/plugins</code>). Without this line I was getting the following error:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo <span style="color:#f92672">-</span>u www<span style="color:#f92672">-</span>data <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>uwsgi <span style="color:#f92672">--</span>ini uwsgi<span style="color:#f92672">.</span>ini
+<span style="color:#f92672">[</span><span style="color:#66d9ef">uWSGI</span><span style="color:#f92672">]</span> getting <span style="color:#a6e22e">INI</span> configuration from uwsgi<span style="color:#f92672">.</span>ini
+open<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;./cgi_plugin.so&#34;</span><span style="color:#f92672">)</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">No</span> <span style="color:#66d9ef">such</span> <span style="color:#66d9ef">file</span> <span style="color:#66d9ef">or</span> <span style="color:#66d9ef">directory</span> <span style="color:#f92672">[</span><span style="color:#66d9ef">core/utils.c</span> <span style="color:#66d9ef">line</span> <span style="color:#960050;background-color:#1e0010">3724</span><span style="color:#f92672">]</span>
+<span style="display:block;width:100%;background-color:#3c3d38"><span style="color:#f92672">!!!</span> <span style="color:#a6e22e">UNABLE</span> to load uWSGI plugin<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">./cgi_plugin.so:</span> <span style="color:#66d9ef">cannot</span> <span style="color:#66d9ef">open</span> <span style="color:#66d9ef">shared</span> <span style="color:#66d9ef">object</span> <span style="color:#66d9ef">file:</span> <span style="color:#66d9ef">No</span> <span style="color:#66d9ef">such</span> <span style="color:#66d9ef">file</span> <span style="color:#66d9ef">or</span> <span style="color:#66d9ef">directory</span> <span style="color:#66d9ef">!!!</span></span></code></pre></div>
+<p>Weird, but okay. Like I said, explicitly providing <code>plugin-dir</code> path fixes that.</p>
+<p>But the <a href="https://stackoverflow.com/questions/58452419/nginx-uwsgi-with-cgi-plugin-python-scripts-502-bad-gateway">next problem</a> I wasn&rsquo;t able to solve. Every time I want to run some script I get <code>502 Bad Gateway</code> error from NGINX, because uWSGI fails with unknown <code>500</code> error. At the same time, if I try to open some non-existent script, then I get <code>404 Not Found</code> error from uWSGI.</p>
+<p>For example, here&rsquo;re 3 URLs:</p>
+<ol>
+<li><code>http://localhost/another.py</code></li>
+<li><code>http://localhost/info.py</code></li>
+<li><code>http://localhost/some.py</code></li>
+</ol>
+<p>And here&rsquo;re results I am getting from trying to open those:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">pid:</span> <span style="color:#960050;background-color:#1e0010">9606</span><span style="color:#66d9ef">|app:</span> <span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">|req:</span> <span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">/</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#f92672">]</span> <span style="color:#ae81ff">127.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0.1</span> <span style="color:#f92672">()</span> <span style="color:#f92672">{</span><span style="color:#ae81ff">42</span> vars in <span style="color:#ae81ff">624</span> bytes<span style="color:#f92672">}</span> <span style="color:#f92672">[</span><span style="color:#66d9ef">Fri</span> <span style="color:#66d9ef">Oct</span> <span style="color:#960050;background-color:#1e0010">18</span> <span style="color:#960050;background-color:#1e0010">15</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">40</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">50</span> <span style="color:#960050;background-color:#1e0010">2019</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">GET</span> <span style="color:#f92672">/</span>another<span style="color:#f92672">.</span>py <span style="color:#66d9ef">=&gt;</span> generated <span style="color:#ae81ff">9</span> bytes in <span style="color:#ae81ff">0</span> msecs <span style="color:#f92672">(</span><span style="color:#a6e22e">HTTP</span><span style="color:#f92672">/</span><span style="color:#ae81ff">1.1</span> <span style="color:#ae81ff">404</span><span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span> headers in <span style="color:#ae81ff">71</span> bytes <span style="color:#f92672">(</span><span style="color:#ae81ff">0</span> switches on core <span style="color:#ae81ff">0</span><span style="color:#f92672">)</span>
+<span style="color:#f92672">[</span><span style="color:#66d9ef">pid:</span> <span style="color:#960050;background-color:#1e0010">9604</span><span style="color:#66d9ef">|app:</span> <span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">|req:</span> <span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">/</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#f92672">]</span> <span style="color:#ae81ff">127.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0.1</span> <span style="color:#f92672">()</span> <span style="color:#f92672">{</span><span style="color:#ae81ff">42</span> vars in <span style="color:#ae81ff">618</span> bytes<span style="color:#f92672">}</span> <span style="color:#f92672">[</span><span style="color:#66d9ef">Fri</span> <span style="color:#66d9ef">Oct</span> <span style="color:#960050;background-color:#1e0010">18</span> <span style="color:#960050;background-color:#1e0010">15</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">41</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">01</span> <span style="color:#960050;background-color:#1e0010">2019</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">GET</span> <span style="color:#f92672">/</span>info<span style="color:#f92672">.</span>py <span style="color:#66d9ef">=&gt;</span> generated <span style="color:#ae81ff">0</span> bytes in <span style="color:#ae81ff">15</span> msecs <span style="color:#f92672">(</span><span style="color:#a6e22e">HTTP</span><span style="color:#f92672">/</span><span style="color:#ae81ff">1.1</span> <span style="color:#ae81ff">500</span><span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span> headers in <span style="color:#ae81ff">0</span> bytes <span style="color:#f92672">(</span><span style="color:#ae81ff">0</span> switches on core <span style="color:#ae81ff">0</span><span style="color:#f92672">)</span>
+<span style="color:#f92672">[</span><span style="color:#66d9ef">pid:</span> <span style="color:#960050;background-color:#1e0010">9606</span><span style="color:#66d9ef">|app:</span> <span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">|req:</span> <span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">/</span><span style="color:#960050;background-color:#1e0010">3</span><span style="color:#f92672">]</span> <span style="color:#ae81ff">127.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0.1</span> <span style="color:#f92672">()</span> <span style="color:#f92672">{</span><span style="color:#ae81ff">42</span> vars in <span style="color:#ae81ff">618</span> bytes<span style="color:#f92672">}</span> <span style="color:#f92672">[</span><span style="color:#66d9ef">Fri</span> <span style="color:#66d9ef">Oct</span> <span style="color:#960050;background-color:#1e0010">18</span> <span style="color:#960050;background-color:#1e0010">15</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">41</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">05</span> <span style="color:#960050;background-color:#1e0010">2019</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">GET</span> <span style="color:#f92672">/</span>some<span style="color:#f92672">.</span>py <span style="color:#66d9ef">=&gt;</span> generated <span style="color:#ae81ff">0</span> bytes in <span style="color:#ae81ff">15</span> msecs <span style="color:#f92672">(</span><span style="color:#a6e22e">HTTP</span><span style="color:#f92672">/</span><span style="color:#ae81ff">1.1</span> <span style="color:#ae81ff">500</span><span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span> headers in <span style="color:#ae81ff">0</span> bytes <span style="color:#f92672">(</span><span style="color:#ae81ff">0</span> switches on core <span style="color:#ae81ff">0</span><span style="color:#f92672">)</span></code></pre></div>
+<p>So obviously it finds the files (<code>info.py</code> and <code>some.py</code>), but why then it fails with <code>500</code> error?</p>
+<p>What I also noticed is that I get the same result from uWSGI installed with <code>pip</code> (<code>~/.local/bin/uwsgi</code>). So what was the point in installing the one from script (<code>/usr/bin/uwsgi</code>), how is this one different?</p>
+<p>Anyway, I would be happy if someone could help me to understand what&rsquo;s wrong here.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/web/">web</a><a class="tag" href="https://retifrav.github.io/tags/python/">python</a><a class="tag" href="https://retifrav.github.io/tags/unsolved/">unsolved</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <script>
+  var id =  35 ;
+
+  if (id)
+  {
+    let url = "https://github.com/retifrav/retifrav.github.io/issues/".concat(id);
+    let api_url = "https://api.github.com/repos/retifrav/retifrav.github.io/issues/".concat(id, "/comments");
+    
+    var commentsDiv = document.getElementById("comments");
+
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", api_url);
+    xhr.setRequestHeader("Accept", "application/vnd.github.v3.html+json");
+    xhr.send();
+
+    xhr.onload = function()
+    {
+      if (xhr.status != 200)
+      {
+        let errorText = document.createElement("p");
+        errorText.innerHTML = "<i>Comments for this post yet are not opened yet (or you have GitHub scripts disabled).</i>";
+        commentsDiv.appendChild(errorText);
+      }
+      else
+      {
+        let comments = xhr.response;
+
+        let mainHeader = document.createElement("h2");
+        mainHeader.innerHTML = "Comments: ".concat(comments.length);
+        commentsDiv.appendChild(mainHeader);
+
+        let issueLink = document.createElement("p");
+        issueLink.innerHTML = "<i>You can leave a comment using this <a href='".concat(url, "'>GitHub issue</a>.</i>");
+        commentsDiv.appendChild(issueLink);
+        
+        comments.forEach(function(comment)
+        {
+            let commentContent = document.createElement("div");
+            commentContent.setAttribute('class', 'gh-comment')
+            commentContent.innerHTML = "".concat(
+                "<div class='gh-header'>",
+                  "<img src='", comment.user.avatar_url, "' />",
+                  "<div style='margin:auto 0;'>",
+                    "<b><a class='gh-username' href='", comment.user.html_url, "'>", comment.user.login, "</a></b>",
+                    " commented at <em>", new Date(comment.created_at), "</em>",
+                  "</div>",
+                "</div>",
+                "<div class='gh-body'>",
+                  comment.body_html,
+                "</div>"
+            );
+            commentsDiv.appendChild(commentContent);
+        });
+      }
+    };
+
+    xhr.onerror = function()
+    {
+      let errorText = document.createElement("p");
+      errorText.innerHTML = "<i>Some error loading comments.</i>";
+      commentsDiv.appendChild(errorText);
+    };
+  }
+</script>
+
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2021,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/297" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (60)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (38)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (31)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (21)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (20)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (13)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (5)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

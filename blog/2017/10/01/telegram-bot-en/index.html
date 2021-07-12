@@ -1,0 +1,528 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Telegram bot | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2017/10/01/telegram-bot-en/" />
+
+    <meta name="generator" content="Hugo 0.84.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Telegram bot" />
+<meta property="og:description" content="On the 24th of June 2015 Telegram got bots, or, to be specific, Telegram Bot API. So, now my other problem about receiving server status can be solved much easier.
+Initially I wrote this article in russian 🇷🇺, but having noticed that it&rsquo;s one of the most visited pages in my blog, I decided to translate it to english." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2017/10/01/telegram-bot-en/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2017-10-01T15:00:15&#43;02:00" />
+<meta property="article:modified_time" content="2017-10-01T15:00:15&#43;02:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2017/10/01/telegram-bot-en/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Telegram bot</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2017-10-01 15:00:15 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 5 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>On the 24th of June 2015 <a href="https://telegram.org/">Telegram</a> got <a href="https://core.telegram.org/bots/api-changelog#june-24-2015">bots</a>, or, to be specific, <a href="https://core.telegram.org/bots/api">Telegram Bot API</a>. So, now <a href="/blog/2015/05/12/telegram-server-status">my other problem</a> about receiving server status can be solved much easier.</p>
+<p>Initially I wrote this article <a href="/blog/2015/10/24/telegram-bot/">in russian 🇷🇺</a>, but having noticed that it&rsquo;s one of the most visited pages in my blog, I decided to translate it to english.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#create-a-bot">Create a bot</a></li>
+    <li><a href="#implementation">Implementation</a></li>
+    <li><a href="#deployment">Deployment</a>
+      <ul>
+        <li><a href="#supervisor">Supervisor</a></li>
+        <li><a href="#systemd">systemd</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<p>Bot is not a &ldquo;user account&rdquo;, it doesn&rsquo;t require a phone number, and most importantly - there is no need to install a Telegram client application on server (or wherever). Telegram bot is an API - web-requests to Telegram servers. And you need to implement those requests sending and processing.</p>
+<p>Official documentation can be found here: <a href="https://core.telegram.org/bots">https://core.telegram.org/bots</a></p>
+<h1 id="create-a-bot">Create a bot</h1>
+<p>Send a message to the bot of all bots - <a href="https://telegram.me/botfather">BotFather</a>:</p>
+
+
+
+    <img class="image-post" src="/blog/2017/10/01/telegram-bot-en/images/botfather-help.png" alt="BotFather help">
+
+
+<p>&hellip;and ask him (with respect) to create a new bot:</p>
+
+
+
+    <img class="image-post" src="/blog/2017/10/01/telegram-bot-en/images/botfather-newbot.png" alt="BotFather newbot">
+
+
+<p>After that your bot will be created. Pay attention to the token - it is used for accessing the bot, so don&rsquo;t make this token publicly available, or someone could get your bot&rsquo;s messages (and also send his own requests).</p>
+<p>Now, when you have your bot created and got your token, I can demonstrate, what exactly I meant by saying that bot is an API. Open your web-browser and go to this address: <a href="https://api.telegram.org/botYOUR-TOKEN-HERE/getMe">https://api.telegram.org/botYOUR-TOKEN-HERE/getMe</a></p>
+<p>Browser will get you the following:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#f92672">&#34;ok&#34;</span>:<span style="color:#66d9ef">true</span>,<span style="color:#f92672">&#34;result&#34;</span>:{<span style="color:#f92672">&#34;id&#34;</span>:<span style="color:#960050;background-color:#1e0010">ID</span>,<span style="color:#f92672">&#34;first_name&#34;</span>:<span style="color:#e6db74">&#34;someTestBot&#34;</span>,<span style="color:#f92672">&#34;username&#34;</span>:<span style="color:#e6db74">&#34;someTestBot&#34;</span>}}<span style="color:#960050;background-color:#1e0010">`</span></code></pre></div>
+<p>Here&rsquo;s even a screenshot for you:</p>
+
+
+
+    <img class="image-post" src="/blog/2017/10/01/telegram-bot-en/images/telegram-bot-browser-screen.png" alt="Telegram bot from web-browser">
+
+
+<p>So, that&rsquo;s the Telegram bot. You send a web-request and get a <a href="https://en.wikipedia.org/wiki/JSON">JSON</a>-response.</p>
+<p>But of course, you need to automate sending requests as well as processing JSON-responses, so you need an <em>implementation</em> for your bot, that will work somewhere at some server (or at your home PC, but then obviously your bot will be available only when your PC is on). For this you can take any programming language that has web-requests (as it&rsquo;s basically the only functionality you need).</p>
+<h1 id="implementation">Implementation</h1>
+<p>I chose <a href="https://en.wikipedia.org/wiki/Python_%28programming_language%29">Python</a>. And not by an accident - there is a ready-made implementation: <a href="https://github.com/eternnoir/pyTelegramBotAPI">pyTelegramBotAPI</a>. It has everything we need, so the only thing left is to implement commands that your bot will be able to process. Although, everything is covered, I recommend you to read the documentation about API: <a href="https://core.telegram.org/bots/api">https://core.telegram.org/bots/api</a></p>
+<p>So, you need to install Python and some IDE (but you can of course use any Notepad). Here&rsquo;s what I have:</p>
+<ul>
+<li><a href="https://www.python.org/downloads/">Python v3.5</a>;</li>
+<li><a href="https://github.com/eternnoir/pyTelegramBotAPI">pyTelegramBotAPI</a>;</li>
+<li><a href="https://code.visualstudio.com">Visual Studio Code</a>.</li>
+</ul>
+<p>Okay, you have <strong>Python</strong> and <strong>pip</strong>, now install <strong>pyTelegramBotAPI</strong>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">pip install pyTelegramBotAPI</code></pre></div>
+<p>Create <code>someTestBot.py</code> file, that will be your implementation. I declared two required commands <code>/start</code> and <code>/help</code>, and also command for sending server status <code>/server</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> telebot <span style="color:#75715e"># pyTelegramBotAPI</span>
+<span style="color:#f92672">import</span> logging <span style="color:#75715e"># logging</span>
+
+<span style="color:#75715e"># for executing scripts</span>
+<span style="color:#f92672">from</span> subprocess <span style="color:#f92672">import</span> call
+
+<span style="color:#75715e"># log settings</span>
+logger <span style="color:#f92672">=</span> logging<span style="color:#f92672">.</span>getLogger(<span style="color:#e6db74">&#39;log&#39;</span>)
+logger<span style="color:#f92672">.</span>setLevel(logging<span style="color:#f92672">.</span>INFO)
+fh <span style="color:#f92672">=</span> logging<span style="color:#f92672">.</span>FileHandler(<span style="color:#e6db74">&#39;someTestBot.log&#39;</span>)
+fh<span style="color:#f92672">.</span>setLevel(logging<span style="color:#f92672">.</span>DEBUG)
+formatter <span style="color:#f92672">=</span> logging<span style="color:#f92672">.</span>Formatter(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%(asctime)s</span><span style="color:#e6db74"> | </span><span style="color:#e6db74">%(levelname)-7s</span><span style="color:#e6db74"> | </span><span style="color:#e6db74">%(message)s</span><span style="color:#e6db74">&#34;</span>)
+fh<span style="color:#f92672">.</span>setFormatter(formatter)
+logger<span style="color:#f92672">.</span>addHandler(fh)
+
+<span style="color:#75715e"># create a bot</span>
+bot <span style="color:#f92672">=</span> telebot<span style="color:#f92672">.</span>TeleBot(<span style="color:#e6db74">&#34;YOUR-TOKEN-HERE&#34;</span>)
+
+<span style="color:#75715e"># help text</span>
+help_string <span style="color:#f92672">=</span> []
+help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;Just a *test* bot.</span><span style="color:#ae81ff">\n\n</span><span style="color:#e6db74">&#34;</span>)
+help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/start - says hello;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
+help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/help - shows help;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
+help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/server - sends server status.&#34;</span>)
+
+<span style="color:#75715e"># --- commands</span>
+
+<span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;start&#39;</span>])
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_start</span>(message):
+    <span style="color:#75715e"># send a simple message</span>
+    bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;Hi, I&#39;m a test bot! Send me /help to get help.&#34;</span>)
+
+<span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;help&#39;</span>])
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_help</span>(message):
+    <span style="color:#75715e"># send a message with Markdown</span>
+    bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join(help_string), parse_mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Markdown&#34;</span>)
+
+<span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;server&#39;</span>])
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_server</span>(message):
+    <span style="color:#66d9ef">try</span>:
+        <span style="color:#75715e"># path to script that gathers server info</span>
+        call([<span style="color:#e6db74">&#34;/root/scrps/status.sh&#34;</span>])
+        <span style="color:#75715e"># read the file with results</span>
+        status <span style="color:#f92672">=</span> open(<span style="color:#e6db74">&#34;/root/scrps/status.txt&#34;</span>, <span style="color:#e6db74">&#34;rb&#34;</span>)<span style="color:#f92672">.</span>read()
+        bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, status, parse_mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Markdown&#34;</span>)
+    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> e:
+        logger<span style="color:#f92672">.</span>exception(str(e))
+        bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;Error while getting a server status. Check the log for details.&#34;</span>)
+
+<span style="color:#75715e"># start message receiving</span>
+bot<span style="color:#f92672">.</span>polling()</code></pre></div>
+<p>Script for gathering server status info <code>status.sh</code> I took from <a href="/blog/2015/05/12/telegram-server-status">last article</a> and changed it a bit:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span>
+scrps_path<span style="color:#f92672">=</span>/root/scrps
+
+info_web<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*Web-servers*
+</span><span style="color:#e6db74">----------------------
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>service apache2 status | sed -r <span style="color:#e6db74">&#34;s/[*]+/-/g&#34;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>service nginx status | sed -r <span style="color:#e6db74">&#34;s/[*]+/-/g&#34;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">&#34;</span>
+
+info_mysql<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*MySQL*
+</span><span style="color:#e6db74">----------------------
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>mysqladmin ping<span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>mysqladmin status<span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">&#34;</span>
+
+info_cpu<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*CPU*
+</span><span style="color:#e6db74">----------------------
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>top -bn1 | grep <span style="color:#e6db74">&#34;Cpu(s)&#34;</span> | sed <span style="color:#e6db74">&#34;s/.*, *\([0-9.]*\)%* id.*/\1/&#34;</span> | awk <span style="color:#e6db74">&#39;{print 100 - $1&#34; of 100 percents&#34;}&#39;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">&#34;</span>
+
+info_ram<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*RAM*
+</span><span style="color:#e6db74">----------------------
+</span><span style="color:#e6db74">free: </span><span style="color:#66d9ef">$(</span>free -m | grep Mem | awk <span style="color:#e6db74">&#39;{print $4}&#39;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74"> MB of </span><span style="color:#66d9ef">$(</span>free -m | grep Mem | awk <span style="color:#e6db74">&#39;{print $2}&#39;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74"> MB total
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">&#34;</span>
+
+info_space<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*HDD*
+</span><span style="color:#e6db74">----------------------
+</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>df -h --output<span style="color:#f92672">=</span>source,size,used,avail | head -n2<span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">&#34;</span>
+
+text<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>printf <span style="color:#e6db74">&#34;</span>$info_web$info_mysql$info_cpu$info_ram$info_space<span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">)</span>
+printf <span style="color:#e6db74">&#39;%s\n&#39;</span> <span style="color:#e6db74">&#34;</span>$text<span style="color:#e6db74">&#34;</span> &gt; <span style="color:#e6db74">${</span>scrps_path<span style="color:#e6db74">}</span>/status.txt</code></pre></div>
+<p>Put this file on server to <code>/root/scrps/status.sh</code> (or anywhere you want, but reflect this in bot settings).</p>
+<p>Your bot is now implemented.</p>
+<p>Go back to <strong>BotFather</strong> and set the commands for your bot:</p>
+
+
+
+    <img class="image-post" src="/blog/2017/10/01/telegram-bot-en/images/botfather-commands.png" alt="BotFather commands">
+
+
+<h1 id="deployment">Deployment</h1>
+<p>Actually, you can already run the bot on your PC - open terminal, go to the folder with <code>someTestBot.py</code> and run <code>python someTestBot.py</code>.Find in Telegram user with name <strong>@someTestBot</strong> (yours will have another name, obviously) and send something to him:</p>
+
+
+
+    <img class="image-post" src="/blog/2017/10/01/telegram-bot-en/images/telegram-bot-test.png" alt="Telegram бот commands">
+
+
+<p>Notice how Telegram application shows tips about bot commands (which we added with BotFather):</p>
+
+
+
+    <img class="image-post" src="/blog/2017/10/01/telegram-bot-en/images/telegram-bot-commands.png" alt="Telegram бот commands">
+
+
+<p>Now you need to make it so bot runs 24/7. Go to your Linux server and create directory <code>/usr/local/bin/someTestBot/</code>. Put there your <code>someTestBot.py</code>. By the way, you need to install <strong>pyTelegramBotAPI</strong> on server too (and <strong>Python</strong> with <strong>pip</strong>, obviously).</p>
+<p>I&rsquo;ll show you 2 ways how to launch script as a service: <code>Supervisor</code> and <code>systemd</code>.</p>
+<h2 id="supervisor">Supervisor</h2>
+<p>Install <a href="http://supervisord.org/">Supervisor</a>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo apt-get install supervisor</code></pre></div>
+<p>Create config (<code>/etc/supervisor/conf.d/someTestBot.conf</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">program:someTestBot</span><span style="color:#f92672">]</span>
+directory<span style="color:#f92672">=/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>someTestBot
+command<span style="color:#66d9ef">=</span>python someTestBot<span style="color:#f92672">.</span>py
+autostart<span style="color:#66d9ef">=</span><span style="color:#66d9ef">true</span>
+autorestart<span style="color:#66d9ef">=</span><span style="color:#66d9ef">true</span></code></pre></div>
+<p>One would assume, that with sush config bot will run with <code>root</code> privileges, which is not cool. You should definitely change that.</p>
+<p>Meanwhile, we are launching:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">supervisorctl update
+supervisorctl restart someTestBot</code></pre></div>
+<h2 id="systemd">systemd</h2>
+<p>Or, of your system has <code>systemd</code>, then there is no need in Supervisor.</p>
+<p>Create a config:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">vi /etc/systemd/system/telegram-bot-sometestbot.service</code></pre></div>
+<p>With this content:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">Unit</span><span style="color:#f92672">]</span>
+<span style="color:#a6e22e">Description</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Telegram</span> bot someTestBot
+
+<span style="color:#f92672">[</span><span style="color:#66d9ef">Service</span><span style="color:#f92672">]</span>
+<span style="color:#a6e22e">WorkingDirectory</span><span style="color:#f92672">=/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>someTestBot
+<span style="color:#a6e22e">ExecStart</span><span style="color:#f92672">=/</span>usr<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>python3 <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>someTestBot<span style="color:#f92672">/</span>someTestBot<span style="color:#f92672">.</span>py
+<span style="color:#a6e22e">Restart</span><span style="color:#66d9ef">=</span>always
+<span style="color:#a6e22e">RestartSec</span><span style="color:#66d9ef">=</span><span style="color:#ae81ff">10</span>
+<span style="color:#a6e22e">SyslogIdentifier</span><span style="color:#66d9ef">=</span>python<span style="color:#f92672">-</span>someTestBot
+<span style="color:#a6e22e">User</span><span style="color:#66d9ef">=</span>someTestBot
+
+<span style="color:#f92672">[</span><span style="color:#66d9ef">Install</span><span style="color:#f92672">]</span>
+<span style="color:#a6e22e">WantedBy</span><span style="color:#66d9ef">=</span>multi<span style="color:#f92672">-</span>user<span style="color:#f92672">.</span>target</code></pre></div>
+<p>In <code>User=someTestBot</code> you can set <code>root</code>, but I recommend to create a new user for that. But then you need to give him access to <code>mysqladmin</code>, otherwise your scripts will fail.</p>
+<p>Enable our new service:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">systemctl enable telegram-bot-sometestbot.service
+systemctl start telegram-bot-sometestbot.service</code></pre></div>
+<p>That&rsquo;s it, bot is running, check it:</p>
+
+
+
+    <img class="image-post" src="/blog/2017/10/01/telegram-bot-en/images/telegram-bot-server-status.png" alt="Telegram bot, server status">
+
+
+<p>What else can be dine here? Well, this line - <code>bot.polling()</code> - means endless loop with request to Telegram servers, which is totally not cool in terms of performance and resource consumption on both sides. Better to do it so you bot will <em>expect</em> messages from Telegram. You can do it implementing <a href="https://core.telegram.org/bots/api#setwebhook">webhook</a>. I will get there eventually and add this to the article.</p>
+<p>P.S. I have deleted <strong>@someTestBot</strong>. If someone will take this username in future - that&rsquo;s not me.</p>
+<hr class="updates-divider"/>
+<div class="alert alert-info"><strong>[02.12.2018] Update:</strong> Telegram bot via webhook</div>
+<p>Finally, I&rsquo;ve dealt with webhook. I decided to create a <a href="/blog/2018/12/02/telegram-bot-webhook-ru">new article</a> about it.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/telegram/">telegram</a><a class="tag" href="https://retifrav.github.io/tags/python/">python</a><a class="tag" href="https://retifrav.github.io/tags/linux/">linux</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <script>
+  var id =  14 ;
+
+  if (id)
+  {
+    let url = "https://github.com/retifrav/retifrav.github.io/issues/".concat(id);
+    let api_url = "https://api.github.com/repos/retifrav/retifrav.github.io/issues/".concat(id, "/comments");
+    
+    var commentsDiv = document.getElementById("comments");
+
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", api_url);
+    xhr.setRequestHeader("Accept", "application/vnd.github.v3.html+json");
+    xhr.send();
+
+    xhr.onload = function()
+    {
+      if (xhr.status != 200)
+      {
+        let errorText = document.createElement("p");
+        errorText.innerHTML = "<i>Comments for this post yet are not opened yet (or you have GitHub scripts disabled).</i>";
+        commentsDiv.appendChild(errorText);
+      }
+      else
+      {
+        let comments = xhr.response;
+
+        let mainHeader = document.createElement("h2");
+        mainHeader.innerHTML = "Comments: ".concat(comments.length);
+        commentsDiv.appendChild(mainHeader);
+
+        let issueLink = document.createElement("p");
+        issueLink.innerHTML = "<i>You can leave a comment using this <a href='".concat(url, "'>GitHub issue</a>.</i>");
+        commentsDiv.appendChild(issueLink);
+        
+        comments.forEach(function(comment)
+        {
+            let commentContent = document.createElement("div");
+            commentContent.setAttribute('class', 'gh-comment')
+            commentContent.innerHTML = "".concat(
+                "<div class='gh-header'>",
+                  "<img src='", comment.user.avatar_url, "' />",
+                  "<div style='margin:auto 0;'>",
+                    "<b><a class='gh-username' href='", comment.user.html_url, "'>", comment.user.login, "</a></b>",
+                    " commented at <em>", new Date(comment.created_at), "</em>",
+                  "</div>",
+                "</div>",
+                "<div class='gh-body'>",
+                  comment.body_html,
+                "</div>"
+            );
+            commentsDiv.appendChild(commentContent);
+        });
+      }
+    };
+
+    xhr.onerror = function()
+    {
+      let errorText = document.createElement("p");
+      errorText.innerHTML = "<i>Some error loading comments.</i>";
+      commentsDiv.appendChild(errorText);
+    };
+  }
+</script>
+
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2021,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/297" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (60)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (38)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (31)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (21)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (20)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (13)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (5)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

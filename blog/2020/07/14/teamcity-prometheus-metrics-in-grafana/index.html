@@ -1,0 +1,520 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>TeamCity Prometheus metrics in Grafana | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2020/07/14/teamcity-prometheus-metrics-in-grafana/" />
+
+    <meta name="generator" content="Hugo 0.84.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="TeamCity Prometheus metrics in Grafana" />
+<meta property="og:description" content="Since we added a Grafana instance to our infrastructure, we started visualizing absolutely every single thing with it. So no wonder that eventually we turned our eyes to TeamCity.
+
+
+
+    
+
+
+In 2019.2 release TeamCity started exposing its metrics in Prometheus format, and that&rsquo;s how Grafana can get those, as Prometheus is one of its supported data sources." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2020/07/14/teamcity-prometheus-metrics-in-grafana/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2020-07-14T19:16:58&#43;02:00" />
+<meta property="article:modified_time" content="2020-07-14T19:16:58&#43;02:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2020/07/14/teamcity-prometheus-metrics-in-grafana/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">TeamCity Prometheus metrics in Grafana</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2020-07-14 19:16:58 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 5 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>Since we added a <a href="https://grafana.com">Grafana</a> instance to our infrastructure, we started visualizing absolutely every single thing with it. So no wonder that eventually we turned our eyes to TeamCity.</p>
+
+
+
+    <img class="image-post" src="/blog/2020/07/14/teamcity-prometheus-metrics-in-grafana/images/grafana-teamcity.png" alt="TeamCity metrics in Grafana">
+
+
+<p>In <a href="https://blog.jetbrains.com/teamcity/2019/09/teamcity-2019-2-eap2-is-out/">2019.2 release</a> TeamCity started exposing its <a href="https://www.jetbrains.com/help/teamcity/what-s-new-in-teamcity-2019-2.html#WhatsNewinTeamCity2019.2-Metricsreporting">metrics</a> in <a href="https://prometheus.io">Prometheus</a> format, and that&rsquo;s how Grafana can get those, as Prometheus is one of its <a href="https://grafana.com/docs/grafana/latest/features/datasources/">supported data sources</a>.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#teamcity-user-with-access-to-metrics">TeamCity user with access to metrics</a></li>
+    <li><a href="#arranging-a-threesome">Arranging a threesome</a>
+      <ul>
+        <li><a href="#adding-data-source-to-grafana-failed-attempt">Adding data source to Grafana, failed attempt</a></li>
+        <li><a href="#setting-up-prometheus">Setting up Prometheus</a></li>
+        <li><a href="#adding-the-right-data-source-to-grafana">Adding the right data source to Grafana</a></li>
+      </ul>
+    </li>
+    <li><a href="#running-everything-behind-nginx">Running everything behind NGINX</a>
+      <ul>
+        <li><a href="#hosting-grafana">Hosting Grafana</a></li>
+        <li><a href="#hosting-prometheus">Hosting Prometheus</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<p>My environment:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmd" data-lang="cmd"># lsb_release -a
+Description:    Ubuntu 18.04.4 LTS
+
+# grafana-cli --version
+Grafana CLI version 7.0.5</code></pre></div>
+<h1 id="teamcity-user-with-access-to-metrics">TeamCity user with access to metrics</h1>
+<p>First you need to add a TeamCity user with access to <code>View usage statistics</code>. For that you need to be logged-in to TeamCity as administrator.</p>
+<p>Create a new role, call it <code>Monitoring</code> or something. Add the <code>View usage statistics</code> permission to it:</p>
+
+
+
+    <img class="image-post" src="/blog/2020/07/14/teamcity-prometheus-metrics-in-grafana/images/teamcity-role-permission.png" alt="TeamCity role permission">
+
+
+<p>Now create a new user, call it <code>grafana</code> and assign this new role to it:</p>
+
+
+
+    <img class="image-post" src="/blog/2020/07/14/teamcity-prometheus-metrics-in-grafana/images/teamcity-user-role.png" alt="TeamCity user role">
+
+
+<p>Also add an access token to this user.</p>
+<h1 id="arranging-a-threesome">Arranging a threesome</h1>
+<p>How to make everyone friends: Grafana, TeamCity and <del>spanish inquisition</del> Prometheus.</p>
+<h2 id="adding-data-source-to-grafana-failed-attempt">Adding data source to Grafana, failed attempt</h2>
+<p>So, we have a user with required access, we have the metrics endpoint, so the next steps are easy to guess, aren&rsquo;t they? Go to Grafana and add a Prometheus data source for TeamCity, right?</p>
+<p>Let&rsquo;s do it then. Set the metrics endpoint, fill user login and password (<em>what then was that access token for?</em>) and that should be it.</p>
+
+
+
+    <img class="image-post" src="/blog/2020/07/14/teamcity-prometheus-metrics-in-grafana/images/grafana-prometheus-data-source-wrong.png" alt="Grafana wrong Prometheus data source">
+
+
+<p>Well, no, as you will get <code>HTTP Error Not Found</code> error:</p>
+
+
+
+    <img class="image-post" src="/blog/2020/07/14/teamcity-prometheus-metrics-in-grafana/images/grafana-prometheus-data-source-wrong-error.png" alt="Grafana wrong Prometheus data source error">
+
+
+<p>And you know why? Because it&rsquo;s not the TeamCity endpoint what you need to add here!</p>
+<p>Here&rsquo;s how it actually should work:</p>
+<ol>
+<li>Prometheus is not just metrics format, it&rsquo;s an actual software, so first <strong>you need to run a Prometheus instance</strong> somewhere</li>
+<li>Then you add your TeamCity metrics endpoint to that Prometheus instance for monitoring (scraping)</li>
+<li>And <strong>only then</strong> you add this Prometheus instance to Grafana as a data source</li>
+</ol>
+<p>It&rsquo;s almost hilarious, how at first I got carried away by the flow, as everything seemed to be so straightforward, so I missed the Prometheus part completely. In my defense I can say that I have never worked with Prometheus (<em>or even knew about its existence, for that matter</em>).</p>
+<p>But okay, let&rsquo;s do it properly.</p>
+<h2 id="setting-up-prometheus">Setting up Prometheus</h2>
+<p>The installation process is described in the <a href="https://prometheus.io/docs/prometheus/latest/getting_started/">documentation</a>, but here&rsquo;s my version anyway.</p>
+<p>So, you <a href="https://prometheus.io/download/">download</a> the latest release and unpack it to some folder where it will be working from. I chose <code>/var/www/prometheus</code>.</p>
+<p>Edit the config file (<code>prometheus.yml</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">global</span>:
+  <span style="color:#f92672">scrape_interval</span>:     <span style="color:#ae81ff">15s</span>
+  <span style="color:#f92672">evaluation_interval</span>: <span style="color:#ae81ff">15s</span>
+
+<span style="color:#f92672">scrape_configs</span>:
+  - <span style="color:#f92672">job_name</span>: <span style="color:#e6db74">&#39;TeamCity&#39;</span>
+
+    <span style="color:#75715e"># here goes the TeamCity endpoint</span>
+    <span style="color:#f92672">metrics_path</span>: <span style="color:#ae81ff">/app/metrics</span>
+
+    <span style="color:#75715e"># that&#39;s how you can set URL parameters (query string)</span>
+    <span style="color:#f92672">params</span>:
+      <span style="color:#f92672">experimental</span>: [<span style="color:#e6db74">&#39;true&#39;</span>]
+
+    <span style="color:#f92672">scheme</span>: <span style="color:#ae81ff">https</span>
+
+    <span style="color:#f92672">bearer_token</span>: <span style="color:#ae81ff">THE-TOKEN-YOU-CREATED-IN-TEAMCITY</span>
+
+    <span style="color:#f92672">static_configs</span>:
+    - <span style="color:#f92672">targets</span>: [<span style="color:#e6db74">&#39;teamcity.your.domain&#39;</span>]</code></pre></div>
+<p>Pay attention to the number of spaces in the beginning of the lines (<em>nesting level</em>), as this thing is quite sensitive to it.</p>
+<p>By default TeamCity doesn&rsquo;t expose all the metrics, as some of them are experimental. If you want to get all the metrics, you need to use the <code>/app/metrics?experimental=true</code> endpoint. And the way you specify that in Prometheus config is by setting the <code>params</code> value, like it is shown above, because <a href="https://github.com/prometheus/prometheus/issues/1417#issuecomment-187241675">it is a list</a>. Quite obvious, innit.</p>
+<p>This is it, Prometheus is ready to run. One would say, that was too easy. I, for one, was curious to know where the data will be stored, as there is nothing in this configuration pointing to any database. But apparently <a href="https://stackoverflow.com/a/46407408/1688203">it is okay</a>, so the configuration is really done.</p>
+<p>But let&rsquo;s also make a proper service for it. Create a new user for running Prometheus:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#66d9ef">#</span> adduser \
+   <span style="color:#f92672">--</span>system \
+   <span style="color:#f92672">--</span>group \
+   <span style="color:#f92672">--</span>disabled<span style="color:#f92672">-</span>password \
+   <span style="color:#f92672">--</span>home <span style="color:#f92672">/</span>home<span style="color:#f92672">/</span>prometheus \
+   prometheus</code></pre></div>
+<p>Make it owner of the Prometheus files:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmd" data-lang="cmd"># sudo chown -R prometheus:prometheus /var/www/prometheus</code></pre></div>
+<p>And add a new <code>systemd</code> service (<code>/etc/systemd/system/prometheus.service</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[Unit]</span>
+<span style="color:#a6e22e">Description</span><span style="color:#f92672">=</span><span style="color:#e6db74">Prometheus</span>
+
+<span style="color:#66d9ef">[Service]</span>
+<span style="color:#a6e22e">WorkingDirectory</span><span style="color:#f92672">=</span><span style="color:#e6db74">/var/www/prometheus/</span>
+<span style="color:#a6e22e">ExecStart</span><span style="color:#f92672">=</span><span style="color:#e6db74">/var/www/prometheus/prometheus --config.file=prometheus.yml --web.listen-address=&#34;localhost:8002&#34;</span>
+<span style="color:#a6e22e">Restart</span><span style="color:#f92672">=</span><span style="color:#e6db74">always</span>
+<span style="color:#a6e22e">RestartSec</span><span style="color:#f92672">=</span><span style="color:#e6db74">10</span>
+<span style="color:#a6e22e">SyslogIdentifier</span><span style="color:#f92672">=</span><span style="color:#e6db74">prometheus</span>
+<span style="color:#a6e22e">User</span><span style="color:#f92672">=</span><span style="color:#e6db74">prometheus</span>
+
+<span style="color:#66d9ef">[Install]</span>
+<span style="color:#a6e22e">WantedBy</span><span style="color:#f92672">=</span><span style="color:#e6db74">multi-user.target</span></code></pre></div>
+<p>Note that I am binding it to <code>localhost:8002</code>. The plan is to run Prometheus on the same server as Grafana and hide both of them behind NGINX as a <a href="#running-everything-behind-nginx">reverse proxy</a>. That&rsquo;s absolutely not necessary, it&rsquo;s just my personal preference, so you can host it in any other way you want.</p>
+<p>Why am I binding the port via command line arguments and not via config? Because, according to <a href="https://groups.google.com/d/msg/prometheus-users/vX5XAgfGjp4/CDXK-ueTAAAJ">this</a>, &ldquo;<em>configuration file is for options that can change dynamically. Changing the listen address is not possible on the fly</em>&rdquo;. What is the actual f<del>uck</del>.</p>
+<p>Anyway, enable and start the service:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#66d9ef">#</span> systemctl enable prometheus<span style="color:#f92672">.</span>service
+<span style="color:#66d9ef">#</span> sudo systemctl start prometheus<span style="color:#f92672">.</span>service</code></pre></div>
+<p>Since it&rsquo;s binded to localhost, most likely you won&rsquo;t be able to test it from your machine. But that doesn&rsquo;t really matter now.</p>
+<h2 id="adding-the-right-data-source-to-grafana">Adding the right data source to Grafana</h2>
+<p>So here&rsquo;s how you add Prometheus as a data source:</p>
+
+
+
+    <img class="image-post" src="/blog/2020/07/14/teamcity-prometheus-metrics-in-grafana/images/grafana-prometheus-data-source-correct.png" alt="Grafana correct Prometheus data source">
+
+
+<p>This is it. Now you can go and visualize TeamCity metrics in your Grafana dashboards:</p>
+
+
+
+    <img class="image-post" src="/blog/2020/07/14/teamcity-prometheus-metrics-in-grafana/images/grafana-teamcity-metric.png" alt="Grafana TeamCity metric">
+
+
+<p>Conveniently enough, you can select metrics from the helper menu:</p>
+
+
+
+    <img class="image-post" src="/blog/2020/07/14/teamcity-prometheus-metrics-in-grafana/images/grafana-prometheus-metrics-helper.png" alt="Grafana Prometheus metrics helper">
+
+
+<h1 id="running-everything-behind-nginx">Running everything behind NGINX</h1>
+<p>I am not sure if we will use Prometheus for anything else, but in case we will, I exposed it via NGINX. And since in my case both Grafana and Prometheus are running on the same server, I needed to create virtual hosts for them.</p>
+<p>So first I registered DNS records for both:</p>
+<ul>
+<li><code>grafana.your.domain</code></li>
+<li><code>prometheus.your.domain</code></li>
+</ul>
+<h2 id="hosting-grafana">Hosting Grafana</h2>
+<p>Grafana config (<code>/etc/grafana/grafana.ini</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[server]</span>
+<span style="color:#75715e">;protocol = http</span>
+<span style="color:#a6e22e">http_addr</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">localhost</span>
+<span style="color:#a6e22e">http_port</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">8001</span>
+<span style="color:#a6e22e">domain</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">grafana.your.domain</span>
+<span style="color:#75715e">;enforce_domain = false</span>
+<span style="color:#75715e">;root_url = %(protocol)s://%(domain)s:%(http_port)s/</span>
+<span style="color:#75715e">;serve_from_sub_path = false</span></code></pre></div>
+<p>NGINX config (<code>/etc/nginx/sites-available/grafana</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">server</span> {
+    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span>;
+    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span>;
+
+    <span style="color:#f92672">index</span> <span style="color:#e6db74">index.html</span> <span style="color:#e6db74">index.htm</span>;
+
+    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">grafana.your.domain</span>;
+
+    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+        <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://localhost:8001/</span>;
+    }
+}</code></pre></div>
+<h2 id="hosting-prometheus">Hosting Prometheus</h2>
+<p>Prometheus config you <a href="#setting-up-prometheus">already saw</a>, and here&rsquo;s NGINX config (<code>/etc/nginx/sites-available/prometheus</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">server</span> {
+    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span>;
+    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span>;
+
+    <span style="color:#f92672">index</span> <span style="color:#e6db74">index.html</span> <span style="color:#e6db74">index.htm</span>;
+
+    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">prometheus.your.domain</span>;
+
+    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+        <span style="color:#f92672">auth_basic</span> <span style="color:#e6db74">&#34;Prometheus&#34;</span>;
+        <span style="color:#f92672">auth_basic_user_file</span> <span style="color:#e6db74">/etc/nginx/.htpasswd-prometheus</span>;
+        <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://localhost:8002/</span>;
+    }
+}</code></pre></div>
+<p>Since Prometheus doesn&rsquo;t have any authentication, I would recommend you to rely at least on Basic authentication from NGINX. Here&rsquo;s how you can create a password mentioned in the config about:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#66d9ef">#</span> htpasswd <span style="color:#f92672">-</span>c <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/.</span>htpasswd<span style="color:#f92672">-</span>prometheus prometheus</code></pre></div>
+<p>Don&rsquo;t forget to set these credentials in Grafana for the Prometheus data source. And while you are there, you might also want to change the URL from <code>http://localhost:8002</code> to <code>http://prometheus.your.domain</code>.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/devops/">devops</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a><a class="tag" href="https://retifrav.github.io/tags/linux/">linux</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <script>
+  var id =  50 ;
+
+  if (id)
+  {
+    let url = "https://github.com/retifrav/retifrav.github.io/issues/".concat(id);
+    let api_url = "https://api.github.com/repos/retifrav/retifrav.github.io/issues/".concat(id, "/comments");
+    
+    var commentsDiv = document.getElementById("comments");
+
+    let xhr = new XMLHttpRequest();
+    xhr.responseType = "json";
+    xhr.open("GET", api_url);
+    xhr.setRequestHeader("Accept", "application/vnd.github.v3.html+json");
+    xhr.send();
+
+    xhr.onload = function()
+    {
+      if (xhr.status != 200)
+      {
+        let errorText = document.createElement("p");
+        errorText.innerHTML = "<i>Comments for this post yet are not opened yet (or you have GitHub scripts disabled).</i>";
+        commentsDiv.appendChild(errorText);
+      }
+      else
+      {
+        let comments = xhr.response;
+
+        let mainHeader = document.createElement("h2");
+        mainHeader.innerHTML = "Comments: ".concat(comments.length);
+        commentsDiv.appendChild(mainHeader);
+
+        let issueLink = document.createElement("p");
+        issueLink.innerHTML = "<i>You can leave a comment using this <a href='".concat(url, "'>GitHub issue</a>.</i>");
+        commentsDiv.appendChild(issueLink);
+        
+        comments.forEach(function(comment)
+        {
+            let commentContent = document.createElement("div");
+            commentContent.setAttribute('class', 'gh-comment')
+            commentContent.innerHTML = "".concat(
+                "<div class='gh-header'>",
+                  "<img src='", comment.user.avatar_url, "' />",
+                  "<div style='margin:auto 0;'>",
+                    "<b><a class='gh-username' href='", comment.user.html_url, "'>", comment.user.login, "</a></b>",
+                    " commented at <em>", new Date(comment.created_at), "</em>",
+                  "</div>",
+                "</div>",
+                "<div class='gh-body'>",
+                  comment.body_html,
+                "</div>"
+            );
+            commentsDiv.appendChild(commentContent);
+        });
+      }
+    };
+
+    xhr.onerror = function()
+    {
+      let errorText = document.createElement("p");
+      errorText.innerHTML = "<i>Some error loading comments.</i>";
+      commentsDiv.appendChild(errorText);
+    };
+  }
+</script>
+
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2021,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/297" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (60)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (38)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (31)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (21)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (20)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (13)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (5)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

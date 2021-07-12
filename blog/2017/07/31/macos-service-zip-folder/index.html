@@ -1,0 +1,349 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Mac OS service to ZIP a folder | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2017/07/31/macos-service-zip-folder/" />
+
+    <meta name="generator" content="Hugo 0.84.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Mac OS service to ZIP a folder" />
+<meta property="og:description" content="Mac OS has integrated Archive Utility for packing files and folders into archives. It works fine, but what I don&rsquo;t like about it, is that it packs not only files and folders I want to pack, but also hidden system stuff like __MACOSX folders and .DS_Store files. You can use some 3rd-party archiver instead (Keka is a very good one) that provides the possibility to exclude such files, but this is also possible to achieve with the integrated ZIP utility." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2017/07/31/macos-service-zip-folder/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2017-07-31T09:34:40&#43;02:00" />
+<meta property="article:modified_time" content="2017-07-31T09:34:40&#43;02:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2017/07/31/macos-service-zip-folder/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Mac OS service to ZIP a folder</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2017-07-31 09:34:40 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 5 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>Mac OS has integrated <strong>Archive Utility</strong> for packing files and folders into archives. It works fine, but what I don&rsquo;t like about it, is that it packs not only files and folders I want to pack, but also hidden system stuff like <code>__MACOSX</code> folders and <code>.DS_Store</code> files. You can use some 3rd-party archiver instead (<a href="http://www.kekaosx.com/en/">Keka</a> is a very good one) that provides the possibility to exclude such files, but this is also possible to achieve with the integrated <strong>ZIP</strong> utility.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#zip-utility-in-terminal">ZIP utility in Terminal</a>
+      <ul>
+        <li><a href="#dataforks">Dataforks</a></li>
+      </ul>
+    </li>
+    <li><a href="#mac-os-service">Mac OS service</a></li>
+  </ul>
+</nav>
+<h1 id="zip-utility-in-terminal">ZIP utility in Terminal</h1>
+<p>First, let me show you those system files in an actual archive.</p>
+<p>So, let&rsquo;s take some folder with files in it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">user@MacBook-Pro:~/Desktop$ ls -la somefolder/
+total <span style="color:#ae81ff">80</span>
+drwxr-xr-x  <span style="color:#ae81ff">6</span> user  staff   204B Jul <span style="color:#ae81ff">31</span> 09:39 ./
+drwx------+ <span style="color:#ae81ff">7</span> user  staff   238B Jul <span style="color:#ae81ff">31</span> 09:48 ../
+-rw-r--r--@ <span style="color:#ae81ff">1</span> user  staff   6.0K Jul <span style="color:#ae81ff">31</span> 09:38 .DS_Store
+-rw-r--r--  <span style="color:#ae81ff">1</span> user  staff   9.7K Jul <span style="color:#ae81ff">30</span> 20:29 and-one-more.markdown
+-rw-r--r--  <span style="color:#ae81ff">1</span> user  staff    13K Jul <span style="color:#ae81ff">21</span> 17:02 another-text.markdown
+-rw-r--r--  <span style="color:#ae81ff">1</span> user  staff   1.1K Jul <span style="color:#ae81ff">12</span> 11:21 some-text.markdown</code></pre></div>
+<p>Now we right-click on this folder in <strong>Finder</strong> and press standard <code>Compress &quot;somefolder&quot;</code>. Archive <code>somefolder.zip</code> will be created. Let&rsquo;s inspect it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">user@MacBook-Pro:~/Desktop$ zipinfo somefolder.zip 
+Archive:  somefolder.zip
+Zip file size: <span style="color:#ae81ff">11704</span> bytes, number of entries: <span style="color:#ae81ff">8</span>
+drwxr-xr-x  2.1 unx        <span style="color:#ae81ff">0</span> bx stor 17-Jul-31 09:39 somefolder/
+-rw-r--r--  2.1 unx     <span style="color:#ae81ff">6148</span> bX defN 17-Jul-31 09:38 somefolder/.DS_Store
+drwxrwxr-x  2.1 unx        <span style="color:#ae81ff">0</span> bx stor 17-Jul-31 10:05 __MACOSX/
+drwxrwxr-x  2.1 unx        <span style="color:#ae81ff">0</span> bx stor 17-Jul-31 10:05 __MACOSX/somefolder/
+-rw-r--r--  2.1 unx      <span style="color:#ae81ff">120</span> bX defN 17-Jul-31 09:38 __MACOSX/somefolder/._.DS_Store
+-rw-r--r--  2.1 unx     <span style="color:#ae81ff">9972</span> bX defN 17-Jul-30 20:29 somefolder/and-one-more.markdown
+-rw-r--r--  2.1 unx    <span style="color:#ae81ff">12989</span> bX defN 17-Jul-21 17:02 somefolder/another-text.markdown
+-rw-r--r--  2.1 unx     <span style="color:#ae81ff">1130</span> bX defN 17-Jul-12 11:21 somefolder/some-text.markdown
+<span style="color:#ae81ff">8</span> files, <span style="color:#ae81ff">30359</span> bytes uncompressed, <span style="color:#ae81ff">10402</span> bytes compressed:  65.7%</code></pre></div>
+<p>As you can see, beside the actual files there is some system stuff inside the archive.</p>
+<p>Okay, now here&rsquo;s how to <a href="https://github.com/retifrav/scraps/blob/master/_Mac%20OS/mac-os-terminal-recipes.md#zip-files">zip a folder</a> in Terminal, excluding system files:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">zip -r9 folderToArchive.zip folderToArchive -x <span style="color:#e6db74">&#34;*.DS_Store&#34;</span></code></pre></div>
+<p>Let&rsquo;s inspect the archive now:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">user@MacBook-Pro:~/Desktop$ zipinfo somefolder.zip 
+Archive:  somefolder.zip
+Zip file size: <span style="color:#ae81ff">10912</span> bytes, number of entries: <span style="color:#ae81ff">4</span>
+drwxr-xr-x  3.0 unx        <span style="color:#ae81ff">0</span> bx stor 17-Jul-31 09:39 somefolder/
+-rw-r--r--  3.0 unx     <span style="color:#ae81ff">9972</span> tx defX 17-Jul-30 20:29 somefolder/and-one-more.markdown
+-rw-r--r--  3.0 unx    <span style="color:#ae81ff">12989</span> tx defX 17-Jul-21 17:02 somefolder/another-text.markdown
+-rw-r--r--  3.0 unx     <span style="color:#ae81ff">1130</span> tx defX 17-Jul-12 11:21 somefolder/some-text.markdown
+<span style="color:#ae81ff">4</span> files, <span style="color:#ae81ff">24091</span> bytes uncompressed, <span style="color:#ae81ff">10170</span> bytes compressed:  57.8%</code></pre></div>
+<p>As you can see, now our archive contains only files we wanted to pack there.</p>
+<h2 id="dataforks">Dataforks</h2>
+<p>From the <code>man zip</code> you can discover this section:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">-df
+    --datafork
+        <span style="color:#f92672">[</span>MacOS<span style="color:#f92672">]</span> Include only data-fork of files zipped into the archive.   Good  <span style="color:#66d9ef">for</span>
+        exporting  files  to  foreign  operating-systems.   Resource-forks  will  be
+        ignored at all.</code></pre></div>
+<p>Which implies that a more correct way to exclude system files from packing is to use this option instead of a hardcoded <code>-x</code>. However, trying to use <code>-df</code> option gives me this error:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">zip error: Invalid command arguments <span style="color:#f92672">(</span>specify just one action<span style="color:#f92672">)</span></code></pre></div>
+<p>or, in case of a long option <code>--datafork</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">zip error: Invalid command arguments <span style="color:#f92672">(</span>long option <span style="color:#e6db74">&#39;datafork&#39;</span> not supported<span style="color:#f92672">)</span></code></pre></div>
+<p>Some *nux&rsquo;es legacy, huh? Giving the documentation for something that is not there.</p>
+<p>But anyway, the point here - I have to use <code>-x &quot;*.DS_Store&quot;</code>.</p>
+<h1 id="mac-os-service">Mac OS service</h1>
+<p>Now we will create a Mac OS service around this, so we could perform this command by right-clicking on folders in <strong>Finder</strong>.</p>
+<p>Here&rsquo;s the workflow:</p>
+
+
+
+    <img class="image-post" src="/blog/2017/07/31/macos-service-zip-folder/images/macos-zip-workflow.png" alt="Mac OS service workflow to ZIP a folder">
+
+
+<p>And here&rsquo;s the main script:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-applescript" data-lang="applescript"><span style="color:#66d9ef">on</span> run {input, parameters}
+    
+    <span style="color:#66d9ef">set</span> logScript <span style="color:#66d9ef">to</span> load script <span style="color:#e6db74">&#34;/path/to/your/scripts/write2log.scpt&#34;</span>
+    <span style="color:#66d9ef">set</span> fnameScript <span style="color:#66d9ef">to</span> load script <span style="color:#e6db74">&#34;/path/to/your/scripts/getFname.scpt&#34;</span>
+    
+    <span style="color:#75715e">#write2log(&#34;/path/to/your/logs/some.log&#34;, input) of logScript</span>
+    
+    <span style="color:#66d9ef">if</span> (count <span style="color:#66d9ef">of</span> input) <span style="color:#f92672">is not</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">then</span> <span style="color:#75715e"># it was easier to implement it with just one folder</span>
+        display dialog <span style="color:#e6db74">&#34;You can archive only one folder.&#34;</span> <span style="color:#66d9ef">with</span> icon stop <span style="color:#66d9ef">with</span> <span style="color:#a6e22e">title</span> <span style="color:#e6db74">&#34;Error&#34;</span> buttons {<span style="color:#e6db74">&#34;Okay, jeez&#34;</span>} default button {<span style="color:#e6db74">&#34;Okay, jeez&#34;</span>}
+        <span style="color:#66d9ef">return</span>
+    <span style="color:#66d9ef">else</span>
+        <span style="color:#66d9ef">set</span> filePath <span style="color:#66d9ef">to</span> POSIX <span style="color:#a6e22e">path</span> <span style="color:#66d9ef">of</span> input
+        <span style="color:#66d9ef">set</span> fname <span style="color:#66d9ef">to</span> getFolderName(filePath) <span style="color:#66d9ef">of</span> fnameScript <span style="color:#75715e"># gets &#34;folder&#34; from &#34;/some/path/to/folder/&#34;</span>
+        <span style="color:#66d9ef">set</span> archName <span style="color:#66d9ef">to</span> text <span style="color:#ae81ff">1</span> thru <span style="color:#f92672">-</span><span style="color:#ae81ff">2</span> <span style="color:#66d9ef">of</span> filePath <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34;.zip&#34;</span> <span style="color:#75715e"># replace last &#34;/&#34; with &#34;.zip&#34;</span>
+        <span style="color:#75715e">#write2log(&#34;/path/to/your/logs/some.log&#34;, archName) of logScript</span>
+        <span style="color:#75715e"># prepare the command: set the context to the same directory and zip the folder</span>
+        <span style="color:#66d9ef">set</span> cmd <span style="color:#66d9ef">to</span> <span style="color:#e6db74">&#34;cd &#34;</span> <span style="color:#f92672">&amp;</span> quoted form <span style="color:#66d9ef">of</span> filePath <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34;..; zip -r9 &#34;</span> <span style="color:#f92672">&amp;</span> fname <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34;.zip &#34;</span> <span style="color:#f92672">&amp;</span> fname <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34; -x \&#34;*.DS_Store\&#34;&#34;</span>
+        <span style="color:#75715e">#write2log(&#34;/path/to/your/logs/some.log&#34;, cmd) of logScript</span>
+        <span style="color:#75715e"># execute command</span>
+        do shell script cmd
+        <span style="color:#75715e"># preparation for the result window</span>
+        <span style="color:#66d9ef">set</span> rez <span style="color:#66d9ef">to</span> do shell script <span style="color:#e6db74">&#34;du -h &#34;</span> <span style="color:#f92672">&amp;</span> quoted form <span style="color:#66d9ef">of</span> archName <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34; | awk &#39;{print $1}&#39;&#34;</span>
+        display dialog <span style="color:#e6db74">&#34;Archive was successfully created: &#34;</span> <span style="color:#f92672">&amp;</span> archName <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34; (&#34;</span> <span style="color:#f92672">&amp;</span> rez <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34;)&#34;</span> <span style="color:#66d9ef">with</span> <span style="color:#a6e22e">title</span> <span style="color:#e6db74">&#34;Job&#39;s done&#34;</span> buttons {<span style="color:#e6db74">&#34;OK&#34;</span>} default button <span style="color:#e6db74">&#34;OK&#34;</span>
+    <span style="color:#66d9ef">end</span> <span style="color:#66d9ef">if</span>
+<span style="color:#66d9ef">end</span> run</code></pre></div>
+<p>Function <code>getFolderName(filePath)</code> is available from <a href="https://github.com/retifrav/ASs/blob/master/scripts/get-folder-name.applescript">this script</a>.</p>
+<p>I want to give you some explanation about <code>cmd</code>. After all substitutes it looks like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">cd /path/to/the/folderToArchive/..; zip -r9 folderToArchive.zip folderToArchive -x <span style="color:#e6db74">&#34;*.DS_Store&#34;</span></code></pre></div>
+<p>First half (the part before <code>;</code>) of the command is an environment (working directory) setting - we go the target directory and then we go one level up (<code>..</code>). That way <code>zip</code> utility will &ldquo;<em>know</em>&rdquo; the path where to operate. Otherwise it will try to create archive somewhere in the system path and will fail with an access error. Of course, you can specify the full path where to create archive, but then inside the archive you will get the full hierarchy of folders. And also there is no need to provide the full path to folder that needs to be archived as we are already inside that directory.</p>
+<p>Currently this service works only with a single folder, because in was easier that way and also because I only need that functionality for a single folder. I usually don&rsquo;t pack several folders into one archive.</p>
+<p>As you might have noticed, I added a dialog to the end of workflow, showing the result of packing. Here&rsquo;s how it looks like in action:</p>
+
+
+
+    <img class="image-post" src="/blog/2017/07/31/macos-service-zip-folder/images/macos-zip-service.gif" alt="Mac OS service to ZIP a folder">
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/macos/">macos</a><a class="tag" href="https://retifrav.github.io/tags/applescript/">applescript</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2021,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/297" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (60)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (38)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (31)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (21)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (20)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (13)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (5)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/microsoft">microsoft (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

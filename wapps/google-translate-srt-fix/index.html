@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+
+<head>
+
+  <meta charset="utf-8">
+  <title>Исправление SRT-скрипта после перевода в Google Translate</title>
+  <meta name="author" content="retif">
+
+  <meta name="description" content="Приведение результатов перевода Google Translate к формату SRT">
+  
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <link href="/favicon.png" rel="icon">
+
+  <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+  <!-- Optional theme -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+
+  <style>
+    .input-group-addon, .form-control, .btn {
+  		height: 34px;
+  	}
+  	.input-group-addon {
+  		font-size: 16px;
+  	}
+    textarea {
+        font-size: 16px !important;
+        font-family: Courier;
+    }
+  </style>
+  
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag("js", new Date());
+    gtag("config", "UA-53340325-1");
+  </script>
+
+</head>
+
+<body style="font-family:verdana; font-size:17px;">
+
+<div class="container" style="width:80%;">
+
+<div class="jumbotron" style="margin-bottom:20px;">
+  <h1>Починка SRT-скрипта</h1>
+  <p>приведение поломанного скрипта субтитров к формату SRT (исправление таймстампов)</p>
+</div>
+
+<noscript>
+	<div class="alert alert-danger" role="alert">Для работы скриптов на странице в вашем браузере должен быть включён JavaScript.</div>
+</noscript>
+
+<p>
+	Google Translate после перевода файла SRT ломает скрипт субтитров, из-за чего он перестаёт восприниматься приложениями, плеерами и вообще. На этой странице вы можете привести результаты перевода обратно к нормальному SRT.
+</p>
+
+<p style="margin-bottom:20px;">
+	Вставьте результат перевода субтитров в левое поле ввода, и форматированный результат автоматически появится в правом.
+</p>
+
+<div style="margin-bottom:15px;">
+    <button type="button" id="btn_advanced" class="btn btn-default" onclick="show_advanced();">
+        Дополнительные настройки для продвинутых
+    </button>
+    <div id="dv_regexp" style="display:none;">
+        <p><span class="label label-info">Если Гугол начнёт ломать время в субтитрах как-то иначе, то вы можете изменить регулярное выражение для починки</span>
+        </p>
+        <div class="input-group">
+            <span class="input-group-addon">Регулярное выражение</span>
+            <input type="text" id="regexp_val" class="form-control" value="\d{2}: \d{2}: \d{2}.\d{3} -> \d{2}: \d{2}: \d{2}.\d{3}" />
+            <span class="input-group-addon">/g</span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+
+    <div class="col-md-6">
+        <span class="label label-primary">Результат перевода Google Translate</span>
+        <div style="margin:auto; margin-bottom:20px;">
+            <textarea id="translated" class="form-control" rows="20">
+351
+00: 57: 15,600 -> 00: 57: 21.840
+I would ... find the bastard, and see
+that he never did it again.
+
+352
+00: 57: 24.800 -> 00: 57: 28.560
+Promise me that you do not do anything stupid.
+
+353
+00: 57: 29.840 -> 00: 57: 32.920
+Thanks for the ride.
+            </textarea>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <span class="label label-success">Исправленный скрипт SRT</span>
+        <div style="margin:auto; margin-bottom:20px;">
+            <textarea id="formatted" readonly class="form-control" rows="20">
+351
+00:57:15,600 --> 00:57:21,840
+I would ... find the bastard, and see
+that he never did it again.
+
+352
+00:57:24,800 --> 00:57:28,560
+Promise me that you do not do anything stupid.
+
+353
+00:57:29,840 --> 00:57:32,920
+Thanks for the ride.
+            </textarea>
+        </div>
+    </div>
+    
+</div>
+
+<div style="margin-top:20px;">
+    <p class="text-muted credit pull-right" style="font-size:12px;">
+        Страница создана в дополнение к записи в блоге <strong><a target="_blank" href="/blog/2015/03/21/fix-timing-in-translated-subs/" class="text-muted credit">Declaration of VAR</a></strong>
+    </p>
+</div>
+
+<script type="text/javascript">
+
+    $("#translated").on("change keyup paste", function() {        
+        function fixTime(match) {
+            return match.replace(/: /g, ":").replace("->", "--\>").replace(/\./g, ",");
+        }
+        $("#formatted").val($(this).val().replace(
+            new RegExp(
+                $("#regexp_val").val().trim(),
+                "g"
+                ),
+            fixTime
+            ));
+    });
+    
+    function show_advanced() {
+        $("#btn_advanced").css("display", "none");
+        $("#dv_regexp").css("display", "table");
+    }
+
+</script>
+
+</body>
+
+</html>
