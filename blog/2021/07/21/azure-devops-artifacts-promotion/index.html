@@ -1,0 +1,518 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Azure DevOps Artifacts package promotion | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2021/07/21/azure-devops-artifacts-promotion/" />
+
+    <meta name="generator" content="Hugo 0.84.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Azure DevOps Artifacts package promotion" />
+<meta property="og:description" content="Some time after we started to publish our packages to Azure DevOps Artifacts, users told us that they cannot see new versions of the packages until those are &ldquo;promoted to Release view&rdquo;. And indeed, there is a concept of &ldquo;views&rdquo;, and packages can be &ldquo;promoted&rdquo; to certain views:
+
+
+
+    
+
+
+Apparently, that is the case when someone consumes packages not directly from your feed, but from their own feed with your feed being an upstream source." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2021/07/21/azure-devops-artifacts-promotion/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2021-07-21T14:06:58&#43;02:00" />
+<meta property="article:modified_time" content="2021-07-21T14:06:58&#43;02:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2021/07/21/azure-devops-artifacts-promotion/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Azure DevOps Artifacts package promotion</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2021-07-21 14:06:58 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 10 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>Some time after we started to publish our packages to <a href="/blog/2020/03/05/azure-devops-nuget-npm-cpp/">Azure DevOps Artifacts</a>, users told us that they cannot see new versions of the packages until those are &ldquo;<em>promoted to Release view</em>&rdquo;. And indeed, there is a concept of &ldquo;views&rdquo;, and packages can be &ldquo;promoted&rdquo; to certain views:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/07/21/azure-devops-artifacts-promotion/images/package-version-promotion.png" alt="Azure DevOps Artifacts package version promotion">
+
+
+<p>Apparently, that is the case when someone consumes packages not directly from your feed, but from their own feed with your feed being an upstream source.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#what-are-these">What are these</a>
+      <ul>
+        <li><a href="#feed-views">Feed views</a></li>
+        <li><a href="#upstream-source">Upstream source</a></li>
+      </ul>
+    </li>
+    <li><a href="#how-to-promote-a-package-version-to-a-certain-view">How to promote a package version to a certain view</a>
+      <ul>
+        <li><a href="#endpoint">Endpoint</a></li>
+        <li><a href="#authentication">Authentication</a></li>
+        <li><a href="#api-version">API version</a></li>
+        <li><a href="#request-body">Request body</a></li>
+        <li><a href="#package-name-and-version">Package name and version</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h1 id="what-are-these">What are these</h1>
+<h2 id="feed-views">Feed views</h2>
+<p>So, as it turns out, package feeds have &ldquo;<a href="https://docs.microsoft.com/en-us/azure/devops/artifacts/concepts/views">views</a>&rdquo;. The default set is:</p>
+<ul>
+<li><code>Local</code></li>
+<li><code>Prerelease</code></li>
+<li><code>Release</code></li>
+</ul>
+<p>More views can be added in <em>Feed settings</em>, if needed.</p>
+<p>The point of having these views in the first place is, apparently, to restrict users from consuming non-production-ready versions of a package from an upstream source. So for example only those versions that have <code>Release</code> view are ready to be used in production.</p>
+<p>But why would anyone publish a package that is not ready to be used in production? I would expect every new package version contents to be tested before publishing, and so it is published only if everything&rsquo;s fine. So, what is&hellip; oh well.</p>
+<p>By default new versions of a package get <code>Local</code> view. There is a setting to assign a different default view:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/07/21/azure-devops-artifacts-promotion/images/feed-default-view.png" alt="Azure DevOps Artifacts feed default view">
+
+
+<p>But having set <code>Release</code> view to be the default one, we still get new published packages versions with <code>Local</code> view only, so they still need to be explicitly promoted to <code>Release</code> view. Thank you, Microsoft?</p>
+<h2 id="upstream-source">Upstream source</h2>
+<p>A feed can be added as an <a href="https://docs.microsoft.com/en-us/azure/devops/artifacts/concepts/upstream-sources">upstream source</a> in another feed, and upon doing so one can select a view, which defaults to <code>Release</code>:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/07/21/azure-devops-artifacts-promotion/images/add-new-upstream-source.png" alt="Azure DevOps Artifacts add new upstream source">
+
+
+<p>It is my understanding that this is what our users did, when they were adding our feed as an upstream source, and that is why they don&rsquo;t see new published versions of our packages in their feed, until we promote them to <code>Release</code> view.</p>
+<p>So the easiest solution here would be for our users to just re-add our feed as an upstream source with <code>Local</code> view selected. We only publish production-ready packages, so that would be a much better option than promoting every single package version to <code>Release</code> view (<em>kind of a stupid exercise in this case</em>). Although, it could be that I&rsquo;m missing something about the point of having these views and the way they work with upstream sources.</p>
+<p>Either way, let&rsquo;s see how the process of promoting package versions to a certain view can be automated (<em>as it would be crazy to perform this promotion manually, wouldn&rsquo;t it</em>).</p>
+<h1 id="how-to-promote-a-package-version-to-a-certain-view">How to promote a package version to a certain view</h1>
+<p>Manual process is described <a href="https://docs.microsoft.com/en-us/azure/devops/artifacts/feeds/views#promote-a-package-to-prerelease-or-release-view">here</a>, but we of course will be doing this in an automated manner via <a href="https://docs.microsoft.com/en-us/azure/devops/artifacts/feeds/views#promote-a-package-using-the-rest-api">Azure DevOps REST API</a>.</p>
+<h2 id="endpoint">Endpoint</h2>
+<p>First thing you need is the endpoint, and you should notice that it is different for promoting NuGet and npm packages. Take a close look at the URLs, as I overlooked it at first.</p>
+<p>What you might still miss is that the example URL for npm doesn&rsquo;t contain <code>/{project}/</code> part, while <strong>it is actually required</strong>. Here&rsquo;s a screenshot of the documentation page:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/07/21/azure-devops-artifacts-promotion/images/wrong-promotion-url.png" alt="Azure DevOps Artifacts wrong promotion URL" style="border:1px solid black;">
+
+
+<p>Thank you, Microsoft.</p>
+<h2 id="authentication">Authentication</h2>
+<p>Having gotten your <a href="/blog/2020/03/05/azure-devops-nuget-npm-cpp/#issuing-a-new-pat-in-azure-devops">Personal Access Token</a>, you might think that you need to set it in <code>Authorization</code> header with <code>Bearer</code> type, like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ curl <span style="color:#e6db74">&#34;https://feeds.dev.azure.com/YOUR-ORGANIZATION/YOUR-PROJECT/_apis/packaging/feeds&#34;</span> \
+<span style="color:#f92672">-</span>H &#39;Authorization<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Bearer</span> <span style="color:#66d9ef">YOUR-PAT</span><span style="color:#960050;background-color:#1e0010">&#39;</span></code></pre></div>
+<p>But nope, that&rsquo;s not it, as it will only give you <code>302</code> redirection to the authentication page.</p>
+<p>What you should set instead is this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ curl <span style="color:#e6db74">&#34;https://feeds.dev.azure.com/YOUR-ORGANIZATION/YOUR-PROJECT/_apis/packaging/feeds&#34;</span> \
+<span style="color:#f92672">-</span>u &#39;YOUR<span style="color:#f92672">-</span><span style="color:#a6e22e">PAT</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">&#39;</span></code></pre></div>
+<p>Yep, you need to provide your PAT as user login with empty password. What is the actual fuck.</p>
+<h2 id="api-version">API version</h2>
+<p>Next thing you need to know is the API version, because if you&rsquo;ll send your request without specifying the API version, you&rsquo;ll get a <code>400 Bad Request</code> error like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;success&#34;</span>: <span style="color:#e6db74">&#34;false&#34;</span>,
+  <span style="color:#f92672">&#34;error&#34;</span>: <span style="color:#e6db74">&#34;BadRequest&#34;</span>,
+  <span style="color:#f92672">&#34;reason&#34;</span>: <span style="color:#e6db74">&#34;No api-version was supplied for the \&#34;PATCH\&#34; request. The version must be supplied either as part of the Accept header (e.g. \&#34;application/json; api-version=1.0\&#34;) or as a query parameter (e.g. \&#34;?api-version=1.0\&#34;).&#34;</span>,
+  <span style="color:#f92672">&#34;innerException&#34;</span>: <span style="color:#66d9ef">null</span>,
+  <span style="color:#f92672">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;No api-version was supplied for the \&#34;PATCH\&#34; request. The version must be supplied either as part of the Accept header (e.g. \&#34;application/json; api-version=1.0\&#34;) or as a query parameter (e.g. \&#34;?api-version=1.0\&#34;).&#34;</span>,
+  <span style="color:#f92672">&#34;typeName&#34;</span>: <span style="color:#e6db74">&#34;Microsoft.VisualStudio.Services.WebApi.VssVersionNotSpecifiedException, Microsoft.VisualStudio.Services.WebApi, Version=14.0.0.0, Culture=neutral, PublicKeyToken=n0k85f74j3d50ag5&#34;</span>,
+  <span style="color:#f92672">&#34;typeKey&#34;</span>: <span style="color:#e6db74">&#34;VssVersionNotSpecifiedException&#34;</span>,
+  <span style="color:#f92672">&#34;errorCode&#34;</span>: <span style="color:#ae81ff">0</span>,
+  <span style="color:#f92672">&#34;eventId&#34;</span>: <span style="color:#ae81ff">3000</span>
+}</code></pre></div>
+<p>Okay, where to find which API version to use? Well, I don&rsquo;t know, the only list I found is <a href="https://docs.microsoft.com/en-us/rest/api/azure/devops#api-and-tfs-version-mapping">this one</a>, and the latest version there is <code>5.1</code>. Let&rsquo;s try that one then (<code>?api-version=5.1</code>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;success&#34;</span>: <span style="color:#e6db74">&#34;false&#34;</span>,
+  <span style="color:#f92672">&#34;error&#34;</span>: <span style="color:#e6db74">&#34;BadRequest&#34;</span>,
+  <span style="color:#f92672">&#34;reason&#34;</span>: <span style="color:#e6db74">&#34;The requested version \&#34;5.1\&#34; of the resource is under preview. The -preview flag must be supplied in the api-version for such requests. For example: \&#34;5.1-preview\&#34;&#34;</span>,
+  <span style="color:#f92672">&#34;innerException&#34;</span>: <span style="color:#66d9ef">null</span>,
+  <span style="color:#f92672">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;The requested version \&#34;5.1\&#34; of the resource is under preview. The -preview flag must be supplied in the api-version for such requests. For example: \&#34;5.1-preview\&#34;&#34;</span>,
+  <span style="color:#f92672">&#34;typeName&#34;</span>: <span style="color:#e6db74">&#34;Microsoft.VisualStudio.Services.WebApi.VssInvalidPreviewVersionException, Microsoft.VisualStudio.Services.WebApi, Version=14.0.0.0, Culture=neutral, PublicKeyToken=n0k85f74j3d50ag5&#34;</span>,
+  <span style="color:#f92672">&#34;typeKey&#34;</span>: <span style="color:#e6db74">&#34;VssInvalidPreviewVersionException&#34;</span>,
+  <span style="color:#f92672">&#34;errorCode&#34;</span>: <span style="color:#ae81ff">0</span>,
+  <span style="color:#f92672">&#34;eventId&#34;</span>: <span style="color:#ae81ff">3000</span>
+}</code></pre></div>
+<p>Hmm, okay, this one is in preview status, and we don&rsquo;t want to use preview version of the API in production, do we, so let&rsquo;s try <code>5.0</code> then:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;success&#34;</span>: <span style="color:#e6db74">&#34;false&#34;</span>,
+  <span style="color:#f92672">&#34;error&#34;</span>: <span style="color:#e6db74">&#34;BadRequest&#34;</span>,
+  <span style="color:#f92672">&#34;reason&#34;</span>: <span style="color:#e6db74">&#34;The requested version \&#34;5.0\&#34; of the resource is under preview. The -preview flag must be supplied in the api-version for such requests. For example: \&#34;5.0-preview\&#34;&#34;</span>,
+  <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>
+}</code></pre></div>
+<p>Hmmmm, okay, this one is in preview status too, let&rsquo;s try <code>4.1</code> then:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;success&#34;</span>: <span style="color:#e6db74">&#34;false&#34;</span>,
+  <span style="color:#f92672">&#34;error&#34;</span>: <span style="color:#e6db74">&#34;BadRequest&#34;</span>,
+  <span style="color:#f92672">&#34;reason&#34;</span>: <span style="color:#e6db74">&#34;The requested version \&#34;4.1\&#34; of the resource is under preview. The -preview flag must be supplied in the api-version for such requests. For example: \&#34;4.1-preview\&#34;&#34;</span>,
+  <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>
+}</code></pre></div>
+<p>Hmmmmmm, okay, this one is in preview status as well, let&rsquo;s try <code>4.0</code> then:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;success&#34;</span>: <span style="color:#e6db74">&#34;false&#34;</span>,
+  <span style="color:#f92672">&#34;error&#34;</span>: <span style="color:#e6db74">&#34;BadRequest&#34;</span>,
+  <span style="color:#f92672">&#34;reason&#34;</span>: <span style="color:#e6db74">&#34;The requested version \&#34;4.0\&#34; of the resource is under preview. The -preview flag must be supplied in the api-version for such requests. For example: \&#34;4.0-preview\&#34;&#34;</span>,
+  <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>
+}</code></pre></div>
+<p>Блядь. Okay, let&rsquo;s try <code>3.2</code> then:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;success&#34;</span>: <span style="color:#e6db74">&#34;false&#34;</span>,
+  <span style="color:#f92672">&#34;error&#34;</span>: <span style="color:#e6db74">&#34;BadRequest&#34;</span>,
+  <span style="color:#f92672">&#34;reason&#34;</span>: <span style="color:#e6db74">&#34;The requested version \&#34;3.2\&#34; of the resource is under preview. The -preview flag must be supplied in the api-version for such requests. For example: \&#34;3.2-preview\&#34;&#34;</span>,
+  <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>
+}</code></pre></div>
+<p>Да сука! Okay, let&rsquo;s try <code>3.1</code> then:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;success&#34;</span>: <span style="color:#e6db74">&#34;false&#34;</span>,
+  <span style="color:#f92672">&#34;error&#34;</span>: <span style="color:#e6db74">&#34;BadRequest&#34;</span>,
+  <span style="color:#f92672">&#34;reason&#34;</span>: <span style="color:#e6db74">&#34;The requested version \&#34;3.1\&#34; of the resource is under preview. The -preview flag must be supplied in the api-version for such requests. For example: \&#34;3.1-preview\&#34;&#34;</span>,
+  <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>
+}</code></pre></div>
+<p>Пиздец, блядь! Okay, let&rsquo;s try <code>3.0</code> then</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;success&#34;</span>: <span style="color:#e6db74">&#34;false&#34;</span>,
+  <span style="color:#f92672">&#34;error&#34;</span>: <span style="color:#e6db74">&#34;BadRequest&#34;</span>,
+  <span style="color:#f92672">&#34;reason&#34;</span>: <span style="color:#e6db74">&#34;The requested version \&#34;3.0\&#34; of the resource is under preview. The -preview flag must be supplied in the api-version for such requests. For example: \&#34;3.0-preview\&#34;&#34;</span>,
+  <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>
+}</code></pre></div>
+<p>Вы ебанулись там что ли, у вас хоть одна версия вообще вышла в релиз? Okay, let&rsquo;s try&hellip; no, fuck it, I got the point, there is no a single non-preview version of the API, and requests to <code>1.0</code> just fail, as apparently this one is ancient history already, so I can just as well take the latest one. Which is not <code>5.1</code>, by the way, but <code>6.1</code> (<em>how should I have known that</em>), so resulting URL query is <code>?api-version=6.1-preview</code>.</p>
+<h2 id="request-body">Request body</h2>
+<p>Documentation says &ldquo;<em>use JsonPatchOperation to construct the body</em>&rdquo; and links to different pages for each type of package, but actually this object is the same for all of them, so <a href="https://docs.microsoft.com/en-us/rest/api/azure/devops/artifactspackagetypes/npm/update%20package#jsonpatchoperation">here&rsquo;s the one</a> for npm.</p>
+<p>What you might overlook is that it needs to be wrapped into <code>views</code> object on the root level of the <a href="https://docs.microsoft.com/en-us/rest/api/azure/devops/artifactspackagetypes/npm/update%20package#request-body">JSON request body</a>, so here&rsquo;s the final JSON:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;views&#34;</span>:
+    {
+        <span style="color:#f92672">&#34;op&#34;</span>: <span style="color:#e6db74">&#34;add&#34;</span>,
+        <span style="color:#f92672">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/views/-&#34;</span>,
+        <span style="color:#f92672">&#34;value&#34;</span>: <span style="color:#e6db74">&#34;Release&#34;</span>
+    }
+}</code></pre></div>
+<p>Why <code>add</code> and not <code>replace</code>? Not sure, but if you&rsquo;ll try it, then you&rsquo;ll get:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;success&#34;</span>: <span style="color:#e6db74">&#34;false&#34;</span>,
+  <span style="color:#f92672">&#34;error&#34;</span>: <span style="color:#e6db74">&#34;BadRequest&#34;</span>,
+  <span style="color:#f92672">&#34;reason&#34;</span>: <span style="color:#e6db74">&#34;Operation &#39;Replace&#39; is not supported on views.&#34;</span>,
+  <span style="color:#f92672">&#34;innerException&#34;</span>: <span style="color:#66d9ef">null</span>,
+  <span style="color:#f92672">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;Operation &#39;Replace&#39; is not supported on views.&#34;</span>,
+  <span style="color:#f92672">&#34;typeName&#34;</span>: <span style="color:#e6db74">&#34;Microsoft.VisualStudio.Services.Packaging.Shared.WebApi.Exceptions.ViewOperationException, Microsoft.VisualStudio.Services.Packaging.Shared.WebApi, Version=14.0.0.0, Culture=neutral, PublicKeyToken=n0k85f74j3d50ag5&#34;</span>,
+  <span style="color:#f92672">&#34;typeKey&#34;</span>: <span style="color:#e6db74">&#34;ViewOperationException&#34;</span>,
+  <span style="color:#f92672">&#34;errorCode&#34;</span>: <span style="color:#ae81ff">0</span>,
+  <span style="color:#f92672">&#34;eventId&#34;</span>: <span style="color:#ae81ff">3000</span>
+}</code></pre></div>
+<p>Why <code>&quot;path&quot;: &quot;/views/-&quot;</code>? Gee, I don&rsquo;t know, because what&rsquo;s the point of wrapping this into <code>views</code> object then? The point of adding <code>-</code> to the end I do now: documentation says it&rsquo;s for taking the last element in the <code>views</code> array. Which begs for the question &ldquo;<em>why <code>add</code> and not <code>replace</code></em>&rdquo;.</p>
+<h2 id="package-name-and-version">Package name and version</h2>
+<p>If you used Azure DevOps REST API before, you might have been sending requests like this one to get a list of package versions:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">https:<span style="color:#f92672">//</span>feeds<span style="color:#f92672">.</span>dev<span style="color:#f92672">.</span>azure<span style="color:#f92672">.</span>com<span style="color:#f92672">/</span>ORGANIZATION<span style="color:#f92672">-</span>NAME<span style="color:#f92672">/</span>PROJECT<span style="color:#f92672">-</span>NAME<span style="color:#f92672">/</span>_apis<span style="color:#f92672">/</span>packaging<span style="color:#f92672">/</span>feeds<span style="color:#f92672">/</span>FEED<span style="color:#f92672">-</span>ID<span style="color:#f92672">/</span>packages<span style="color:#f92672">/</span><span style="color:#ae81ff">370</span>bf540<span style="color:#f92672">-</span>edf3<span style="color:#f92672">-</span><span style="color:#ae81ff">4105</span><span style="color:#f92672">-</span>a827<span style="color:#f92672">-</span><span style="color:#ae81ff">10962</span>g54e224<span style="color:#f92672">/</span>versions</code></pre></div>
+<p>or this one to get information about specific package version:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">https:<span style="color:#f92672">//</span>feeds<span style="color:#f92672">.</span>dev<span style="color:#f92672">.</span>azure<span style="color:#f92672">.</span>com<span style="color:#f92672">/</span>ORGANIZATION<span style="color:#f92672">-</span>NAME<span style="color:#f92672">/</span>PROJECT<span style="color:#f92672">-</span>NAME<span style="color:#f92672">/</span>_apis<span style="color:#f92672">/</span>packaging<span style="color:#f92672">/</span>feeds<span style="color:#f92672">/</span>FEED<span style="color:#f92672">-</span>ID<span style="color:#f92672">/</span>packages<span style="color:#f92672">/</span><span style="color:#ae81ff">370</span>bf540<span style="color:#f92672">-</span>edf3<span style="color:#f92672">-</span><span style="color:#ae81ff">4105</span><span style="color:#f92672">-</span>a827<span style="color:#f92672">-</span><span style="color:#ae81ff">10962</span>g54e224<span style="color:#f92672">/</span>versions<span style="color:#f92672">/</span>bt54ceww<span style="color:#f92672">-</span><span style="color:#ae81ff">0545</span><span style="color:#f92672">-</span><span style="color:#ae81ff">4001</span><span style="color:#f92672">-</span><span style="color:#ae81ff">8724</span><span style="color:#f92672">-</span><span style="color:#ae81ff">43</span>c18216ab5c</code></pre></div>
+<p>So here <code>370bf540-edf3-4105-a827-10962g54e224</code> is the package ID and <code>bt54ceww-0545-4001-8724-43c18216ab5c</code> is the ID of one of this package&rsquo;s versions.</p>
+<p>By the way, here there is no distinction between NuGet and npm packages, and endpoint URLs are the same for both, and they work in a consistent way, and IDs are the only thing that would be different (<em>obviously</em>). So, Microsoft, why the API for promotion <code>PATCH</code> requests is not like this?</p>
+<p>But anyway, let&rsquo;s now try to promote this version of the package (<em>which is npm, as you can see from the endpoint URL</em>):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ curl <span style="color:#f92672">-</span>X <span style="color:#e6db74">&#34;PATCH&#34;</span> <span style="color:#e6db74">&#34;https://pkgs.dev.azure.com/YOUR-ORGANIZATION/YOUR-PROJECT/_apis/packaging/feeds/FEED-ID/npm/370bf540-edf3-4105-a827-10962g54e224/versions/bt54ceww-0545-4001-8724-43c18216ab5c?api-version=6.1-preview&#34;</span> \
+<span style="color:#f92672">-</span>H &#39;Content<span style="color:#f92672">-</span><span style="color:#a6e22e">Type</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">application/json</span><span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#66d9ef">\</span>
+<span style="color:#f92672">-</span>u &#39;YOUR<span style="color:#f92672">-</span><span style="color:#a6e22e">PAT</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#66d9ef">\</span>
+<span style="color:#f92672">-</span>d $<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">{</span>
+  <span style="color:#e6db74">&#34;views&#34;</span><span style="color:#66d9ef">:</span> <span style="color:#f92672">{</span>
+    <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">op</span><span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">add</span><span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#f92672">,</span>
+    <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">path</span><span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">/views/-</span><span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#f92672">,</span>
+    <span style="color:#e6db74">&#34;value&#34;</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">Release</span><span style="color:#960050;background-color:#1e0010">&#34;</span>
+  <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span><span style="color:#960050;background-color:#1e0010">&#39;</span></code></pre></div>
+<p>The response will be:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;success&#34;</span>: <span style="color:#e6db74">&#34;false&#34;</span>,
+  <span style="color:#f92672">&#34;error&#34;</span>: <span style="color:#e6db74">&#34;BadRequest&#34;</span>,
+  <span style="color:#f92672">&#34;reason&#34;</span>: <span style="color:#e6db74">&#34;The package version &#39;bt54ceww-0545-4001-8724-43c18216ab5c&#39; is not a valid SemVer 2.0.0 version&#34;</span>,
+  <span style="color:#f92672">&#34;innerException&#34;</span>: <span style="color:#66d9ef">null</span>,
+  <span style="color:#f92672">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;The package version &#39;bt54ceww-0545-4001-8724-43c18216ab5c&#39; is not a valid SemVer 2.0.0 version&#34;</span>,
+  <span style="color:#f92672">&#34;typeName&#34;</span>: <span style="color:#e6db74">&#34;Microsoft.VisualStudio.Services.Npm.WebApi.Exceptions.InvalidPackageException, Microsoft.VisualStudio.Services.Npm.WebApi, Version=14.0.0.0, Culture=neutral, PublicKeyToken=n0k85f74j3d50ag5&#34;</span>,
+  <span style="color:#f92672">&#34;typeKey&#34;</span>: <span style="color:#e6db74">&#34;InvalidPackageException&#34;</span>,
+  <span style="color:#f92672">&#34;errorCode&#34;</span>: <span style="color:#ae81ff">0</span>,
+  <span style="color:#f92672">&#34;eventId&#34;</span>: <span style="color:#ae81ff">3000</span>
+}</code></pre></div>
+<p>First of all, I like how stable <code>eventId</code> is - it&rsquo;s all the fucking same <code>3000</code> value for all sorts of errors.</p>
+<p>The actual error though is <code>not a valid SemVer 2.0.0 version</code>. So it says that <code>bt54ceww-0545-4001-8724-43c18216ab5c</code> is not a valid version value, and that was the moment of enlightenment, as I realized that this thing expects an actual user-facing version of the package, not that version&rsquo;s internal ID from Azure DevOps database.</p>
+<p>Just how the fuck should I have known about this, especially given the fact that the other half of API methods operates exactly with internal IDs (<em>which is the way it usually is in other services</em>)? Fucking thank you, Microsoft.</p>
+<p>Alright, the user-facing package version is <code>2021.3.57883</code>, let&rsquo;s try with it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ curl <span style="color:#f92672">-</span>X <span style="color:#e6db74">&#34;PATCH&#34;</span> <span style="color:#e6db74">&#34;https://pkgs.dev.azure.com/YOUR-ORGANIZATION/YOUR-PROJECT/_apis/packaging/feeds/FEED-ID/npm/370bf540-edf3-4105-a827-10962g54e224/versions/2021.3.57883?api-version=6.1-preview&#34;</span> \
+<span style="color:#f92672">-</span>H &#39;Content<span style="color:#f92672">-</span><span style="color:#a6e22e">Type</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">application/json</span><span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#66d9ef">\</span>
+<span style="color:#f92672">-</span>u &#39;YOUR<span style="color:#f92672">-</span><span style="color:#a6e22e">PAT</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#66d9ef">\</span>
+<span style="color:#f92672">-</span>d $<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">{</span>
+  <span style="color:#e6db74">&#34;views&#34;</span><span style="color:#66d9ef">:</span> <span style="color:#f92672">{</span>
+    <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">op</span><span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">add</span><span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#f92672">,</span>
+    <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">path</span><span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">/views/-</span><span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#f92672">,</span>
+    <span style="color:#e6db74">&#34;value&#34;</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">Release</span><span style="color:#960050;background-color:#1e0010">&#34;</span>
+  <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span><span style="color:#960050;background-color:#1e0010">&#39;</span></code></pre></div>
+<p>And the response is:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;success&#34;</span>: <span style="color:#e6db74">&#34;false&#34;</span>,
+  <span style="color:#f92672">&#34;error&#34;</span>: <span style="color:#e6db74">&#34;NotFound&#34;</span>,
+  <span style="color:#f92672">&#34;reason&#34;</span>: <span style="color:#e6db74">&#34;Cannot find the file 370bf540-edf3-4105-a827-10962g54e224-2021.3.57883.tgz in package &#39;370bf540-edf3-4105-a827-10962g54e224 2021.3.57883&#39; in feed &#39;FEED-NAME&#39;&#34;</span>,
+  <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>
+}</code></pre></div>
+<p>So the version value was okay, but this time it complains about not finding the package. Since now we understand at least some logic behind this thing, let&rsquo;s try replacing the package ID <code>370bf540-edf3-4105-a827-10962g54e224</code> with the user-facing package name. In our case it is prefixed with the namespace like this: <code>@ourcompany/ourlib-windows-x64-msvc2019</code>, so that needs to be URL-encoded, and so here&rsquo;s the final request:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ curl <span style="color:#f92672">-</span>X <span style="color:#e6db74">&#34;PATCH&#34;</span> <span style="color:#e6db74">&#34;https://pkgs.dev.azure.com/YOUR-ORGANIZATION/YOUR-PROJECT/_apis/packaging/feeds/FEED-ID/npm/%40ourcompany%2Fourlib-windows-x64-msvc2019/versions/2021.3.57883?api-version=6.1-preview&#34;</span> \
+<span style="color:#f92672">-</span>H &#39;Content<span style="color:#f92672">-</span><span style="color:#a6e22e">Type</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">application/json</span><span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#66d9ef">\</span>
+<span style="color:#f92672">-</span>u &#39;YOUR<span style="color:#f92672">-</span><span style="color:#a6e22e">PAT</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#66d9ef">\</span>
+<span style="color:#f92672">-</span>d $<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">{</span>
+  <span style="color:#e6db74">&#34;views&#34;</span><span style="color:#66d9ef">:</span> <span style="color:#f92672">{</span>
+    <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">op</span><span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">add</span><span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#f92672">,</span>
+    <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">path</span><span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">/views/-</span><span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#f92672">,</span>
+    <span style="color:#e6db74">&#34;value&#34;</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">Release</span><span style="color:#960050;background-color:#1e0010">&#34;</span>
+  <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span><span style="color:#960050;background-color:#1e0010">&#39;</span></code></pre></div>
+<p>And the response is:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">HTTP</span><span style="color:#f92672">/</span><span style="color:#ae81ff">1.1</span> <span style="color:#ae81ff">202</span> <span style="color:#a6e22e">Accepted</span>
+<span style="color:#a6e22e">Cache</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Control</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">no-cache</span>
+<span style="color:#a6e22e">Pragma</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">no-cache</span>
+<span style="color:#a6e22e">Expires</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">1</span>
+<span style="color:#66d9ef">P3P:</span> <span style="color:#66d9ef">CP</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;CAQ DSG VOR ADKa DEV CQNo TCLo CQR PSV PSD PAI IVBo OUR WAMi BMS DEa NAL SEA XNI COM INT PSY KNL CIN PUY LOC ENT&#34;</span>
+X<span style="color:#f92672">-</span><span style="color:#a6e22e">TFS</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ProcessId</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">780</span><span style="color:#66d9ef">cgvf8-</span><span style="color:#960050;background-color:#1e0010">0133</span><span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">4</span><span style="color:#66d9ef">a21-ad98-</span><span style="color:#960050;background-color:#1e0010">7</span><span style="color:#66d9ef">c4gfbe52f25</span>
+<span style="color:#a6e22e">Strict</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Transport</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Security</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">max-age</span><span style="color:#f92672">=</span><span style="color:#ae81ff">31536000</span><span style="color:#f92672">;</span> includeSubDomains
+<span style="color:#a6e22e">ActivityId</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">3</span><span style="color:#66d9ef">v2rah33-qf2g-</span><span style="color:#960050;background-color:#1e0010">4</span><span style="color:#66d9ef">c22-abm3-</span><span style="color:#960050;background-color:#1e0010">7</span><span style="color:#66d9ef">a90075wfaf5</span>
+X<span style="color:#f92672">-</span><span style="color:#a6e22e">TFS</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Session</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">3</span><span style="color:#66d9ef">v2rah33-qf2g-</span><span style="color:#960050;background-color:#1e0010">4</span><span style="color:#66d9ef">c22-abm3-</span><span style="color:#960050;background-color:#1e0010">7</span><span style="color:#66d9ef">a90075wfaf5</span>
+X<span style="color:#f92672">-</span><span style="color:#a6e22e">VSS</span><span style="color:#f92672">-</span>E2EID<span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">3</span><span style="color:#66d9ef">v2rah33-qf2g-</span><span style="color:#960050;background-color:#1e0010">4</span><span style="color:#66d9ef">c22-abm3-</span><span style="color:#960050;background-color:#1e0010">7</span><span style="color:#66d9ef">a90075wfaf5</span>
+X<span style="color:#f92672">-</span><span style="color:#a6e22e">VSS</span><span style="color:#f92672">-</span><span style="color:#a6e22e">UserData</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">9</span><span style="color:#66d9ef">gfa234e-</span><span style="color:#960050;background-color:#1e0010">85</span><span style="color:#66d9ef">ag-</span><span style="color:#960050;background-color:#1e0010">5</span><span style="color:#66d9ef">gfb-v558-</span><span style="color:#960050;background-color:#1e0010">02</span><span style="color:#66d9ef">c6975b8345:yourname@yourcompany.com</span>
+X<span style="color:#f92672">-</span><span style="color:#a6e22e">FRAME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">OPTIONS</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">SAMEORIGIN</span>
+X<span style="color:#f92672">-</span><span style="color:#a6e22e">Packaging</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Migration</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">NpmBlobMetadata</span>
+X<span style="color:#f92672">-</span><span style="color:#a6e22e">Packaging</span><span style="color:#f92672">-</span><span style="color:#a6e22e">OperationId</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">evlpZCI3FjZlZTVjMjI0ZTVi34LjODc4YTdjYfP5ZDMxMTEwNmI3I4pic2vLIjoxOTc4kL</span>
+<span style="color:#a6e22e">Request</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Context</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">appId</span><span style="color:#f92672">=</span>cid<span style="color:#f92672">-</span>v1<span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">234</span><span style="color:#66d9ef">f64fg-</span><span style="color:#960050;background-color:#1e0010">73</span><span style="color:#66d9ef">f5-</span><span style="color:#960050;background-color:#1e0010">475</span><span style="color:#66d9ef">g-bl52-a93451f9t551</span>
+<span style="color:#a6e22e">Access</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Control</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Expose</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Headers</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Request-Context</span>
+X<span style="color:#f92672">-</span><span style="color:#a6e22e">Content</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Type</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Options</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">nosniff</span>
+X<span style="color:#f92672">-</span><span style="color:#a6e22e">Cache</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">CONFIG_NOCACHE</span>
+X<span style="color:#f92672">-</span><span style="color:#a6e22e">MSEdge</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Ref</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Ref</span> <span style="color:#66d9ef">A:</span> <span style="color:#66d9ef">GE7ACC7R4FBB405OA33891B336F1CO8U</span> <span style="color:#66d9ef">Ref</span> <span style="color:#66d9ef">B:</span> <span style="color:#66d9ef">NYC39HDPL0132</span> <span style="color:#66d9ef">Ref</span> <span style="color:#66d9ef">C:</span> <span style="color:#960050;background-color:#1e0010">2021</span><span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">07</span><span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">20</span><span style="color:#66d9ef">T17:</span><span style="color:#960050;background-color:#1e0010">15</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">56</span><span style="color:#66d9ef">Z</span>
+<span style="color:#a6e22e">Date</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Tue</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">20</span> <span style="color:#a6e22e">Jul</span> <span style="color:#ae81ff">2021</span> <span style="color:#ae81ff">17</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">15</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">57</span> <span style="color:#66d9ef">GMT</span>
+<span style="color:#a6e22e">Connection</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">close</span>
+<span style="color:#a6e22e">Content</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Length</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">0</span></code></pre></div>
+<p>Fucking finally! And the package version got promoted to <code>Release</code> view:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/07/21/azure-devops-artifacts-promotion/images/promoted-package-version.png" alt="Azure DevOps Artifacts promoted package version">
+
+
+<p>Since we always know the package name and the version that is being published, it is trivial for us to send just this one request right after the new package version is published.</p>
+<p>If you don&rsquo;t have a luxury of knowing the latest package version, then you can query it like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ curl <span style="color:#f92672">-</span>s <span style="color:#e6db74">&#34;https://feeds.dev.azure.com/YOUR-ORGANIZATION/YOUR-PROJECT/_apis/packaging/feeds/FEED-ID/packages/PACKAGE-ID&#34;</span> \
+<span style="color:#f92672">-</span>u &#39;YOUR<span style="color:#f92672">-</span><span style="color:#a6e22e">PAT</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#66d9ef">\</span>
+<span style="color:#f92672">|</span> jq <span style="color:#f92672">-</span>r <span style="color:#f92672">.</span>versions<span style="color:#f92672">[</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#f92672">].</span>normalizedVersion</code></pre></div>
+<p>And then send the <code>PATCH</code> request (<em>don&rsquo;t forget that it has <a href="#endpoint">different URL structure</a> for NuGet and npm</em>).</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/devops/">devops</a><a class="tag" href="https://retifrav.github.io/tags/azure/">azure</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a><a class="tag" href="https://retifrav.github.io/tags/fail/">fail</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2021,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5" data-telegram-post="decovar/297" data-width="100%" data-userpic="false"></script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (62)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (39)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (31)</a></li>
+                  
+                  <li><a href="/tags/review">review (26)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (21)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (21)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (13)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (5)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (5)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/azure">azure (2)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>
