@@ -5,7 +5,7 @@
     <title>Jupyter Notebook on a subdomain of your website | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2020/05/27/jupyter-notebook-nginx/" />
 
-    <meta name="generator" content="Hugo 0.84.0" />
+    <meta name="generator" content="Hugo 0.86.1" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -40,8 +40,8 @@ host it on a subdomain of existing website, so there will be a new DNS record
 " />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://retifrav.github.io/blog/2020/05/27/jupyter-notebook-nginx/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2020-05-27T14:45:46&#43;02:00" />
-<meta property="article:modified_time" content="2020-05-27T14:45:46&#43;02:00" />
+<meta property="article:published_time" content="2020-05-27T14:45:46+02:00" />
+<meta property="article:modified_time" content="2020-05-27T14:45:46+02:00" />
 
 
 
@@ -138,7 +138,7 @@ host it on a subdomain of existing website, so there will be a new DNS record
 </nav>
 <h1 id="setup">Setup</h1>
 <p>My environment:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ae81ff">$ lsb_release -a</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ae81ff">$ lsb_release -a</span>
 <span style="color:#ae81ff">Description:	Ubuntu 19.10</span>
 
 <span style="color:#ae81ff">$ python --version</span>
@@ -154,28 +154,28 @@ host it on a subdomain of existing website, so there will be a new DNS record
 <span style="color:#ae81ff">mysql  Ver 8.0.20-0ubuntu0.19.10.1 for Linux on x86_64 ((Ubuntu))</span></code></pre></div>
 <h2 id="installing-jupyter">Installing Jupyter</h2>
 <p>Jupyter itself is easy:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ pip install jupyter</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ pip install jupyter</code></pre></div>
 <p>But then comes a number of infrastructural things. First of all, it&rsquo;s better if you won&rsquo;t run it as root, so:</p>
 <ol>
 <li>Create a new user for it</li>
 <li>Pick a folder where to store notebooks (<em>I went with <code>/var/www/jupyter</code></em>)</li>
 <li>Generate a config, as you&rsquo;ll need to overwrite some default settings</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo useradd <span style="color:#f92672">-</span>m jupyter
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo useradd <span style="color:#f92672">-</span>m jupyter
 $ sudo mkdir <span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>www<span style="color:#f92672">/</span>jupyter
 $ sudo chown <span style="color:#f92672">-</span>R jupyter<span style="color:#66d9ef">:</span><span style="color:#66d9ef">jupyter</span> <span style="color:#66d9ef">/var/www/jupyter</span>
 $ sudo <span style="color:#f92672">-</span>u jupyter jupyter notebook <span style="color:#f92672">--</span>generate<span style="color:#f92672">-</span>config</code></pre></div>
 <p>Edit the generated config:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ nano <span style="color:#f92672">/</span>home<span style="color:#f92672">/</span>jupyter<span style="color:#f92672">/.</span>jupyter<span style="color:#f92672">/</span>jupyter_notebook_config<span style="color:#f92672">.</span>py</code></pre></div>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># I think it&#39;s better to keep remote access disabled</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ nano <span style="color:#f92672">/</span>home<span style="color:#f92672">/</span>jupyter<span style="color:#f92672">/.</span>jupyter<span style="color:#f92672">/</span>jupyter_notebook_config<span style="color:#f92672">.</span>py</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># I think it&#39;s better to keep remote access disabled</span>
 <span style="color:#75715e">#c.NotebookApp.allow_remote_access = False</span>
 
 <span style="color:#75715e"># allow requests from your domain (works in combo with $http_host from NGINX)</span>
 c<span style="color:#f92672">.</span>NotebookApp<span style="color:#f92672">.</span>local_hostnames <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;localhost&#39;</span>,<span style="color:#e6db74">&#39;jupyter.YOUR-DOMAIN.com&#39;</span>]</code></pre></div>
 <h2 id="systemd-service">systemd service</h2>
 <p>Create a service:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo nano <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>systemd<span style="color:#f92672">/</span>system<span style="color:#f92672">/</span>jupyter<span style="color:#f92672">.</span>service</code></pre></div>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">Unit</span><span style="color:#f92672">]</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo nano <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>systemd<span style="color:#f92672">/</span>system<span style="color:#f92672">/</span>jupyter<span style="color:#f92672">.</span>service</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">Unit</span><span style="color:#f92672">]</span>
 <span style="color:#a6e22e">Description</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Jupyter</span> <span style="color:#a6e22e">Notebook</span>
 
 <span style="color:#f92672">[</span><span style="color:#66d9ef">Service</span><span style="color:#f92672">]</span>
@@ -189,12 +189,12 @@ c<span style="color:#f92672">.</span>NotebookApp<span style="color:#f92672">.</s
 <span style="color:#f92672">[</span><span style="color:#66d9ef">Install</span><span style="color:#f92672">]</span>
 <span style="color:#a6e22e">WantedBy</span><span style="color:#66d9ef">=</span>multi<span style="color:#f92672">-</span>user<span style="color:#f92672">.</span>target</code></pre></div>
 <p>Enable and run the service:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo systemctl enable jupyter<span style="color:#f92672">.</span>service
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo systemctl enable jupyter<span style="color:#f92672">.</span>service
 $ sudo systemctl start jupyter<span style="color:#f92672">.</span>service
 $ sudo systemctl status jupyter<span style="color:#f92672">.</span>service</code></pre></div>
 <h2 id="nginx-config">NGINX config</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo nano <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/</span>sites<span style="color:#f92672">-</span>available<span style="color:#f92672">/</span>jupyter</code></pre></div>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">map</span> $http_upgrade $connection_upgrade {
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo nano <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/</span>sites<span style="color:#f92672">-</span>available<span style="color:#f92672">/</span>jupyter</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">map</span> $http_upgrade $connection_upgrade {
     <span style="color:#f92672">default</span> <span style="color:#e6db74">upgrade</span>;
     <span style="color:#f92672">&#39;&#39;</span>      <span style="color:#e6db74">close</span>;
 }
@@ -217,15 +217,15 @@ $ sudo systemctl status jupyter<span style="color:#f92672">.</span>service</code
         <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Connection</span> $connection_upgrade;
     }
 }</code></pre></div>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo ln <span style="color:#f92672">-</span>s <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/</span>sites<span style="color:#f92672">-</span>available<span style="color:#f92672">/</span>jupyter <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/</span>sites<span style="color:#f92672">-</span>enabled<span style="color:#f92672">/</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo ln <span style="color:#f92672">-</span>s <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/</span>sites<span style="color:#f92672">-</span>available<span style="color:#f92672">/</span>jupyter <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/</span>sites<span style="color:#f92672">-</span>enabled<span style="color:#f92672">/</span>
 $ sudo systemctl restart nginx<span style="color:#f92672">.</span>service</code></pre></div>
 <h3 id="lets-encrypt-certificate-for-the-subdomain">Let&rsquo;s Encrypt certificate for the subdomain</h3>
 <p>If you already <a href="/blog/2017/11/28/several-domains-same-server-letsencrypt-tls/#lets-encrypt-certificate">have a certificate</a> for your main domain, here&rsquo;s how to extend it to the new subdomain:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ certbot <span style="color:#f92672">--</span>expand <span style="color:#f92672">-</span>d jupyter<span style="color:#f92672">.</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">DOMAIN</span><span style="color:#f92672">.</span>com</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ certbot <span style="color:#f92672">--</span>expand <span style="color:#f92672">-</span>d jupyter<span style="color:#f92672">.</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">DOMAIN</span><span style="color:#f92672">.</span>com</code></pre></div>
 <p>It will also make required changes in the NGINX config.</p>
 <h3 id="dns-record">DNS-record</h3>
 <p>Go to your hoster and add a new subdomain under your main domain. Then add a new DNS record for it (<em>just one <code>A</code> record</em>):</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">jupyter<span style="color:#f92672">.</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">DOMAIN</span><span style="color:#f92672">.</span>com 	A 	<span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">SERVER</span><span style="color:#f92672">-</span><span style="color:#a6e22e">IP</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ADDRESS</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">jupyter<span style="color:#f92672">.</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">DOMAIN</span><span style="color:#f92672">.</span>com 	A 	<span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">SERVER</span><span style="color:#f92672">-</span><span style="color:#a6e22e">IP</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ADDRESS</span></code></pre></div>
 <p>Now as soon as DNS records update on servers, your Jupyter instance will be available on <code>https://jupyter.YOUR-DOMAIN.com</code>.</p>
 <h2 id="authentication">Authentication</h2>
 <p>Conveniently enough, Jupyter already has authentication <a href="https://jupyter-notebook.readthedocs.io/en/stable/security.html">out of the box</a>, so anonymous users won&rsquo;t be able to open your notebooks. Here&rsquo;s how the login page looks like:</p>
@@ -237,7 +237,7 @@ $ sudo systemctl restart nginx<span style="color:#f92672">.</span>service</code>
 
 <h3 id="with-token">With token</h3>
 <p>At least for the first time you&rsquo;ll need to log in using token. To get your current token value run the following:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo <span style="color:#f92672">-</span>u jupyter jupyter notebook list
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo <span style="color:#f92672">-</span>u jupyter jupyter notebook list
 <span style="color:#a6e22e">Currently</span> running servers<span style="color:#66d9ef">:</span>
 <span style="color:#66d9ef">http://localhost:</span><span style="color:#960050;background-color:#1e0010">8888</span><span style="color:#66d9ef">/?token</span><span style="color:#f92672">=</span>h8g4a81416de5ofcc3nmb9ao32de80206ae640dq8agee9nn <span style="color:#66d9ef">:</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">/var/www/jupyter</span></code></pre></div>
 <p>After successful authentication you will get a listing of your working folder (<code>/var/www/jupyter</code>) where you can manage your notebooks:</p>
@@ -250,7 +250,7 @@ $ sudo systemctl restart nginx<span style="color:#f92672">.</span>service</code>
 <h3 id="with-password">With password</h3>
 <p>You can keep logging in with token, but its value will be different with every service restart, so you might want to switch to using password. Use the <strong>Setup a Password</strong> form in the bottom of the login page - your password will be hashed and saved
 to <code>/home/jupyter/.jupyter/jupyter_notebook_config.json</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
   <span style="color:#f92672">&#34;NotebookApp&#34;</span>: {
     <span style="color:#f92672">&#34;password&#34;</span>: <span style="color:#e6db74">&#34;sha1:bd10epf67nc8:1fg568845sgdeb3377bf90eccc0d34337ddhcc94&#34;</span>
   }
@@ -264,21 +264,21 @@ to <code>/home/jupyter/.jupyter/jupyter_notebook_config.json</code>:</p>
 
 
 <p>And if you list the running Jupyter server now, it will no longer have the token value:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo <span style="color:#f92672">-</span>u jupyter jupyter notebook list
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo <span style="color:#f92672">-</span>u jupyter jupyter notebook list
 <span style="color:#a6e22e">Currently</span> running servers<span style="color:#66d9ef">:</span>
 <span style="color:#66d9ef">http://localhost:</span><span style="color:#960050;background-color:#1e0010">8888</span><span style="color:#66d9ef">/</span> <span style="color:#66d9ef">::</span> <span style="color:#66d9ef">/var/www/jupyter</span></code></pre></div>
 <h1 id="working-with-sql-database">Working with SQL database</h1>
 <p>In our case we needed to do some analytics/statistics on certain values in our database. At first we started adding views for that in our .NET Core MVC admin interface, but that was veeeeery time consuming, especially given the dynamic nature of our momentary needs.</p>
 <p>Jupyter Notebook, on the other hand, turned out to be a super convenient and fast tool for such purpose. So instead of piling up admin pages (<em>or exposing our MySQL server over the internet</em>) we can just run SQL queries from a notebook and process results with simple Python operations.</p>
 <p>Packages needed for that:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ pip install mysql<span style="color:#f92672">-</span>connector
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ pip install mysql<span style="color:#f92672">-</span>connector
 $ pip install tabulate</code></pre></div>
 <p>If you will be getting this error:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">mysql<span style="color:#f92672">.</span>connector<span style="color:#f92672">.</span>errors<span style="color:#f92672">.</span><span style="color:#a6e22e">NotSupportedError</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Authentication</span> <span style="color:#66d9ef">plugin</span> <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#66d9ef">caching_sha2_password</span><span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">supported</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">mysql<span style="color:#f92672">.</span>connector<span style="color:#f92672">.</span>errors<span style="color:#f92672">.</span><span style="color:#a6e22e">NotSupportedError</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Authentication</span> <span style="color:#66d9ef">plugin</span> <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#66d9ef">caching_sha2_password</span><span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">supported</span></code></pre></div>
 <p>then install this package:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ pip install mysql<span style="color:#f92672">-</span>connector<span style="color:#f92672">-</span>python</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ pip install mysql<span style="color:#f92672">-</span>connector<span style="color:#f92672">-</span>python</code></pre></div>
 <p>When it comes to executing SQL, I would not recommend connecting to the database from Jupyter Notebook with a user that has <em>any</em> writing privileges, so it&rsquo;s better to create a new user with read-only privileges:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">USER</span> <span style="color:#e6db74">&#39;jupyter&#39;</span><span style="color:#f92672">@</span><span style="color:#e6db74">&#39;localhost&#39;</span> IDENTIFIED <span style="color:#66d9ef">BY</span> <span style="color:#e6db74">&#39;YOUR-PASSWORD&#39;</span>;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">USER</span> <span style="color:#e6db74">&#39;jupyter&#39;</span><span style="color:#f92672">@</span><span style="color:#e6db74">&#39;localhost&#39;</span> IDENTIFIED <span style="color:#66d9ef">BY</span> <span style="color:#e6db74">&#39;YOUR-PASSWORD&#39;</span>;
 <span style="color:#66d9ef">GRANT</span> <span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">ON</span> YOUR_DATABASE.SOME_TABLE <span style="color:#66d9ef">to</span> <span style="color:#e6db74">&#39;jupyter&#39;</span><span style="color:#f92672">@</span><span style="color:#e6db74">&#39;localhost&#39;</span>;
 <span style="color:#66d9ef">SHOW</span> GRANTS <span style="color:#66d9ef">FOR</span> <span style="color:#e6db74">&#39;jupyter&#39;</span><span style="color:#f92672">@</span><span style="color:#e6db74">&#39;localhost&#39;</span>;</code></pre></div>
 <p>Now you can start your notebook with something like:</p>
@@ -307,10 +307,10 @@ $ pip install tabulate</code></pre></div>
 
 <p>Give it your <code>https://jupyter.YOUR-DOMAIN.com</code> and password/token when asked for it.</p>
 <p>You might get the following error right after trying to add a server:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Command <span style="color:#e6db74">&#39;Python: Specify local or remote Jupyter server for connections&#39;</span> resulted in an error <span style="color:#f92672">(</span>Unable to write to Workspace Settings because no workspace is opened. Please open a workspace first and try again.<span style="color:#f92672">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Command <span style="color:#e6db74">&#39;Python: Specify local or remote Jupyter server for connections&#39;</span> resulted in an error <span style="color:#f92672">(</span>Unable to write to Workspace Settings because no workspace is opened. Please open a workspace first and try again.<span style="color:#f92672">)</span></code></pre></div>
 <p>That is because, like I said, first you need to open some folder in VS Code (<em>which will be your workplace</em>), preferably the one where you will be storing your <code>.ipynb</code> files, and only then run this command.</p>
 <p>If it&rsquo;s all good, you&rsquo;ll have <code>.vscode/settings.json</code> file in the workspace folder with the following contents:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
     <span style="color:#f92672">&#34;python.dataScience.jupyterServerURI&#34;</span>: <span style="color:#e6db74">&#34;https://jupyter.YOUR-DOMAIN.com/&#34;</span>
 }</code></pre></div>
 <p>Now you can open your <code>sandbox.ipynb</code>, try to run some code, and VS Code will connect to your Jupyter server:</p>
@@ -325,11 +325,11 @@ $ pip install tabulate</code></pre></div>
 <h2 id="jupyter-as-a-local-service-on-mac-os">Jupyter as a local service on Mac OS</h2>
 <p>Though initially that was not a part of the article, but since I brought up working with Jupyter notebooks in VS Code, quite likely you&rsquo;ll want to run Jupyter locally too (<em>on Mac OS, in my case</em>). So here&rsquo;s how to do it.</p>
 <p>I assume you&rsquo;ve managed to install Jupyter with pip, generate the default config and create a folder for notebooks:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ pip install jupyter
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ pip install jupyter
 $ jupyter notebook <span style="color:#f92672">--</span>generate<span style="color:#f92672">-</span>config
 $ mkdir <span style="color:#f92672">/</span><span style="color:#a6e22e">Users</span><span style="color:#f92672">/</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">NAME</span><span style="color:#f92672">/</span>jupyter</code></pre></div>
 <p>So now you can get something like this from your environment:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ which jupyter
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ which jupyter
 <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>jupyter
 
 $ jupyter <span style="color:#f92672">--</span>version
@@ -345,7 +345,7 @@ nbconvert        <span style="color:#66d9ef">:</span> <span style="color:#960050
 <span style="color:#66d9ef">nbformat</span>         <span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">5</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">7</span>
 <span style="color:#66d9ef">traitlets</span>        <span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">4</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">3</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">3</span></code></pre></div>
 <p>To run Jupyter (<em>or anything, really</em>) as a service, you&rsquo;ll need to add a <a href="https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html">launchd user agent</a> to your system. For that create a <code>/Users/YOUR-NAME/Library/LaunchAgents/SOME.DOMAIN.jupyter-python.plist</code> file:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#75715e">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#75715e">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
 <span style="color:#75715e">&lt;!DOCTYPE plist PUBLIC &#34;-//Apple Computer//DTD PLIST 1.0//EN&#34; &#34;http://www.apple.com/DTDs/PropertyList-1.0.dtd&#34;&gt;</span>
 <span style="color:#f92672">&lt;plist</span> <span style="color:#a6e22e">version=</span><span style="color:#e6db74">&#34;1.0&#34;</span><span style="color:#f92672">&gt;</span>
 <span style="color:#f92672">&lt;dict&gt;</span>
@@ -371,7 +371,7 @@ nbconvert        <span style="color:#66d9ef">:</span> <span style="color:#960050
 <span style="color:#f92672">&lt;/plist&gt;</span></code></pre></div>
 <p>And yes, having absolute paths (<em><code>/Users/YOUR-NAME/</code> instead of just <code>~/</code></em>) turned out to be important.</p>
 <p>Also, if you are on Catalina, don&rsquo;t put <code>jupyter</code> folder inside <code>Documents</code> or other <a href="https://developer.apple.com/documentation/macos-release-notes/macos-catalina-10_15-release-notes#Launch-Daemons-and-Agents">privacy-sensitive</a> places, otherwise you&rsquo;ll get the following errors:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">shell<span style="color:#f92672">-</span>init<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">error</span> <span style="color:#66d9ef">retrieving</span> <span style="color:#66d9ef">current</span> <span style="color:#66d9ef">directory:</span> <span style="color:#66d9ef">getcwd:</span> <span style="color:#66d9ef">cannot</span> <span style="color:#66d9ef">access</span> <span style="color:#66d9ef">parent</span> <span style="color:#66d9ef">directories:</span> <span style="color:#66d9ef">Operation</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">permitted</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">shell<span style="color:#f92672">-</span>init<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">error</span> <span style="color:#66d9ef">retrieving</span> <span style="color:#66d9ef">current</span> <span style="color:#66d9ef">directory:</span> <span style="color:#66d9ef">getcwd:</span> <span style="color:#66d9ef">cannot</span> <span style="color:#66d9ef">access</span> <span style="color:#66d9ef">parent</span> <span style="color:#66d9ef">directories:</span> <span style="color:#66d9ef">Operation</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">permitted</span>
 <span style="color:#a6e22e">Starting</span> <span style="color:#a6e22e">Jupyter</span> server<span style="color:#f92672">...</span>
 job<span style="color:#f92672">-</span>working<span style="color:#f92672">-</span>directory<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">error</span> <span style="color:#66d9ef">retrieving</span> <span style="color:#66d9ef">current</span> <span style="color:#66d9ef">directory:</span> <span style="color:#66d9ef">getcwd:</span> <span style="color:#66d9ef">cannot</span> <span style="color:#66d9ef">access</span> <span style="color:#66d9ef">parent</span> <span style="color:#66d9ef">directories:</span> <span style="color:#66d9ef">Operation</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">permitted</span>
 shell<span style="color:#f92672">-</span>init<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">error</span> <span style="color:#66d9ef">retrieving</span> <span style="color:#66d9ef">current</span> <span style="color:#66d9ef">directory:</span> <span style="color:#66d9ef">getcwd:</span> <span style="color:#66d9ef">cannot</span> <span style="color:#66d9ef">access</span> <span style="color:#66d9ef">parent</span> <span style="color:#66d9ef">directories:</span> <span style="color:#66d9ef">Operation</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">permitted</span>
@@ -401,16 +401,16 @@ job<span style="color:#f92672">-</span>working<span style="color:#f92672">-</spa
 <span style="color:#a6e22e">PermissionError</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">[</span><span style="color:#66d9ef">Errno</span> <span style="color:#960050;background-color:#1e0010">1]</span> <span style="color:#66d9ef">Operation</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">permitted</span></code></pre></div>
 <p>To overcome this, you&rsquo;ll need to grant Documents Folder access or even Full Disc Access to&hellip; something that potentially can execute anything? Yeah, better just to keep <code>jupyter</code> folder somewhere else.</p>
 <p>Create <code>/Users/YOUR-NAME/bin/start-jupyter.sh</code> script, which will be starting the Jupyter server:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/bash
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/bash
 </span><span style="color:#75715e"></span>
 echo <span style="color:#e6db74">&#34;Starting Jupyter server...&#34;</span>
 /usr/local/bin/jupyter notebook --no-browser --config<span style="color:#f92672">=</span>/Users/YOUR-NAME/.jupyter/jupyter_notebook_config.py</code></pre></div>
 <p>Don&rsquo;t forget to <code>chmod +x</code> it.</p>
 <p>Why a script instead of just starting Jupyter directly? Well, I guess, it would indeed be better to do so, but I failed to configure launch agent that way, while this &ldquo;intermediate&rdquo; script just worked.</p>
 <p>Now you can enable the agent, and it will automatically start:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ launchctl load <span style="color:#f92672">/</span><span style="color:#a6e22e">Users</span><span style="color:#f92672">/</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">NAME</span><span style="color:#f92672">/</span><span style="color:#a6e22e">Library</span><span style="color:#f92672">/</span><span style="color:#a6e22e">LaunchAgents</span><span style="color:#f92672">/</span><span style="color:#a6e22e">SOME</span><span style="color:#f92672">.</span><span style="color:#a6e22e">DOMAIN</span><span style="color:#f92672">.</span>jupyter<span style="color:#f92672">.</span>plist</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ launchctl load <span style="color:#f92672">/</span><span style="color:#a6e22e">Users</span><span style="color:#f92672">/</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">NAME</span><span style="color:#f92672">/</span><span style="color:#a6e22e">Library</span><span style="color:#f92672">/</span><span style="color:#a6e22e">LaunchAgents</span><span style="color:#f92672">/</span><span style="color:#a6e22e">SOME</span><span style="color:#f92672">.</span><span style="color:#a6e22e">DOMAIN</span><span style="color:#f92672">.</span>jupyter<span style="color:#f92672">.</span>plist</code></pre></div>
 <p>You can check that by looking at <code>/Users/YOUR-NAME/Library/Logs/jupyter-python.log</code> contents, which should be now populated:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">Starting</span> <span style="color:#a6e22e">Jupyter</span> server<span style="color:#f92672">...</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">Starting</span> <span style="color:#a6e22e">Jupyter</span> server<span style="color:#f92672">...</span>
 <span style="color:#f92672">[</span><span style="color:#66d9ef">I</span> <span style="color:#960050;background-color:#1e0010">15</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">49</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">03</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">177</span> <span style="color:#66d9ef">NotebookApp</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Serving</span> notebooks from local directory<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">/Users/YOUR-NAME/jupyter</span>
 <span style="color:#f92672">[</span><span style="color:#66d9ef">I</span> <span style="color:#960050;background-color:#1e0010">15</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">49</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">03</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">177</span> <span style="color:#66d9ef">NotebookApp</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Jupyter</span> <span style="color:#a6e22e">Notebook</span> <span style="color:#ae81ff">6.1</span><span style="color:#f92672">.</span><span style="color:#ae81ff">3</span> is running at<span style="color:#66d9ef">:</span>
 <span style="color:#960050;background-color:#1e0010">[</span><span style="color:#66d9ef">I</span> <span style="color:#960050;background-color:#1e0010">15</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">49</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">03</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">178</span> <span style="color:#66d9ef">NotebookApp</span><span style="color:#960050;background-color:#1e0010">]</span> <span style="color:#66d9ef">http://localhost:</span><span style="color:#960050;background-color:#1e0010">8888</span><span style="color:#66d9ef">/</span>

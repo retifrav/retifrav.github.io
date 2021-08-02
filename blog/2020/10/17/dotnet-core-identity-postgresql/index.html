@@ -5,7 +5,7 @@
     <title>.NET Core Identity with PostgreSQL | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2020/10/17/dotnet-core-identity-postgresql/" />
 
-    <meta name="generator" content="Hugo 0.84.0" />
+    <meta name="generator" content="Hugo 0.86.1" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -26,8 +26,8 @@
 It is also a good timing to prepare for the upcoming .NET 5, which is about to release next month, so I decided to do it with .NET 5.0 RC2 right away." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://retifrav.github.io/blog/2020/10/17/dotnet-core-identity-postgresql/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2020-10-17T13:32:15&#43;02:00" />
-<meta property="article:modified_time" content="2020-10-17T13:32:15&#43;02:00" />
+<meta property="article:published_time" content="2020-10-17T13:32:15+02:00" />
+<meta property="article:modified_time" content="2020-10-17T13:32:15+02:00" />
 
 
 
@@ -93,7 +93,7 @@ It is also a good timing to prepare for the upcoming .NET 5, which is about to r
 <h1 id="environment">Environment</h1>
 <p>The previous post was written in times of <strong>.NET Core 2.0</strong> and <strong>2.1</strong>, but most of the things are pretty much the same (<em>or even easier</em>) now with <strong>.NET 5</strong>. Also, I&rsquo;m doing everything on Mac OS, but yet again it will be all the same on other platforms too.</p>
 <p>My environment:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sw_vers -productVersion
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sw_vers -productVersion
 10.15.7
 
 $ brew --version
@@ -128,16 +128,16 @@ Host <span style="color:#f92672">(</span>useful <span style="color:#66d9ef">for<
   Microsoft.NETCore.App 5.0.0-rc.2.20475.5 <span style="color:#f92672">[</span>/usr/local/share/dotnet/shared/Microsoft.NETCore.App<span style="color:#f92672">]</span></code></pre></div>
 <h1 id="postgresql-database">PostgreSQL database</h1>
 <p>You can install PostgreSQL on Mac OS using Homebrew:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ brew install postgresql
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ brew install postgresql
 $ postgres <span style="color:#f92672">--</span>version
 postgres <span style="color:#f92672">(</span><span style="color:#a6e22e">PostgreSQL</span><span style="color:#f92672">)</span> <span style="color:#ae81ff">13.0</span></code></pre></div>
 <p>Check if your user owns the folders where you&rsquo;ll put the database. If not, switch to admin and make yourself the owner:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ ls <span style="color:#f92672">-</span>l <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span><span style="color:#66d9ef">var</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ ls <span style="color:#f92672">-</span>l <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span><span style="color:#66d9ef">var</span>
 $ su admin
 $ sudo chown <span style="color:#f92672">-</span>R yourname<span style="color:#66d9ef">:</span><span style="color:#66d9ef">staff</span> <span style="color:#66d9ef">/usr/local/var</span>
 $ exit</code></pre></div>
 <p>Initiate the database(s) folder, start PostgreSQL, login via <code>psql</code> and create a database for your application:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ initdb <span style="color:#f92672">--</span>locale<span style="color:#66d9ef">=</span>C <span style="color:#f92672">-</span>E <span style="color:#a6e22e">UTF</span><span style="color:#f92672">-</span><span style="color:#ae81ff">8</span> <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>postgres
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ initdb <span style="color:#f92672">--</span>locale<span style="color:#66d9ef">=</span>C <span style="color:#f92672">-</span>E <span style="color:#a6e22e">UTF</span><span style="color:#f92672">-</span><span style="color:#ae81ff">8</span> <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>postgres
 $ pg_ctl <span style="color:#f92672">-</span>D <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>postgres start
 $ psql postgres
 
@@ -154,7 +154,7 @@ postgres<span style="color:#f92672">=</span><span style="color:#66d9ef">#</span>
                <span style="color:#f92672">|</span>          <span style="color:#f92672">|</span>          <span style="color:#f92672">|</span>         <span style="color:#f92672">|</span>       <span style="color:#f92672">|</span> yourname<span style="color:#66d9ef">=</span><span style="color:#a6e22e">CTc</span><span style="color:#f92672">/</span>yourname
 <span style="color:#f92672">(</span><span style="color:#ae81ff">4</span> rows<span style="color:#f92672">)</span></code></pre></div>
 <p>If you want to run it as a service (<em>instead of starting it with <code>pg_ctl</code></em>), you can <a href="https://docs.brew.sh/Manpage#services-subcommand">use Homebrew</a> for that too:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ brew services list
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ brew services list
 <span style="color:#a6e22e">Name</span>       <span style="color:#a6e22e">Status</span>  <span style="color:#a6e22e">User</span> <span style="color:#a6e22e">Plist</span>
 ipfs       stopped
 lighttpd   stopped
@@ -163,7 +163,7 @@ unbound    stopped
 
 $ brew services start postgresql</code></pre></div>
 <p>Create a password for your user and find where the <code>pg_hba.conf</code> lives:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">postgres<span style="color:#f92672">=</span><span style="color:#66d9ef">#</span> \password
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">postgres<span style="color:#f92672">=</span><span style="color:#66d9ef">#</span> \password
 <span style="color:#a6e22e">Enter</span> <span style="color:#66d9ef">new</span> password<span style="color:#66d9ef">:</span>
 <span style="color:#66d9ef">Enter</span> <span style="color:#66d9ef">it</span> <span style="color:#66d9ef">again:</span>
 
@@ -174,7 +174,7 @@ postgres<span style="color:#f92672">=</span><span style="color:#66d9ef">#</span>
 
 postgres<span style="color:#f92672">=</span><span style="color:#66d9ef">#</span> \q</code></pre></div>
 <p>Edit that file (<code>/usr/local/var/postgres/pg_hba.conf</code>) to disable logging-in without passwords:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e"># TYPE  DATABASE        USER            ADDRESS                 METHOD</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e"># TYPE  DATABASE        USER            ADDRESS                 METHOD</span>
 
 <span style="color:#75715e"># &#34;local&#34; is for Unix domain socket connections only</span>
 local   all             all                                     md5
@@ -188,7 +188,7 @@ local   replication     all                                     md5
 host    replication     all             127.0.0.1/32            md5
 host    replication     all             ::1/128                 md5</code></pre></div>
 <p>Restart Postgres, login back (<em>this time it will ask you for password</em>), connect to <code>SOME-DATABASE</code> and create an application user:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ pg_ctl <span style="color:#f92672">-</span>D <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>postgres restart <span style="color:#66d9ef">#</span> or brew services restart postgresql
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ pg_ctl <span style="color:#f92672">-</span>D <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>postgres restart <span style="color:#66d9ef">#</span> or brew services restart postgresql
 $ psql postgres
 
 postgres<span style="color:#f92672">=</span><span style="color:#66d9ef">#</span> \c <span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">DATABASE</span>
@@ -205,18 +205,18 @@ postgres<span style="color:#f92672">=</span><span style="color:#66d9ef">#</span>
 <p>The database is ready, let&rsquo;s now create a .NET Core MVC project.</p>
 <h1 id="net-core-mvc-project">.NET Core MVC project</h1>
 <p>Create new MVC project with <code>Individual</code> authentication and install <code>dotnet-ef</code> tool:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ mkdir <span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PROJECT</span> <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#a6e22e">$_</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ mkdir <span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PROJECT</span> <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#a6e22e">$_</span>
 $ dotnet tool install <span style="color:#f92672">--</span>global dotnet<span style="color:#f92672">-</span>ef
 $ dotnet tool update <span style="color:#f92672">--</span>global dotnet<span style="color:#f92672">-</span>ef <span style="color:#f92672">--</span>version <span style="color:#ae81ff">5.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span><span style="color:#f92672">-</span>rc<span style="color:#f92672">.</span><span style="color:#ae81ff">2.20475</span><span style="color:#f92672">.</span><span style="color:#ae81ff">6</span>
 $ dotnet <span style="color:#66d9ef">new</span> mvc <span style="color:#f92672">--</span>auth <span style="color:#a6e22e">Individual</span></code></pre></div>
 <p>By default new projects get SQLite database context, so you&rsquo;ll need to remove default SQLite database file and packages and install PostgreSQL and Design packages</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ rm app<span style="color:#f92672">.</span>db
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ rm app<span style="color:#f92672">.</span>db
 $ dotnet remove <span style="color:#66d9ef">package</span> Microsoft.EntityFrameworkCore.Sqlite
 $ dotnet add <span style="color:#66d9ef">package</span> Npgsql.EntityFrameworkCore.PostgreSQL <span style="color:#f92672">--</span>version <span style="color:#ae81ff">5.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span><span style="color:#f92672">-</span>rc2
 $ dotnet add <span style="color:#66d9ef">package</span> Microsoft.EntityFrameworkCore.Design <span style="color:#f92672">--</span>version <span style="color:#ae81ff">5.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span><span style="color:#f92672">-</span>rc<span style="color:#f92672">.</span><span style="color:#ae81ff">2.20475</span><span style="color:#f92672">.</span><span style="color:#ae81ff">6</span></code></pre></div>
 <p>After .NET 5 is released, these specific <code>-rc</code> version suffixes won&rsquo;t be needed.</p>
 <p>Now your <code>.csproj</code> should look like this (<em>after removing reference to <code>app.db</code> from it</em>):</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#f92672">&lt;Project</span> <span style="color:#a6e22e">Sdk=</span><span style="color:#e6db74">&#34;Microsoft.NET.Sdk.Web&#34;</span><span style="color:#f92672">&gt;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#f92672">&lt;Project</span> <span style="color:#a6e22e">Sdk=</span><span style="color:#e6db74">&#34;Microsoft.NET.Sdk.Web&#34;</span><span style="color:#f92672">&gt;</span>
 
   <span style="color:#f92672">&lt;PropertyGroup&gt;</span>
     <span style="color:#f92672">&lt;TargetFramework&gt;</span>net5.0<span style="color:#f92672">&lt;/TargetFramework&gt;</span>
@@ -240,35 +240,35 @@ $ dotnet add <span style="color:#66d9ef">package</span> Microsoft.EntityFramewor
 
 <span style="color:#f92672">&lt;/Project&gt;</span></code></pre></div>
 <p>Change <code>AddDbContext</code> options in <code>Startup.cs</code> - replace <code>UseSqlite</code> with <code>UseNpgsql</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">services<span style="color:#f92672">.</span><span style="color:#a6e22e">AddDbContext</span><span style="color:#f92672">&lt;</span><span style="color:#a6e22e">ApplicationDbContext</span><span style="color:#f92672">&gt;(</span>options <span style="color:#66d9ef">=&gt;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">services<span style="color:#f92672">.</span><span style="color:#a6e22e">AddDbContext</span><span style="color:#f92672">&lt;</span><span style="color:#a6e22e">ApplicationDbContext</span><span style="color:#f92672">&gt;(</span>options <span style="color:#66d9ef">=&gt;</span>
   options<span style="color:#f92672">.</span><span style="color:#a6e22e">UseNpgsql</span><span style="color:#f92672">(</span>
       <span style="color:#a6e22e">Configuration</span><span style="color:#f92672">.</span><span style="color:#a6e22e">GetConnectionString</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;DefaultConnection&#34;</span><span style="color:#f92672">))</span>
 <span style="color:#f92672">);</span></code></pre></div>
 <p>Change the connection string in <code>appsettings.json</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
     <span style="color:#f92672">&#34;ConnectionStrings&#34;</span>: {
       <span style="color:#f92672">&#34;DefaultConnection&#34;</span>: <span style="color:#e6db74">&#34;Server=localhost;Port=5432;Database=some;User Id=birdperson;Password=SOME-PASSWORD;&#34;</span>
     },
     <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>
 }</code></pre></div>
 <p>If you try to run the project right away, operations with the database (<em>such as registering a new user</em>) might fail with errors like this:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">PostgresException</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">42804</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">column</span> <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">EmailConfirmed</span><span style="color:#960050;background-color:#1e0010">&#34;</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">type</span> <span style="color:#66d9ef">integer</span> <span style="color:#66d9ef">but</span> <span style="color:#66d9ef">expression</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">type</span> <span style="color:#66d9ef">boolean</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">PostgresException</span><span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">42804</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">column</span> <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">EmailConfirmed</span><span style="color:#960050;background-color:#1e0010">&#34;</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">type</span> <span style="color:#66d9ef">integer</span> <span style="color:#66d9ef">but</span> <span style="color:#66d9ef">expression</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">type</span> <span style="color:#66d9ef">boolean</span>
 <span style="color:#a6e22e">DbUpdateException</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">An</span> <span style="color:#66d9ef">error</span> <span style="color:#66d9ef">occurred</span> <span style="color:#66d9ef">while</span> <span style="color:#66d9ef">updating</span> <span style="color:#66d9ef">the</span> <span style="color:#66d9ef">entries.</span> <span style="color:#66d9ef">See</span> <span style="color:#66d9ef">the</span> <span style="color:#66d9ef">inner</span> <span style="color:#66d9ef">exception</span> <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">details.</span></code></pre></div>
 <p>You might want to update PostgreSQL database with existing migration generated for SQLite, but that will fail:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ dotnet ef database update
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ dotnet ef database update
 <span style="color:#a6e22e">Method</span> &#39;Create<span style="color:#960050;background-color:#1e0010">&#39;</span> in <span style="color:#66d9ef">type</span> <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#66d9ef">Npgsql.EntityFrameworkCore.PostgreSQL.Query.Internal.NpgsqlSqlTranslatingExpressionVisitorFactory</span><span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#66d9ef">from</span> <span style="color:#66d9ef">assembly</span> <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#66d9ef">Npgsql.EntityFrameworkCore.PostgreSQL</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">Version</span><span style="color:#66d9ef">=</span><span style="color:#ae81ff">3.1</span><span style="color:#f92672">.</span><span style="color:#ae81ff">4.0</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">Culture</span><span style="color:#66d9ef">=</span>neutral<span style="color:#f92672">,</span> <span style="color:#a6e22e">PublicKeyToken</span><span style="color:#66d9ef">=</span><span style="color:#ae81ff">5</span>d8b90d52f46fda7<span style="color:#960050;background-color:#1e0010">&#39;</span> does not have an implementation<span style="color:#f92672">.</span></code></pre></div>
 <p>So you&rsquo;d want to remove the migration first, but that will fail too:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ dotnet ef migrations remove
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ dotnet ef migrations remove
 <span style="color:#a6e22e">Build</span> started<span style="color:#f92672">...</span>
 <span style="color:#a6e22e">Build</span> succeeded<span style="color:#f92672">.</span>
 <span style="color:#a6e22e">The</span> migration <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#ae81ff">00000000000000</span><span style="color:#a6e22e">_CreateIdentitySchema</span><span style="color:#960050;background-color:#1e0010">&#39;</span> has already been applied to the database<span style="color:#f92672">.</span> <span style="color:#a6e22e">Revert</span> it and <span style="color:#66d9ef">try</span> again<span style="color:#f92672">.</span> <span style="color:#a6e22e">If</span> the migration has been applied to other databases<span style="color:#f92672">,</span> consider reverting its changes using a <span style="color:#66d9ef">new</span> migration instead<span style="color:#f92672">.</span></code></pre></div>
 <p>And the right sequence of commands is the following:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ dotnet ef database update <span style="color:#ae81ff">0</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ dotnet ef database update <span style="color:#ae81ff">0</span>
 $ dotnet ef migrations remove
 $ dotnet ef migrations add <span style="color:#a6e22e">CreateIdentitySchema</span>
 $ dotnet ef database update</code></pre></div>
 <p>After that you can connect to the database and check that you have all the required Identity tables:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ psql postgres
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ psql postgres
 postgres<span style="color:#f92672">=</span><span style="color:#66d9ef">#</span> \c <span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">DATABASE</span>
 <span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">DATABASE</span><span style="color:#f92672">=</span><span style="color:#66d9ef">#</span> \d
                     <span style="color:#a6e22e">List</span> of relations
@@ -289,14 +289,14 @@ postgres<span style="color:#f92672">=</span><span style="color:#66d9ef">#</span>
 <h2 id="scaffolding-identity-code">Scaffolding Identity code</h2>
 <p>You might want to customize default Identity views and/or modify its code, but by default your project doesn&rsquo;t have these files, so first you&rsquo;ll need to <a href="https://docs.microsoft.com/en-us/aspnet/core/security/authentication/scaffold-identity?view=aspnetcore-5.0&amp;tabs=netcore-cli#scaffold-identity-into-an-mvc-project-with-authorization">scaffold</a> them.</p>
 <p>Install required packages and the tool:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ dotnet tool install <span style="color:#f92672">-</span>g dotnet<span style="color:#f92672">-</span>aspnet<span style="color:#f92672">-</span>codegenerator
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ dotnet tool install <span style="color:#f92672">-</span>g dotnet<span style="color:#f92672">-</span>aspnet<span style="color:#f92672">-</span>codegenerator
 $ dotnet tool update <span style="color:#f92672">--</span>global dotnet<span style="color:#f92672">-</span>aspnet<span style="color:#f92672">-</span>codegenerator <span style="color:#f92672">--</span>version <span style="color:#ae81ff">5.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span><span style="color:#f92672">-</span>rc<span style="color:#f92672">.</span><span style="color:#ae81ff">2.20473</span><span style="color:#f92672">.</span><span style="color:#ae81ff">1</span>
 $ dotnet add <span style="color:#66d9ef">package</span> Microsoft.VisualStudio.Web.CodeGeneration.Design <span style="color:#f92672">--</span>version <span style="color:#ae81ff">5.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span><span style="color:#f92672">-</span>rc<span style="color:#f92672">.</span><span style="color:#ae81ff">2.20475</span><span style="color:#f92672">.</span><span style="color:#ae81ff">17</span>
 $ dotnet add <span style="color:#66d9ef">package</span> Microsoft.EntityFrameworkCore.SqlServer <span style="color:#f92672">--</span>version <span style="color:#ae81ff">5.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span><span style="color:#f92672">-</span>rc<span style="color:#f92672">.</span><span style="color:#ae81ff">2.20475</span><span style="color:#f92672">.</span><span style="color:#ae81ff">6</span></code></pre></div>
 <p>Run the tool with <code>-h</code> parameter to see the help output and to check if there any problems with your project (<em>if any, they will be listed in the end</em>):</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ dotnet aspnet<span style="color:#f92672">-</span>codegenerator identity <span style="color:#f92672">-</span>h</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ dotnet aspnet<span style="color:#f92672">-</span>codegenerator identity <span style="color:#f92672">-</span>h</code></pre></div>
 <p>To see the full list of files you can scaffold/generate:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ dotnet aspnet-codegenerator identity --listFiles
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ dotnet aspnet-codegenerator identity --listFiles
 Building project ...
 Finding the generator <span style="color:#e6db74">&#39;identity&#39;</span>...
 Running the generator <span style="color:#e6db74">&#39;identity&#39;</span>...
@@ -337,9 +337,9 @@ Account.ResetPassword
 Account.ResetPasswordConfirmation
 RunTime 00:00:07.77</code></pre></div>
 <p>So if you want to generate only <code>AccessDenied</code>, <code>Register</code>, <code>Login</code> and <code>Logout</code> pages, then:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ dotnet aspnet<span style="color:#f92672">-</span>codegenerator identity <span style="color:#f92672">-</span>dc <span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PROJECT</span><span style="color:#f92672">.</span><span style="color:#a6e22e">Data</span><span style="color:#f92672">.</span><span style="color:#a6e22e">ApplicationDbContext</span> <span style="color:#f92672">--</span>files <span style="color:#e6db74">&#34;Account.AccessDenied;Account.Register;Account.Login;Account.Logout&#34;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ dotnet aspnet<span style="color:#f92672">-</span>codegenerator identity <span style="color:#f92672">-</span>dc <span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PROJECT</span><span style="color:#f92672">.</span><span style="color:#a6e22e">Data</span><span style="color:#f92672">.</span><span style="color:#a6e22e">ApplicationDbContext</span> <span style="color:#f92672">--</span>files <span style="color:#e6db74">&#34;Account.AccessDenied;Account.Register;Account.Login;Account.Logout&#34;</span></code></pre></div>
 <p>That will generate the following files in your project:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">Areas</span><span style="color:#f92672">/</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">Areas</span><span style="color:#f92672">/</span>
 <span style="color:#f92672">└──</span> <span style="color:#a6e22e">Identity</span>
     <span style="color:#f92672">├──</span> <span style="color:#a6e22e">IdentityHostingStartup</span><span style="color:#f92672">.</span>cs
     <span style="color:#f92672">└──</span> <span style="color:#a6e22e">Pages</span>

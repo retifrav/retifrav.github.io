@@ -5,7 +5,7 @@
     <title>New server and remark42 comments | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2021/05/30/new-server-and-remark42-comments/" />
 
-    <meta name="generator" content="Hugo 0.84.0" />
+    <meta name="generator" content="Hugo 0.86.1" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -26,8 +26,8 @@
 So the main website and the origin is now on https://decovar.dev/, and https://retifrav.github.io/ will continue to exist as a mirror on GitHub Pages." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://retifrav.github.io/blog/2021/05/30/new-server-and-remark42-comments/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2021-05-30T18:32:54&#43;02:00" />
-<meta property="article:modified_time" content="2021-05-30T18:32:54&#43;02:00" />
+<meta property="article:published_time" content="2021-05-30T18:32:54+02:00" />
+<meta property="article:modified_time" content="2021-05-30T18:32:54+02:00" />
 
 
 
@@ -108,7 +108,7 @@ So the main website and the origin is now on https://decovar.dev/, and https://r
 <p>Since I&rsquo;m now on my own without GitHub infrastructure, I needed a domain and a web-server.</p>
 <p>For the domain I chose <code>decovar.dev</code>, and <code>.dev</code> mandates the use of HTTPS. I already covered that in the <a href="/blog/2021/04/05/acme-sh-instead-of-certbot/">previous post</a>.</p>
 <p>The web-server (<em>NGINX-config</em>) part is not very complicated, as not much is needed for serving a static website:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">server</span> {
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">server</span> {
     <span style="color:#f92672">listen</span> <span style="color:#ae81ff">443</span> <span style="color:#e6db74">ssl</span>;
     <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:443</span> <span style="color:#e6db74">ssl</span>;
 
@@ -147,7 +147,7 @@ So the main website and the origin is now on https://decovar.dev/, and https://r
 </code></pre></div><p>So I could set my own error pages for <code>401</code>, <code>403</code> and <code>404</code> codes. The reason for not having those templated with Hugo is simply the fact the Hugo <a href="https://github.com/gohugoio/hugo/issues/1316">only supports 404</a>.</p>
 <p>I also protected <code>/admin</code> route with <a href="https://en.wikipedia.org/wiki/Basic_access_authentication">Basic authentication</a> - to add password protection for <a href="#goaccess">GoAccess</a> reports. They are not that secret, actually, so I might make them public later.</p>
 <p>Another nice thing about having full control over the web-server is that you can set whatever HTTP headers and MIME types. In my case I wanted to set <code>text/plain</code> for my public PGP key (<em><code>*.asc</code> extension</em>), and with NGINX this is done in <code>/etc/nginx/mime.types</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">...</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">...</span>
 <span style="color:#e6db74">text/plain</span> <span style="color:#e6db74">txt</span> <span style="color:#e6db74">asc</span>;
 <span style="color:#66d9ef">...</span>
 </code></pre></div><p>To see the difference, try opening <a href="/about/retif-public.asc">this</a> and <a href="https://retifrav.github.io/about/retif-public.asc">that</a> link. By the way, Firefox complained about unknown encoding for a plain-text file, which is why I also needed to set <code>charset utf-8;</code> header in the website config.</p>
@@ -164,19 +164,19 @@ So the main website and the origin is now on https://decovar.dev/, and https://r
 <p>None (<em>except for <code>/</code> and <code>/index.html</code></em>) of these routes belong to my website, and like I said there was actually no website on the server. So my guess is that since Oracle Cloud (<em>also AWS and Azure</em>) and often rented by businesses, their IP-ranges are more likely to get probed like this than hosts from other providers. For instance, I also rent servers from a couple of other (<em>smaller</em>) providers, and none of them have this amount of probing requests on their hosts.</p>
 <p>Naturally, such spamming completely messes up the analytics. The total number of unique visitors over the measured period (<em>last two months</em>) was <strong>2918</strong> - a value that normally I would be happy to see for my humble blog, but in this case this is obviously not a real number of actual visitors.</p>
 <p>So what can be done here? There is a pretty simple solution - to blacklist these trash requests. For example, if we compose a text file <code>requests-blacklisted.txt</code> with something like this:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-txt" data-lang="txt">/vendor/phpunit/
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-txt" data-lang="txt">/vendor/phpunit/
 /_ignition/
 XDEBUG_SESSION_START
 /solr/admin/
 /index.php
 /dnscfg.cgi
 </code></pre></div><p>then here&rsquo;s how this list can be used in the pipe of generating GoAccess report:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ zcat -f /var/log/nginx/access.log* <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ zcat -f /var/log/nginx/access.log* <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    | grep -v -f /path/to/requests-blacklisted.txt <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    | sudo -u www-data goaccess - -o /var/www/decovar.dev/admin/analytics.html
 </code></pre></div><p>However, this way you are risking to accidentally <em>blacklist</em> some routes which you don&rsquo;t have now, but might have in future, so an even better solution would be to first <em>whitelist</em> all the known routes of your website and then optionally <em>blacklist</em> some sub-routes.</p>
 <p>In my case, here&rsquo;s what I whitelisted in <code>requests-whitelisted.txt</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">GET <span style="color:#ae81ff">\/\s</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">GET <span style="color:#ae81ff">\/\s</span>
 GET <span style="color:#ae81ff">\/</span>rss<span style="color:#ae81ff">\.</span>xml<span style="color:#ae81ff">\s</span>
 GET <span style="color:#ae81ff">\/</span>projects<span style="color:#f92672">(</span><span style="color:#ae81ff">\/</span>|<span style="color:#ae81ff">\s</span><span style="color:#f92672">)</span>
 GET <span style="color:#ae81ff">\/</span>stuff<span style="color:#f92672">(</span><span style="color:#ae81ff">\/</span>|<span style="color:#ae81ff">\s</span><span style="color:#f92672">)</span>
@@ -186,11 +186,11 @@ GET <span style="color:#ae81ff">\/</span>etc<span style="color:#f92672">(</span>
 GET <span style="color:#ae81ff">\/</span>top<span style="color:#f92672">(</span><span style="color:#ae81ff">\/</span>|<span style="color:#ae81ff">\s</span><span style="color:#f92672">)</span>
 </code></pre></div><p>I don&rsquo;t see much point in counting requests with methods other than <code>GET</code>, especially for a static website, so I explicitly whitelisted only requests with <code>GET</code> method.</p>
 <p>Just in case, if you don&rsquo;t understand why my rules are like this, take a look at any request in NGINX access log, such as this one:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">36.233.31.141 - - <span style="color:#f92672">[</span>30/May/2021:05:39:47 +0000<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /blog/2017/09/29/virtual-box-on-mac-os/images/virtualbox-host-only-network-adapter.png HTTP/1.1&#34;</span> <span style="color:#ae81ff">200</span> <span style="color:#ae81ff">210740</span> <span style="color:#e6db74">&#34;https://decovar.dev/blog/2017/09/29/virtual-box-on-mac-os/&#34;</span> <span style="color:#e6db74">&#34;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36&#34;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">36.233.31.141 - - <span style="color:#f92672">[</span>30/May/2021:05:39:47 +0000<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /blog/2017/09/29/virtual-box-on-mac-os/images/virtualbox-host-only-network-adapter.png HTTP/1.1&#34;</span> <span style="color:#ae81ff">200</span> <span style="color:#ae81ff">210740</span> <span style="color:#e6db74">&#34;https://decovar.dev/blog/2017/09/29/virtual-box-on-mac-os/&#34;</span> <span style="color:#e6db74">&#34;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36&#34;</span>
 </code></pre></div><p>Admittedly, it&rsquo;s not the best RegEx in the world for such purpose, but it seems to work.</p>
 <p>I could&rsquo;ve also added <code>GET \/ HTTP</code> and maybe also <code>GET \/css\/</code> and <code>GET \/js\/</code> rules, but they add pretty much useless noise in reports, so I haven&rsquo;t.</p>
 <p>Anyway, having added this list to the pipe, I almost completely eliminated trash requests from report. Almost - because there were still some, which did not belong to my website, so I modified the file with blacklisted requests like so:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#ae81ff">\.</span><span style="color:#f92672">(</span>jar|jsp|php|asp|aspx|cgi|pl|cfm|htm|nsf<span style="color:#f92672">)</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#ae81ff">\.</span><span style="color:#f92672">(</span>jar|jsp|php|asp|aspx|cgi|pl|cfm|htm|nsf<span style="color:#f92672">)</span>
 GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>skin<span style="color:#ae81ff">\/</span>?
 GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>bad397<span style="color:#ae81ff">\/</span>?
 GET <span style="color:#ae81ff">\/</span>blog<span style="color:#ae81ff">\/</span>pivot<span style="color:#ae81ff">\/</span>?
@@ -213,7 +213,7 @@ YandexZenRss<span style="color:#ae81ff">\/</span>
 ZoominfoBot
 </code></pre></div><p>The second half of the list excludes crawlers, and actually GoAccess seems to have its own lists of crawlers and even a setting to exclude them, but for some reasons that doesn&rsquo;t work for me. Plus not all the crawlers I&rsquo;ve seen are present in GoAccess&rsquo;es list.</p>
 <p>And the updated pipe for generating GoAccess report now looks like this:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ zcat -f /var/log/nginx/access.log* <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ zcat -f /var/log/nginx/access.log* <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    | egrep -if /path/to/requests-whitelisted.txt <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    | egrep -vif /path/to/requests-blacklisted.txt <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    | sudo -u www-data goaccess - -o /var/www/decovar.dev/admin/analytics.html
@@ -241,20 +241,20 @@ ZoominfoBot
 <p>So here&rsquo;s how I added it to my website.</p>
 <h2 id="system-user-config-and-systemd-service">System user, config and systemd service</h2>
 <p>As usual, first you create a system user for it:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo adduser <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo adduser <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --system <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --group <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --disabled-password <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    remark42
 </code></pre></div><p>Then you get the binary and install it in the system:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cd /home/remark42/
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cd /home/remark42/
 $ wget https://github.com/umputun/remark42/releases/download/v1.8.1/remark42.linux-amd64.tar.gz
 $ tar -xvf remark42.linux-amd64.tar.gz
 $ sudo mv remark42.linux-amd64 /usr/local/bin/
 </code></pre></div><p>Official documentation recommends to run it from Docker, but obviously we won&rsquo;t do so, and that complicates things a bit. The setup without Docker is actually not that hard, but I had to refer to <a href="https://blog.lasall.dev/post/hugo-and-comments-with-remark42/">this article</a> a couple of times, as some things were not entirely clear.</p>
 <p>To run remark42 you need to pass several mandatory parameters to it. If you&rsquo;d like to provide non-default paths for things like backup folder and avatars, that can be also done via parameters.</p>
 <p>If you&rsquo;ll pass those via CLI, that might look like the following:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ /usr/local/bin/remark42.linux-amd64 server --secret<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SOME-SECRET&#34;</span> --url<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;https://comments.decovar.dev&#34;</span> <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ /usr/local/bin/remark42.linux-amd64 server --secret<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SOME-SECRET&#34;</span> --url<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;https://comments.decovar.dev&#34;</span> <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --site<span style="color:#f92672">=</span>decovar.dev --auth.anon --edit-time<span style="color:#f92672">=</span>10m <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --store.bolt.path<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/home/remark42/data&#34;</span> --backup<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/home/remark42/backup&#34;</span> <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --avatar.fs.path<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/home/remark42/avatars&#34;</span> --avatar.bolt.file<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/home/remark42/avatars.db&#34;</span> <span style="color:#ae81ff">\
@@ -263,8 +263,8 @@ $ sudo mv remark42.linux-amd64 /usr/local/bin/
 </span><span style="color:#ae81ff"></span>    --image.bolt.file<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/home/remark42/img/pictures.db&#34;</span> <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --web-root<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/home/remark42/web&#34;</span> --port<span style="color:#f92672">=</span><span style="color:#ae81ff">8765</span>
 </code></pre></div><p>Not very convenient, is it. Fortunately, you can put all this into a config/environmental file:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo -u remark42 nano /home/remark42/remark42.conf
-</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#a6e22e">REMARK_URL</span><span style="color:#f92672">=</span><span style="color:#e6db74">https://comments.decovar.dev</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo -u remark42 nano /home/remark42/remark42.conf
+</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#a6e22e">REMARK_URL</span><span style="color:#f92672">=</span><span style="color:#e6db74">https://comments.decovar.dev</span>
 <span style="color:#a6e22e">SECRET</span><span style="color:#f92672">=</span><span style="color:#e6db74">SOME-SECRET</span>
 <span style="color:#a6e22e">REMARK_PORT</span><span style="color:#f92672">=</span><span style="color:#e6db74">8765</span>
 <span style="color:#a6e22e">SITE</span><span style="color:#f92672">=</span><span style="color:#e6db74">decovar.dev</span>
@@ -277,8 +277,8 @@ $ sudo mv remark42.linux-amd64 /usr/local/bin/
 </code></pre></div><p>By that moment I also decided not to customize paths and to go with the default ones, especially that they will appear relatively to the working folder anyway.</p>
 <p>Unfortunately, there is no option to bind remark42 only to localhost (<em>if you&rsquo;d like to run it behind reverse-proxy</em>), so its port is exposed to the internet by default, and so you might want to add a blocking rule in your firewall for it. I <a href="https://github.com/umputun/remark42/discussions/1000">have asked</a> about this in remark42 repository, and what would you know, developers responded almost immediately and <a href="https://github.com/umputun/remark42/pull/1001/commits/2a60d267d4432e4bfa378c167a5a98e3cfedd5f3">added</a> this option to sources right away, so the next release should have it.</p>
 <p>Having created the config, you can now add a systemd service like this:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo nano /etc/systemd/system/remark42.service
-</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[Unit]</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo nano /etc/systemd/system/remark42.service
+</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[Unit]</span>
 <span style="color:#a6e22e">Description</span><span style="color:#f92672">=</span><span style="color:#e6db74">remark42</span>
 <span style="color:#a6e22e">After</span><span style="color:#f92672">=</span><span style="color:#e6db74">network.target</span>
 
@@ -298,7 +298,7 @@ $ sudo mv remark42.linux-amd64 /usr/local/bin/
 </code></pre></div><p>Don&rsquo;t forget to enable and run it.</p>
 <h2 id="nginx-config-and-certificate">NGINX config and certificate</h2>
 <p>Of course, we&rsquo;ll be running remark42 behind NGINX as a reverse-proxy:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">server</span> {
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">server</span> {
     <span style="color:#f92672">listen</span> <span style="color:#ae81ff">443</span> <span style="color:#e6db74">ssl</span>;
     <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:443</span> <span style="color:#e6db74">ssl</span>;
 
@@ -326,7 +326,7 @@ $ sudo mv remark42.linux-amd64 /usr/local/bin/
     <span style="color:#f92672">return</span> <span style="color:#ae81ff">301</span> <span style="color:#e6db74">https://</span>$server_name$request_uri;
 }
 </code></pre></div><p>So the service runs on a subdomain (<em>which means you&rsquo;ll need to declare it at your registrar</em>), and the certificate is the same one as for the main domain. Just in case, here&rsquo;s how you can <a href="/blog/2021/04/05/acme-sh-instead-of-certbot/#getting-lets-encrypt-certificate">issue</a> and install Let&rsquo;s Encrypt certificate for more than one domain:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ acme.sh --issue -d decovar.dev -d www.decovar.dev -d comments.decovar.dev -w /var/www/decovar.dev
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ acme.sh --issue -d decovar.dev -d www.decovar.dev -d comments.decovar.dev -w /var/www/decovar.dev
 $ acme.sh --install-cert -d decovar.dev -d www.decovar.dev -d comments.decovar.dev <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --key-file ~/certs/decovar.dev/key.pem  <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --fullchain-file ~/certs/decovar.dev/fullchain.pem <span style="color:#ae81ff">\
@@ -334,7 +334,7 @@ $ acme.sh --install-cert -d decovar.dev -d www.decovar.dev -d comments.decovar.d
 </code></pre></div><p>To test if your remark42 setup is correct, documentation suggest to open <code>/web/</code> route on your comments subdomain, such as <a href="https://comments.decovar.dev/web/">https://comments.decovar.dev/web/</a>, but for me this page <a href="https://github.com/umputun/remark42/discussions/1002">is failing</a> (<em>yet another artifact of running without Docker</em>), although this particular problem should be fixed soon. At the same time, comments on the main website are working fine.</p>
 <h2 id="adding-remark42-to-hugo">Adding remark42 to Hugo</h2>
 <p>To run the remark42 scripts, I created a <code>/layouts/partials/comments.html</code> partial:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">script</span>&gt;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">script</span>&gt;
     <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">remark_config</span> <span style="color:#f92672">=</span> {
         <span style="color:#a6e22e">host</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;{{ .Site.Params.remark42url }}&#34;</span>,
         <span style="color:#a6e22e">site_id</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;{{ .Site.Params.domain }}&#34;</span>,
@@ -350,12 +350,12 @@ $ acme.sh --install-cert -d decovar.dev -d www.decovar.dev -d comments.decovar.d
 &lt;/<span style="color:#f92672">script</span>&gt;
 &lt;<span style="color:#f92672">script</span>&gt;<span style="color:#f92672">!</span><span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">e</span>,<span style="color:#a6e22e">n</span>){<span style="color:#66d9ef">for</span>(<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">o</span><span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>;<span style="color:#a6e22e">o</span><span style="color:#f92672">&lt;</span><span style="color:#a6e22e">e</span>.<span style="color:#a6e22e">length</span>;<span style="color:#a6e22e">o</span><span style="color:#f92672">++</span>){<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">r</span><span style="color:#f92672">=</span><span style="color:#a6e22e">n</span>.<span style="color:#a6e22e">createElement</span>(<span style="color:#e6db74">&#34;script&#34;</span>),<span style="color:#a6e22e">c</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;.js&#34;</span>,<span style="color:#a6e22e">d</span><span style="color:#f92672">=</span><span style="color:#a6e22e">n</span>.<span style="color:#a6e22e">head</span><span style="color:#f92672">||</span><span style="color:#a6e22e">n</span>.<span style="color:#a6e22e">body</span>;<span style="color:#e6db74">&#34;noModule&#34;</span><span style="color:#66d9ef">in</span> <span style="color:#a6e22e">r</span><span style="color:#f92672">?</span>(<span style="color:#a6e22e">r</span>.<span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;module&#34;</span>,<span style="color:#a6e22e">c</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;.mjs&#34;</span>)<span style="color:#f92672">:</span><span style="color:#a6e22e">r</span>.<span style="color:#66d9ef">async</span><span style="color:#f92672">=!</span><span style="color:#ae81ff">0</span>,<span style="color:#a6e22e">r</span>.<span style="color:#a6e22e">defer</span><span style="color:#f92672">=!</span><span style="color:#ae81ff">0</span>,<span style="color:#a6e22e">r</span>.<span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#a6e22e">remark_config</span>.<span style="color:#a6e22e">host</span><span style="color:#f92672">+</span><span style="color:#e6db74">&#34;/web/&#34;</span><span style="color:#f92672">+</span><span style="color:#a6e22e">e</span>[<span style="color:#a6e22e">o</span>]<span style="color:#f92672">+</span><span style="color:#a6e22e">c</span>,<span style="color:#a6e22e">d</span>.<span style="color:#a6e22e">appendChild</span>(<span style="color:#a6e22e">r</span>)}}(<span style="color:#a6e22e">remark_config</span>.<span style="color:#a6e22e">components</span><span style="color:#f92672">||</span>[<span style="color:#e6db74">&#34;embed&#34;</span>],document);&lt;/<span style="color:#f92672">script</span>&gt;
 </code></pre></div><p>It takes some parameters from <code>config.toml</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[<span style="color:#a6e22e">params</span>]
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[<span style="color:#a6e22e">params</span>]
     <span style="color:#a6e22e">domain</span> = <span style="color:#e6db74">&#34;decovar.dev&#34;</span>
     <span style="color:#a6e22e">remark42url</span> = <span style="color:#e6db74">&#34;https://comments.decovar.dev&#34;</span>
 </code></pre></div><p>And also it conveniently makes use of Hugo variables such as <code>.Permalink</code> and <code>.Title</code>.</p>
 <p>Then I included this partial in the <code>/layouts/_default/single.html</code> template and also added a <code>&lt;div&gt;</code> for loading the actual comments:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-md" data-lang="md">{{ define &#34;main&#34; }}
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-md" data-lang="md">{{ define &#34;main&#34; }}
     &lt;<span style="color:#f92672">article</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;post&#34;</span>&gt;
         &lt;<span style="color:#f92672">div</span>&gt;
             &lt;<span style="color:#f92672">h1</span> <span style="color:#a6e22e">class </span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;post-title&#34;</span>&gt;{{ .Title }}&lt;/<span style="color:#f92672">h1</span>&gt;
@@ -379,18 +379,18 @@ $ acme.sh --install-cert -d decovar.dev -d www.decovar.dev -d comments.decovar.d
 {{ end }}
 
 </code></pre></div><p>The <code>AddToBottom</code> block is defined in <code>/layouts/_default/baseof.html</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-md" data-lang="md">        ...
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-md" data-lang="md">        ...
         {{- block &#34;AddToBottom&#34; .}}{{- end }}
     &lt;/<span style="color:#f92672">body</span>&gt;
 &lt;/<span style="color:#f92672">html</span>&gt;
 </code></pre></div><p>This way comments scripts will be added only on pages that have <code>comments</code> parameter in the front matter, like so:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-md" data-lang="md">---
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-md" data-lang="md">---
 title: &#34;About me&#34;
 date: 2014-07-30 10:35:42 +0300
 comments: true
 ---
 </code></pre></div><p>But for pages in the <code>blog</code> section I&rsquo;d like to have comments enabled by default, without adding this parameter to the front matter, so I added the scripts partial unconditionally in the <code>/layouts/blog/single.html</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-md" data-lang="md">    ...
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-md" data-lang="md">    ...
     &lt;<span style="color:#f92672">hr</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;comments-divider&#34;</span>&gt;
     &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;comments&#34;</span>&gt;
         &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;remark42&#34;</span>&gt;&lt;/<span style="color:#f92672">div</span>&gt;
@@ -403,7 +403,7 @@ comments: true
 </code></pre></div><h2 id="styling">Styling</h2>
 <p><a href="https://github.com/umputun/remark42/issues/5">At the moment</a> remark42 commenting form and comments tree are added to the page via <code>iframe</code>, so setting a custom CSS would not be a very trivial task. One possible <a href="https://maxmastalerz.com/blog/how-to-customize-remark42-css-via-a-proxy-workaround">workaround</a> for that is overwriting or rather redirecting requests to CSS files.</p>
 <p>But actually I am totally fine with the &ldquo;stock&rdquo; styles for both comment form and comments tree. What I did want to customize though was the latest comments widget, and that one is not an <code>iframe</code> but a regular <code>div</code>, so here it cometh in <code>comments.scss</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scss" data-lang="scss"><span style="color:#f92672">div</span><span style="color:#a6e22e">.remark42__last-comments</span> {
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scss" data-lang="scss"><span style="color:#f92672">div</span><span style="color:#a6e22e">.remark42__last-comments</span> {
     <span style="color:#a6e22e">margin</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">30</span><span style="color:#66d9ef">px</span> <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">20</span><span style="color:#66d9ef">px</span>;
 
     <span style="color:#f92672">article</span><span style="color:#a6e22e">.comment</span> {
@@ -448,7 +448,7 @@ comments: true
 <h2 id="import-from-disqus">Import from Disqus</h2>
 <p>Another nice thing about remark42 is that it supports importing comments from Disqus. In the very beginning I was using exactly Disqus, before I switched to GitHub issue-based comments, and so it was nice to be able to move over at least the comments from Disqus.</p>
 <p>To do so, go to <a href="https://waspenterprises.disqus.com/admin/discussions/export/">Export</a> page (<em>but first try to find it yourself in the Disqus admin panel</em>) and request an export. Some time later you will receive an e-mail with the link to your exported comments. Having the link, go to your host, download the archive, unpack and import to remark42:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cd /home/remark42/downloads
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cd /home/remark42/downloads
 $ sudo -u remark42 wget https://media.disqus.com/uploads/exports/1/1/waspenterprises-2021-05-22T20:31:45.123456-all.xml.gz
 $ sudo -u remark42 gunzip ./waspenterprises-2021-05-22T20:31:45.123456-all.xml.gz
 $ sudo -u remark42 remark42.linux-amd64 import -p disqus <span style="color:#ae81ff">\
@@ -457,10 +457,10 @@ $ sudo -u remark42 remark42.linux-amd64 import -p disqus <span style="color:#ae8
 </span><span style="color:#ae81ff"></span>    -f ./downloads/waspenterprises-2021-05-22T20:31:45.123456-all.xml
 </code></pre></div><p>For that to work you need to have <code>ADMIN_PASSWD</code> set in your remark42 config file. I didn&rsquo;t see that in import/remapping examples which I found on the internet, but as I recall for me either of the commands was complaining about missing mandatory parameters such as <code>--admin-passwd</code>.</p>
 <p>Now you need to remap the imported comments from the old page URLs to the new URLs on your domain. Create a file with mapping rules, like so:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo -u remark42 nano rules.txt
-</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-txt" data-lang="txt">https://retifrav.github.io* https://decovar.dev*
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo -u remark42 nano rules.txt
+</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-txt" data-lang="txt">https://retifrav.github.io* https://decovar.dev*
 </code></pre></div><p>And execute the remapping:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo -u remark42 remark42.linux-amd64 remap <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo -u remark42 remark42.linux-amd64 remap <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --secret SOME-SECRET --url https://comments.decovar.dev <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --admin-passwd SOME-PASSWORD -f ./rules.txt -s decovar.dev
 </code></pre></div><p>Actually, it wasn&rsquo;t too obvious to guess what rules exactly are expected here. I tried several combinations of rules and parameters for the remapping command, and eventually something worked. What exactly did work - I don&rsquo;t know, because to see if it worked or not, you need to restart the service, and I figured that out only after some time, so maybe the very first attempt was already successful, and all further actions were redundant.</p>
@@ -479,12 +479,12 @@ $ sudo -u remark42 remark42.linux-amd64 import -p disqus <span style="color:#ae8
 
 
 <p>Now you can perform administrator actions. For example, if you&rsquo;d like to delete a comment with <code>COMMENT-ID</code> from <code>https://decovar.dev/some/page.html</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    -X <span style="color:#e6db74">&#34;DELETE&#34;</span> <span style="color:#e6db74">&#34;https://comments.decovar.dev/api/v1/admin/comment/COMMENT-ID?site=decovar.dev&amp;url=https:%2F%2Fdecovar.dev%2Fsome%2Fpage.html&#34;</span> <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#39;X-JWT: HERE-GOES-JWT&#39;</span>
 </code></pre></div><h2 id="telegram-notifications">Telegram notifications</h2>
 <p>You can enable <a href="https://remark42.com/docs/latest/telegram/">Telegram notifications</a> in a minute or so. Get a <a href="https://core.telegram.org/bots#creating-a-new-bot">token</a> from <a href="https://t.me/botfather">BotFather</a> (<em>or reuse one of your existing bots</em>) and add the following to the remark42 config:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">NOTIFY_TYPE<span style="color:#f92672">=</span>telegram
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">NOTIFY_TYPE<span style="color:#f92672">=</span>telegram
 NOTIFY_TELEGRAM_CHAN<span style="color:#f92672">=</span>YOUR-ID
 NOTIFY_TELEGRAM_TOKEN<span style="color:#f92672">=</span>YOUR-BOT-TOKEN
 </code></pre></div><p>Despite documentation saying that <code>NOTIFY_TELEGRAM_CHAN</code> is for a channel ID, this value can actually be set to either of the following:</p>
@@ -505,12 +505,12 @@ NOTIFY_TELEGRAM_TOKEN<span style="color:#f92672">=</span>YOUR-BOT-TOKEN
 <p>Apparently, this is what <a href="https://en.wikipedia.org/wiki/Canonical_link_element">canonical url</a> is (<em>partly</em>) for. So you just need to add it to <code>&lt;head&gt;</code> on your mirrors, pointing to the main website.</p>
 <p>However, Google can still <a href="https://developers.google.com/search/docs/advanced/crawling/consolidate-duplicate-urls#how-googlebot-indexes-and-chooses-the-canonical-url">decide on its own</a>, which page is the origin and which is a mirror, despite your explicit intention. Classic Google.</p>
 <p>Either way, here&rsquo;s what I did for the mirror on <a href="https://retifrav.github.io/">https://retifrav.github.io/</a>. First I added the main website base URL as a parameter in <code>config.toml</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[<span style="color:#a6e22e">params</span>]
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[<span style="color:#a6e22e">params</span>]
     <span style="color:#a6e22e">mainSite</span> = <span style="color:#e6db74">&#34;https://decovar.dev&#34;</span>
 </code></pre></div><p>And then added canonical URL in <code>/layouts/_default/baseof.html</code>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">link</span> <span style="color:#a6e22e">rel</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;canonical&#34;</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;{{ .Site.Params.mainSite }}{{ .RelPermalink }}&#34;</span> /&gt;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">link</span> <span style="color:#a6e22e">rel</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;canonical&#34;</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;{{ .Site.Params.mainSite }}{{ .RelPermalink }}&#34;</span> /&gt;
 </code></pre></div><p>Plus I added this orange banner right under the page header block:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">style</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;&#34;</span>&gt;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">style</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;&#34;</span>&gt;
     On 19.05.2021 the website was moved to
     &lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;{{ .Site.Params.mainSite }}{{ .RelPermalink }}&#34;</span> <span style="color:#a6e22e">style</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;color:black; font-weight:bold;&#34;</span>&gt;
         {{ .Site.Params.mainSite }}/&lt;/<span style="color:#f92672">a</span>&gt;. This is just a mirror now.

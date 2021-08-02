@@ -5,7 +5,7 @@
     <title>Creating a Telegram IV template for a blog on Octopress | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2017/05/19/creating-telegram-iv-template-for-octopress/" />
 
-    <meta name="generator" content="Hugo 0.84.0" />
+    <meta name="generator" content="Hugo 0.86.1" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -20,8 +20,8 @@
 For those, who (like me) has an Octopress-based blog, it is an extremely easy thing to do." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://retifrav.github.io/blog/2017/05/19/creating-telegram-iv-template-for-octopress/" /><meta property="article:section" content="blog" />
-<meta property="article:published_time" content="2017-05-19T15:06:04&#43;02:00" />
-<meta property="article:modified_time" content="2017-05-19T15:06:04&#43;02:00" />
+<meta property="article:published_time" content="2017-05-19T15:06:04+02:00" />
+<meta property="article:modified_time" content="2017-05-19T15:06:04+02:00" />
 
 
 
@@ -103,7 +103,7 @@ For those, who (like me) has an Octopress-based blog, it is an extremely easy th
 <li>Removing &ldquo;trash&rdquo; blocks like comments, asides, etc.</li>
 </ol>
 <p>Well, here&rsquo;s a template I&rsquo;ve created for my blog (based on one of the <a href="https://instantview.telegram.org/samples/">Sample Templates</a>):</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#75715e">### STEP 1: Define which pages get Instant View and which don&#39;t</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#75715e">### STEP 1: Define which pages get Instant View and which don&#39;t</span>
 
 <span style="color:#75715e"># All blog posts in the Octopress have a /blog/ section in their URLs, so:</span>
 ?<span style="color:#e6db74">path</span>: <span style="color:#e6db74">/blog/</span><span style="color:#f92672">.</span>+
@@ -133,7 +133,7 @@ $main: <span style="color:#e6db74">//</span>div<span style="color:#f92672">[</sp
 <p>When you edit something in the template editor, the <strong>IV</strong> preview will try to reflect those changes, and the output will display some information along with debug messages. In the beginning it was doing it soooo slow, like literally for several minutes and that was a pain, but then apparently they fixed something, because now it applies the changes right away.</p>
 <h2 id="about-xpath">About XPath</h2>
 <p>Now a bit of explanation about the expression for <code>published_date</code> property. <strong>IV</strong> templates use <a href="https://en.wikipedia.org/wiki/XPath">XPath</a> expressions to navigate through the HTML source of your page. And if you would open the page source of any Octopress blog, you&rsquo;d see, that published date can be found in two places, so let&rsquo;s take a look at one of them:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">footer</span>&gt;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">footer</span>&gt;
     &lt;<span style="color:#f92672">p</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;meta&#34;</span>&gt;
         &lt;<span style="color:#f92672">span</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;byline author vcard&#34;</span>&gt;Posted by &lt;<span style="color:#f92672">span</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;fn&#34;</span>&gt;retif&lt;/<span style="color:#f92672">span</span>&gt;&lt;/<span style="color:#f92672">span</span>&gt;
         2017-05-16 23:54:21 +0200
@@ -145,13 +145,13 @@ $main: <span style="color:#e6db74">//</span>div<span style="color:#f92672">[</sp
     &lt;/<span style="color:#f92672">p</span>&gt;
 &lt;/<span style="color:#f92672">footer</span>&gt;</code></pre></div>
 <p>To get the date string you&rsquo;ll need the following XPath expression:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ae81ff">//footer[1]/p[@class=&#34;meta&#34;][1]/text()[2]</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ae81ff">//footer[1]/p[@class=&#34;meta&#34;][1]/text()[2]</span></code></pre></div>
 <p>That means: take the first <code>&lt;footer&gt;</code> element you find in the document, then take its first child <code>&lt;p&gt;</code> element that has a <code>meta</code> class, and then get the second text entry of it. By the way, it would be better without unnecessary spaces:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ae81ff">normalize-space(//footer[1]/p[@class=&#34;meta&#34;][1]/text()[2])</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ae81ff">normalize-space(//footer[1]/p[@class=&#34;meta&#34;][1]/text()[2])</span></code></pre></div>
 <p>But <strong>IV</strong> parser apparently doesn&rsquo;t support all of the XPath functions, because template fails in this case. By the way, Telegram <strong>IV</strong> XPath parser also gets you a bit different results comparing with with some online XPath tools. Keep it in mind, just in case.</p>
 <h2 id="making-changes-in-your-octopress-pages">Making changes in your Octopress pages</h2>
 <p>Ok, that&rsquo;s good enough and it works, but if you want to make it easier for parser (and for yourself), then you can add a special tag that will store the published date of the post. That can be done by editing <code>/source/_includes/article.html</code> of your blog sources:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">header</span>&gt;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">header</span>&gt;
     {% if index %}
       &lt;<span style="color:#f92672">h2</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;entry-title&#34;</span>&gt;&lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;{{ root_url }}{{ post.url }}&#34;</span>&gt;{% if site.titlecase %}{{ post.title | titlecase }}{% else %}{{ post.title }}{% endif %}&lt;/<span style="color:#f92672">a</span>&gt;&lt;/<span style="color:#f92672">h2</span>&gt;
     {% else %}
@@ -169,7 +169,7 @@ $main: <span style="color:#e6db74">//</span>div<span style="color:#f92672">[</sp
     {% endunless %}
   &lt;/<span style="color:#f92672">header</span>&gt;</code></pre></div>
 <p>So, I&rsquo;ve added a new <code>&lt;p&gt;</code> element that has a class <code>meta published_date</code>. Now every blog post will have this meta tag in its source, and I can use it in my <strong>IV</strong> template:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ae81ff">//p[@class=&#34;meta published_date&#34;]/text()[1]</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#ae81ff">//p[@class=&#34;meta published_date&#34;]/text()[1]</span></code></pre></div>
 <p>To get a better understanding of how <strong>IV</strong> parser works, you should definitely read the <a href="https://instantview.telegram.org/docs">documentation</a>.</p>
 <h1 id="how-to-use-a-template">How to use a template</h1>
 <p>Alright, you have created your template. How to apply it to your website? Well, it&rsquo;s kinda fuzzy moment, because <a href="https://instantview.telegram.org/#publishing-templates">the article</a> (to be specific, the &ldquo;<em>For all Telegram users</em>&rdquo; section) only says this:</p>
