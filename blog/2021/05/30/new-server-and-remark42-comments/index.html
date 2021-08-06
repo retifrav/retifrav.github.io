@@ -11,19 +11,12 @@
     <link href="/favicon.png" rel="icon">
 
     <meta name="author" content="retif" />
-    <meta name="description" content="" />
+    <meta name="description" content="Moving to a new server and new domain, setting up NGINX, GoAccess for visitors analytics, remark42 comments, canonical URL" />
 
     <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
 
     <meta property="og:title" content="New server and remark42 comments" />
-<meta property="og:description" content="I decided to move from GitHub Pages to my own server with my own domain. Also I switched from commenting system based on GitHub issues to remark42 comment engine.
-
-
-
-    
-
-
-So the main website and the origin is now on https://decovar.dev/, and https://retifrav.github.io/ will continue to exist as a mirror on GitHub Pages." />
+<meta property="og:description" content="Moving to a new server and new domain, setting up NGINX, GoAccess for visitors analytics, remark42 comments, canonical URL" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://retifrav.github.io/blog/2021/05/30/new-server-and-remark42-comments/" /><meta property="article:section" content="blog" />
 <meta property="article:published_time" content="2021-05-30T18:32:54+02:00" />
@@ -67,7 +60,7 @@ So the main website and the origin is now on https://decovar.dev/, and https://r
 </svg> 2021-05-30 18:32:54 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 17 min read</div>
+</svg> 19 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -91,9 +84,18 @@ So the main website and the origin is now on https://decovar.dev/, and https://r
         <li><a href="#adding-remark42-to-hugo">Adding remark42 to Hugo</a></li>
         <li><a href="#styling">Styling</a></li>
         <li><a href="#import-from-disqus">Import from Disqus</a></li>
-        <li><a href="#authentication">Authentication</a></li>
+        <li><a href="#authentication">Authentication</a>
+          <ul>
+            <li><a href="#e-mail">E-mail</a></li>
+          </ul>
+        </li>
         <li><a href="#api">API</a></li>
-        <li><a href="#telegram-notifications">Telegram notifications</a></li>
+        <li><a href="#notifications">Notifications</a>
+          <ul>
+            <li><a href="#via-telegram">Via Telegram</a></li>
+            <li><a href="#via-e-mail">Via e-mail</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
     <li><a href="#canonical-url">Canonical URL</a></li>
@@ -354,6 +356,7 @@ $ acme.sh --install-cert -d decovar.dev -d www.decovar.dev -d comments.decovar.d
     <span style="color:#a6e22e">domain</span> = <span style="color:#e6db74">&#34;decovar.dev&#34;</span>
     <span style="color:#a6e22e">remark42url</span> = <span style="color:#e6db74">&#34;https://comments.decovar.dev&#34;</span>
 </code></pre></div><p>And also it conveniently makes use of Hugo variables such as <code>.Permalink</code> and <code>.Title</code>.</p>
+<p>If you have <a href="#via-e-mail">e-mail notifications</a> set-up, then set <code>show_email_subscription</code> to <code>true</code>. Back then I didn&rsquo;t have it, so I set it to <code>false</code>.</p>
 <p>Then I included this partial in the <code>/layouts/_default/single.html</code> template and also added a <code>&lt;div&gt;</code> for loading the actual comments:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-md" data-lang="md">{{ define &#34;main&#34; }}
     &lt;<span style="color:#f92672">article</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;post&#34;</span>&gt;
@@ -467,8 +470,31 @@ $ sudo -u remark42 remark42.linux-amd64 import -p disqus <span style="color:#ae8
 <p>After the remapping all the old Disqus comments magically appeared under the posts on my new website. Shortly after I went to Disqus admin panel and deleted all the comments from the old website there.</p>
 <h2 id="authentication">Authentication</h2>
 <p>You can enable several authentication methods for users and you can also allow anonymous comments. I did the latter and also enabled <a href="https://github.com/umputun/remark42#github-auth-provider">GitHub authentication</a>. Facebook and Twitter are for retards, so I won&rsquo;t enable those, and others I will think about, perhaps I will at least enable Microsoft too.</p>
-<p><a href="https://remark42.com/docs/latest/email/">E-mail authentication</a> is also supported, and most likely I will enable that one too.</p>
 <p>Speaking about anonymous comments, at the moment there is no pre-moderation functionality, although it <a href="https://github.com/umputun/remark42/discussions/1019">might be added</a> soon enough.</p>
+<h3 id="e-mail">E-mail</h3>
+<p>E-mail authentication is also supported, and obviously you will need to have an e-mail sending service for it.</p>
+<p>The complexity here is that most likely you&rsquo;d want to use a nice sender e-mail address with your own domain, not a poor man&rsquo;s <code>vasya@gmail.com</code>, so first you&rsquo;ll need to find some service that will provide you e-mail for your domain. You can of course host your own mail server, but that might be too much of a task for an unprepared mind.</p>
+<p>remark42 <a href="https://remark42.com/docs/latest/email/">documentation</a> provides examples for services like <a href="https://www.mailgun.com/">Mailgun</a> and <a href="https://sendgrid.com/">SendGrid</a>, but they are just too expensive (<em>or too strict</em>) for a humble blog-owner, so I went with <a href="https://360.yandex.com/business/">Yandex 360</a>: they have a free-of-charge tier called &ldquo;Mail for Domain&rdquo; - exactly what I needed, and this is what I&rsquo;ll use as an example below.</p>
+<p>Once you have the e-mail service, in your DNS records set MX record for it and also add a TXT record for the DKIM. You might need to wait for a couple of hours (<em>or maybe days</em>) until the new DNS records are propagated over the internet.</p>
+<p>Then add the following to your <code>remark42.conf</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#75715e"># enable authentication via e-mail</span>
+<span style="color:#a6e22e">AUTH_EMAIL_ENABLE</span><span style="color:#f92672">=</span><span style="color:#e6db74">true</span>
+<span style="color:#75715e"># settings for the service that will be sending e-mails (Yandex, in my case)</span>
+<span style="color:#a6e22e">SMTP_HOST</span><span style="color:#f92672">=</span><span style="color:#e6db74">smtp.yandex.com</span>
+<span style="color:#a6e22e">SMTP_PORT</span><span style="color:#f92672">=</span><span style="color:#e6db74">465</span>
+<span style="color:#a6e22e">SMTP_TLS</span><span style="color:#f92672">=</span><span style="color:#e6db74">true</span>
+<span style="color:#a6e22e">SMTP_USERNAME</span><span style="color:#f92672">=</span><span style="color:#e6db74">noreply@decovar.dev</span>
+<span style="color:#a6e22e">SMTP_PASSWORD</span><span style="color:#f92672">=</span><span style="color:#e6db74">PASSWORD-FOR-THAT-ACCOUNT-AT-EMAIL-SERVICE</span>
+<span style="color:#75715e"># from what address users will be getting authentication e-mails</span>
+<span style="color:#a6e22e">AUTH_EMAIL_FROM</span><span style="color:#f92672">=</span><span style="color:#e6db74">noreply@decovar.dev</span></code></pre></div>
+<p>After restarting remark42 you&rsquo;ll see that the comment form now has an option to sign-in via e-mail:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/05/30/new-server-and-remark42-comments/images/remark42-signin-with-email.png" alt="remark42 sign-in with email">
+
+
+<p>When a user will try to do so, he will receive a token to the e-mail address he provided, and after entering this token back in the form he will be authenticated in that browser. If he&rsquo;ll want to get authenticated in a different browser, he&rsquo;ll need to repeat the whole procedure, but he still will be authenticated as the same user, of course.</p>
 <h2 id="api">API</h2>
 <p>There is a REST API, and to use it for administration purposes you need to be logged-in via either of authentication methods and to have your <a href="https://github.com/umputun/remark42#admin-users">user ID</a> added to the <code>ADMIN_SHARED_ID</code> parameter in the config.</p>
 <p>Then you&rsquo;ll need to get a JWT. You can take it with Web Developer Tools from any request on a page with comments:</p>
@@ -482,11 +508,12 @@ $ sudo -u remark42 remark42.linux-amd64 import -p disqus <span style="color:#ae8
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    -X <span style="color:#e6db74">&#34;DELETE&#34;</span> <span style="color:#e6db74">&#34;https://comments.decovar.dev/api/v1/admin/comment/COMMENT-ID?site=decovar.dev&amp;url=https:%2F%2Fdecovar.dev%2Fsome%2Fpage.html&#34;</span> <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#39;X-JWT: HERE-GOES-JWT&#39;</span>
-</code></pre></div><h2 id="telegram-notifications">Telegram notifications</h2>
+</code></pre></div><h2 id="notifications">Notifications</h2>
+<h3 id="via-telegram">Via Telegram</h3>
 <p>You can enable <a href="https://remark42.com/docs/latest/telegram/">Telegram notifications</a> in a minute or so. Get a <a href="https://core.telegram.org/bots#creating-a-new-bot">token</a> from <a href="https://t.me/botfather">BotFather</a> (<em>or reuse one of your existing bots</em>) and add the following to the remark42 config:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">NOTIFY_TYPE<span style="color:#f92672">=</span>telegram
-NOTIFY_TELEGRAM_CHAN<span style="color:#f92672">=</span>YOUR-ID
-NOTIFY_TELEGRAM_TOKEN<span style="color:#f92672">=</span>YOUR-BOT-TOKEN
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#a6e22e">NOTIFY_TYPE</span><span style="color:#f92672">=</span><span style="color:#e6db74">telegram</span>
+<span style="color:#a6e22e">NOTIFY_TELEGRAM_CHAN</span><span style="color:#f92672">=</span><span style="color:#e6db74">YOUR-ID</span>
+<span style="color:#a6e22e">NOTIFY_TELEGRAM_TOKEN</span><span style="color:#f92672">=</span><span style="color:#e6db74">YOUR-BOT-TOKEN</span>
 </code></pre></div><p>Despite documentation saying that <code>NOTIFY_TELEGRAM_CHAN</code> is for a channel ID, this value can actually be set to either of the following:</p>
 <ul>
 <li><strong>your own ID</strong> (<em>numerical value, or perhaps <code>@</code>-name also works</em>). In that case the bot will be sending notifications directly to you. It might be that you&rsquo;ll need to send <code>/start</code> to the bot first, as bots cannot message users by default</li>
@@ -498,6 +525,30 @@ NOTIFY_TELEGRAM_TOKEN<span style="color:#f92672">=</span>YOUR-BOT-TOKEN
 
 
     <img class="image-post" src="/blog/2021/05/30/new-server-and-remark42-comments/images/telegram-notification.jpg" alt="remark42 Telegram notification" style="border:1px solid black;">
+
+
+<h3 id="via-e-mail">Via e-mail</h3>
+<p>If you already set-up <a href="#e-mail">e-mail service</a>, then you&rsquo;ll only need to add the following lines to your <code>remark42.conf</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#a6e22e">NOTIFY_TYPE</span><span style="color:#f92672">=</span><span style="color:#e6db74">telegram,email</span>
+<span style="color:#75715e"># from which e-mail address USERS will be getting notifications about replies</span>
+<span style="color:#a6e22e">NOTIFY_EMAIL_FROM</span><span style="color:#f92672">=</span><span style="color:#e6db74">noreply@decovar.dev</span>
+<span style="color:#75715e"># where remark42 will be sending ADMIN notifications to, such as about all the new comments</span>
+<span style="color:#a6e22e">ADMIN_SHARED_EMAIL</span><span style="color:#f92672">=</span><span style="color:#e6db74">any@email.com</span>
+<span style="color:#75715e"># in case you already have ADMIN global comments notifications via Telegram</span>
+<span style="color:#a6e22e">NOTIFY_EMAIL_ADMIN</span><span style="color:#f92672">=</span><span style="color:#e6db74">false</span></code></pre></div>
+<p>Now, if you have <code>show_email_subscription</code> set to <code>true</code> in the comment widget settings, then your (<em>logged-in</em>) users will be able to subscribe to replies to their comments:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/05/30/new-server-and-remark42-comments/images/remark42-email-subscription-to-replies.png" alt="remark42 e-mail subscription to replies" style="border:1px solid black;">
+
+
+<p>It is a bit confusing, but by default this subscription <a href="https://github.com/umputun/remark42/issues/745#issuecomment-656755889">is disabled</a>, so users will need to explicitly subscribe to notifications and once again provide an e-mail address (<em>even though they are already authenticated and likely have an associated e-mail address</em>). The subscription will then apply to all the pages on the website, not just to the one where user subscribed to notifications on.</p>
+<p>Here&rsquo;s how an e-mail notification about a comment reply might look like:</p>
+
+
+
+    <img class="image-post" src="/blog/2021/05/30/new-server-and-remark42-comments/images/remark42-email-notification.png" alt="remark42 email notification" style="border:1px solid black;">
 
 
 <h1 id="canonical-url">Canonical URL</h1>
