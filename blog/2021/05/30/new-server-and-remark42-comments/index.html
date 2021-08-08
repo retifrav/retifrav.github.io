@@ -60,7 +60,7 @@
 </svg> 2021-05-30 18:32:54 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 19 min read</div>
+</svg> 20 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -299,7 +299,7 @@ $ sudo mv remark42.linux-amd64 /usr/local/bin/
 <span style="color:#a6e22e">WantedBy</span><span style="color:#f92672">=</span><span style="color:#e6db74">multi-user.target</span>
 </code></pre></div><p>Don&rsquo;t forget to enable and run it.</p>
 <h2 id="nginx-config-and-certificate">NGINX config and certificate</h2>
-<p>Of course, we&rsquo;ll be running remark42 behind NGINX as a reverse-proxy:</p>
+<p>Of course, we&rsquo;ll be running remark42 behind NGINX as a reverse-proxy (<code>/etc/nginx/sites-enabled/comments.decovar.dev</code>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">server</span> {
     <span style="color:#f92672">listen</span> <span style="color:#ae81ff">443</span> <span style="color:#e6db74">ssl</span>;
     <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:443</span> <span style="color:#e6db74">ssl</span>;
@@ -310,6 +310,7 @@ $ sudo mv remark42.linux-amd64 /usr/local/bin/
     <span style="color:#f92672">ssl_certificate_key</span> <span style="color:#e6db74">/path/to/certs/decovar.dev/key.pem</span>;
 
     <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+        <span style="color:#f92672">proxy_redirect</span> <span style="color:#66d9ef">off</span>;
         <span style="color:#f92672">proxy_http_version</span> <span style="color:#ae81ff">1</span><span style="color:#e6db74">.1</span>;
         <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Upgrade</span> $http_upgrade;
         <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Connection</span> <span style="color:#e6db74">keep-alive</span>;
@@ -326,14 +327,48 @@ $ sudo mv remark42.linux-amd64 /usr/local/bin/
     <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span>;
     <span style="color:#f92672">server_name</span> <span style="color:#e6db74">comments.decovar.dev</span>;
     <span style="color:#f92672">return</span> <span style="color:#ae81ff">301</span> <span style="color:#e6db74">https://</span>$server_name$request_uri;
-}
-</code></pre></div><p>So the service runs on a subdomain (<em>which means you&rsquo;ll need to declare it at your registrar</em>), and the certificate is the same one as for the main domain. Just in case, here&rsquo;s how you can <a href="/blog/2021/04/05/acme-sh-instead-of-certbot/#getting-lets-encrypt-certificate">issue</a> and install Let&rsquo;s Encrypt certificate for more than one domain:</p>
+}</code></pre></div>
+<p>So the service runs on a subdomain (<em>which means you&rsquo;ll need to declare it at your registrar</em>), and the certificate is the same one as for the main domain. Just in case, here&rsquo;s how you can <a href="/blog/2021/04/05/acme-sh-instead-of-certbot/#getting-lets-encrypt-certificate">issue</a> and install Let&rsquo;s Encrypt certificate for more than one domain:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ acme.sh --issue -d decovar.dev -d www.decovar.dev -d comments.decovar.dev -w /var/www/decovar.dev
 $ acme.sh --install-cert -d decovar.dev -d www.decovar.dev -d comments.decovar.dev <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --key-file ~/certs/decovar.dev/key.pem  <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --fullchain-file ~/certs/decovar.dev/fullchain.pem <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --reloadcmd <span style="color:#e6db74">&#34;sudo systemctl restart nginx.service&#34;</span>
-</code></pre></div><p>To test if your remark42 setup is correct, documentation suggest to open <code>/web/</code> route on your comments subdomain, such as <a href="https://comments.decovar.dev/web/">https://comments.decovar.dev/web/</a>, but for me this page <a href="https://github.com/umputun/remark42/discussions/1002">is failing</a> (<em>yet another artifact of running without Docker</em>), although this particular problem should be fixed soon. At the same time, comments on the main website are working fine.</p>
+</code></pre></div><p>The cron job for renewing would be the same:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#ae81ff">45</span> <span style="color:#ae81ff">0</span> * * * <span style="color:#e6db74">&#34;/home/USERNAME/.acme.sh&#34;</span>/acme.sh --cron --home <span style="color:#e6db74">&#34;/home/USERNAME/.acme.sh&#34;</span> --reloadcmd <span style="color:#e6db74">&#34;sudo systemctl restart nginx.service&#34;</span> &gt;&gt; /home/USERNAME/logs/cron.log</code></pre></div>
+<p>In my setup <code>www.decovar.dev</code> is just a ALIAS/CNAME for <code>decovar.dev</code>, so ACME challenge will find the files in <code>/var/www/decovar.dev/.well-known/acme-challenge/</code>. But <code>comments.decovar.dev</code> is served from remark42, so the challenge will fail. To resolve this I could do either of the following in <code>comments.decovar.dev</code> NGINX config:</p>
+<ol>
+<li>Set <code>/var/www/decovar.dev</code> as the <code>root</code> and do <code>try_files</code> for the <code>/.well-known/acme-challenge/</code> location;</li>
+<li>Or simply add a redirect to <code>decovar.dev</code> for this location.</li>
+</ol>
+<p>I chose the second option:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">server</span> {
+    <span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span>
+<span style="display:block;width:100%;background-color:#3c3d38">    <span style="color:#75715e">#root /var/www/decovar.dev;
+</span></span><span style="color:#75715e"></span>
+    <span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span>
+    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+        <span style="color:#f92672">proxy_redirect</span> <span style="color:#66d9ef">off</span>;
+        <span style="color:#f92672">proxy_http_version</span> <span style="color:#ae81ff">1</span><span style="color:#e6db74">.1</span>;
+        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Upgrade</span> $http_upgrade;
+        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Connection</span> <span style="color:#e6db74">keep-alive</span>;
+        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Host</span> $host;
+        <span style="color:#f92672">proxy_cache_bypass</span> $http_upgrade;
+        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-For</span> $proxy_add_x_forwarded_for;
+        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-Proto</span> $scheme;
+        <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://127.0.0.1:8765/</span>;
+    }
+
+<span style="display:block;width:100%;background-color:#3c3d38">    <span style="color:#f92672">location</span> <span style="color:#e6db74">/.well-known/acme-challenge/</span> {
+</span><span style="display:block;width:100%;background-color:#3c3d38">        <span style="color:#75715e">#try_files $uri $uri/ =404;
+</span></span><span style="display:block;width:100%;background-color:#3c3d38"><span style="color:#75715e"></span>        <span style="color:#f92672">return</span> <span style="color:#ae81ff">301</span> <span style="color:#e6db74">https://decovar.dev</span>$request_uri;
+</span><span style="display:block;width:100%;background-color:#3c3d38">    }
+</span>
+    <span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span>}</code></pre></div>
+<p>To test if your remark42 setup is correct, documentation suggest to open <code>/web/</code> route on your comments subdomain, such as <a href="https://comments.decovar.dev/web/">https://comments.decovar.dev/web/</a>, but for me this page <a href="https://github.com/umputun/remark42/discussions/1002">is failing</a> (<em>yet another artifact of running without Docker</em>), although this particular problem should be fixed soon. At the same time, comments on the main website are working fine.</p>
 <h2 id="adding-remark42-to-hugo">Adding remark42 to Hugo</h2>
 <p>To run the remark42 scripts, I created a <code>/layouts/partials/comments.html</code> partial:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">script</span>&gt;
