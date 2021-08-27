@@ -65,7 +65,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </svg> 2018-02-17 20:52:06 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 42 min read</div>
+</svg> 46 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -77,6 +77,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
     <img class="image-post" src="/blog/2018/02/17/build-qt-statically/images/qt-configure.png" alt="Qt configure">
 
 
+<p>Although the article is about making a static build, it also covers the task of building Qt from sources in general.</p>
 <nav id="TableOfContents">
   <ul>
     <li><a href="#why-build-qt-statically">Why build Qt statically</a>
@@ -86,20 +87,24 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
     </li>
     <li><a href="#how-to-build-qt-statically">How to build Qt statically</a>
       <ul>
-        <li>
+        <li><a href="#configuration">Configuration</a>
           <ul>
-            <li><a href="#optimisation-options">Optimisation options</a></li>
+            <li><a href="#optimization-options">Optimization options</a></li>
             <li><a href="#cleaning-the-build-directory">Cleaning the build directory</a></li>
           </ul>
         </li>
-        <li><a href="#mac-os">Mac OS</a></li>
-        <li><a href="#linux">Linux</a></li>
-        <li><a href="#windows">Windows</a>
+        <li><a href="#platforms">Platforms</a>
           <ul>
-            <li><a href="#qt-5101-windows-10-and-mingw-x32">Qt 5.10.1, Windows 10 and MinGW x32</a></li>
-            <li><a href="#qt-5111-windows-7-and-msvc2015-x64">Qt 5.11.1, Windows 7 and MSVC2015 x64</a></li>
-            <li><a href="#qt-5111-windows-10-and-msvc2017-x64">Qt 5.11.1, Windows 10 and MSVC2017 x64</a></li>
-            <li><a href="#qt-5112-windows-10-and-mingw-x32">Qt 5.11.2, Windows 10 and MinGW x32</a></li>
+            <li><a href="#mac-os">Mac OS</a></li>
+            <li><a href="#linux">Linux</a></li>
+            <li><a href="#windows">Windows</a>
+              <ul>
+                <li><a href="#qt-5101-windows-10-and-mingw-x32">Qt 5.10.1, Windows 10 and MinGW x32</a></li>
+                <li><a href="#qt-5111-windows-7-and-msvc2015-x64">Qt 5.11.1, Windows 7 and MSVC2015 x64</a></li>
+                <li><a href="#qt-5111-windows-10-and-msvc2017-x64">Qt 5.11.1, Windows 10 and MSVC2017 x64</a></li>
+                <li><a href="#qt-5112-windows-10-and-mingw-x32">Qt 5.11.2, Windows 10 and MinGW x32</a></li>
+              </ul>
+            </li>
           </ul>
         </li>
       </ul>
@@ -124,11 +129,14 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
         <li><a href="#slower-building">Slower building</a></li>
       </ul>
     </li>
-    <li><a href="#problems">Problems</a>
+    <li><a href="#possible-problems">Possible problems</a>
       <ul>
-        <li><a href="#shadow-builds">Shadow builds</a></li>
+        <li><a href="#shadow-builds-not-working">Shadow builds not working</a></li>
         <li><a href="#trailing-backslash-in-prefix">Trailing backslash in prefix</a></li>
-        <li><a href="#fonts">Fonts</a></li>
+        <li><a href="#text-is-not-visible-because-there-are-no-fonts">Text is not visible, because there are no fonts</a></li>
+        <li><a href="#non-existent-module-or-unknown-command-line-option">Non-existent module or unknown command line option</a></li>
+        <li><a href="#qqmlapplicationengine-failed-to-load-component-qtquick2plugin-not-found">QQmlApplicationEngine failed to load component, qtquick2plugin not found</a></li>
+        <li><a href="#could-not-find-the-qt-platform-plugin-xcb">Could not find the Qt platform plugin XCB</a></li>
       </ul>
     </li>
   </ul>
@@ -157,16 +165,18 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 <p>But if you are using Qt under GPL, then it doesn&rsquo;t matter to you anyway as your code already belongs to community.</p>
 <p>Please note, that I am not a lawyer, and this is just my interpretation of the license text, so don&rsquo;t make business decisions based only on my comments - consult with a proper legal specialist.</p>
 <h1 id="how-to-build-qt-statically">How to build Qt statically</h1>
+<h2 id="configuration">Configuration</h2>
 <p>It is actually embarrassingly easy. You only need to run the <code>configure</code> utility with the right set of parameters.</p>
 <p>I&rsquo;ll describe the process for Mac OS (<em>works like a charm</em>), Linux (<em>there are some tiny problems</em>) and Windows (<del><em>doesn&rsquo;t fucking work</em></del> <em>lots of problems</em>).</p>
 <p>The first step is the same for all platforms: create a folder for <a href="http://doc.qt.io/qtcreator/creator-glossary.html#glossary-shadow-build">shadow build</a> and run <code>configure</code> command from there:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">/path/to/qt/src/configure -static -release -ltcg -optimize-size -no-pch -prefix <span style="color:#e6db74">&#34;/path/to/qt/510-static&#34;</span> -skip webengine -nomake tools -nomake tests -nomake examples</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ cd /path/to/qt/sources
+$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd $_
+$ ../configure -static -release -no-pch -prefix <span style="color:#e6db74">&#34;/path/to/qt/510-static&#34;</span> -skip webengine -nomake tools -nomake tests -nomake examples</code></pre></div>
+<p>Note how <code>configure</code> doesn&rsquo;t care about short/long options and just has a single <code>-</code> for everything.</p>
 <p>Here&rsquo;s a description for the options I used:</p>
 <ul>
 <li><code>-static</code> - this one tells to build exactly a static version;</li>
 <li><code>-release</code> - because I need static build only for publishing my apps, therefore there is no need in static debug build, so it can be skipped. For debugging/profiling I&rsquo;ll keep using dynamic build;</li>
-<li><code>-ltcg</code> - Link-Time Code Generation, optimizes something. I took it from <a href="https://youtu.be/mbs3-XE0HNE">here</a>. I don&rsquo;t recommend to use it on Windows (<em>you&rsquo;ll see later why</em>);</li>
-<li><code>-optimize-size</code> - optimizes release builds for size instead of speed. I am after smaller builds, so;</li>
 <li><code>-no-pch</code> - no precompiled headers, meaning that all the header files (<code>.h</code>) will not be precompiled, so you&rsquo;ll get all the benefits from <code>#ifdef</code>. Moreover, for some platforms Qt won&rsquo;t even build with precompiled headers turned on;</li>
 <li><code>-prefix &quot;/path/to/qt/510-static&quot;</code> - where to put the result;</li>
 <li><code>-skip webengine</code> - I don&rsquo;t need WebEngine;</li>
@@ -544,12 +554,16 @@ Webengine options:
                                    <span style="color:#f92672">(</span>macOS only<span style="color:#f92672">)</span>
   -webengine-webrtc .............. Enable support <span style="color:#66d9ef">for</span> WebRTC <span style="color:#f92672">[</span>auto<span style="color:#f92672">]</span></code></pre></div>
 <p>Core options section refers to <a href="http://doc.qt.io/qt-5/configure-options.html#third-party-libraries">3rd-party libraries</a>, and quite often I see in different places people putting options like <code>-qt-zlib</code>, <code>-qt-libpng</code> and so on for <code>configure</code>. Although, if you won&rsquo;t set them, it doesn&rsquo;t mean that you won&rsquo;t have those libraries in your build - they just will be included with default values: some with Qt implementations and some with system ones. You can check which ones exactly are set in the <code>configure</code> summary output (after you run it).</p>
-<h3 id="optimisation-options">Optimisation options</h3>
-<p>At some point I decided to configure Qt without <code>-ltcg</code> and <code>-optimize-size</code> options to see the actual &ldquo;optimisation&rdquo;.</p>
-<p>So I built Qt 5.12.3 on Mac OS twice, first time with those options:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">configure <span style="color:#f92672">-</span>static <span style="color:#f92672">-</span>release <span style="color:#f92672">-</span>ltcg <span style="color:#f92672">-</span>optimize<span style="color:#f92672">-</span>size <span style="color:#f92672">-</span>no<span style="color:#f92672">-</span>pch <span style="color:#f92672">-</span>prefix <span style="color:#e6db74">&#34;/path/to/qt/5123-static&#34;</span> <span style="color:#f92672">-</span>skip webengine <span style="color:#f92672">-</span>nomake tools <span style="color:#f92672">-</span>nomake tests <span style="color:#f92672">-</span>nomake examples</code></pre></div>
+<h3 id="optimization-options">Optimization options</h3>
+<p>Qt build can be configured with so-called optimization options:</p>
+<ul>
+<li><code>-ltcg</code> - Link-Time Code Generation, optimizes something. I took it from <a href="https://youtu.be/mbs3-XE0HNE">here</a></li>
+<li><code>-optimize-size</code> - seems to be optimizing release builds in terms of resulting binaries size (<em>by sacrificing build time</em>)</li>
+</ul>
+<p>To see the actual effect of such optimi`ation, I built Qt 5.12.3 on Mac OS twice, first time with these options:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ <span style="color:#f92672">../</span>configure <span style="color:#f92672">-</span>static <span style="color:#f92672">-</span>release <span style="color:#f92672">-</span>ltcg <span style="color:#f92672">-</span>optimize<span style="color:#f92672">-</span>size <span style="color:#f92672">-</span>no<span style="color:#f92672">-</span>pch <span style="color:#f92672">-</span>prefix <span style="color:#e6db74">&#34;/path/to/qt/5123-static&#34;</span> <span style="color:#f92672">-</span>skip webengine <span style="color:#f92672">-</span>nomake tools <span style="color:#f92672">-</span>nomake tests <span style="color:#f92672">-</span>nomake examples</code></pre></div>
 <p>and second time without them:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">configure <span style="color:#f92672">-</span>static <span style="color:#f92672">-</span>release <span style="color:#f92672">-</span>no<span style="color:#f92672">-</span>pch <span style="color:#f92672">-</span>prefix <span style="color:#e6db74">&#34;/path/to/qt/5123-static&#34;</span> <span style="color:#f92672">-</span>skip webengine <span style="color:#f92672">-</span>nomake tools <span style="color:#f92672">-</span>nomake tests <span style="color:#f92672">-</span>nomake examples</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ <span style="color:#f92672">../</span>configure <span style="color:#f92672">-</span>static <span style="color:#f92672">-</span>release <span style="color:#f92672">-</span>no<span style="color:#f92672">-</span>pch <span style="color:#f92672">-</span>prefix <span style="color:#e6db74">&#34;/path/to/qt/5123-static&#34;</span> <span style="color:#f92672">-</span>skip webengine <span style="color:#f92672">-</span>nomake tools <span style="color:#f92672">-</span>nomake tests <span style="color:#f92672">-</span>nomake examples</code></pre></div>
 <p>Results are here:</p>
 <div style="overflow-x:auto;">
   <table class="table">
@@ -583,12 +597,16 @@ Webengine options:
     </tbody>
   </table>
 </div>
-<p>So, indeed, <code>-ltcg</code> (<em>I actually don&rsquo;t know what role does that one play here</em>) and <code>-optimize-size</code> configuration options do provide smaller application binaries, but at the same time you lose in Qt build time, its size and also applications build time.</p>
+<p>So, indeed, <code>-optimize-size</code> does provide smaller application binaries, but at the same time you lose in Qt build time, its size and also applications build time.</p>
+<p>What <code>-ltcg</code> actually does - that I still don&rsquo;t know and have no idea how to measure it.</p>
+<p>I had these options enabled for most of the builds described below, and on Windows it caused certain problems, so perhaps I would recommend not to set those in your builds.</p>
 <h3 id="cleaning-the-build-directory">Cleaning the build directory</h3>
-<p>Note, that if you were building Qt before, then you should clean out the old build first:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">make -j8 distclean</code></pre></div>
-<p>In case of shadow build it is enough to simply delete the &ldquo;shadow&rdquo; folder (and the one you&rsquo;ve set with <code>-prefix</code>).</p>
-<h2 id="mac-os">Mac OS</h2>
+<p>Note, that if you were building Qt before, then you should clean out the old build first (<em>and the folder you&rsquo;ve set with <code>-prefix</code></em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ make -j8 distclean</code></pre></div>
+<p>or:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ rm -r ./*; rm .config.notes; rm .qmake.*</code></pre></div>
+<h2 id="platforms">Platforms</h2>
+<h3 id="mac-os">Mac OS</h3>
 <p>So, you ran <code>configure</code> and now it asks you which edition you would like to build and also if you accept the license (these two are also available as options for <code>configure</code>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Creating qmake...
 .Done.
@@ -812,30 +830,30 @@ Qt will be installed into <span style="color:#e6db74">&#39;/path/to/qt/510-stati
 Prior to reconfiguration, make sure you remove any leftovers from
 the previous build.</code></pre></div>
 <p>Now you need to actually build it. It is done by running <code>make</code> command, and it is important to note that it will be doing it for ages, because by default it doesn&rsquo;t parallelize the process. So, if you, like me, have 8 cores in your CPU (4 physical and 4 logical), you can run it like that:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">make -j8</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ make -j8</code></pre></div>
 <p>With <code>-j8</code> provided, it took <strong>32 minutes</strong> to build Qt statically on my MacBookPro with 2.8 GHz Intel Core i7.</p>
 <p>However, if there will be any error, the only output you&rsquo;ll get will be:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">make<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: *** <span style="color:#f92672">[</span>sub-src-make_first<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">2</span>
 make: *** <span style="color:#f92672">[</span>module-qtbase-make_first<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">2</span></code></pre></div>
 <p>And to see the errors you&rsquo;ll have to run <code>make</code> without <code>-j8</code>.</p>
 <p>Last step is to &ldquo;install&rdquo; your new static Qt:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">make -j8 install</code></pre></div>
-<p>That will take couple more minutes, and then you can go to <code>/path/to/qt/510-static</code> to see the result.</p>
-<h2 id="linux">Linux</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ make -j8 install</code></pre></div>
+<p>That should take a couple of minutes (<em>usually less than a minute</em>), and then you can go to <code>/path/to/qt/510-static</code> to see the result. If installation runs for more than 5 minutes, than it likely means that something is wrong and it might actually fail. This concerns not only Mac OS but other platforms too.</p>
+<h3 id="linux">Linux</h3>
 <p>All the same as for Mac OS, but I encountered 2 problems.</p>
 <p>First one was missing <code>g++</code>, which is fixed by installing build tools:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">apt-get install build-essential</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ sudo apt install build-essential</code></pre></div>
 <p>Second one was this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ERROR The OpenGL functionality tests failed</code></pre></div>
 <p>Which is fixed by installing Mesa libraries:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">apt-get install libgl1-mesa-dev</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ sudo apt install libgl1-mesa-dev</code></pre></div>
 <p>And actually <a href="http://doc.qt.io/qt-5/linux.html#requirements-for-development-host">documentation</a> says about that, but I didn&rsquo;t notice at first.</p>
 <p>Note here, that even after you install the missing stuff, <code>configure</code> won&rsquo;t know about it, because it performs all the checks only once, and after that it relies on the generated <code>config.cache</code>, so every time you change something - delete <code>config.cache</code> before launching <code>configure</code> again.</p>
 <p>I have Linux on Lenovo T540p laptop with 2.5 GHz Intel Core i7, and there it takes <strong>43 minutes</strong> (with <code>make -j8</code>) to built Qt statically.</p>
-<p>After executing the last step (<code>make -j8 install</code>) you will get your static Qt in the folder specified with <code>prefix</code> parameter.</p>
-<h2 id="windows">Windows</h2>
+<p>After executing the last step (<code>make -j8 install</code>) you will get your static Qt in the folder specified with <code>-prefix</code> parameter.</p>
+<h3 id="windows">Windows</h3>
 <p>I was trying to build Qt on Windows from time to time, and usually it fails, but sometimes it actually does build.</p>
-<h3 id="qt-5101-windows-10-and-mingw-x32">Qt 5.10.1, Windows 10 and MinGW x32</h3>
+<h4 id="qt-5101-windows-10-and-mingw-x32">Qt 5.10.1, Windows 10 and MinGW x32</h4>
 <p>I have Windows 10 running on the same Lenovo laptop, and there I use Qt (<code>d:\Programs\Qt</code>) with <strong>MinGW</strong> (you should have <code>\path\to\Qt\Tools\mingw530_32\bin</code> in your <code>PATH</code>).</p>
 <p>First I tried to do it with Qt 5.10, but it failed with some error about dummy platforms. I wanted to investigate that, but then suddenly Qt 5.10.1 was released, so I tried with this version and this time it didn&rsquo;t give me that error.</p>
 <p>But I got another error anyway, and it was about OpenGL:</p>
@@ -1177,7 +1195,7 @@ ERROR: You are not licensed to use this software.</code></pre></div>
 Running configuration tests...
 Checking <span style="color:#66d9ef">for</span> valid makespec... ERROR: Cannot compile a minimal program. The toolchain or QMakeSpec is broken.</code></pre></div>
 <p>Yeah, fuck this shit.</p>
-<h3 id="qt-5111-windows-7-and-msvc2015-x64">Qt 5.11.1, Windows 7 and MSVC2015 x64</h3>
+<h4 id="qt-5111-windows-7-and-msvc2015-x64">Qt 5.11.1, Windows 7 and MSVC2015 x64</h4>
 <p>After quite a while I gave it another shot as I needed to build static Qt for Windows 7 with MSVC2015.</p>
 <p>So, here are the steps.</p>
 <p>Install <a href="https://www.microsoft.com/en-us/download/details.aspx?id=35">DirectX</a> and <a href="https://www.microsoft.com/en-us/download/details.aspx?id=6812">DirectX SDK</a>. Most likely it is not required, but I would do it just in case;</p>
@@ -1210,7 +1228,7 @@ jom -j8 install</code></pre></div>
 <p>During both build and install phases I got several occasional freezes of my PC when it became totally unresponsive so I had to hard-reset the machine and start over. Windows is definitely my favorite development platform.</p>
 <p>But okay, most importantly thing is that it has successfully built and that it works.</p>
 <p>Also note, that I haven&rsquo;t set any special flags which you can find being mentioned all over the internet (<em><code>QMAKE_CFLAGS_X</code> and others</em>) and didn&rsquo;t edit any configs - everything just builds as it is with out-of-the-box configuration.</p>
-<h3 id="qt-5111-windows-10-and-msvc2017-x64">Qt 5.11.1, Windows 10 and MSVC2017 x64</h3>
+<h4 id="qt-5111-windows-10-and-msvc2017-x64">Qt 5.11.1, Windows 10 and MSVC2017 x64</h4>
 <p>Just in case I decided to try Windows 10 and MSVC2017.</p>
 <p>Again, it&rsquo;s all the same: Python and Perl in your PATH, Visual Studio installed but this time with MSVC2017, you launched <code>VS2017 x64 Native Tools Command Prompt</code>.</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">configure.bat -release -static -no-pch -optimize-size -opengl desktop -platform win32-msvc -prefix <span style="color:#e6db74">&#34;\path\to\Qt\511-static&#34;</span> -skip webengine -nomake tools -nomake tests -nomake examples
@@ -1218,7 +1236,7 @@ time /t &gt;&gt; time.txt &amp; jom -j8 &amp; time /t &gt;&gt; time.txt
 jom -j8 install</code></pre></div>
 <p>And again, with <code>-ltcg</code> option it produced <strong>14.5 GB</strong> after build, then increased that to <strong>52.6 GB</strong>, having installed <strong>25.7 GB</strong> of static Qt. Compilation took <strong>18 minutes</strong>, and installation was going for <strong>59 minutes</strong>.</p>
 <p>Without <code>-ltcg</code> it produced <strong>480 MB</strong> after build, increased that to <strong>1.34 GB</strong> and installed <strong>606 MB</strong> of static Qt. Compilation took <strong>15 minutes</strong>, and installation was going for <strong>44 minutes</strong>.</p>
-<h3 id="qt-5112-windows-10-and-mingw-x32">Qt 5.11.2, Windows 10 and MinGW x32</h3>
+<h4 id="qt-5112-windows-10-and-mingw-x32">Qt 5.11.2, Windows 10 and MinGW x32</h4>
 <p>After I succeeded building Qt with MSVC, I decided to try MinGW again with just released Qt 5.11.2.</p>
 <p>It&rsquo;s all the same as for <a href="#qt-5111-windows-7-and-msvc2015-x64">Windows 7</a>, except for installed Python and Perl.</p>
 <p>Configuration went okay, but <code>mingw32-make</code> failed literally within a couple of minutes:</p>
@@ -1516,11 +1534,11 @@ cinematic-demo.app/Contents/MacOS/cinematic-demo:
 <li>dynamic: 5 seconds;</li>
 <li>static: 210 seconds.</li>
 </ul>
-<h1 id="problems">Problems</h1>
+<h1 id="possible-problems">Possible problems</h1>
 <p>There could be all sorts of problems along the road. And those are not necessarily your fault - on the contrary, in most cases it will be Qt bugs, which you should definitely report at <a href="http://bugreports.qt.io/">Qt&rsquo;s bug-tracker</a>. Seriously, do that, because they give highest priority to that kind of issues (<em>especially if it&rsquo;s reported against a pre-release version</em>) and fix those pretty fast.</p>
 <p>Now about the problems I&rsquo;ve encountered myself.</p>
-<h2 id="shadow-builds">Shadow builds</h2>
-<p>Sometimes, shadow builds are broken &ldquo;by default&rdquo; - meaning that it is impossible to built a particular Qt version using shadow build, so you have to do it from the <code>Src</code> directory. Report that at bug-tracker, but as most likely it will be fixed only for the next version, you&rsquo;ll have to build the one you have without shadow build.</p>
+<h2 id="shadow-builds-not-working">Shadow builds not working</h2>
+<p>Sometimes, shadow builds just get broken, meaning that it is impossible to built a particular Qt version using shadow build, whatever the reason might be, and so you&rsquo;ll have to do it right in the <code>Src</code> directory.</p>
 <h2 id="trailing-backslash-in-prefix">Trailing backslash in prefix</h2>
 <p>Having a trailing <code>\</code> in prefix on Windows can cause the following problem:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Running configuration tests...
@@ -1532,9 +1550,9 @@ Check config.log <span style="color:#66d9ef">for</span> details.</code></pre></d
 <li><code>-prefix &quot;d:\programs\qt\5122-static\&quot;</code> - <span style="color:red;">fails</span>;</li>
 <li><code>-prefix &quot;d:\programs\qt\5122-static&quot;</code> - <span style="color:green;">works</span>.</li>
 </ul>
-<h2 id="fonts">Fonts</h2>
-<p>One of the issues you might encounter with your applications built with static Qt is the absent of fonts for your GUI. Literally, all the text controls will have no text at all. The reason might be that path to system fonts is lost somehow.</p>
-<p>One way to fix this is to embed fonts into your application: add font file into resources and &ldquo;activate&rdquo; it in <code>main.cpp</code>:</p>
+<h2 id="text-is-not-visible-because-there-are-no-fonts">Text is not visible, because there are no fonts</h2>
+<p>One of the issues you might encounter with your applications built with static Qt is the absence of fonts for your GUI. Literally, all the text controls will have no text at all. The reason might be that path to your system fonts got lost somehow, or that Qt build needs to be configured with respective options (<em><code>-fontconfig</code>, <code>-freetype</code>, etc</em>).</p>
+<p>One way to fix this (<em>aside from correcting the configuration and rebuilding Qt</em>) is to embed fonts into your application: add font file into resources and &ldquo;activate&rdquo; it in <code>main.cpp</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp">...
 <span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QFontDatabase&gt;</span><span style="color:#75715e">
 </span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QFont&gt;</span><span style="color:#75715e">
@@ -1548,6 +1566,133 @@ Check config.log <span style="color:#66d9ef">for</span> details.</code></pre></d
 
     ...
 }</code></pre></div>
+<h2 id="non-existent-module-or-unknown-command-line-option">Non-existent module or unknown command line option</h2>
+<p>Sometimes you might get this error trying to run <code>configure</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">Project ERROR: -skip command line argument used with non-existent module <span style="color:#e6db74">&#39;qtwebengine&#39;</span>.</code></pre></div>
+<p>or even this one:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">ERROR: Unknown command line option <span style="color:#e6db74">&#39;-release&#39;</span>.</code></pre></div>
+<p>I&rsquo;ve got both after unpacking Qt sources from a snapshot archive with default Archive Manager application on Elementary OS. I figured it did something wrong during unpacking, and so I unpacked the archive using <code>tar</code> from command line instead, and then the exactly same <code>configure</code> command ran without problems.</p>
+<h2 id="qqmlapplicationengine-failed-to-load-component-qtquick2plugin-not-found">QQmlApplicationEngine failed to load component, qtquick2plugin not found</h2>
+<p>At some point, having built Qt 5.15.2, I got this error, trying to launch my application:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">QQmlApplicationEngine failed to load component
+qrc:/main.qml:1:1: module <span style="color:#e6db74">&#34;QtQuick&#34;</span> plugin <span style="color:#e6db74">&#34;qtquick2plugin&#34;</span> not found</code></pre></div>
+<p>That one I did not find a solution for, so I had to re-build Qt dynamically (<em>without <code>-static</code> configuration option</em>), and then my application was able to launch.</p>
+<h2 id="could-not-find-the-qt-platform-plugin-xcb">Could not find the Qt platform plugin XCB</h2>
+<p>On Linux, even though the Qt builds fine, and even your applications <em>build</em> fine, you might get the following error, trying to <em>launch</em> them:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">qt.qpa.plugin: Could not find the Qt platform plugin <span style="color:#e6db74">&#34;xcb&#34;</span> in <span style="color:#e6db74">&#34;&#34;</span>
+This application failed to start because no Qt platform plugin could be initialized. Reinstalling the application may fix this problem.
+
+Available platform plugins are: eglfs, linuxfb, minimal, minimalegl, offscreen, vnc, webgl.</code></pre></div>
+<p>There is a <a href="https://forum.qt.io/topic/93247/qt-qpa-plugin-could-not-load-the-qt-platform-plugin-xcb-in-even-though-it-was-found/">one kilometer long thread</a> on Qt&rsquo;s forum, where you might find an <a href="https://forum.qt.io/topic/93247/qt-qpa-plugin-could-not-load-the-qt-platform-plugin-xcb-in-even-though-it-was-found/41">absolutely retarded advice</a> (<em>что за уебан догадался такое посоветовать</em>) to remove <code>libqt5gui5</code> from the system - <strong>don&rsquo;t do that</strong>, it will basically ruin your system.</p>
+<p>Some replies there and also <a href="https://askubuntu.com/questions/308128/failed-to-load-platform-plugin-xcb-while-launching-qt5-app-on-linux-without">here</a> say that installing/reinstalling <code>libxcb-xinerama0</code> resolved the problem for them, but it didn&rsquo;t for me.</p>
+<p>There is also a shorter thread on a similar topic <a href="https://forum.qt.io/topic/115827/build-on-linux-qt-xcb-option/">here</a>, and this one did point to <a href="https://github.com/RudolfCardinal/camcops/issues/3#issuecomment-498519511">this comment</a>, which finally got me to the right place - <a href="https://wiki.qt.io/Building_Qt_5_from_Git">Qt wiki</a>, which had the full list of packets that you need to install:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo apt install <span style="color:#e6db74">&#39;^libxcb.*-dev&#39;</span> libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev</code></pre></div>
+<p>Qt&rsquo;s documentation also <a href="https://doc.qt.io/qt-5/linux-requirements.html">provides</a> a list of those, but it&rsquo;s not as full as the one from wiki, and installing only the ones listed in documentation was not enough in my case.</p>
+<p>Anyway, here&rsquo;s how your Qt configuration output might look like without required XCB packages installed:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-perl" data-lang="perl"><span style="color:#f92672">...</span>
+Features used by QPA backends:
+  evdev <span style="color:#f92672">..................................</span> yes
+  libinput <span style="color:#f92672">...............................</span> <span style="color:#66d9ef">no</span>
+  INTEGRITY HID <span style="color:#f92672">..........................</span> <span style="color:#66d9ef">no</span>
+  mtdev <span style="color:#f92672">..................................</span> <span style="color:#66d9ef">no</span>
+  tslib <span style="color:#f92672">..................................</span> <span style="color:#66d9ef">no</span>
+  xkbcommon <span style="color:#f92672">..............................</span> <span style="color:#66d9ef">no</span>
+  X11 specific:
+    XLib <span style="color:#f92672">.................................</span> <span style="color:#66d9ef">no</span>
+    XCB Xlib <span style="color:#f92672">.............................</span> <span style="color:#66d9ef">no</span>
+    EGL on X11 <span style="color:#f92672">...........................</span> <span style="color:#66d9ef">no</span>
+    xkbcommon<span style="color:#f92672">-</span>x11 <span style="color:#f92672">........................</span> <span style="color:#66d9ef">no</span>
+QPA backends:
+  DirectFB <span style="color:#f92672">...............................</span> <span style="color:#66d9ef">no</span>
+  EGLFS <span style="color:#f92672">..................................</span> yes
+  EGLFS details:
+    EGLFS OpenWFD <span style="color:#f92672">........................</span> <span style="color:#66d9ef">no</span>
+    EGLFS i<span style="color:#f92672">.</span>Mx6 <span style="color:#f92672">..........................</span> <span style="color:#66d9ef">no</span>
+    EGLFS i<span style="color:#f92672">.</span>Mx6 Wayland <span style="color:#f92672">..................</span> <span style="color:#66d9ef">no</span>
+    EGLFS RCAR <span style="color:#f92672">...........................</span> <span style="color:#66d9ef">no</span>
+    EGLFS EGLDevice <span style="color:#f92672">......................</span> <span style="color:#66d9ef">no</span>
+    EGLFS GBM <span style="color:#f92672">............................</span> <span style="color:#66d9ef">no</span>
+    EGLFS VSP2 <span style="color:#f92672">...........................</span> <span style="color:#66d9ef">no</span>
+    EGLFS Mali <span style="color:#f92672">...........................</span> <span style="color:#66d9ef">no</span>
+    EGLFS Raspberry Pi <span style="color:#f92672">...................</span> <span style="color:#66d9ef">no</span>
+    EGLFS X11 <span style="color:#f92672">............................</span> <span style="color:#66d9ef">no</span>
+  LinuxFB <span style="color:#f92672">................................</span> yes
+  VNC <span style="color:#f92672">....................................</span> yes
+<span style="color:#f92672">...</span></code></pre></div>
+<p>here&rsquo;s the resulting platform plugins folder contents:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ls -L1 ~/programs/qt/5152-static/plugins/platforms
+libqeglfs.a
+libqeglfs.prl
+libqlinuxfb.a
+libqlinuxfb.prl
+libqminimal.a
+libqminimal.prl
+libqminimalegl.a
+libqminimalegl.prl
+libqoffscreen.a
+libqoffscreen.prl
+libqvnc.a
+libqvnc.prl
+libqwebgl.a
+libqwebgl.prl</code></pre></div>
+<p>That&rsquo;s how you know that your applications will <em>build</em> but will not <em>launch</em>. Pretty amazing how you can get get a Qt build, which did not complain about anything neither during configuration nor during the build, succeeded without errors, and yet it ended up being actually useless for you.</p>
+<p>And here&rsquo;s a Qt configuration output when all the required XCB packages are installed:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-perl" data-lang="perl"><span style="color:#f92672">...</span>
+Features used by QPA backends:
+  evdev <span style="color:#f92672">..................................</span> yes
+  libinput <span style="color:#f92672">...............................</span> <span style="color:#66d9ef">no</span>
+  INTEGRITY HID <span style="color:#f92672">..........................</span> <span style="color:#66d9ef">no</span>
+  mtdev <span style="color:#f92672">..................................</span> <span style="color:#66d9ef">no</span>
+  tslib <span style="color:#f92672">..................................</span> <span style="color:#66d9ef">no</span>
+  xkbcommon <span style="color:#f92672">..............................</span> yes
+  X11 specific:
+    XLib <span style="color:#f92672">.................................</span> yes
+    XCB Xlib <span style="color:#f92672">.............................</span> yes
+    EGL on X11 <span style="color:#f92672">...........................</span> yes
+    xkbcommon<span style="color:#f92672">-</span>x11 <span style="color:#f92672">........................</span> yes
+QPA backends:
+  DirectFB <span style="color:#f92672">...............................</span> <span style="color:#66d9ef">no</span>
+  EGLFS <span style="color:#f92672">..................................</span> yes
+  EGLFS details:
+    EGLFS OpenWFD <span style="color:#f92672">........................</span> <span style="color:#66d9ef">no</span>
+    EGLFS i<span style="color:#f92672">.</span>Mx6 <span style="color:#f92672">..........................</span> <span style="color:#66d9ef">no</span>
+    EGLFS i<span style="color:#f92672">.</span>Mx6 Wayland <span style="color:#f92672">..................</span> <span style="color:#66d9ef">no</span>
+    EGLFS RCAR <span style="color:#f92672">...........................</span> <span style="color:#66d9ef">no</span>
+    EGLFS EGLDevice <span style="color:#f92672">......................</span> <span style="color:#66d9ef">no</span>
+    EGLFS GBM <span style="color:#f92672">............................</span> <span style="color:#66d9ef">no</span>
+    EGLFS VSP2 <span style="color:#f92672">...........................</span> <span style="color:#66d9ef">no</span>
+    EGLFS Mali <span style="color:#f92672">...........................</span> <span style="color:#66d9ef">no</span>
+    EGLFS Raspberry Pi <span style="color:#f92672">...................</span> <span style="color:#66d9ef">no</span>
+    EGLFS X11 <span style="color:#f92672">............................</span> yes
+  LinuxFB <span style="color:#f92672">................................</span> yes
+  VNC <span style="color:#f92672">....................................</span> yes
+  XCB:
+    Using system<span style="color:#f92672">-</span>provided xcb<span style="color:#f92672">-</span>xinput <span style="color:#f92672">.....</span> yes
+    Native painting (experimental) <span style="color:#f92672">.......</span> <span style="color:#66d9ef">no</span>
+    GL integrations:
+      GLX Plugin <span style="color:#f92672">.........................</span> yes
+        XCB GLX <span style="color:#f92672">..........................</span> yes
+      EGL<span style="color:#f92672">-</span>X11 Plugin <span style="color:#f92672">.....................</span> yes
+<span style="color:#f92672">...</span></code></pre></div>
+<p>and resulting platform plugins folder contents:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ls -L1 ~/programs/qt/5152-static/plugins/platforms
+libqeglfs.a
+libqeglfs.prl
+libqlinuxfb.a
+libqlinuxfb.prl
+libqminimal.a
+libqminimal.prl
+libqminimalegl.a
+libqminimalegl.prl
+libqoffscreen.a
+libqoffscreen.prl
+libqvnc.a
+libqvnc.prl
+libqwebgl.a
+libqwebgl.prl
+libqxcb.a
+libqxcb.prl</code></pre></div>
+<p>So now <code>libqxcb</code> plugin is in place, and your applications will not only build but also actually work.</p>
       </div>
     </article>
     <div><div id="tags">
