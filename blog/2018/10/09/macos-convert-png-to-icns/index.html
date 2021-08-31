@@ -106,18 +106,20 @@ some.iconset:Failed to generate ICNS.</code></pre></div>
 <p>Correct dimensions can be found in <a href="https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon#app-icon-sizes">Apple Guidelines</a>. So it&rsquo;s 5 different dimensions, but actually 10 &ldquo;physical&rdquo; files as each dimension is represented twice (<em>you&rsquo;ll see why</em>). And these files have to be named according to the following format:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">icon_<span style="color:#f92672">{</span>width<span style="color:#f92672">}</span>x<span style="color:#f92672">{</span>height<span style="color:#f92672">}[</span>@<span style="color:#f92672">{</span>scale<span style="color:#f92672">}</span>x<span style="color:#f92672">]</span>.png</code></pre></div>
 <p>So here&rsquo;s the full list of proper filenames:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">some.iconset
-├── icon_1024x1024.png
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ tree some.iconset/
+some.iconset/
+├── icon_128x128.png
 ├── icon_128x128@2x.png
+├── icon_16x16.png
 ├── icon_16x16@2x.png
 ├── icon_256x256.png
 ├── icon_256x256@2x.png
 ├── icon_32x32.png
 ├── icon_32x32@2x.png
 ├── icon_512x512.png
-├── icon_512x512@2x.png
-└── icon_64x64.png</code></pre></div>
-<p>Some time later I&rsquo;ve got a <a href="https://github.com/retifrav/python-scripts/commit/3180a35b19fcb6fd6c2957bda026e0fc12ce9f85">commit to my script</a>, that adds more sizes, which supposedly solves a <code>missing size</code> error that could appear. I never got such an error myself, but still - check out the final script for the updated list of sizes.</p>
+└── icon_512x512@2x.png
+
+<span style="color:#ae81ff">0</span> directories, <span style="color:#ae81ff">10</span> files</code></pre></div>
 <h2 id="script-to-automate-the-process">Script to automate the process</h2>
 <p>But that&rsquo;s rather boring to create all those files manually in some graphics editor, right? So let&rsquo;s use <a href="https://ss64.com/osx/sips.html">sips</a> utility (<em>although, I recommend using ImageMagick, as it gives <a href="/blog/2019/12/12/imagemagick-vs-sips-resize/">better quality</a> results</em>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sips -z <span style="color:#ae81ff">16</span> <span style="color:#ae81ff">16</span> some.png --out icon_16x16.png</code></pre></div>
@@ -126,33 +128,46 @@ some.iconset:Failed to generate ICNS.</code></pre></div>
 <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IconParameters</span>():
     width <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
     scale <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
-    <span style="color:#66d9ef">def</span> __init__(self,width,scale):
+
+    <span style="color:#66d9ef">def</span> __init__(self, width, scale):
         self<span style="color:#f92672">.</span>width <span style="color:#f92672">=</span> width
         self<span style="color:#f92672">.</span>scale <span style="color:#f92672">=</span> scale
+
     <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getIconName</span>(self):
-        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>scale <span style="color:#f92672">!=</span> <span style="color:#ae81ff">1</span>:
-            <span style="color:#66d9ef">return</span> <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;icon_</span><span style="color:#e6db74">{</span>self<span style="color:#f92672">.</span>width<span style="color:#e6db74">}</span><span style="color:#e6db74">x</span><span style="color:#e6db74">{</span>self<span style="color:#f92672">.</span>width<span style="color:#e6db74">}{</span>ext<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>
-        <span style="color:#66d9ef">else</span>:
-            <span style="color:#66d9ef">return</span> <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;icon_</span><span style="color:#e6db74">{</span>self<span style="color:#f92672">.</span>width<span style="color:#f92672">//</span><span style="color:#ae81ff">2</span><span style="color:#e6db74">}</span><span style="color:#e6db74">x</span><span style="color:#e6db74">{</span>self<span style="color:#f92672">.</span>width<span style="color:#f92672">//</span><span style="color:#ae81ff">2</span><span style="color:#e6db74">}</span><span style="color:#e6db74">@2x</span><span style="color:#e6db74">{</span>ext<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>
+        scaleString <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>scale <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">else</span> <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;@</span><span style="color:#e6db74">{</span>self<span style="color:#f92672">.</span>scale<span style="color:#e6db74">}</span><span style="color:#e6db74">x&#34;</span>
+        <span style="color:#66d9ef">return</span> <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;icon_</span><span style="color:#e6db74">{</span>self<span style="color:#f92672">.</span>width<span style="color:#e6db74">}</span><span style="color:#e6db74">x</span><span style="color:#e6db74">{</span>self<span style="color:#f92672">.</span>width<span style="color:#e6db74">}{</span>scaleString<span style="color:#e6db74">}</span><span style="color:#e6db74">.png&#34;</span>
+
 
 <span style="color:#75715e"># create a list of all the sizes (5 actual sizes, but 10 files)</span>
 ListOfIconParameters <span style="color:#f92672">=</span> [
+    IconParameters(<span style="color:#ae81ff">16</span>, <span style="color:#ae81ff">1</span>),
+    IconParameters(<span style="color:#ae81ff">16</span>, <span style="color:#ae81ff">2</span>),
     IconParameters(<span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">1</span>),
     IconParameters(<span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">2</span>),
-    IconParameters(<span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">1</span>),
-    IconParameters(<span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">2</span>),
+    IconParameters(<span style="color:#ae81ff">128</span>, <span style="color:#ae81ff">1</span>),
+    IconParameters(<span style="color:#ae81ff">128</span>, <span style="color:#ae81ff">2</span>),
     IconParameters(<span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">1</span>),
     IconParameters(<span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">2</span>),
     IconParameters(<span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">1</span>),
-    IconParameters(<span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">2</span>),
-    IconParameters(<span style="color:#ae81ff">1024</span>, <span style="color:#ae81ff">1</span>),
-    IconParameters(<span style="color:#ae81ff">1024</span>, <span style="color:#ae81ff">2</span>)
+    IconParameters(<span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">2</span>)
 ]
 
 <span style="color:#75715e"># generate iconset folder by calling sips utility for each item in the list (so it&#39;s 10 times)</span>
 <span style="color:#66d9ef">for</span> ip <span style="color:#f92672">in</span> ListOfIconParameters:
-    subprocess<span style="color:#f92672">.</span>call([<span style="color:#e6db74">&#34;sips&#34;</span>, <span style="color:#e6db74">&#34;-z&#34;</span>, str(ip<span style="color:#f92672">.</span>width), str(ip<span style="color:#f92672">.</span>width), originalPicture, <span style="color:#e6db74">&#34;--out&#34;</span>, os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(iconsetDir, ip<span style="color:#f92672">.</span>getIconName())])</code></pre></div>
-<p>The full script is published <a href="https://github.com/retifrav/python-scripts/blob/master/generate-iconset/generate-iconset.py">here</a>.</p>
+    subprocess<span style="color:#f92672">.</span>run(
+        [
+            <span style="color:#e6db74">&#34;sips&#34;</span>,
+            <span style="color:#e6db74">&#34;-z&#34;</span>,
+            str(ip<span style="color:#f92672">.</span>width <span style="color:#f92672">*</span> ip<span style="color:#f92672">.</span>scale),
+            str(ip<span style="color:#f92672">.</span>width <span style="color:#f92672">*</span> ip<span style="color:#f92672">.</span>scale),
+            originalPicture,
+            <span style="color:#e6db74">&#34;--out&#34;</span>,
+            iconsetDir <span style="color:#f92672">/</span> ip<span style="color:#f92672">.</span>getIconName()
+        ],
+        capture_output<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>,
+        text<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>
+    )</code></pre></div>
+<p>The full script is published <a href="https://github.com/retifrav/generate-iconset/blob/master/generate-iconset.py">here</a>.</p>
 <p>As an example, I prepared a square picture with a resolution of 2048x2048 and 150 pixel per inch, so there is plenty room to prevent upscaling:</p>
 
 
