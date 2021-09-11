@@ -5,7 +5,7 @@
     <title>Creating a C&#43;&#43; library with CMake | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2021/03/08/cmake-cpp-library/" />
 
-    <meta name="generator" content="Hugo 0.86.1" />
+    <meta name="generator" content="Hugo 0.88.1" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -130,7 +130,7 @@ To clarify, this will be about so-called normal kind of library." />
 <p>For the sake of focusing on CMake side of things, the library itself is very trivial:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">├── CMakeLists.txt
 ├── include
-│   └── some.h
+│   └── some.h
 └── src
     ├── some.cpp
     └── things.h</code></pre></div>
@@ -264,14 +264,15 @@ target_sources(<span style="color:#960050;background-color:#1e0010">$</span>{PRO
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#75715e"># definitions of CMAKE_INSTALL_LIBDIR, CMAKE_INSTALL_INCLUDEDIR and others
 </span><span style="color:#75715e"></span>include(<span style="color:#e6db74">GNUInstallDirs</span>)<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># paths for binaries and headers
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># install the target and create export-set
 </span><span style="color:#75715e"></span>install(<span style="color:#e6db74">TARGETS</span> <span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>
-    <span style="color:#e6db74">EXPORT</span> <span style="color:#e6db74">&#34;${PROJECT_NAME}Config&#34;</span>
-    <span style="color:#e6db74">LIBRARY</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_LIBDIR<span style="color:#f92672">}</span> <span style="color:#75715e"># lib
-</span><span style="color:#75715e"></span>    <span style="color:#e6db74">ARCHIVE</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_LIBDIR<span style="color:#f92672">}</span> <span style="color:#75715e"># lib
-</span><span style="color:#75715e"></span>    <span style="color:#e6db74">RUNTIME</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_BINDIR<span style="color:#f92672">}</span> <span style="color:#75715e"># bin
-</span><span style="color:#75715e"></span>    <span style="color:#e6db74">INCLUDES</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_INCLUDEDIR<span style="color:#f92672">}</span> <span style="color:#75715e"># include
-</span><span style="color:#75715e"></span>    <span style="color:#e6db74">PUBLIC_HEADER</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_INCLUDEDIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#75715e"># include/SomeLibrary
+    <span style="color:#e6db74">EXPORT</span> <span style="color:#e6db74">&#34;${PROJECT_NAME}Targets&#34;</span>
+    <span style="color:#e6db74">PUBLIC_HEADER</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_INCLUDEDIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#75715e"># include/SomeLibrary
+</span><span style="color:#75715e"></span>    <span style="color:#75715e"># these get default values from GNUInstallDirs, no need to set them
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">#RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} # bin
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">#LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # lib
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">#ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} # lib
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">#INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} # include
 </span><span style="color:#75715e"></span>)<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># CMake config name, namespace and path
 </span><span style="color:#75715e"></span>install(
@@ -321,11 +322,11 @@ Install the project...
 
 $ tree ../install/
 ├── cmake
-│   ├── SomeLibraryConfig-noconfig.cmake
-│   └── SomeLibraryConfig.cmake
+│   ├── SomeLibraryConfig-noconfig.cmake
+│   └── SomeLibraryConfig.cmake
 ├── include
-│   └── SomeLibrary
-│       └── some.h
+│   └── SomeLibrary
+│       └── some.h
 └── lib
     └── libSomeLibrary.a</code></pre></div>
 <p>Note that <code>SomeLibraryConfig-noconfig.cmake</code> has this weird <code>noconfig</code> suffix. This is because we ran configuration without specifying the build type - better to explicitly set it then, both Debug and Release:</p>
@@ -359,12 +360,12 @@ Install the project...
 
 $ tree ../install/
 ├── cmake
-│   ├── SomeLibraryConfig-debug.cmake
-│   ├── SomeLibraryConfig-release.cmake
-│   └── SomeLibraryConfig.cmake
+│   ├── SomeLibraryConfig-debug.cmake
+│   ├── SomeLibraryConfig-release.cmake
+│   └── SomeLibraryConfig.cmake
 ├── include
-│   └── SomeLibrary
-│       └── some.h
+│   └── SomeLibrary
+│       └── some.h
 └── lib
     ├── libSomeLibrary.a
     └── libSomeLibraryd.a</code></pre></div>
@@ -434,14 +435,14 @@ ololo, some string</code></pre></div>
 $ tree .
 ├── CMakeLists.txt
 ├── libraries
-│   ├── CMakeLists.txt
-│   └── SomeLibrary
-│       ├── CMakeLists.txt
-│       ├── include
-│       │   └── some.h
-│       └── src
-│           ├── some.cpp
-│           └── things.h
+│   ├── CMakeLists.txt
+│   └── SomeLibrary
+│       ├── CMakeLists.txt
+│       ├── include
+│       │   └── some.h
+│       └── src
+│           ├── some.cpp
+│           └── things.h
 └── main.cpp</code></pre></div>
 <p>The main <code>CMakeLists.txt</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">project(<span style="color:#e6db74">&#34;some-application&#34;</span> <span style="color:#e6db74">VERSION</span> <span style="color:#e6db74">0.9</span> <span style="color:#e6db74">DESCRIPTION</span> <span style="color:#e6db74">&#34;A project with nested library&#34;</span>)<span style="color:#960050;background-color:#1e0010">
@@ -549,8 +550,8 @@ $ cmake --install ./libraries/SomeLibrary
 <p>To make our library shared, simply replace <code>STATIC</code> with <code>SHARED</code> in <code>add_library</code> statement (<em>in the library&rsquo;s <code>CMakeLists.txt</code></em>).</p>
 <p>So, first thing that is different about resulting executable (<code>another-application</code>) is its size:</p>
 <ul>
-<li>statically linked with SomeLibrary: 51 920 bytes</li>
-<li>dynamically linked with SomeLibrary: 51 616 bytes</li>
+<li>statically linked with SomeLibrary: 51 920 bytes</li>
+<li>dynamically linked with SomeLibrary: 51 616 bytes</li>
 </ul>
 <p>Not a very noticeable difference (<em>remember that our library just prints a line of text</em>), but it is there: statically linked executable is bigger, because the library is &ldquo;bundled&rdquo; into it.</p>
 <p>Secondly, if you now rename or delete <code>libSomeLibrary.dylib</code> (<em><code>libSomeLibrary.so</code>, <code>SomeLibrary.dll</code></em>), then trying to run this dynamically linked application you&rsquo;ll get an error like this on Mac OS:</p>
