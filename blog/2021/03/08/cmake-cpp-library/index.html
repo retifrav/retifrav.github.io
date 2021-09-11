@@ -67,7 +67,7 @@ To clarify, this will be about so-called normal kind of library." />
 </svg> 2021-03-08 20:41:56 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 17 min read</div>
+</svg> 18 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -260,26 +260,57 @@ target_sources(<span style="color:#960050;background-color:#1e0010">$</span>{PRO
 </span><span style="color:#75715e"></span>set_target_properties(<span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#e6db74">PROPERTIES</span> <span style="color:#e6db74">PUBLIC_HEADER</span> <span style="color:#e6db74">&#34;${public_headers}&#34;</span>)</code></pre></div>
 <p>Not related to public headers, but it might be a good idea to add <code>d</code> suffix to debug binaries - that way you&rsquo;ll get <code>libSomeLibraryd.a</code> with Debug configuration and <code>libSomeLibrary.a</code> with Release. To do that you need to set the <a href="https://cmake.org/cmake/help/latest/prop_tgt/CONFIG_POSTFIX.html">DEBUG_POSTFIX</a> property:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">set_target_properties(<span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#e6db74">PROPERTIES</span> <span style="color:#e6db74">DEBUG_POSTFIX</span> <span style="color:#e6db74">&#34;d&#34;</span>)</code></pre></div>
-<p>And here finally come the actual installation instructions:</p>
+<p>And here come the actual installation instructions:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#75715e"># definitions of CMAKE_INSTALL_LIBDIR, CMAKE_INSTALL_INCLUDEDIR and others
 </span><span style="color:#75715e"></span>include(<span style="color:#e6db74">GNUInstallDirs</span>)<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># install the target and create export-set
 </span><span style="color:#75715e"></span>install(<span style="color:#e6db74">TARGETS</span> <span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>
     <span style="color:#e6db74">EXPORT</span> <span style="color:#e6db74">&#34;${PROJECT_NAME}Targets&#34;</span>
-    <span style="color:#e6db74">PUBLIC_HEADER</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_INCLUDEDIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#75715e"># include/SomeLibrary
-</span><span style="color:#75715e"></span>    <span style="color:#75715e"># these get default values from GNUInstallDirs, no need to set them,
-</span><span style="color:#75715e"></span>    <span style="color:#75715e"># but if unset, for some reasons external project cannot find headers during compilation
-</span><span style="color:#75715e"></span>    <span style="color:#e6db74">RUNTIME</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_BINDIR<span style="color:#f92672">}</span> <span style="color:#75715e"># bin
-</span><span style="color:#75715e"></span>    <span style="color:#e6db74">LIBRARY</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_LIBDIR<span style="color:#f92672">}</span> <span style="color:#75715e"># lib
-</span><span style="color:#75715e"></span>    <span style="color:#e6db74">ARCHIVE</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_LIBDIR<span style="color:#f92672">}</span> <span style="color:#75715e"># lib
+    <span style="color:#75715e"># these get default values from GNUInstallDirs, no need to set them
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">#RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} # bin
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">#LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # lib
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">#ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} # lib
+</span><span style="color:#75715e"></span>    <span style="color:#75715e"># except for public headers, as we want them to be inside a library folder
+</span><span style="color:#75715e"></span>    <span style="color:#e6db74">PUBLIC_HEADER</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_INCLUDEDIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#75715e"># include/SomeLibrary
 </span><span style="color:#75715e"></span>    <span style="color:#e6db74">INCLUDES</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_INCLUDEDIR<span style="color:#f92672">}</span> <span style="color:#75715e"># include
-</span><span style="color:#75715e"></span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># generate and install export file
-</span><span style="color:#75715e"></span>install(
-    <span style="color:#e6db74">EXPORT</span> <span style="color:#e6db74">&#34;${PROJECT_NAME}Config&#34;</span>
-    <span style="color:#e6db74">FILE</span> <span style="color:#e6db74">&#34;${PROJECT_NAME}Config.cmake&#34;</span>
-    <span style="color:#e6db74">NAMESPACE</span> <span style="color:#e6db74">some::</span>
+</span><span style="color:#75715e"></span>)</code></pre></div>
+<p>Important to note here that <code>INCLUDES</code> is not part of the <code>RUNTIME</code>/<code>LIBRARY</code>/<code>ARCHIVE</code>/<code>PUBLIC_HEADER</code> group. See for yourself in the <a href="https://cmake.org/cmake/help/latest/command/install.html#installing-targets">install()</a> signature:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">install(
+    <span style="color:#e6db74">TARGETS</span> <span style="color:#e6db74">targets...</span> <span style="color:#e6db74">[EXPORT</span> <span style="color:#e6db74">&lt;export-name&gt;]</span>
+    <span style="color:#e6db74">[RUNTIME_DEPENDENCIES</span> <span style="color:#e6db74">args...|RUNTIME_DEPENDENCY_SET</span> <span style="color:#e6db74">&lt;set-name&gt;]</span>
+    <span style="color:#e6db74">[</span>
+        <span style="color:#e6db74">[</span>
+            <span style="color:#e6db74">ARCHIVE|LIBRARY|RUNTIME|OBJECTS|FRAMEWORK|BUNDLE|PRIVATE_HEADER|PUBLIC_HEADER|RESOURCE</span>
+        <span style="color:#e6db74">]</span>
+        <span style="color:#e6db74">[DESTINATION</span> <span style="color:#e6db74">&lt;dir&gt;]</span>
+        <span style="color:#e6db74">[PERMISSIONS</span> <span style="color:#e6db74">permissions...]</span>
+        <span style="color:#e6db74">[CONFIGURATIONS</span> <span style="color:#e6db74">[Debug|Release|...]]</span>
+        <span style="color:#e6db74">[COMPONENT</span> <span style="color:#e6db74">&lt;component&gt;]</span>
+        <span style="color:#e6db74">[NAMELINK_COMPONENT</span> <span style="color:#e6db74">&lt;component&gt;]</span>
+        <span style="color:#e6db74">[OPTIONAL]</span> <span style="color:#e6db74">[EXCLUDE_FROM_ALL]</span>
+        <span style="color:#e6db74">[NAMELINK_ONLY|NAMELINK_SKIP]</span>
+    <span style="color:#e6db74">]</span> <span style="color:#e6db74">[...]</span>
+    <span style="color:#e6db74">[INCLUDES</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">[&lt;dir&gt;</span> <span style="color:#e6db74">...]]</span>
+)</code></pre></div>
+<p>If you won&rsquo;t have <code>INCLUDES</code> in the <code>install()</code>, then <code>SomeLibraryTargets.cmake</code> won&rsquo;t have these lines:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">set_target_properties(<span style="color:#e6db74">some::SomeLibrary</span> <span style="color:#e6db74">PROPERTIES</span>
+  <span style="color:#e6db74">INTERFACE_INCLUDE_DIRECTORIES</span> <span style="color:#e6db74">&#34;${_IMPORT_PREFIX}/include&#34;</span>
+)</code></pre></div>
+<p>and when you&rsquo;ll try to use this (<em>installed</em>) library in an external project, it will configure fine, but it will fail to build:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cmake --build .
+<span style="color:#f92672">[</span> 50%<span style="color:#f92672">]</span> Building CXX object CMakeFiles/another-application.dir/main.cpp.o
+/path/to/cmake-library-example/external-project/main.cpp:2:10: fatal error: <span style="color:#e6db74">&#39;SomeLibrary/some.h&#39;</span> file not found
+<span style="color:#75715e">#include &lt;SomeLibrary/some.h&gt;</span>
+         ^~~~~~~~~~~~~~~~~~~~
+<span style="color:#ae81ff">1</span> error generated.
+make<span style="color:#f92672">[</span>2<span style="color:#f92672">]</span>: *** <span style="color:#f92672">[</span>CMakeFiles/another-application.dir/main.cpp.o<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">1</span>
+make<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: *** <span style="color:#f92672">[</span>CMakeFiles/another-application.dir/all<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">2</span>
+make: *** <span style="color:#f92672">[</span>all<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">2</span></code></pre></div>
+<p>Coming back to the install instructions, finally, generate and install export file:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">install(<span style="color:#e6db74">EXPORT</span> <span style="color:#e6db74">&#34;${PROJECT_NAME}Targets&#34;</span>
+    <span style="color:#e6db74">FILE</span> <span style="color:#e6db74">&#34;${PROJECT_NAME}Targets.cmake&#34;</span>
+    <span style="color:#e6db74">NAMESPACE</span> <span style="color:#f92672">${</span>namespace<span style="color:#f92672">}</span><span style="color:#e6db74">::</span>
     <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">cmake</span>
 )</code></pre></div>
 <p>The <code>NAMESPACE</code> property is exactly what is looks like - a namespace of your library. I reckon, that will help to avoid names collision, but most likely it will allow to group stuff in the namespace similar to <a href="https://doc.qt.io/qt-5/cmake-get-started.html#build-a-gui-executable">how Qt does it</a>:</p>
