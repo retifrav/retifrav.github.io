@@ -65,7 +65,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </svg> 2018-02-17 20:52:06 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 46 min read</div>
+</svg> 49 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -1576,7 +1576,134 @@ Check config.log <span style="color:#66d9ef">for</span> details.</code></pre></d
 <p>At some point, having built Qt 5.15.2, I got this error, trying to launch my application:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">QQmlApplicationEngine failed to load component
 qrc:/main.qml:1:1: module <span style="color:#e6db74">&#34;QtQuick&#34;</span> plugin <span style="color:#e6db74">&#34;qtquick2plugin&#34;</span> not found</code></pre></div>
-<p>That one I did not find a solution for, so I had to re-build Qt dynamically (<em>without <code>-static</code> configuration option</em>), and then my application was able to launch.</p>
+<p>So the application builds fine, but throws this error on launch.</p>
+<p>At first I did not find a solution for this, so I just re-built Qt dynamically (<em>without <code>-static</code> configuration option</em>), and then my application was able to launch.</p>
+<p>But then I did some digging and discovered that some Qt plugins/modules (<em>including <code>qtquick2plugin</code>, apparently</em>) require some additional massaging if Qt is built statically, and actually Qt warns about this in the end of the configuration output:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">Note</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Using</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">linking</span> <span style="color:#66d9ef">will</span> <span style="color:#66d9ef">disable</span> <span style="color:#66d9ef">the</span> <span style="color:#66d9ef">use</span> <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">dynamically</span>
+loaded plugins<span style="color:#f92672">.</span> <span style="color:#a6e22e">Make</span> sure to <span style="color:#66d9ef">import</span> all needed static plugins<span style="color:#f92672">,</span>
+or compile needed modules into the library<span style="color:#f92672">.</span></code></pre></div>
+<p>Why cannot it just take care of this on its own, so one could get a working build out of the box - I don&rsquo;t know, apparently one just can not. Well, actually, if you are using qmake, then it will work out of the box (<em>but here&rsquo;s also <a href="https://doc.qt.io/qt-5/plugins-howto.html#static-plugins">some documentation</a> on the matter, just in case</em>), and you won&rsquo;t need to change anything in your project file, but with CMake that is not the case.</p>
+<p>When using Qt static build and CMake, one needs to call <a href="https://doc.qt.io/qt-5/qtqml-cmake-qt5-import-qml-plugins.html">qt5_import_qml_plugins</a> function in his project:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">get_target_property(<span style="color:#e6db74">QT_TARGET_TYPE</span> <span style="color:#e6db74">Qt5::Core</span> <span style="color:#e6db74">TYPE</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>if(<span style="color:#f92672">${</span>QT_TARGET_TYPE<span style="color:#f92672">}</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;STATIC_LIBRARY&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    find_package(<span style="color:#e6db74">Qt5QmlImportScanner</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    qt5_import_qml_plugins(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>endif()</code></pre></div>
+<p>Hopefully, there is also <code>qt6_import_qml_plugins</code> in Qt 6, at least it is mentioned in <a href="https://bugreports.qt.io/browse/QTBUG-86827">QTBUG-86827</a>.</p>
+<p>This function is available only from Qt 5.14, but for versions older than 5.14 there seems to be nothing for that in the official resources, but fortunately there is this external <a href="https://github.com/OlivierLDff/QtStaticCMake">CMake module</a>. I did <a href="https://github.com/retifrav/color-corners/blob/master/cmake/QtStaticPlugins.cmake">some modifications</a> to it, and here&rsquo;s how I used it in my project:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">get_target_property(<span style="color:#e6db74">QT_TARGET_TYPE</span> <span style="color:#e6db74">Qt</span><span style="color:#f92672">${</span>QT_VERSION_MAJOR<span style="color:#f92672">}</span><span style="color:#e6db74">::Core</span> <span style="color:#e6db74">TYPE</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>if(<span style="color:#f92672">${</span>QT_TARGET_TYPE<span style="color:#f92672">}</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;STATIC_LIBRARY&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;This Qt is static&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#75715e"># from 5.14 there is a standard fuction for this
+</span><span style="color:#75715e"></span>    set(<span style="color:#e6db74">QT_VERSION_WITH_QML_IMPORTS</span> <span style="color:#e6db74">5.14</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    if(<span style="color:#f92672">${</span>QT_VERSION<span style="color:#f92672">}</span> <span style="color:#e6db74">VERSION_EQUAL</span> <span style="color:#f92672">${</span>QT_VERSION_WITH_QML_IMPORTS<span style="color:#f92672">}</span>
+        <span style="color:#e6db74">OR</span> <span style="color:#f92672">${</span>QT_VERSION<span style="color:#f92672">}</span> <span style="color:#e6db74">VERSION_GREATER</span> <span style="color:#f92672">${</span>QT_VERSION_WITH_QML_IMPORTS<span style="color:#f92672">}</span>
+    )<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>        message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;This Qt version (${QT_VERSION}) is newer than ${QT_VERSION_WITH_QML_IMPORTS}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>        find_package(<span style="color:#e6db74">Qt5QmlImportScanner</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>        qt5_import_qml_plugins(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    else() <span style="color:#75715e"># use a custom module
+</span><span style="color:#75715e"></span>        message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;This Qt version (${QT_VERSION}) is older than ${QT_VERSION_WITH_QML_IMPORTS}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>        include(<span style="color:#e6db74">QtStaticPlugins</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>        <span style="color:#75715e"># this adds lots of unused modules and actually is not needed at all, as it seems
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">#qt_generate_plugin_import(${CMAKE_PROJECT_NAME}
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">#    OUTPUT &#34;${CMAKE_PROJECT_NAME}_plugin_import.cpp&#34;
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">#    OUTPUT_DIR &#34;${PROJECT_BINARY_DIR}&#34;
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">#    #VERBOSE
+</span><span style="color:#75715e"></span>        <span style="color:#75715e">#)
+</span><span style="color:#75715e"></span>        qt_generate_qml_plugin_import(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+            <span style="color:#e6db74">QML_DIR</span> <span style="color:#e6db74">&#34;${QT_HOME}/qml&#34;</span>
+            <span style="color:#e6db74">QML_SRC</span> <span style="color:#e6db74">&#34;${CMAKE_CURRENT_SOURCE_DIR}&#34;</span>
+            <span style="color:#e6db74">OUTPUT</span> <span style="color:#e6db74">&#34;${CMAKE_PROJECT_NAME}_qml_plugin_import.cpp&#34;</span>
+            <span style="color:#e6db74">OUTPUT_DIR</span> <span style="color:#e6db74">&#34;${PROJECT_BINARY_DIR}&#34;</span>
+            <span style="color:#75715e">#VERBOSE
+</span><span style="color:#75715e"></span>        )<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>        <span style="color:#75715e"># this target needs to be linked after qt_generate_qml_plugin_import call
+</span><span style="color:#75715e"></span>        if(<span style="color:#e6db74">TARGET</span> <span style="color:#e6db74">Qt</span><span style="color:#f92672">${</span>QT_VERSION_MAJOR<span style="color:#f92672">}</span><span style="color:#e6db74">::QmlWorkerScript</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>            target_link_libraries(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#e6db74">PRIVATE</span> <span style="color:#e6db74">Qt</span><span style="color:#f92672">${</span>QT_VERSION_MAJOR<span style="color:#f92672">}</span><span style="color:#e6db74">::QmlWorkerScript</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>        endif()<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    endif()<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>endif()</code></pre></div>
+<p>The last bit about linking to <code>QmlWorkerScript</code> is a required crutch, otherwise you&rsquo;ll get the following error on linking:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp">Undefined symbols <span style="color:#66d9ef">for</span> architecture x86_64:
+  <span style="color:#e6db74">&#34;qml_register_types_QtQml_WorkerScript()&#34;</span>, referenced from:
+      qt_plugin_instance_QtQmlWorkerScriptPlugin() in libworkerscriptplugin.a(plugin.o)
+  <span style="color:#e6db74">&#34;QQmlWorkerScriptModule::registerQuickTypes()&#34;</span>, referenced from:
+      QtQuick2Plugin<span style="color:#f92672">::</span>registerTypes(<span style="color:#66d9ef">char</span> <span style="color:#66d9ef">const</span><span style="color:#f92672">*</span>) in libqtquick2plugin.a(plugin.o)
+      non<span style="color:#f92672">-</span><span style="color:#66d9ef">virtual</span> thunk to QtQuick2Plugin<span style="color:#f92672">::</span>registerTypes(<span style="color:#66d9ef">char</span> <span style="color:#66d9ef">const</span><span style="color:#f92672">*</span>) in libqtquick2plugin.a(plugin.o)</code></pre></div>
+<p>With my glorious <a href="https://github.com/retifrav/color-corners">Color Corners</a> application as an example, both the standard function and this module produced identical <code>.cpp</code> files in the build directory:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QtPlugin&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span>
+Q_IMPORT_PLUGIN(QtQuick2Plugin)
+Q_IMPORT_PLUGIN(QtQuick2WindowPlugin)
+Q_IMPORT_PLUGIN(QtQuickLayoutsPlugin)
+Q_IMPORT_PLUGIN(QtQmlPlugin)
+Q_IMPORT_PLUGIN(QtQmlModelsPlugin)
+Q_IMPORT_PLUGIN(QtQmlWorkerScriptPlugin)</code></pre></div>
+<p>Plus certain linking instructions were added.</p>
+<p>If you are curious to see where this list of plugins originates from, you can inspect your application imports with <code>qmlimportscanner</code> tool yourself:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>qt<span style="color:#f92672">/</span><span style="color:#ae81ff">5.15</span><span style="color:#f92672">.</span><span style="color:#ae81ff">2</span><span style="color:#f92672">-</span>static<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>qmlimportscanner \
+    <span style="color:#f92672">-</span>rootPath <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>your<span style="color:#f92672">/</span>project<span style="color:#f92672">/</span>qml<span style="color:#f92672">/</span>sources \
+    <span style="color:#f92672">-</span>importPath <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>qt<span style="color:#f92672">/</span><span style="color:#ae81ff">5.15</span><span style="color:#f92672">.</span><span style="color:#ae81ff">2</span><span style="color:#f92672">-</span>static<span style="color:#f92672">/</span>qml</code></pre></div>
+<p>For me it was the following:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">[
+    {
+        <span style="color:#f92672">&#34;classname&#34;</span>: <span style="color:#e6db74">&#34;QtQuick2Plugin&#34;</span>,
+        <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;QtQuick&#34;</span>,
+        <span style="color:#f92672">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/path/to/qt/5.15.2-static/qml/QtQuick.2&#34;</span>,
+        <span style="color:#f92672">&#34;plugin&#34;</span>: <span style="color:#e6db74">&#34;qtquick2plugin&#34;</span>,
+        <span style="color:#f92672">&#34;relativePath&#34;</span>: <span style="color:#e6db74">&#34;QtQuick.2&#34;</span>,
+        <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;module&#34;</span>,
+        <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;2.15&#34;</span>
+    },
+    {
+        <span style="color:#f92672">&#34;classname&#34;</span>: <span style="color:#e6db74">&#34;QtQuick2WindowPlugin&#34;</span>,
+        <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;QtQuick.Window&#34;</span>,
+        <span style="color:#f92672">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/path/to/qt/5.15.2-static/qml/QtQuick/Window.2&#34;</span>,
+        <span style="color:#f92672">&#34;plugin&#34;</span>: <span style="color:#e6db74">&#34;windowplugin&#34;</span>,
+        <span style="color:#f92672">&#34;relativePath&#34;</span>: <span style="color:#e6db74">&#34;QtQuick/Window.2&#34;</span>,
+        <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;module&#34;</span>,
+        <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;2.15&#34;</span>
+    },
+    {
+        <span style="color:#f92672">&#34;classname&#34;</span>: <span style="color:#e6db74">&#34;QtQuickLayoutsPlugin&#34;</span>,
+        <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;QtQuick.Layouts&#34;</span>,
+        <span style="color:#f92672">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/path/to/qt/5.15.2-static/qml/QtQuick/Layouts&#34;</span>,
+        <span style="color:#f92672">&#34;plugin&#34;</span>: <span style="color:#e6db74">&#34;qquicklayoutsplugin&#34;</span>,
+        <span style="color:#f92672">&#34;relativePath&#34;</span>: <span style="color:#e6db74">&#34;QtQuick/Layouts&#34;</span>,
+        <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;module&#34;</span>,
+        <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;1.15&#34;</span>
+    },
+    {
+        <span style="color:#f92672">&#34;classname&#34;</span>: <span style="color:#e6db74">&#34;QtQmlPlugin&#34;</span>,
+        <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;QtQml&#34;</span>,
+        <span style="color:#f92672">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/path/to/qt/5.15.2-static/qml/QtQml&#34;</span>,
+        <span style="color:#f92672">&#34;plugin&#34;</span>: <span style="color:#e6db74">&#34;qmlplugin&#34;</span>,
+        <span style="color:#f92672">&#34;relativePath&#34;</span>: <span style="color:#e6db74">&#34;QtQml&#34;</span>,
+        <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;module&#34;</span>,
+        <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;2.15&#34;</span>
+    },
+    {
+        <span style="color:#f92672">&#34;classname&#34;</span>: <span style="color:#e6db74">&#34;QtQmlModelsPlugin&#34;</span>,
+        <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;QtQml.Models&#34;</span>,
+        <span style="color:#f92672">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/path/to/qt/5.15.2-static/qml/QtQml/Models.2&#34;</span>,
+        <span style="color:#f92672">&#34;plugin&#34;</span>: <span style="color:#e6db74">&#34;modelsplugin&#34;</span>,
+        <span style="color:#f92672">&#34;relativePath&#34;</span>: <span style="color:#e6db74">&#34;QtQml/Models.2&#34;</span>,
+        <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;module&#34;</span>,
+        <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;2.15&#34;</span>
+    },
+    {
+        <span style="color:#f92672">&#34;classname&#34;</span>: <span style="color:#e6db74">&#34;QtQmlWorkerScriptPlugin&#34;</span>,
+        <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;QtQml.WorkerScript&#34;</span>,
+        <span style="color:#f92672">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/path/to/qt/5.15.2-static/qml/QtQml/WorkerScript.2&#34;</span>,
+        <span style="color:#f92672">&#34;plugin&#34;</span>: <span style="color:#e6db74">&#34;workerscriptplugin&#34;</span>,
+        <span style="color:#f92672">&#34;relativePath&#34;</span>: <span style="color:#e6db74">&#34;QtQml/WorkerScript.2&#34;</span>,
+        <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;module&#34;</span>,
+        <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;2.15&#34;</span>
+    }
+]</code></pre></div>
+<p>Which matches the generated list of imports.</p>
 <h2 id="could-not-find-the-qt-platform-plugin-xcb">Could not find the Qt platform plugin XCB</h2>
 <p>On Linux, even though the Qt builds fine, and even your applications <em>build</em> fine, you might get the following error, trying to <em>launch</em> them:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">qt.qpa.plugin: Could not find the Qt platform plugin <span style="color:#e6db74">&#34;xcb&#34;</span> in <span style="color:#e6db74">&#34;&#34;</span>
