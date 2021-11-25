@@ -67,7 +67,7 @@ To clarify, this will be about so-called normal kind of library." />
 </svg> 2021-03-08 20:41:56 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 18 min read</div>
+</svg> 19 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -97,7 +97,11 @@ To clarify, this will be about so-called normal kind of library." />
     </li>
     <li><a href="#linking-to-the-library">Linking to the library</a>
       <ul>
-        <li><a href="#from-external-project">From external project</a></li>
+        <li><a href="#from-external-project">From external project</a>
+          <ul>
+            <li><a href="#no-need-to-set-include_directories-and-use-magic-variables">No need to set include_directories and use magic variables</a></li>
+          </ul>
+        </li>
         <li><a href="#from-internal-top-level-project">From internal top-level project</a>
           <ul>
             <li><a href="#adding-nested-library-to-the-main-project">Adding nested library to the main project</a></li>
@@ -458,6 +462,63 @@ $ ./another-application
 base application message
 ololo, some string</code></pre></div>
 <p>It works!</p>
+<h3 id="no-need-to-set-include_directories-and-use-magic-variables">No need to set include_directories and use magic variables</h3>
+<p>You might have seen in other projects that they also set <code>include_directories</code> for external libraries, and probably you are now wondering why I didn&rsquo;t do it here, and how then it all works.</p>
+<p>Indeed, if we take a look at one of such projects, for example SDL2 installed via Homebrew on Mac OS:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ brew info sdl2
+sdl2<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">stable</span> <span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">16</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">bottled</span><span style="color:#f92672">),</span> <span style="color:#a6e22e">HEAD</span>
+<span style="color:#a6e22e">Low</span><span style="color:#f92672">-</span>level access to audio<span style="color:#f92672">,</span> keyboard<span style="color:#f92672">,</span> mouse<span style="color:#f92672">,</span> joystick<span style="color:#f92672">,</span> and graphics
+https<span style="color:#66d9ef">:</span><span style="color:#75715e">//www.libsdl.org/
+</span><span style="color:#75715e"></span><span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span><span style="color:#a6e22e">Cellar</span><span style="color:#f92672">/</span>sdl2<span style="color:#f92672">/</span><span style="color:#ae81ff">2.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">16</span> <span style="color:#f92672">(</span><span style="color:#ae81ff">91</span> files<span style="color:#f92672">,</span> <span style="color:#ae81ff">5.4</span><span style="color:#a6e22e">MB</span><span style="color:#f92672">)</span>
+
+$ tree <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span><span style="color:#a6e22e">Cellar</span><span style="color:#f92672">/</span>sdl2<span style="color:#f92672">/</span><span style="color:#ae81ff">2.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">16</span>
+<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span><span style="color:#a6e22e">Cellar</span><span style="color:#f92672">/</span>sdl2<span style="color:#f92672">/</span><span style="color:#ae81ff">2.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">16</span>
+<span style="color:#f92672">├──</span> <span style="color:#f92672">...</span>
+<span style="color:#f92672">├──</span> bin
+<span style="color:#f92672">│</span> <span style="color:#f92672">└──</span> sdl2<span style="color:#f92672">-</span>config
+<span style="color:#f92672">├──</span> include
+<span style="color:#f92672">│</span> <span style="color:#f92672">└──</span> <span style="color:#a6e22e">SDL2</span>
+<span style="color:#f92672">│</span>     <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SDL</span><span style="color:#f92672">.</span>h
+<span style="color:#f92672">│</span>     <span style="color:#f92672">└──</span> <span style="color:#f92672">...</span>
+<span style="color:#f92672">├──</span> lib
+<span style="color:#f92672">│</span> <span style="color:#f92672">├──</span> cmake
+<span style="color:#f92672">│</span> <span style="color:#f92672">│</span> <span style="color:#f92672">└──</span> <span style="color:#a6e22e">SDL2</span>
+<span style="color:#f92672">│</span> <span style="color:#f92672">│</span>     <span style="color:#f92672">├──</span> sdl2<span style="color:#f92672">-</span>config<span style="color:#f92672">-</span>version<span style="color:#f92672">.</span>cmake
+<span style="color:#f92672">│</span> <span style="color:#f92672">│</span>     <span style="color:#f92672">└──</span> sdl2<span style="color:#f92672">-</span>config<span style="color:#f92672">.</span>cmake
+<span style="color:#f92672">│</span> <span style="color:#f92672">├──</span> libSDL2<span style="color:#f92672">-</span><span style="color:#ae81ff">2.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0.d</span>ylib
+<span style="color:#f92672">│</span> <span style="color:#f92672">├──</span> libSDL2<span style="color:#f92672">.</span>a
+<span style="color:#f92672">│</span> <span style="color:#f92672">├──</span> libSDL2<span style="color:#f92672">.</span>dylib <span style="color:#f92672">-&gt;</span> libSDL2<span style="color:#f92672">-</span><span style="color:#ae81ff">2.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0.d</span>ylib
+<span style="color:#f92672">│</span> <span style="color:#f92672">├──</span> libSDL2_test<span style="color:#f92672">.</span>a
+<span style="color:#f92672">│</span> <span style="color:#f92672">├──</span> libSDL2main<span style="color:#f92672">.</span>a
+<span style="color:#f92672">│</span> <span style="color:#f92672">└──</span> pkgconfig
+<span style="color:#f92672">│</span>     <span style="color:#f92672">└──</span> sdl2<span style="color:#f92672">.</span>pc
+<span style="color:#f92672">└──</span> share
+    <span style="color:#f92672">└──</span> aclocal
+        <span style="color:#f92672">└──</span> sdl2<span style="color:#f92672">.</span>m4</code></pre></div>
+<p>Thanks to Homebrew, it is discoverable even without setting <code>CMAKE_PREFIX_PATH</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#75715e">#list(APPEND CMAKE_PREFIX_PATH &#34;/usr/local/Cellar/sdl2/2.0.16&#34;)
+</span><span style="color:#75715e"></span>find_package(<span style="color:#e6db74">SDL2</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>if(<span style="color:#f92672">${</span>SDL2_FOUND<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;Found SDL: ${SDL2_PREFIX}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ...
+</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>target_link_libraries(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+    <span style="color:#e6db74">PRIVATE</span>
+        <span style="color:#f92672">${</span>SDL2_LIBRARIES<span style="color:#f92672">}</span>
+)<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><p>But trying to build your application you&rsquo;ll get this error:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">fatal error: <span style="color:#e6db74">&#39;SDL.h&#39;</span> file not found
+<span style="color:#75715e">#include &lt;SDL.h&gt;</span>
+         ^~~~~~~
+<span style="color:#ae81ff">1</span> error generated.
+</code></pre></div><p>To fix that you&rsquo;ll also need to add the following to the project file:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">include_directories(
+    <span style="color:#f92672">${</span>SDL2_INCLUDE_DIRS<span style="color:#f92672">}</span>
+)<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><p>That is because SDL2 CMake package was created in a rather obsolete manner, so you have to manually set <code>include_directories</code> and also to use these magic variables such as <code>_INCLUDE_DIRS</code> and <code>_LIBRARIES</code>.</p>
+<p>Our library package is written in a more modern way, so including directories is already taken care of, and also there is no need to use any magic variables, just the package name. Nice, innit.</p>
 <h2 id="from-internal-top-level-project">From internal top-level project</h2>
 <p>But what if we have our library as a part of some other top-level project, so the library lives in its source tree? Do we still need to build it first and add it to the main project via <code>find_package</code>? Not exactly - now there is no need to &ldquo;find&rdquo; it: the library will be built together with the parent project and then linked to.</p>
 <h3 id="adding-nested-library-to-the-main-project">Adding nested library to the main project</h3>
