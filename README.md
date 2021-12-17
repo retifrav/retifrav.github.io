@@ -1,3 +1,4 @@
 # Me blog
 
-That's just my blog: https://retifrav.github.io/
+- original: https://decovar.dev/
+- this mirror: https://retifrav.github.io/
