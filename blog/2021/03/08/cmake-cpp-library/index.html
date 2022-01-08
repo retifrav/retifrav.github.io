@@ -94,7 +94,8 @@ To clarify, this will be about so-called normal kind of library." />
                 <li><a href="#installation-path">Installation path</a></li>
                 <li><a href="#public-headers">Public headers</a></li>
                 <li><a href="#debug-suffix">Debug suffix</a></li>
-                <li><a href="#configs-and-targets">Configs and targets</a></li>
+                <li><a href="#destinations">Destinations</a></li>
+                <li><a href="#configs">Configs</a></li>
               </ul>
             </li>
           </ul>
@@ -121,11 +122,6 @@ To clarify, this will be about so-called normal kind of library." />
             </li>
           </ul>
         </li>
-      </ul>
-    </li>
-    <li><a href="#going-deeper">Going deeper</a>
-      <ul>
-        <li><a href="#package-version">Package version</a></li>
         <li><a href="#static-vs-shared">STATIC vs SHARED</a>
           <ul>
             <li><a href="#shared-dll-on-windows">SHARED DLL on Windows</a></li>
@@ -200,7 +196,10 @@ To clarify, this will be about so-called normal kind of library." />
 <h3 id="top-level-and-nested-projects">Top-level and nested projects</h3>
 <p>In CMake projects there is a variable called <a href="https://cmake.org/cmake/help/latest/variable/CMAKE_PROJECT_NAME.html">CMAKE_PROJECT_NAME</a>. It stores the top-level project name that you set with <a href="https://cmake.org/cmake/help/latest/command/project.html">project</a> command. This variable persists across all the nested projects, and so calling <code>project</code> command from nested projects will not change <code>CMAKE_PROJECT_NAME</code>, but will set another variable called <a href="https://cmake.org/cmake/help/latest/variable/PROJECT_NAME.html">PROJECT_NAME</a>.</p>
 <p>Knowing that, here&rsquo;s how you can check if you are in the top-level project or not:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">project(<span style="color:#e6db74">&#34;SomeLibrary&#34;</span> <span style="color:#e6db74">DESCRIPTION</span> <span style="color:#e6db74">&#34;Some library&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">project(<span style="color:#e6db74">&#34;SomeLibrary&#34;</span>
+    <span style="color:#e6db74">DESCRIPTION</span> <span style="color:#e6db74">&#34;Some library&#34;</span>
+    <span style="color:#e6db74">VERSION</span> <span style="color:#e6db74">0.9.1</span>
+)<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010"></span>if (<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">CMAKE_PROJECT_NAME</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">PROJECT_NAME</span>)<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;This project has a top-level one called [${CMAKE_PROJECT_NAME}]&#34;</span>)<span style="color:#960050;background-color:#1e0010">
@@ -310,8 +309,8 @@ target_sources(<span style="color:#960050;background-color:#1e0010">$</span>{PRO
 <p>It might be a good idea to add <code>d</code> suffix to debug binaries - that way you&rsquo;ll get <code>libSomeLibraryd.a</code> with Debug configuration and <code>libSomeLibrary.a</code> with Release. To do that you need to set the <a href="https://cmake.org/cmake/help/latest/prop_tgt/CONFIG_POSTFIX.html">DEBUG_POSTFIX</a> property:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">set_target_properties(<span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#e6db74">PROPERTIES</span> <span style="color:#e6db74">DEBUG_POSTFIX</span> <span style="color:#e6db74">&#34;d&#34;</span>)</code></pre></div>
 <p>Or you can set it globally for the entire project on configuration with <code>-DCMAKE_DEBUG_POSTFIX=&quot;d&quot;</code>.</p>
-<h4 id="configs-and-targets">Configs and targets</h4>
-<p>And here come the actual installation instructions:</p>
+<h4 id="destinations">Destinations</h4>
+<p>Here come the actual installation instructions:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#75715e"># if you haven&#39;t included it already
 </span><span style="color:#75715e"># definitions of CMAKE_INSTALL_LIBDIR, CMAKE_INSTALL_INCLUDEDIR and others
 </span><span style="color:#75715e"></span>include(<span style="color:#e6db74">GNUInstallDirs</span>)<span style="color:#960050;background-color:#1e0010">
@@ -359,11 +358,39 @@ target_sources(<span style="color:#960050;background-color:#1e0010">$</span>{PRO
 make<span style="color:#f92672">[</span>2<span style="color:#f92672">]</span>: *** <span style="color:#f92672">[</span>CMakeFiles/another-application.dir/main.cpp.o<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">1</span>
 make<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: *** <span style="color:#f92672">[</span>CMakeFiles/another-application.dir/all<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">2</span>
 make: *** <span style="color:#f92672">[</span>all<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">2</span></code></pre></div>
-<p>Coming back to the install instructions, finally, generate and install export file:</p>
+<h4 id="configs">Configs</h4>
+<p>Create <code>Config.cmake.in</code> file:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">@PACKAGE_INIT@
+
+include<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CMAKE_CURRENT_LIST_DIR<span style="color:#e6db74">}</span><span style="color:#e6db74">/@PROJECT_NAME@Targets.cmake&#34;</span><span style="color:#f92672">)</span>
+
+check_required_components<span style="color:#f92672">(</span>@PROJECT_NAME@<span style="color:#f92672">)</span></code></pre></div>
+<p><a href="https://cmake.org/cmake/help/git-stage/guide/importing-exporting/index.html#creating-a-package-configuration-file">CMake documentation</a> doesn&rsquo;t mention it in a clear way, but you can still use the <code>PROJECT_NAME</code> variable here too - just wrap it in <code>@@</code>.</p>
+<p>And then in <code>CMakeLists.txt</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#75715e"># generate and install export file
 </span><span style="color:#75715e"></span>install(<span style="color:#e6db74">EXPORT</span> <span style="color:#e6db74">&#34;${PROJECT_NAME}Targets&#34;</span>
     <span style="color:#e6db74">FILE</span> <span style="color:#e6db74">&#34;${PROJECT_NAME}Targets.cmake&#34;</span>
     <span style="color:#e6db74">NAMESPACE</span> <span style="color:#f92672">${</span>namespace<span style="color:#f92672">}</span><span style="color:#e6db74">::</span>
+    <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">cmake</span>
+)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>include(<span style="color:#e6db74">CMakePackageConfigHelpers</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># generate the version file for the config file
+</span><span style="color:#75715e"></span>write_basic_package_version_file(
+    <span style="color:#e6db74">&#34;${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake&#34;</span>
+    <span style="color:#e6db74">VERSION</span> <span style="color:#e6db74">&#34;${version}&#34;</span>
+    <span style="color:#e6db74">COMPATIBILITY</span> <span style="color:#e6db74">AnyNewerVersion</span>
+)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># create config file
+</span><span style="color:#75715e"></span>configure_package_config_file(<span style="color:#f92672">${</span>CMAKE_CURRENT_SOURCE_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/Config.cmake.in</span>
+    <span style="color:#e6db74">&#34;${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake&#34;</span>
+    <span style="color:#e6db74">INSTALL_DESTINATION</span> <span style="color:#e6db74">cmake</span>
+)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># install config files
+</span><span style="color:#75715e"></span>install(<span style="color:#e6db74">FILES</span>
+    <span style="color:#e6db74">&#34;${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake&#34;</span>
+    <span style="color:#e6db74">&#34;${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake&#34;</span>
     <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">cmake</span>
 )<span style="color:#960050;background-color:#1e0010">
 </span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># generate the export targets for the build tree
@@ -371,9 +398,18 @@ make: *** <span style="color:#f92672">[</span>all<span style="color:#f92672">]</
     <span style="color:#e6db74">FILE</span> <span style="color:#e6db74">&#34;${CMAKE_CURRENT_BINARY_DIR}/cmake/${PROJECT_NAME}Targets.cmake&#34;</span>
     <span style="color:#e6db74">NAMESPACE</span> <span style="color:#f92672">${</span>namespace<span style="color:#f92672">}</span><span style="color:#e6db74">::</span>
 )</code></pre></div>
-<p>The <code>NAMESPACE</code> property is exactly what is looks like - a namespace of your library. I reckon, that will help to avoid names collision, but most likely it will allow to group stuff in the namespace similar to <a href="https://doc.qt.io/qt-5/cmake-get-started.html#build-a-gui-executable">how Qt does it</a>:</p>
+<p>The <code>write_basic_package_version_file()</code> function from above will create <code>SomeLibraryConfigVersion.cmake</code> file in the <code>install</code> folder. Having it, if you now try to find your package in external project (<code>cmake-library-example/external-project/CMakeLists.txt</code>) like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">find_package(<span style="color:#e6db74">SomeLibrary</span> <span style="color:#e6db74">0.9.2</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)</code></pre></div>
+<p>then you will get the following error on configuration:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">CMake Error at CMakeLists.txt:9 <span style="color:#f92672">(</span>find_package<span style="color:#f92672">)</span>:
+  Could not find a configuration file <span style="color:#66d9ef">for</span> package <span style="color:#e6db74">&#34;SomeLibrary&#34;</span> that is
+  compatible with requested version <span style="color:#e6db74">&#34;0.9.2&#34;</span>.
+
+  The following configuration files were considered but not accepted:
+
+    /Users/YOURNAME/code/cpp/cmake-library-example/internal-project/install/cmake/SomeLibraryConfig.cmake, version: 0.9.1</code></pre></div>
+<p>Finally, the <code>NAMESPACE</code> property is exactly what is looks like - a namespace of your library. I reckon, that will help to avoid names collision and also allow to group related stuff in one namespace, similar to <a href="https://doc.qt.io/qt-5/cmake-get-started.html#build-a-gui-executable">how Qt does it</a>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">target_link_libraries(<span style="color:#e6db74">helloworld</span> <span style="color:#e6db74">Qt5::Widgets</span>)</code></pre></div>
-<p>One last thing: if you won&rsquo;t use <a href="#package-version">package version</a>, then replace all the <code>&quot;${PROJECT_NAME}Targets&quot;</code> occurrences above with <code>&quot;${PROJECT_NAME}Config&quot;</code>, otherwise CMake won&rsquo;t be able to find the package.</p>
 <h2 id="building-and-installing">Building and installing</h2>
 <p>Go to library source tree root and run the usual:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd $_
@@ -662,36 +698,6 @@ $ cmake --install ./libraries/SomeLibrary
 -- Installing: /Users/YOURNAME/code/cpp/cmake-library-example/internal-project/install/cmake/SomeLibraryConfig.cmake
 -- Installing: /Users/YOURNAME/code/cpp/cmake-library-example/internal-project/install/cmake/SomeLibraryConfig-debug.cmake</code></pre></div>
 <p>Here you can also see how you can install a single target with <code>--install</code> option - by pointing it to the target folder inside <code>build</code> folder. Also note that install folder is now on the project&rsquo;s source tree root level, not in the library&rsquo;s nested source folder.</p>
-<h1 id="going-deeper">Going deeper</h1>
-<h2 id="package-version">Package version</h2>
-<p>You can set a version for your library (<code>cmake-library-example/internal-project/libraries/SomeLibrary/CMakeLists.txt</code>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">project(<span style="color:#e6db74">&#34;SomeLibrary&#34;</span> <span style="color:#e6db74">DESCRIPTION</span> <span style="color:#e6db74">&#34;Some library&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">version</span> <span style="color:#e6db74">0.9.1</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ...
-</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>include(<span style="color:#e6db74">CMakePackageConfigHelpers</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>write_basic_package_version_file(
-    <span style="color:#e6db74">&#34;${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake&#34;</span>
-    <span style="color:#e6db74">VERSION</span> <span style="color:#e6db74">&#34;${version}&#34;</span>
-    <span style="color:#e6db74">COMPATIBILITY</span> <span style="color:#e6db74">AnyNewerVersion</span>
-)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>install(<span style="color:#e6db74">FILES</span>
-    <span style="color:#e6db74">&#34;${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake&#34;</span>
-    <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">cmake</span>
-)</code></pre></div>
-<p>As a result you will get one more CMake config file in the <code>install</code> folder: <code>SomeLibraryConfigVersion.cmake</code>.</p>
-<p>If you now try to find the package in external project (<code>cmake-library-example/external-project/CMakeLists.txt</code>) like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">find_package(<span style="color:#e6db74">SomeLibrary</span> <span style="color:#e6db74">0.9.2</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)</code></pre></div>
-<p>then you will get the following error on configuration:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">CMake Error at CMakeLists.txt:9 <span style="color:#f92672">(</span>find_package<span style="color:#f92672">)</span>:
-  Could not find a configuration file <span style="color:#66d9ef">for</span> package <span style="color:#e6db74">&#34;SomeLibrary&#34;</span> that is
-  compatible with requested version <span style="color:#e6db74">&#34;0.9.2&#34;</span>.
-
-  The following configuration files were considered but not accepted:
-
-    /Users/YOURNAME/code/cpp/cmake-library-example/internal-project/install/cmake/SomeLibraryConfig.cmake, version: 0.9.1</code></pre></div>
 <h2 id="static-vs-shared">STATIC vs SHARED</h2>
 <p>Hopefully, you already know the difference between static and shared libraries. If not, then, <a href="/blog/2018/02/17/build-qt-statically/#why-build-qt-statically">to put it simple</a>, static libraries are &ldquo;bundled&rdquo; into your binaries, and shared libraries are separate files which need to be discoverable by your binaries in order for the latter to work.</p>
 <p>A little practical example: let&rsquo;s build our library as static, link to it from external project, then build it as shared and link to that one.</p>
