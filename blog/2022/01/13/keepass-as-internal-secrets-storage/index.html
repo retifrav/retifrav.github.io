@@ -1,0 +1,546 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>KeePass as internal secrets storage for a team | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2022/01/13/keepass-as-internal-secrets-storage/" />
+
+    <meta name="generator" content="Hugo 0.91.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="A way to store passwords, keys and other secrets using KeePass database, hosted on internal server in Git repository." />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="KeePass as internal secrets storage for a team" />
+<meta property="og:description" content="A way to store passwords, keys and other secrets using KeePass database, hosted on internal server in Git repository." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2022/01/13/keepass-as-internal-secrets-storage/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2022-01-13T21:53:34+01:00" />
+<meta property="article:modified_time" content="2022-01-13T21:53:34+01:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2022/01/13/keepass-as-internal-secrets-storage/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">KeePass as internal secrets storage for a team</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2022-01-13 21:53:34 &#43;0100</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 10 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>For a long time in our team we&rsquo;ve been storing logins, passwords, keys and other things like that in personal password managers or just plain-text files, spread around people&rsquo;s machines, and no one had the full set. Finally, we decided to stop this chaos and start using one common passwords database.</p>
+
+
+
+    <img class="image-post" src="/blog/2022/01/13/keepass-as-internal-secrets-storage/images/keepassxc-passwords.png" alt="Passwords in KeePass XC">
+
+
+<p>Having evaluated several options, we chose <a href="https://en.wikipedia.org/wiki/KeePass">KeePass</a>. It&rsquo;s not exactly meant for multi-user usage, but we came up with some sort of workaround.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#why-keepass">Why KeePass</a></li>
+    <li><a href="#client-applications">Client applications</a></li>
+    <li><a href="#database">Database</a>
+      <ul>
+        <li><a href="#master-password-and-key-file">Master password and key file</a></li>
+        <li><a href="#server-setup">Server setup</a>
+          <ul>
+            <li><a href="#system-users-and-ssh-keys">System users and SSH keys</a></li>
+            <li><a href="#repository">Repository</a>
+              <ul>
+                <li><a href="#syncing">Syncing</a></li>
+                <li><a href="#making-changes">Making changes</a></li>
+              </ul>
+            </li>
+            <li><a href="#rss-updates">RSS updates</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#overall">Overall</a>
+      <ul>
+        <li><a href="#whats-good">What&rsquo;s good</a></li>
+        <li><a href="#whats-not-so-good">What&rsquo;s not so good</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h1 id="why-keepass">Why KeePass</h1>
+<p>There are many password manager solutions available, but not all of them meet the following requirements:</p>
+<ul>
+<li>no clouds, offline in-house hosting;</li>
+<li>no vendor-lock on a proprietary/closed format;</li>
+<li>proper native desktop/mobile client applications, and preferably more than one to choose from.</li>
+</ul>
+<p>So the choice is rather (<em>very</em>) limited.</p>
+<p>Personally I&rsquo;ve been using 1Password, v6 and v7, while it&rsquo;s still not based on Electron, with ability to have an offline vault and without subscription. And that was my first candidate, especially that they have some additional functionality for teams, but then they announced v8, which is destined to be a <a href="https://t.me/decovar/301">total shit</a>: cloud-only, subscription-only, Electron-based - so that&rsquo;s no longer an option.</p>
+<p>Then there are some solutions that do meet most of the requirements, and for example we could consider using <a href="https://bitwarden.com/">Bitwarden</a> or <a href="https://www.passbolt.com/">Passbolt</a>. But sadly neither of these two have proper native client applications.</p>
+<p>So <a href="https://keepass.info/">KeePass</a> ended up being basically the only suitable candidate:</p>
+<ul>
+<li>offline database, which is just a file that you can host anywhere;</li>
+<li>database format (KDBX) and reference client application <a href="https://sourceforge.net/projects/keepass/files/">are open</a> (<em>every release comes with the sources archive</em>);</li>
+<li>a lot of native client applications on all the platforms, including mobile ones.</li>
+</ul>
+<h1 id="client-applications">Client applications</h1>
+<p>Most of the compatible client application are proper native (<em>without Electron garbage</em>) applications. Many of those are available free of charge.</p>
+<p>The full(?) list of clients on all platforms can be found <a href="https://keepass.info/download.html">here</a>, under the &ldquo;<em>Other downloads and links</em>&rdquo; section.</p>
+<p>Out of the desktop clients I liked the <a href="https://keepassxc.org/">KeePassXC</a> (<em><a href="https://github.com/keepassxreboot/keepassxc">sources</a></em>) the most. Unlike the reference client, which is written in C# and is for Windows only, KeePassXC is based on C++/Qt and works on Windows, Mac OS and Linux. It also seems to have better performance / more responsive (<em>and nicer</em>) GUI.</p>
+<p>One thing I was worried about is whether KeePass has the functionality of storing 2FA/<a href="https://en.wikipedia.org/wiki/Time-based_One-Time_Password">TOTP</a> codes, but it certainly does have that:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/01/13/keepass-as-internal-secrets-storage/images/keepassxc-totp-attribute.png" alt="KeePass XC, TOTP attribute">
+
+
+
+
+
+    <img class="image-post" src="/blog/2022/01/13/keepass-as-internal-secrets-storage/images/keepassxc-totp-code.png" alt="KeePass XC, TOTP code">
+
+
+<p>Mobile clients I haven&rsquo;t tried yet, but looks like the choice comes down to these two:</p>
+<ul>
+<li><a href="https://keepassium.com/">KeePassium</a> (<em><a href="https://github.com/keepassium/KeePassium">sources</a></em>)</li>
+<li><a href="https://strongboxsafe.com/">Strongbox</a> (<em><a href="https://github.com/strongbox-password-safe/Strongbox">sources</a></em>)</li>
+</ul>
+<p>Both are paid applications and are not cheap, but they do have a one-time purchase lifetime license option.</p>
+<h1 id="database">Database</h1>
+<p>As I mentioned, KeePass isn&rsquo;t really meant to be used in a multi-user environment, as there are certain challenges in keeping the original database in order and tracking changes. There are, however, solutions like <a href="https://www.pleasantpasswords.com/">Pleasant Password Server</a>, which can help with that.</p>
+<p>As a workaround, we came up with the following plan:</p>
+<ol>
+<li>The original / source of truth database is stored on a dedicated server in the internal network, not exposed to the internet;</li>
+<li>The database file lives in a Git repository, and that&rsquo;s how changes are tracked. Yes, it is a binary file, but still it&rsquo;s not a terrible idea to version control it with Git;</li>
+<li>Users (<em>team members</em>) clone the repository to their machines and get a local copy of the database.</li>
+</ol>
+<h2 id="master-password-and-key-file">Master password and key file</h2>
+<p>The database file (<em>let&rsquo;s call it <code>passwords.kdbx</code></em>) can be protected by two security/access factors (<em>and/or with a <a href="https://www.yubico.com/">YubiKey</a></em>):</p>
+<ol>
+<li>Password. As it&rsquo;s the master password, it must be a long and a complex one, so it unlikely will be memorable, and so you&rsquo;ll need to store it somewhere, but where - that&rsquo;s an interesting question, because the first answer is yet another database/manager, the password for which you also need to store somewhere, and then the password for this &ldquo;somewhere&rdquo; also needs to be stored&hellip; yeah, interesting question;</li>
+<li>Database key file. To open the database, in addition to entering the password, you also need to provide path to the key file. Obviously, it must never be stored together with the database file.</li>
+</ol>
+<p>To add a key file, enable additional protection on creating the database:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/01/13/keepass-as-internal-secrets-storage/images/keepassxc-new-database.png" alt="KeePass XC, new database">
+
+
+<p>And here&rsquo;s how it will look like when you will be unlocking the database using both the password and the key file:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/01/13/keepass-as-internal-secrets-storage/images/keepassxc-opening.png" alt="KeePass XC, opening the database">
+
+
+<p>The paths to database and key file should be different here, as, once again, they should never be stored together. And of course the key file should not be part of the database Git repository either.</p>
+<h2 id="server-setup">Server setup</h2>
+<p>For such purpose (<em>hosting a Git repository</em>) it is enough to create a small GNU/Linux VM. Certainly make sure that it is not exposed to the internet, so team members can connect to it only from the office network (<em>or via VPN</em>).</p>
+<p>The server should definitely be protected with some additional security measures, comparing to your regular hosts. As a bare minimum disable password authentication, so only SSH keys are allowed:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo nano <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>ssh<span style="color:#f92672">/</span>sshd_config</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-php" data-lang="php"><span style="color:#a6e22e">ChallengeResponseAuthentication</span> <span style="color:#a6e22e">no</span>
+<span style="color:#a6e22e">PasswordAuthentication</span> <span style="color:#a6e22e">no</span>
+<span style="color:#a6e22e">PermitEmptyPasswords</span> <span style="color:#a6e22e">no</span></code></pre></div>
+<p>Generate and add an SSH key for administrator account to <code>/home/ADMINISTRATOR-USER-NAME/.ssh/authorized_keys</code> (<em>more about <a href="#system-users">system users</a> below</em>), make sure that you can connect with it and only then restart the SSH service, to apply the <code>sshd_config</code> changes:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo systemctl restart sshd<span style="color:#f92672">.</span>service</code></pre></div>
+<p>It also wouldn&rsquo;t hurt to setup <code>fail2ban</code>, just in case:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo apt install fail2ban
+$ sudo nano <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>fail2ban<span style="color:#f92672">/</span>jail<span style="color:#f92672">.</span>local</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[sshd]</span>
+<span style="color:#a6e22e">enabled</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">true</span>
+<span style="color:#a6e22e">port</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">ssh</span>
+<span style="color:#a6e22e">filter</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">sshd</span>
+<span style="color:#a6e22e">logpath</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">/var/log/auth.log</span>
+<span style="color:#a6e22e">maxretry</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">5</span>
+<span style="color:#a6e22e">findtime</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">667</span>
+<span style="color:#a6e22e">bantime</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">11111</span>
+<span style="color:#a6e22e">ignoreip</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">127.0.0.1</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo systemctl restart fail2ban<span style="color:#f92672">.</span>service
+
+$ sudo fail2ban<span style="color:#f92672">-</span>client status
+$ sudo fail2ban<span style="color:#f92672">-</span>client status sshd</code></pre></div>
+<p>Further server hardening I leave up to you.</p>
+<h3 id="system-users-and-ssh-keys">System users and SSH keys</h3>
+<p>Speaking about users and home directories on the server, here&rsquo;s a suggested configuration:</p>
+<ul>
+<li><code>keeper:keeper</code> - administrator, can run <code>sudo</code>;</li>
+<li><code>roquelaire:shoppers</code> - regular user, cannot run <code>sudo</code>.</li>
+</ul>
+<p>The <code>roquelaire</code> user is the owner of the database repository, which is placed in his home folder, and his account is used to access the repository over SSH.</p>
+<p>This account also will have multiple SSH keys - one per team member. It is important to note that this user should not be able to modify his <code>authorized_keys</code>, to prevent regular team members from adding more keys, as only administrator (<code>keeper</code>) should be allowed to do that. So <code>roquelaire</code>&rsquo;s <code>authorized_keys</code> file should be kept for example in <code>/home/keeper/.ssh-roquelaire</code> and owned by <code>keeper</code> user. In that case, of course, <code>keeper</code> home folder should not be available to <code>roquelaire</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo mv <span style="color:#f92672">/</span>home<span style="color:#f92672">/</span>roquelaire<span style="color:#f92672">/.</span>ssh <span style="color:#f92672">/</span>home<span style="color:#f92672">/</span>keeper<span style="color:#f92672">/.</span>ssh<span style="color:#f92672">-</span>roquelaire
+$ sudo chown <span style="color:#f92672">-</span>R keeper<span style="color:#66d9ef">:</span><span style="color:#66d9ef">keeper</span> <span style="color:#66d9ef">/home/keeper/.ssh-roquelaire</span>
+$ sudo chmod <span style="color:#ae81ff">711</span> <span style="color:#f92672">/</span>home<span style="color:#f92672">/</span>keeper</code></pre></div>
+<p>Then for SSH access to work, the following needs to be added to <code>/etc/ssh/sshd_config</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-php" data-lang="php"><span style="color:#a6e22e">Match</span> <span style="color:#a6e22e">User</span> <span style="color:#a6e22e">roquelaire</span>
+    <span style="color:#75715e">#AuthorizedKeysFile /home/keeper/.ssh-roquelaire/authorized_keys
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">AuthorizedKeysCommand</span> <span style="color:#f92672">/</span><span style="color:#a6e22e">usr</span><span style="color:#f92672">/</span><span style="color:#a6e22e">local</span><span style="color:#f92672">/</span><span style="color:#a6e22e">bin</span><span style="color:#f92672">/</span><span style="color:#a6e22e">get_roquelaire_keys</span>
+    <span style="color:#a6e22e">AuthorizedKeysCommandUser</span> <span style="color:#a6e22e">keeper</span></code></pre></div>
+<p>And the <code>/usr/local/bin/get_roquelaire_keys</code> script does the following:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">#!/</span>bin<span style="color:#f92672">/</span>sh
+
+cat <span style="color:#f92672">/</span>home<span style="color:#f92672">/</span>keeper<span style="color:#f92672">/.</span>ssh<span style="color:#f92672">-</span>roquelaire<span style="color:#f92672">/</span>authorized_keys</code></pre></div>
+<h3 id="repository">Repository</h3>
+<p>The database repository lives in <code>/home/roquelaire/passwds</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cd <span style="color:#f92672">/</span>home<span style="color:#f92672">/</span>roquelaire
+$ mkdir passwds <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#a6e22e">$_</span>
+$ git init <span style="color:#f92672">--</span>bare <span style="color:#f92672">.</span></code></pre></div>
+<p>After you commit first version of the database file to it, the resulting structure will look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ tree <span style="color:#f92672">-</span>L <span style="color:#ae81ff">2</span> <span style="color:#f92672">/</span>home<span style="color:#f92672">/</span>roquelaire<span style="color:#f92672">/</span>
+<span style="color:#f92672">/</span>home<span style="color:#f92672">/</span>roquelaire<span style="color:#f92672">/</span>
+<span style="color:#f92672">└──</span> passwds
+    <span style="color:#f92672">├──</span> <span style="color:#a6e22e">HEAD</span>
+    <span style="color:#f92672">├──</span> branches
+    <span style="color:#f92672">├──</span> config
+    <span style="color:#f92672">├──</span> description
+    <span style="color:#f92672">├──</span> hooks
+    <span style="color:#f92672">├──</span> info
+    <span style="color:#f92672">├──</span> objects
+    <span style="color:#f92672">└──</span> refs</code></pre></div>
+<p>As it&rsquo;s a bare repository, the database file isn&rsquo;t really in a downloadable form here. To clone the repository, team members need to generate an SSH key pair on their machine:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cd <span style="color:#f92672">~/.</span>ssh
+$ ssh<span style="color:#f92672">-</span>keygen <span style="color:#f92672">-</span>o <span style="color:#f92672">-</span>t rsa <span style="color:#f92672">-</span>b <span style="color:#ae81ff">4096</span> <span style="color:#f92672">-</span>C <span style="color:#e6db74">&#34;USERNAME@YOUR-COMPANY.com&#34;</span></code></pre></div>
+<p>Ideally, the e-mails need to be correct and unique per user, so it&rsquo;s a good idea for administrator to ensure that before adding a new key.</p>
+<p>Once the key pair is generated, user gives his public key to administrator, and administrator then adds it to <code>/home/keeper/.ssh-roquelaire/authorized_keys</code> file on the server.</p>
+<p>Users, in turn, add a new record into their local <code>~/.ssh/config</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e"># you might want to add a local DNS record for convenience
+</span><span style="color:#75715e"></span>Host passwords.YOUR<span style="color:#f92672">-</span>COMPANY.com
+User roquelaire
+IdentityFile <span style="color:#f92672">~/</span>.ssh<span style="color:#f92672">/</span>FILENAME<span style="color:#f92672">-</span>OF<span style="color:#f92672">-</span>THE<span style="color:#f92672">-</span>PRIVATE<span style="color:#f92672">-</span>KEY</code></pre></div>
+<p>Having established SSH access to the server, users can now clone the repository:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ git clone roquelaire<span style="color:#a6e22e">@passwords</span><span style="color:#f92672">.</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">COMPANY</span><span style="color:#f92672">.</span>com<span style="color:#66d9ef">:</span><span style="color:#66d9ef">passwds</span></code></pre></div>
+<p>If you are confused about how that works, remember that Git repository path on server is <code>/home/roquelaire/passwds</code>, and so <code>passwds</code> is indeed the first folder in the <code>roquelaire</code> user home directory.</p>
+<p>Now the <code>/path/to/passwds/passwords.kdbx</code> file in user&rsquo;s local repository is the actual database he can work with.</p>
+<h4 id="syncing">Syncing</h4>
+<p>Once users clone the main repository to their machines, getting updates and making changes becomes a familiar task of working with a Git repository.</p>
+<p>When it comes to mobile clients, everyone can distribute their local copy of the database to their mobile devices, but since there is rarely a Git client on those, especially on iOS, one might have to use a cloud provider (<em>iCloud Drive, OneDrive, Dropbox, etc</em>) for syncing the database across his devices. It is not recommended (<em>no 3rd-party servers should be involved</em>), but it&rsquo;s more or less tolerable, as long as the key file isn&rsquo;t uploaded to the cloud storage together with the database.</p>
+<h4 id="making-changes">Making changes</h4>
+<p>As with any other Git repository, when someone has some changes to make in the database file, he just adds them into his local copy and commits/pushes it to the main repository.</p>
+<p>In ideal world everyone would write meaningful commit messages, so others would know what exactly has changed in the database.</p>
+<p>In a super ideal world everyone would also <a href="https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work">sign their commits</a>.</p>
+<h3 id="rss-updates">RSS updates</h3>
+<p>One way how users can know about updates in the database is, as with any other Git repository, by fetching them from the main repository and looking at the log/history.</p>
+<p>Another way to let users know about updates would be to create a RSS feed, using Git <a href="https://git-scm.com/docs/githooks#post-update">post-update</a> hook in <code>/home/roquelaire/passwds/hooks/post-update</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span>
+rssFile<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/var/www/passwords.YOUR-COMPANY.com/rss.xml&#34;</span>
+
+<span style="color:#75715e"># just to overwrite the file</span>
+echo <span style="color:#e6db74">&#39;&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;&#39;</span> &gt; $rssFile
+
+cat <span style="color:#e6db74">&lt;&lt; _EOF_ &gt;&gt; $rssFile
+</span><span style="color:#e6db74">&lt;rss version=&#34;2.0&#34; xmlns:atom=&#34;http://www.w3.org/2005/Atom&#34;&gt;
+</span><span style="color:#e6db74">    &lt;channel&gt;
+</span><span style="color:#e6db74">        &lt;title&gt;Keeper&lt;/title&gt;
+</span><span style="color:#e6db74">        &lt;link&gt;http://passwords.YOUR-COMPANY.com/&lt;/link&gt;
+</span><span style="color:#e6db74">        &lt;atom:link href=&#34;http://passwords.YOUR-COMPANY.com/rss.xml&#34; rel=&#34;self&#34; type=&#34;application/rss+xml&#34;/&gt;
+</span><span style="color:#e6db74">        &lt;description&gt;Keeper database updates&lt;/description&gt;
+</span><span style="color:#e6db74">        &lt;language&gt;en&lt;/language&gt;
+</span><span style="color:#e6db74">_EOF_</span>
+<span style="color:#75715e">#for i in $(git log -n11 --pretty=format:&#34;%H&#34;)</span>
+git log -n11 --pretty<span style="color:#f92672">=</span>format:<span style="color:#e6db74">&#34;%H&#34;</span> | <span style="color:#66d9ef">while</span> read -r commitHash <span style="color:#f92672">||</span> <span style="color:#f92672">[</span> -n <span style="color:#e6db74">&#34;</span>$commitHash<span style="color:#e6db74">&#34;</span> <span style="color:#f92672">]</span>;
+<span style="color:#66d9ef">do</span>
+    dt<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>git show $commitHash --no-patch --date<span style="color:#f92672">=</span>rfc --pretty<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;format:%ad&#34;</span><span style="color:#66d9ef">)</span>
+    author<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>git show $commitHash --no-patch --pretty<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;format:%ae (%an)&#34;</span><span style="color:#66d9ef">)</span>
+    msg<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>git show $commitHash --no-patch --pretty<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;format:%s&#34;</span><span style="color:#66d9ef">)</span>
+    cat <span style="color:#e6db74">&lt;&lt; _EOF_ &gt;&gt; $rssFile
+</span><span style="color:#e6db74">        &lt;item&gt;
+</span><span style="color:#e6db74">            &lt;title&gt;Database update $(echo $commitHash | cut -c1-8)&lt;/title&gt;
+</span><span style="color:#e6db74">            &lt;guid isPermaLink=&#34;false&#34;&gt;$commitHash&lt;/guid&gt;
+</span><span style="color:#e6db74">            &lt;pubDate&gt;$dt&lt;/pubDate&gt;
+</span><span style="color:#e6db74">            &lt;author&gt;$author&lt;/author&gt;
+</span><span style="color:#e6db74">            &lt;description&gt;&lt;![CDATA[$msg]]&gt;&lt;/description&gt;
+</span><span style="color:#e6db74">        &lt;/item&gt;
+</span><span style="color:#e6db74">_EOF_</span>
+<span style="color:#66d9ef">done</span>
+cat <span style="color:#e6db74">&lt;&lt; _EOF_ &gt;&gt; $rssFile
+</span><span style="color:#e6db74">    &lt;/channel&gt;
+</span><span style="color:#e6db74">&lt;/rss&gt;
+</span><span style="color:#e6db74">_EOF_</span></code></pre></div>
+<p>And serve resulting <code>rss.xml</code> with NGINX (<code>/etc/nginx/conf.d/default.conf</code>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">server</span> {
+    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span>;
+    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span>;
+
+    <span style="color:#f92672">server_name</span>  <span style="color:#e6db74">passwords.YOUR-COMPANY.com</span>;
+
+    <span style="color:#75715e"># probably also throw in a HTML page
+</span><span style="color:#75715e"></span>    <span style="color:#75715e"># with some description and administrator contacts
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">root</span> <span style="color:#e6db74">/var/www/passwords.YOUR-COMPANY.com</span>;
+
+    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+        <span style="color:#f92672">index</span>  <span style="color:#e6db74">index.html</span> <span style="color:#e6db74">index.htm</span>;
+    }
+}</code></pre></div>
+<p>Now users can subscribe to the feed in their RSS clients:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/01/13/keepass-as-internal-secrets-storage/images/passwords-rss.png" alt="Git repository updates as RSS feed">
+
+
+<h1 id="overall">Overall</h1>
+<h2 id="whats-good">What&rsquo;s good</h2>
+<p>Everything seems to work quite good:</p>
+<ul>
+<li>one common database to store team&rsquo;s secrets;</li>
+<li>no vendor-lock, not sharing anything with 3rd-party;
+<ul>
+<li>everything is hosted on internal server;</li>
+<li>the database format and client applications are open sourced;</li>
+</ul>
+</li>
+<li>server is available via SSH keys only;
+<ul>
+<li>every user has his own key;</li>
+<li>the keys are managed by administrator;</li>
+</ul>
+</li>
+<li>database is encrypted and protected by two factors: password and key file;</li>
+<li>changes are under version control with Git.</li>
+</ul>
+<h2 id="whats-not-so-good">What&rsquo;s not so good</h2>
+<p>There are certain disadvantages too:</p>
+<ul>
+<li>the process of getting the database file is neither trivial nor convenient for a user;
+<ul>
+<li>many people are somewhat CLI-challenged and can struggle with such tasks as generating an SSH key. Managers and other non-technical people will be simply horrified by the whole thing;</li>
+<li>there is no simple way to share the master password and the key file with new users, especially if they are not in the same office with someone who already has it;</li>
+</ul>
+</li>
+<li>it is the same shared master password and key file for everyone in the team;</li>
+<li>there is no access level separation, so everyone has access to all the entries, whilst some of those might need to be available only to managers/administrators;</li>
+<li>there needs to be an administrator - to add/remove users public SSH keys on the server (<em>although, that&rsquo;s actually a good thing</em>);</li>
+<li>binary file changes are not &ldquo;visible&rdquo; in Git;
+<ul>
+<li>one can forget what he changed in the database, and Git will only show that there are some uncommitted changes;</li>
+<li>describing changes in commit messages is not ideal/reliable, because everyone must write meaningful and detailed commit messages (<em>which they won&rsquo;t</em>);</li>
+</ul>
+</li>
+<li>people can still mess up and (<em>accidentally</em>) leak the database by using personal clouds (<em>although chances that they will also leak password and key file are not that high</em>).</li>
+</ul>
+<p>That&rsquo;s quite a lot of disadvantages, actually. So we will keep looking for better solutions, but like I said in the beginning, so far KeePass seems to be the best one available, given the requirements we have. At the very least, it&rsquo;s better than nothing.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/devops/">devops</a><a class="tag" href="https://retifrav.github.io/tags/linux/">linux</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div style="border:3px orange solid; background-color: floralwhite; border-radius:0.5rem; padding: 10px 14px; font-style:italic;">
+              If you'd like to comment the article, you can do it on the
+              <a href="https://decovar.dev/blog/2022/01/13/keepass-as-internal-secrets-storage/#remark42" style="font-weight:bold;">
+                  original website</a>. This one is just a mirror without comments.
+          </div>
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2022,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        <iframe src="https://github.com/sponsors/retifrav/button"
+            height="35" style="border:0;"
+            title="You can sponsor me">
+        </iframe>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5"
+                  data-telegram-post="decovar/306" data-width="100%" data-userpic="false">
+              </script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (63)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (39)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (32)</a></li>
+                  
+                  <li><a href="/tags/review">review (27)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (24)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (23)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (14)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (13)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (6)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/azure">azure (2)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>
