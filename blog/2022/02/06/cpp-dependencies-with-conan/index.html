@@ -1,0 +1,1050 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Conan and resolving dependencies in a C&#43;&#43; project | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2022/02/06/cpp-dependencies-with-conan/" />
+
+    <meta name="generator" content="Hugo 0.91.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="Managing 3rd-party dependencies in a C&#43;&#43; project with Conan: automatic builds and deployment in TeamCity, storing artifacts in JFrog Artifactory and fetching them for CMake" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Conan and resolving dependencies in a C&#43;&#43; project" />
+<meta property="og:description" content="Managing 3rd-party dependencies in a C&#43;&#43; project with Conan: automatic builds and deployment in TeamCity, storing artifacts in JFrog Artifactory and fetching them for CMake" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2022/02/06/cpp-dependencies-with-conan/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2022-02-06T14:47:47+01:00" />
+<meta property="article:modified_time" content="2022-02-06T14:47:47+01:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2022/02/06/cpp-dependencies-with-conan/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Conan and resolving dependencies in a C&#43;&#43; project</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2022-02-06 14:47:47 &#43;0100</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 23 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>Like many other teams, we have a fair amount of 3rd-party dependencies in our project (<em>a C++-based SDK, that is</em>). Like fewer other teams, we store those dependencies source code right in our project repository and we build them together with the project sources every time. This is of course a tremendous waste of time and CPU cycles, as it would be much more efficient to build dependencies just once (<em>per version</em>) and link to already pre-built binaries.</p>
+
+
+
+<figure>
+    <img class="image-post" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/conan-the-librarian.png" alt="Conan The Librarian">
+    <footer>
+        <small>
+            <i><a href="https://igorcomics.blogspot.com/2017/11/conan-librarian.html">original picture</a></i>
+        </small>
+    </footer>
+</figure>
+
+<p>But where to store pre-built dependencies and how to fetch the correct variants for various platforms, toolchains and configurations? Our investigation on the matter led us to <a href="https://conan.io/">Conan</a> package manager.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#why-bother">Why bother</a></li>
+    <li><a href="#conan">Conan</a></li>
+    <li><a href="#packages-storage">Packages storage</a>
+      <ul>
+        <li><a href="#conan_server">conan_server</a></li>
+        <li><a href="#conan-center">Conan Center</a></li>
+        <li><a href="#jfrog-artifactory">JFrog Artifactory</a></li>
+      </ul>
+    </li>
+    <li><a href="#dependencies">Dependencies</a>
+      <ul>
+        <li><a href="#source-code-repositories">Source code repositories</a></li>
+        <li><a href="#project-files">Project files</a>
+          <ul>
+            <li><a href="#conanfile">conanfile</a></li>
+          </ul>
+        </li>
+        <li><a href="#cicd">CI/CD</a>
+          <ul>
+            <li><a href="#projects-and-configurations">Projects and configurations</a></li>
+            <li><a href="#building">Building</a>
+              <ul>
+                <li><a href="#dependencies-of-dependencies">Dependencies of dependencies</a></li>
+              </ul>
+            </li>
+            <li><a href="#packing">Packing</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#resolving-dependencies-in-a-project">Resolving dependencies in a project</a></li>
+  </ul>
+</nav>
+<h1 id="why-bother">Why bother</h1>
+<p>Straight to the point, here&rsquo;s a build of my <a href="/blog/2019/08/04/glfw-dear-imgui/">simple application</a> that has a few dependencies: <a href="https://github.com/Dav1dde/glad">glad</a>, <a href="https://www.glfw.org/">GLFW</a> and <a href="https://github.com/ocornut/imgui">Dear ImGui</a> - everything is built from sources:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ time cmake --build .
+<span style="color:#f92672">[</span>29/29<span style="color:#f92672">]</span> Linking CXX executable glfw-imgui
+
+real    0m13.472s
+
+$ cat .ninja_log
+<span style="color:#75715e"># ninja log v5</span>
+<span style="color:#ae81ff">2</span>    <span style="color:#ae81ff">344</span>    <span style="color:#ae81ff">1643144116191484343</span>    CMakeFiles/glfw-imgui.dir/_dependencies/DearImGui/imgui_impl_glfw.cpp.o    538b240abc3a3bc4
+<span style="color:#ae81ff">3</span>    <span style="color:#ae81ff">386</span>    <span style="color:#ae81ff">1643144116228441376</span>    CMakeFiles/glfw-imgui.dir/_dependencies/DearImGui/imgui_impl_opengl3.cpp.o    cb2977cd0cf0a02
+<span style="color:#ae81ff">1</span>    <span style="color:#ae81ff">838</span>    <span style="color:#ae81ff">1643144116674414843</span>    CMakeFiles/glfw-imgui.dir/_dependencies/DearImGui/imgui_stdlib.cpp.o    72c8c50464634e52
+<span style="color:#ae81ff">4</span>    <span style="color:#ae81ff">1459</span>    <span style="color:#ae81ff">1643144117295845649</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/init.c.o    ec7a84d90e09be1
+<span style="color:#ae81ff">1</span>    <span style="color:#ae81ff">1473</span>    <span style="color:#ae81ff">1643144117313538409</span>    CMakeFiles/glfw-imgui.dir/functions.cpp.o    369a9f32cfe69e82
+<span style="color:#ae81ff">4</span>    <span style="color:#ae81ff">1600</span>    <span style="color:#ae81ff">1643144117436078293</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/context.c.o    2ae159d1c31a5c3c
+<span style="color:#ae81ff">386</span>    <span style="color:#ae81ff">1707</span>    <span style="color:#ae81ff">1643144117535843892</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/vulkan.c.o    e5f6409e22e990ab
+<span style="color:#ae81ff">345</span>    <span style="color:#ae81ff">1855</span>    <span style="color:#ae81ff">1643144117682858278</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/monitor.c.o    aa0b3f727ad17763
+<span style="color:#ae81ff">5</span>    <span style="color:#ae81ff">1972</span>    <span style="color:#ae81ff">1643144117794902750</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/input.c.o    556c75d1b24c1fec
+<span style="color:#ae81ff">0</span>    <span style="color:#ae81ff">2122</span>    <span style="color:#ae81ff">1643144117958231086</span>    CMakeFiles/glfw-imgui.dir/main.cpp.o    3c409eca7f63548
+<span style="color:#ae81ff">841</span>    <span style="color:#ae81ff">2612</span>    <span style="color:#ae81ff">1643144118445759410</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/window.c.o    4cd69de2cf698676
+<span style="color:#ae81ff">2</span>    <span style="color:#ae81ff">3040</span>    <span style="color:#ae81ff">1643144118878103647</span>    CMakeFiles/glfw-imgui.dir/_dependencies/DearImGui/imgui_tables.cpp.o    d613d3d1e47520ee
+<span style="color:#ae81ff">1855</span>    <span style="color:#ae81ff">3420</span>    <span style="color:#ae81ff">1643144119254115013</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/cocoa_time.c.o    8fe5aa7e55c4a4ee
+<span style="color:#ae81ff">1973</span>    <span style="color:#ae81ff">3522</span>    <span style="color:#ae81ff">1643144119337803512</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/posix_thread.c.o    ca35990aafd46022
+<span style="color:#ae81ff">2613</span>    <span style="color:#ae81ff">4220</span>    <span style="color:#ae81ff">1643144120055526527</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/egl_context.c.o    4a0f25900af8ffc7
+<span style="color:#ae81ff">3</span>    <span style="color:#ae81ff">4312</span>    <span style="color:#ae81ff">1643144120151590718</span>    CMakeFiles/glfw-imgui.dir/_dependencies/DearImGui/imgui_demo.cpp.o    ad04f8180049818f
+<span style="color:#ae81ff">1474</span>    <span style="color:#ae81ff">4379</span>    <span style="color:#ae81ff">1643144120210864651</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/cocoa_joystick.m.o    8f8a50953484faa7
+<span style="color:#ae81ff">1467</span>    <span style="color:#ae81ff">4428</span>    <span style="color:#ae81ff">1643144120252642979</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/cocoa_init.m.o    ec5d33d5098b5c52
+<span style="color:#ae81ff">1600</span>    <span style="color:#ae81ff">4543</span>    <span style="color:#ae81ff">1643144120379829813</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/cocoa_monitor.m.o    eb2653b5a4204ff1
+<span style="color:#ae81ff">3043</span>    <span style="color:#ae81ff">4578</span>    <span style="color:#ae81ff">1643144120418062550</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/osmesa_context.c.o    7d802e40cc6041e4
+<span style="color:#ae81ff">2123</span>    <span style="color:#ae81ff">4695</span>    <span style="color:#ae81ff">1643144120536939362</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/nsgl_context.m.o    787dd493c62ff124
+<span style="color:#ae81ff">1708</span>    <span style="color:#ae81ff">4810</span>    <span style="color:#ae81ff">1643144120650860676</span>    _dependencies/glfw/src/CMakeFiles/glfw.dir/cocoa_window.m.o    5bd62d5af52211f1
+<span style="color:#ae81ff">4810</span>    <span style="color:#ae81ff">4863</span>    <span style="color:#ae81ff">1643144120718256000</span>    _dependencies/glfw/src/libglfw3.a    39988b2ad15bd49d
+<span style="color:#ae81ff">3</span>    <span style="color:#ae81ff">5676</span>    <span style="color:#ae81ff">1643144121524078659</span>    CMakeFiles/glad.dir/_dependencies/glad/src/glad.c.o    4875fb68b660e707
+<span style="color:#ae81ff">5676</span>    <span style="color:#ae81ff">5716</span>    <span style="color:#ae81ff">1643144121571422000</span>    libglad.a    af027585fb9b185b
+<span style="color:#ae81ff">2</span>    <span style="color:#ae81ff">5824</span>    <span style="color:#ae81ff">1643144121672025107</span>    CMakeFiles/glfw-imgui.dir/_dependencies/DearImGui/imgui_widgets.cpp.o    ce787c92a020884c
+<span style="color:#ae81ff">1</span>    <span style="color:#ae81ff">7045</span>    <span style="color:#ae81ff">1643144122892928204</span>    CMakeFiles/glfw-imgui.dir/_dependencies/DearImGui/imgui.cpp.o    6d6193214989032
+<span style="color:#ae81ff">2</span>    <span style="color:#ae81ff">12906</span>    <span style="color:#ae81ff">1643144128754775483</span>    CMakeFiles/glfw-imgui.dir/_dependencies/DearImGui/imgui_draw.cpp.o    ed7c0bc7c73c224b
+<span style="color:#ae81ff">12906</span>    <span style="color:#ae81ff">13075</span>    <span style="color:#ae81ff">1643144128921561250</span>    glfw-imgui    c2d88c723185913b</code></pre></div>
+<p>So it is 29 items to build and <strong>13.5 seconds</strong> of building time.</p>
+<p>And here&rsquo;s the same project building only the project sources, while all the dependencies are already pre-built:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ time cmake --build .
+<span style="color:#f92672">[</span>3/3<span style="color:#f92672">]</span> Linking CXX executable glfw-imgui
+
+real    0m1.068s
+
+$ cat .ninja_log
+<span style="color:#75715e"># ninja log v5</span>
+<span style="color:#ae81ff">1</span>    <span style="color:#ae81ff">727</span>    <span style="color:#ae81ff">1643144024851560807</span>    CMakeFiles/glfw-imgui.dir/functions.cpp.o    abc14ffe6cd16ea3
+<span style="color:#ae81ff">0</span>    <span style="color:#ae81ff">958</span>    <span style="color:#ae81ff">1643144025083386756</span>    CMakeFiles/glfw-imgui.dir/main.cpp.o    49263edbd6a7bdab
+<span style="color:#ae81ff">958</span>    <span style="color:#ae81ff">1174</span>    <span style="color:#ae81ff">1643144025294166462</span>    glfw-imgui    eb2bea70f24ef99e</code></pre></div>
+<p>Only 3 items to build and <strong>1 second</strong> of building time - 13 times faster! Certainly worth the effort, intit? And for bigger projects the gain can be even greater.</p>
+<p>For us this became especially important, as our project is re-built on every commit in our CI/CD to run all the QA tests, so the builds are run many times a day, wasting a lot of resources re-building non-changing dependencies over and over.</p>
+<p>But pre-building dependencies is not enough, it isn&rsquo;t even a half of the job. First of all, dependencies need to be built for several platforms and different toolchains. Then every dependency can (<em>will</em>) have different versions and also dependencies of its own. And finally you need to store pre-build artifacts somewhere and fetch the right variant for the build.</p>
+<p>To handle/manage all this you&rsquo;ll need a combination of CI/CD builbots, an artifacts storage and a package manager.</p>
+<h1 id="conan">Conan</h1>
+<p><a href="https://docs.conan.io/en/latest/introduction.html">Conan</a> is a package/dependency manager, mostly for C++ development. It has a good and easy enough integration with CMake (<em>and seemingly other build systems too</em>).</p>
+<p>In short, Conan packages are regular <code>bin</code>/<code>cmake</code>/<code>include</code>/<code>lib</code>/<code>etc</code> folder structures packed into <code>.tgz</code> compressed archives, accompanied with various metadata. Conan client uses that metadata to determine correct packages for concrete platforms/toolchains/configurations, resolve dependencies, etc.</p>
+<p>What might come as a shock for some is that Conan is written in Python. I&rsquo;ve seen people looking down on it because of that and saying something like &ldquo;<em>how can this pitiful indent-based scripting language handle dependencies for our mighty C++</em>&rdquo;. But after testing Conan for a couple of months, I can say that it is doing a good job. There are not that many package managers for C++ projects, and out of those that I tried so far I like Conan the most.</p>
+<p>I suggest you to get familiar with Conan by reading <a href="https://docs.conan.io/en/latest/cheatsheet.html">its documentation</a> and trying out their examples, as it&rsquo;s too much to cover in one article.</p>
+<p>Out of all the functionality that Conan provides, at the moment we are using only <a href="https://docs.conan.io/en/latest/creating_packages/existing_binaries.html#packaging-pre-built-binaries">packing pre-built binaries</a> and of course <a href="https://docs.conan.io/en/latest/getting_started.html">installing dependencies</a>.</p>
+<h1 id="packages-storage">Packages storage</h1>
+<p>There are <a href="https://docs.conan.io/en/latest/uploading_packages/remotes.html">several options</a> for where the Conan packages can be hosted and fetched from.</p>
+<h2 id="conan_server">conan_server</h2>
+<p>The default option is to use <a href="https://docs.conan.io/en/latest/uploading_packages/running_your_server.html">conan_server</a> that comes out of the box. If you decide to use that one, as usual, I would recommend not to expose it to the internet directly but rather via a reverse-proxy, such as NGINX.</p>
+<p>In short, this would be your <code>server.conf</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[server]</span>
+<span style="color:#a6e22e">ssl_enabled: False</span>
+<span style="color:#a6e22e">port: 9300</span>
+<span style="color:#a6e22e">host_name: your.host</span>
+<span style="color:#a6e22e">...</span>
+
+<span style="color:#66d9ef">[write_permissions]</span>
+<span style="color:#a6e22e">*/*@*/*: ADMIN-USER</span>
+
+<span style="color:#66d9ef">[read_permissions]</span>
+<span style="color:#a6e22e">*/*@*/*: ?</span>
+
+<span style="color:#66d9ef">[users]</span>
+<span style="color:#a6e22e">ADMIN-USER: HERE-GOES-ADMIN-PASSWORD</span>
+<span style="color:#75715e"># has nothing to do with the system user</span>
+<span style="color:#a6e22e">packages: HERE-GOES-USER-PASSWORD</span></code></pre></div>
+<p>this is systemd service:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-systemd" data-lang="systemd"><span style="color:#66d9ef">[Unit]</span>
+<span style="color:#a6e22e">Description</span><span style="color:#f92672">=</span><span style="color:#e6db74">Conan server</span>
+
+<span style="color:#66d9ef">[Service]</span>
+<span style="color:#75715e"># isn&#39;t really used, set just in case</span>
+<span style="color:#a6e22e">WorkingDirectory</span><span style="color:#f92672">=</span><span style="color:#e6db74">/var/www/conan-server/</span>
+<span style="color:#a6e22e">ExecStart</span><span style="color:#f92672">=</span><span style="color:#e6db74">/usr/local/bin/conan_server</span>
+<span style="color:#a6e22e">Restart</span><span style="color:#f92672">=</span><span style="color:#e6db74">always</span>
+<span style="color:#a6e22e">RestartSec</span><span style="color:#f92672">=</span><span style="color:#e6db74">10</span>
+<span style="color:#a6e22e">SyslogIdentifier</span><span style="color:#f92672">=</span><span style="color:#e6db74">conan_server</span>
+<span style="color:#a6e22e">User</span><span style="color:#f92672">=</span><span style="color:#e6db74">packages</span>
+
+<span style="color:#66d9ef">[Install]</span>
+<span style="color:#a6e22e">WantedBy</span><span style="color:#f92672">=</span><span style="color:#e6db74">multi-user.target</span></code></pre></div>
+<p>and that&rsquo;s NGINX config:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">location</span> <span style="color:#e6db74">/packages/conan/</span> {
+    <span style="color:#75715e"># Conan server has its own authentication
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">#auth_basic           &#34;restricted area&#34;;
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">#auth_basic_user_file /etc/nginx/packages.htpasswd;
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://127.0.0.1:9300/</span>;
+    <span style="color:#75715e"># these might not be needed
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">proxy_http_version</span> <span style="color:#ae81ff">1</span><span style="color:#e6db74">.1</span>;
+    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Upgrade</span> $http_upgrade;
+    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Connection</span> <span style="color:#e6db74">keep-alive</span>;
+    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Host</span> $host;
+    <span style="color:#f92672">proxy_cache_bypass</span> $http_upgrade;
+    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-For</span> $proxy_add_x_forwarded_for;
+    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-Proto</span> $scheme;
+}</code></pre></div>
+<p>We started with <code>conan_server</code>, and it was working fine, but then we discovered that despite <code>read_permissions</code> is set to <code>*/*@*/*: ?</code>, which means allowing access only for authenticated users(?), the server was still available to anonymous users too, so everyone could list and download our packages, which certainly was not the intention. I thought about reporting this in the Conan bugtracker, but when I had <a href="https://github.com/conan-io/conan/issues/9664">another question</a>, along with the answer I got a recommendation to start using JFrog Artifactory, so I reckoned it won&rsquo;t be worth wasting everyone&rsquo;s time asking about <code>conan_server</code> any more.</p>
+<h2 id="conan-center">Conan Center</h2>
+<p>Not much to say here - it&rsquo;s a public <a href="https://conan.io/center/">Conan packages storage</a>, a great source of lots of pre-built libraries.</p>
+<p>But we are not using it. First of all, because of the same reasons listed <a href="#source-code-repositories">below</a>; and secondly, we&rsquo;d like to ensure that both our project and all the dependencies are built in the same environment, on the same buildbots, and in general we prefer to build our dependencies ourselves.</p>
+<h2 id="jfrog-artifactory">JFrog Artifactory</h2>
+<p><a href="https://jfrog.com/artifactory/">JFrog Artifactory</a> is a great piece of software for hosting packages, either in their cloud (<em>no</em>) or on your own server (<em>yes</em>). Probably that is what&rsquo;s running behind the <a href="#conan-center">Conan Center</a> too.</p>
+<p>You can take the <a href="https://docs.conan.io/en/latest/uploading_packages/artifactory/artifactory_ce.html">Community Edition</a>, which is graciously available free of charge (<em>and limited to Conan packages only</em>). Trying to find it using the links from the <a href="https://www.jfrog.com/confluence/">referred documentation</a> if futile, so here&rsquo;s the <a href="https://conan.io/downloads.html">downloads page</a>.</p>
+<p>As we need to distribute many other package formats beside Conan (<em><a href="/blog/2021/09/23/cmake-cpack-package-deb-apt/#hosting-deb-packages-for-apt">deb</a>, <a href="/blog/2020/03/05/azure-devops-nuget-npm-cpp/#azure-devops-feed">NuGet</a>, <a href="/blog/2020/03/05/azure-devops-nuget-npm-cpp/#azure-devops-feed-1">npm</a>, Maven, etc</em>), it was grand time for us to get a full-featured Artifactory, which supports <a href="https://www.jfrog.com/confluence/display/JFROG/Package+Management#PackageManagement-SupportedPackageTypes">all these formats</a>:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/artifactory-supported-packages.png" alt="JFrog Artifactory, supported packages">
+
+
+<p>It is <a href="https://jfrog.com/pricing/#hosted">expensive</a> (<em>cheapest variant is 3200 USD per year!</em>), but it saves a lot of trouble for maintaining several different storages/services - instead you only need to maintain one Artifactory. Also it nicely integrates with <a href="https://docs.microsoft.com/en-us/azure/active-directory/saas-apps/jfrog-artifactory-tutorial">Azure AD SAML SSO</a>, which helps a lot too.</p>
+<h1 id="dependencies">Dependencies</h1>
+<h2 id="source-code-repositories">Source code repositories</h2>
+<p>Now we have a place for storing pre-built dependencies in packages, but where to store their source code?</p>
+<p>If you are your own evil twin (<em>сам себе злой Буратино</em>), then you can just fetch it from original repositories on GitHub, GitLab or wherever. If you really are an enemy to yourself, then you can also store your own project source code in an external repository too.</p>
+<p>The main reason why this is not a great idea is that any external resource might suddenly become unavailable, and you can&rsquo;t do anything about it, as that&rsquo;s not your server and you have no control over it. Here are some examples of such unavailability:</p>
+<ul>
+<li>any service can go down anytime, including <a href="https://github.blog/2021-12-01-github-availability-report-november-2021/">GitHub</a>;</li>
+<li>Facebook can <a href="https://blog.cloudflare.com/october-2021-facebook-outage/">update its DNS records</a> and bring the rest of the internet down;</li>
+<li>malicious/righteous person(s) can <a href="https://www.zdnet.com/article/when-open-source-developers-go-bad/">commit destructive changes</a> into a repository;</li>
+<li>a <a href="https://en.wikinews.org/wiki/GitHub_blocks_public_access_to_youtube-dl_after_RIAA_issues_DMCA_notice">repository can be blocked</a> on whatever grounds;</li>
+<li>just as well users from certain sanctioned countries can be <a href="https://www.cnet.com/tech/computing/github-blocked-developer-in-iran-syria-and-crimea-due-to-us-sanctions/">denied using a service</a>;</li>
+<li>the entire country can <a href="https://blog.cloudflare.com/internet-shut-down-in-kazakhstan-amid-unrest/">lose internet completely</a>, because authorities shut it down;</li>
+<li>fucking sharks can <a href="https://www.forbes.com/sites/melissacristinamarquez/2020/07/20/our-underwater-world-is-full-of-cables-that-are-sometimes-attacked-by-sharks/">destroy internet cables</a>.</li>
+</ul>
+<p>A better idea would be to store copies (<em>clones</em>) of your dependencies source code in a self-hosted in-house repository. It can be the <a href="https://about.gitlab.com/install/">GitLab</a>, <a href="https://gitea.io/en-us/">Gitea</a>, some other service or just <a href="http://git-scm.com/book/en/v2/Git-on-the-Server-Getting-Git-on-a-Server">bare Git repositories</a>.</p>
+<p>An even better idea would be to have those repositories not as mirrors, but as regular clones, so they are updated to the next version manually, once it is verified to be safe/stable to use. And that is what we started doing by gradually moving 3rd-party sources out from our main repository to their own repositories:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/dependencies-repositories.png" alt="Dependencies repositories">
+
+
+<h2 id="project-files">Project files</h2>
+<p>Almost always libraries sources already have project files for various build systems. Ideally that would be CMake, because that is our main build system.</p>
+<p>If a library doesn&rsquo;t have a project file, then it could be that author intended it to be built as a part of your project, for example Dear ImGui is like that. But you still might want to pre-build it separately, so creating a <code>CMakeLists.txt</code> for it will be on you.</p>
+<p>Another scenario would be so-called &ldquo;header-only&rdquo; libraries, such as <a href="https://github.com/orlp/pdqsort">pdqsort</a>, so there is nothing to build there. But even in that case you might want to consider making <code>CMakeLists.txt</code> for it with install instructions to generate CMake configs. Furthermore, some header-only libraries, for example <a href="https://json.nlohmann.me/">json-nlohmann</a>, do have <code>CMakeLists.txt</code> and sometimes even include a number of tests.</p>
+<p>For storing those missing <code>CMakeLists.txt</code>&rsquo;s, <a href="#conanfile">conanfiles</a>, shared CMake modules and also patches for special cases we created a separate repository called &ldquo;<em>Dependencies resources</em>&rdquo;, which looks like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">├──</span> <span style="color:#a6e22e">README</span><span style="color:#f92672">.</span>md
+<span style="color:#f92672">├──</span> <span style="color:#a6e22e">_cmake</span>
+<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">Config</span><span style="color:#f92672">.</span>cmake<span style="color:#f92672">.</span>in
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">Installing</span><span style="color:#f92672">.</span>cmake
+<span style="color:#f92672">├──</span> <span style="color:#a6e22e">_conan</span>
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> functions<span style="color:#f92672">.</span>py
+<span style="color:#f92672">├──</span> cpp<span style="color:#f92672">-</span>base64
+<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> conanfile<span style="color:#f92672">.</span>py
+<span style="color:#f92672">├──</span> dear<span style="color:#f92672">-</span>imgui
+<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> conanfile<span style="color:#f92672">.</span>py
+<span style="color:#f92672">├──</span> e57format
+<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> conanfile<span style="color:#f92672">.</span>py
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> patches
+<span style="color:#f92672">│</span>       <span style="color:#f92672">└──</span> <span style="color:#ae81ff">2.2</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span>
+<span style="color:#f92672">│</span>           <span style="color:#f92672">└──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt<span style="color:#f92672">.</span>patch
+<span style="color:#f92672">├──</span> glad
+<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> conanfile<span style="color:#f92672">.</span>py
+<span style="color:#f92672">├──</span> glfw
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> conanfile<span style="color:#f92672">.</span>py
+<span style="color:#f92672">├──</span> json<span style="color:#f92672">-</span>nlohmann
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> conanfile<span style="color:#f92672">.</span>py
+<span style="color:#f92672">├──</span> jsoncpp
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> conanfile<span style="color:#f92672">.</span>py
+<span style="color:#f92672">├──</span> pdqsort
+<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> conanfile<span style="color:#f92672">.</span>py
+<span style="color:#f92672">├──</span> poco
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> conanfile<span style="color:#f92672">.</span>py
+<span style="color:#f92672">├──</span> rapidxml
+<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> conanfile<span style="color:#f92672">.</span>py
+<span style="color:#f92672">├──</span> xerces<span style="color:#f92672">-</span>c
+<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> conanfile<span style="color:#f92672">.</span>py
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> patches
+<span style="color:#f92672">│</span>       <span style="color:#f92672">└──</span> <span style="color:#ae81ff">3.2</span><span style="color:#f92672">.</span><span style="color:#ae81ff">3</span>
+<span style="color:#f92672">│</span>           <span style="color:#f92672">└──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt<span style="color:#f92672">.</span>patch
+<span style="color:#f92672">└──</span> zstandard
+    <span style="color:#f92672">└──</span> conanfile<span style="color:#f92672">.</span>py</code></pre></div>
+<p>That way we don&rsquo;t interfere with the original repositories/clones and keep all the dependencies-related resources in one place.</p>
+<h3 id="conanfile">conanfile</h3>
+<p>The <code>conanfile.py</code> contains various information about the package and it is almost the same for all the dependencies:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">from</span> conans <span style="color:#f92672">import</span> ConanFile, tools
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">normalizeVersion</span>(rawVersion):
+    <span style="color:#66d9ef">if</span> rawVersion<span style="color:#f92672">.</span>startswith(<span style="color:#e6db74">&#34;v&#34;</span>):
+        rawVersion <span style="color:#f92672">=</span> rawVersion[<span style="color:#ae81ff">1</span>:]
+    <span style="color:#66d9ef">if</span> rawVersion<span style="color:#f92672">.</span>count(<span style="color:#e6db74">&#34;.&#34;</span>) <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">2</span>:
+        rawVersion <span style="color:#f92672">=</span> <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{</span>rawVersion<span style="color:#e6db74">}</span><span style="color:#e6db74">.0&#34;</span>
+    <span style="color:#66d9ef">return</span> rawVersion
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DearImGuiConan</span>(ConanFile):
+    projectName <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;DearImGui&#34;</span>
+    name <span style="color:#f92672">=</span> projectName
+    version <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;0.0.0&#34;</span>
+    user <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;YOUR-PREFIX&#34;</span>
+    channel <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;public&#34;</span>
+    settings <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;os&#34;</span>, <span style="color:#e6db74">&#34;compiler&#34;</span>, <span style="color:#e6db74">&#34;build_type&#34;</span>, <span style="color:#e6db74">&#34;arch&#34;</span>
+    description <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Bloat-free Graphical User interface for C++ with minimal dependencies&#34;</span>
+    homepage <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;https://github.com/ocornut/imgui&#34;</span>
+    url <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;https://github.com/ocornut/imgui&#34;</span>
+    license <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;https://github.com/ocornut/imgui/blob/master/LICENSE.txt&#34;</span>
+    author <span style="color:#f92672">=</span> projectName
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">set_version</span>(self):
+        self<span style="color:#f92672">.</span>version <span style="color:#f92672">=</span> normalizeVersion(self<span style="color:#f92672">.</span>version)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">package</span>(self):
+        self<span style="color:#f92672">.</span>copy(<span style="color:#e6db74">&#34;*&#34;</span>)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">package_info</span>(self):
+        self<span style="color:#f92672">.</span>cpp_info<span style="color:#f92672">.</span>libs <span style="color:#f92672">=</span> tools<span style="color:#f92672">.</span>collect_libs(self)</code></pre></div>
+<p>You will be right to assume that <code>normalizeVersion</code> function is redundantly duplicated across all of them. This is because sadly Conan does not support <a href="https://github.com/conan-io/conan/issues/39">importing relative files/modules</a>. There is <a href="https://docs.conan.io/en/latest/extending/python_requires.html">Python requires</a> functionality, but it looks too complex for such a purpose and also it is marked as experimental at the moment, so we haven&rsquo;t tried it yet.</p>
+<p>Why <code>version</code> is set to <code>0.0.0</code>? At first we were setting it based in Git tags:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getVersionFromGit</span>():
+    rawVersion <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span>
+    git <span style="color:#f92672">=</span> tools<span style="color:#f92672">.</span>Git(folder<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>recipe_folder)
+    <span style="color:#66d9ef">try</span>:
+        <span style="color:#75715e"># rawVersion = git.run(&#34;describe --tags --abbrev=0&#34;)</span>
+        rawVersion <span style="color:#f92672">=</span> normalizeVersion(git<span style="color:#f92672">.</span>get_tag())
+    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> ex:
+        print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;Exception: </span><span style="color:#e6db74">{</span>str(ex)<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>)
+        <span style="color:#75715e"># rawVersion = &#34;0.0.0&#34;</span>
+        <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">SystemExit</span>(
+            <span style="color:#e6db74">&#34;##teamcity[message text=&#39;Package version identification failed&#39; &#34;</span>
+            <span style="color:#e6db74">&#34;errorDetails=&#39;Conan couldn&#39;t get the version tag from Git&#39; &#34;</span>
+            <span style="color:#e6db74">&#34;status=&#39;ERROR&#39;]&#34;</span>
+        )
+    <span style="color:#66d9ef">return</span> rawVersion</code></pre></div>
+<p>But that is not very reliable (<em>different tag formats, missing tags, etc</em>), and so now we set it explicitly from CI/CD variable by replacing <code>version = &quot;0.0.0&quot;</code> pattern with <code>sed</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">sed -i <span style="color:#e6db74">&#39;s/version = \&#34;0\.0\.0\&#34;$/version = \&#34;%system.current-version%\&#34;/&#39;</span> ./conanfile.py</code></pre></div>
+<p>In addition, if you are checking out sources from different repositories into a common path, there might be no <code>.git</code> data available.</p>
+<p>The <code>name</code>, <code>version</code>, <code>user</code> and <code>channel</code> properties comprise the package formula/reference, for example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">DearImGui</span><span style="color:#f92672">/</span><span style="color:#ae81ff">1.86</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span><span style="color:#a6e22e">@YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PREFIX</span><span style="color:#f92672">/</span>public</code></pre></div>
+<p>You might want to use <code>channel</code> property for organizing packages by platforms, but that would be redundant and rather confusing, as that is already taken care of by Conan via so-called <a href="https://docs.conan.io/en/latest/reference/config_files/default_profile.html#default-profile">profiles</a> (<em>there is an illustration for that on the last screenshot in the <a href="#packing">packing</a> section</em>).</p>
+<p>What <code>user</code> and <code>channel</code> properties should be used for is identifying your package as yours to <a href="https://docs.conan.io/en/latest/faq/using.html#faq-recommendation-user-channel">prevent possible collisions</a> with other people packages. The <code>user</code> property here (<code>YOUR-PREFIX</code>) can be your company or team name, and <code>channel</code> can be whatever you&rsquo;d like (<em><code>public</code>, <code>experimental</code>, <code>customerspecific</code></em>).</p>
+<h2 id="cicd">CI/CD</h2>
+<h3 id="projects-and-configurations">Projects and configurations</h3>
+<p>Hopefully your infrastructure already has dedicated buildbots for building, testing and packing your product, managed by a CI/CD system.</p>
+<p>We use <a href="https://www.jetbrains.com/teamcity/">TeamCity</a>, so instructions below will be mostly TeamCity-specific, but it&rsquo;s rather trivial to apply them to whatever CI/CD you might have.</p>
+<p>As we build and distribute our SDK for several platforms/toolchains, there is a configuration for every target:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/teamcity-dependencies-project.png" alt="TeamCity, dependencies project">
+
+
+<p>Libraries have versions, and usually those are marked with Git tags, which can be used as branch specifications. We set a project parameter <code>current-version</code> for each dependency:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/teamcity-project-parameters.png" alt="Project parameters in TeamCity" style="border:1px solid black;">
+
+
+<p>This parameter can be then used in VCS root default branch specification:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/teamcity-vsc-root.png" alt="TeamCity, VSC root" style="border:1px solid black;">
+
+
+<p>Note the <code>v</code> in <code>refs/tags/v%system.current-version%</code>. Different repositories have different naming schema for tags: some add <code>v</code> to the version number, some don&rsquo;t and others do something else (<em>like <a href="https://github.com/libsdl-org/SDL/tags">SDL</a> or <a href="https://github.com/ReneNyffenegger/cpp-base64/tags">cpp-base64</a></em>). So for consistency we have a &ldquo;plain&rdquo; version set as a system variable in <a href="https://semver.org/">SemVer</a> format and then prefix it with necessary values. If the original tags format is absolutely horrible (<em>or if they are no tags at all</em>), then you&rsquo;ll need to add the tags with versions yourself (<em>it&rsquo;s your clone, after all</em>).</p>
+<p>Once you set the VCS root like that, you&rsquo;ll be able to build the specific version of a library, instead of looking for the commit of interest:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/teamcity-build-versions.png" alt="TeamCity, choosing specific version">
+
+
+<p>Quite handy, wouldn&rsquo;t you say. And here&rsquo;s how the builds will look like:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/teamcity-library-versions.png" alt="TeamCity, library versions builds" style="border:1px solid black;">
+
+
+<p>The <code>START</code> configuration generates a common build number (<em>optional</em>) and triggers the builds themselves:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/teamcity-configuration-trigger.png" alt="TeamCity, configuration trigger">
+
+
+<p>Here you can specify that builds won&rsquo;t trigger for any version other than the default one that is set in the project parameters (<em>note the <code>v</code> prefix again</em>).</p>
+<p>Finally, how to organize the sources checkout:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/teamcity-checkout.png" alt="TeamCity, checkout" style="border:1px solid black;">
+
+
+<p>The library sources checkout rule is trivial:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">+:.</span> <span style="color:#66d9ef">=&gt;</span> <span style="color:#f92672">./</span></code></pre></div>
+<p>And dependencies resources are checked out like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">+:%</span>system<span style="color:#f92672">.</span>projectNameNormalized<span style="color:#f92672">%</span> <span style="color:#66d9ef">=&gt;</span> <span style="color:#f92672">./</span>
+<span style="color:#f92672">+:</span><span style="color:#a6e22e">_cmake</span> <span style="color:#66d9ef">=&gt;</span> <span style="color:#f92672">./</span>cmake</code></pre></div>
+<p>So everything specific to this library (<em><code>CMakeLists.txt</code>, <code>conanfile.py</code>, patches, etc</em>) is fetched to the top level, and common resources (<em>CMake modules</em>) are fetched into subfolders.</p>
+<p>Since it&rsquo;s two different repositories that are fetched into a common path, you won&rsquo;t have <code>.git</code> data there, so if you do need it, then you&rsquo;ll need to checkout those into separate paths.</p>
+<h3 id="building">Building</h3>
+<p>The build step in most cases is simple:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">mkdir build
+mkdir install
+
+cd build
+cmake <span style="color:#f92672">-</span>G <span style="color:#e6db74">&#34;Visual Studio 16 2019&#34;</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_INSTALL_PREFIX</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../install&#34;</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_DEBUG_POSTFIX</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;d&#34;</span> <span style="color:#f92672">..</span>
+cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target install <span style="color:#f92672">--</span>config <span style="color:#a6e22e">Debug</span>
+sh<span style="color:#f92672">.</span>exe <span style="color:#f92672">-</span>c <span style="color:#e6db74">&#34;cp ./install_manifest.txt ../install-manifest-debug.txt&#34;</span>
+cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target install <span style="color:#f92672">--</span>config <span style="color:#a6e22e">Release</span>
+sh<span style="color:#f92672">.</span>exe <span style="color:#f92672">-</span>c <span style="color:#e6db74">&#34;cp ./install_manifest.txt ../install-manifest-release.txt&#34;</span></code></pre></div>
+<p>The <code>install_manifest.txt</code> files are a very useful feature of CMake: when you build <code>install</code> target (<em>or run <code>cmake --install</code></em>), CMake generates a list of files that were installed. These files can be then used to separate Debug and Release build artifacts, which is what&rsquo;s happening here.</p>
+<p>You can of course set different installation prefixes for Debug/Release configurations, but we need them in one folder (<em>that way you also avoid duplication of some files between configurations</em>).</p>
+<p>On GNU/Linux the build step is somewhat less simple:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span>
+mkdir build
+mkdir install
+
+cd build
+
+cmake -G Ninja -DCMAKE_BUILD_TYPE<span style="color:#f92672">=</span>Debug -DCMAKE_INSTALL_PREFIX<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../install&#34;</span> -DCMAKE_DEBUG_POSTFIX<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;d&#34;</span> ..
+cmake --build . --target install
+cp ./install_manifest.txt ../install-manifest-debug.txt
+rm -r ./* <span style="color:#f92672">&amp;&amp;</span> rm .ninja*
+
+cmake -G Ninja -DCMAKE_BUILD_TYPE<span style="color:#f92672">=</span>Release -DCMAKE_INSTALL_PREFIX<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../install&#34;</span> ..
+cmake --build . --target install
+cp ./install_manifest.txt ../install-manifest-release.txt</code></pre></div>
+<p>Without cleaning the build folder (<em><code>rm -r ./* &amp;&amp; rm .ninja*</code></em>) after building and installing Debug configuration you&rsquo;ll get a surprising result on installing the Release configuration:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">--</span> <span style="color:#a6e22e">Old</span> export file <span style="color:#e6db74">&#34;/home/build/buildAgent/work/externals/dear-imgui/src/install/cmake/DearImGuiConfig.cmake&#34;</span> will be replaced
+<span style="color:#a6e22e">Removing</span> files <span style="color:#f92672">[</span><span style="color:#66d9ef">/home/build/buildAgent/work/externals/dear-imgui/src/install/cmake/DearImGuiConfig-debug.cmake</span><span style="color:#f92672">]</span></code></pre></div>
+<p>And so you&rsquo;ll be missing that file in your package (<em>thanks a lot!</em>).</p>
+<h4 id="dependencies-of-dependencies">Dependencies of dependencies</h4>
+<p>If (<em>when</em>) a dependency has dependencies of its own, the project configuration and build become slightly more complicated, but thanks to Conan not too complicated.</p>
+<p>For example, let&rsquo;s take <a href="https://github.com/asmaloney/libE57Format">E57Format</a> library, which depends on <a href="https://xerces.apache.org/xerces-c/">Xerces-C++</a> library and expects to discover it with <code>find_package()</code>.</p>
+<p>In that case, naturally, first you need to build Xerces-C++ and publish it to your Conan packages storage. Then add the following to E57Format&rsquo;s <code>conanfile.py</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">E57FormatConan</span>(ConanFile):
+    projectName <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;E57Format&#34;</span>
+    <span style="color:#75715e"># ...</span>
+    requires <span style="color:#f92672">=</span> [
+        <span style="color:#e6db74">&#34;Xerces-C/3.2.3@YOUR-PREFIX/public&#34;</span>
+    ]</code></pre></div>
+<p>But that&rsquo;s not enough, because E57Format&rsquo;s <code>CMakeLists.txt</code> does not contain required commands for running Conan stuff, and that means that we need to make a patch (<em><code>dependencies-resources/e57format/patches/2.2.0/CMakeLists.txt.patch</code></em>) for adding them:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-patch" data-lang="patch">44a45,47
+&gt; include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+&gt; conan_basic_setup()
+&gt;
+106c109
+&lt;         DEBUG_POSTFIX &#34;-d&#34;
+<span style="color:#f92672">---
+</span><span style="color:#f92672"></span>&gt;         DEBUG_POSTFIX &#34;d&#34;
+</code></pre></div>
+<p>Here we also override their hardcoded <code>DEBUG_POSTFIX</code>, because we use <code>d</code> in our libraries and we would like this to be consistent. By the way, that hardcoding is a good example of doing bad things in CMake, because in that case user loses the ability to override this value with a <code>-D</code> argument (<em>so a better patch would be to delete this line instead of replacing it</em>).</p>
+<p>The build step for E57Format project in CI/CD looks like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">mkdir build
+mkdir install
+
+sh<span style="color:#f92672">.</span>exe <span style="color:#f92672">-</span>c <span style="color:#e6db74">&#34;patch ./CMakeLists.txt ./patches/%system.current-version%/CMakeLists.txt.patch&#34;</span>
+
+cd build
+conan install <span style="color:#f92672">..</span> <span style="color:#f92672">-</span>s compiler<span style="color:#f92672">.</span>version<span style="color:#66d9ef">=</span><span style="color:#ae81ff">16</span> <span style="color:#f92672">-</span>s build_type<span style="color:#66d9ef">=</span><span style="color:#a6e22e">Debug</span> <span style="color:#f92672">-</span>r <span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">CONAN</span><span style="color:#f92672">-</span><span style="color:#a6e22e">REMOTE</span>
+conan install <span style="color:#f92672">..</span> <span style="color:#f92672">-</span>s compiler<span style="color:#f92672">.</span>version<span style="color:#66d9ef">=</span><span style="color:#ae81ff">16</span> <span style="color:#f92672">-</span>s build_type<span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> <span style="color:#f92672">-</span>r <span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">CONAN</span><span style="color:#f92672">-</span><span style="color:#a6e22e">REMOTE</span>
+
+cmake <span style="color:#f92672">-</span>G <span style="color:#e6db74">&#34;Visual Studio 16 2019&#34;</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_INSTALL_PREFIX</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../install&#34;</span> <span style="color:#f92672">..</span>
+cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target install <span style="color:#f92672">--</span>config <span style="color:#a6e22e">Debug</span>
+sh<span style="color:#f92672">.</span>exe <span style="color:#f92672">-</span>c <span style="color:#e6db74">&#34;cp ./install_manifest.txt ../install-manifest-debug.txt&#34;</span>
+cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target install <span style="color:#f92672">--</span>config <span style="color:#a6e22e">Release</span>
+sh<span style="color:#f92672">.</span>exe <span style="color:#f92672">-</span>c <span style="color:#e6db74">&#34;cp ./install_manifest.txt ../install-manifest-release.txt&#34;</span></code></pre></div>
+<p>While we are on the subject of dependencies of dependencies, here&rsquo;s another nice feature of Conan - it can generate a dependencies graph:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ conan info <span style="color:#f92672">../</span>conanfile<span style="color:#f92672">.</span>py <span style="color:#f92672">-</span>g <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>html
+$ open <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>html</code></pre></div>
+<p>Here&rsquo;s an example of a graph from one of our projects that actually depends on E57Format library:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/dependencies-graph.png" alt="Conan dependencies graph">
+
+
+<p>As you can see, E57Format is a direct dependency of the project and in turn E57Format has Xerces-C++ as its own dependency. You can also click on any node and get some more information about it (<em>Zstandard is clicked on that screenshot</em>).</p>
+<p>In our project&rsquo;s <code>conanfile.py</code> we only list direct dependencies:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">requires <span style="color:#f92672">=</span> [
+    <span style="color:#e6db74">&#34;Zstandard/1.5.2@YOUR-PREFIX/public&#34;</span>,
+    <span style="color:#e6db74">&#34;pdqsort/1.0.0@YOUR-PREFIX/public&#34;</span>,
+    <span style="color:#e6db74">&#34;JsonCpp/1.9.5@YOUR-PREFIX/public&#34;</span>,
+    <span style="color:#e6db74">&#34;E57Format/2.2.0@YOUR-PREFIX/public&#34;</span>
+    <span style="color:#75715e"># no Xerces-C/3.2.3@YOUR-PREFIX/public&#34;</span>
+]</code></pre></div>
+<p>And Conan then takes care of fetching dependencies of dependencies, how convenient is that.</p>
+<p>If you add <code>-j</code> argument to <code>conan info</code>, then you&rsquo;ll get a JSON representation of the graph, which you can easily parse to generate a report about your dependencies (<em>versions, licenses, etc</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ conan info <span style="color:#f92672">../</span>conanfile<span style="color:#f92672">.</span>py <span style="color:#f92672">-</span>j <span style="color:#f92672">./</span>dependencies<span style="color:#f92672">.</span>json</code></pre></div>
+<h3 id="packing">Packing</h3>
+<p>When creating Conan package, you can put both Debug and Release configurations into one package. Thanks to CMake this work work just fine: <code>find_package()</code> will find both Debug (<em><code>DearImGuiTargets-debug.cmake</code></em>) and Release (<em><code>DearImGuiTargets-release.cmake</code></em>) configurations. And <code>conan export-pkg</code> wouldn&rsquo;t care, as it packs everything it finds in the path specified in <code>-pf</code> argument.</p>
+<p>But that would not be exactly correct, because if one tries to install such package like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ conan install <span style="color:#f92672">-</span>s build_type<span style="color:#66d9ef">=</span><span style="color:#a6e22e">Debug</span> <span style="color:#f92672">-</span>r <span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">CONAN</span><span style="color:#f92672">-</span><span style="color:#a6e22e">REMOTE</span></code></pre></div>
+<p>then Conan will say that there are no available packages for this configuration. And why it works without providing <code>-s build_type</code> is because it defaults to <code>Release</code> (<em>both for <code>conan export-pkg</code> and <code>conan install</code></em>).</p>
+<p>It is actually possible to have Debug and Release <a href="https://docs.conan.io/en/latest/creating_packages/package_approaches.html#n-configs-1-package">in one package</a>, so it would work for any <code>-s build_type</code>, but it&rsquo;s not as simple as just splitting configurations into different packages.</p>
+<p>The splitting can be done by using <code>install-manifest-*.txt</code> lists produced on the <a href="#building">building step</a>. But they store absolute paths to the files, and so we need to trim them with <code>sed</code>. After that the installation folder can be split into Debug/Release with <code>cp --parents</code> to preserve the folders structure.</p>
+<p>After splitting is done, you can create packages with <code>conan export-pkg</code> and publish them to your Artifactory with <code>conan upload</code>.</p>
+<p>Here are all the commands executing on the packing step:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">mkdir package<span style="color:#f92672">-</span>debug
+sh<span style="color:#f92672">.</span>exe <span style="color:#f92672">-</span>c <span style="color:#e6db74">&#34;sed -i &#39;s/.*install\///g&#39; ./install-manifest-debug.txt&#34;</span>
+
+mkdir package<span style="color:#f92672">-</span>release
+sh<span style="color:#f92672">.</span>exe <span style="color:#f92672">-</span>c <span style="color:#e6db74">&#34;sed -i &#39;s/.*install\///g&#39; ./install-manifest-release.txt&#34;</span>
+
+cd install
+sh<span style="color:#f92672">.</span>exe <span style="color:#f92672">-</span>c <span style="color:#e6db74">&#34;cp --parents $(&lt;../install-manifest-debug.txt) ../package-debug || :&#34;</span>
+sh<span style="color:#f92672">.</span>exe <span style="color:#f92672">-</span>c <span style="color:#e6db74">&#34;cp --parents $(&lt;../install-manifest-release.txt) ../package-release || :&#34;</span>
+cd <span style="color:#f92672">..</span>
+
+sh<span style="color:#f92672">.</span>exe <span style="color:#f92672">-</span>c <span style="color:#e6db74">&#34;sed -i &#39;s/version = \&#34;0\.0\.0\&#34;$/version = \&#34;%system.current-version%\&#34;/&#39; ./conanfile.py&#34;</span>
+conan export<span style="color:#f92672">-</span>pkg conanfile<span style="color:#f92672">.</span>py <span style="color:#f92672">-</span>s compiler<span style="color:#f92672">.</span>toolset<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;v142&#34;</span> <span style="color:#f92672">-</span>pf<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;./package-debug&#34;</span> <span style="color:#f92672">-</span>s build_type<span style="color:#66d9ef">=</span><span style="color:#a6e22e">Debug</span> <span style="color:#f92672">-</span>f <span style="color:#f92672">&amp;&amp;</span> conan upload <span style="color:#f92672">%</span>system<span style="color:#f92672">.</span>projectName<span style="color:#f92672">%</span> <span style="color:#f92672">--</span>all <span style="color:#f92672">--</span>remote<span style="color:#66d9ef">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">CONAN</span><span style="color:#f92672">-</span><span style="color:#a6e22e">REMOTE</span> <span style="color:#f92672">--</span>check <span style="color:#f92672">--</span>confirm
+conan export<span style="color:#f92672">-</span>pkg conanfile<span style="color:#f92672">.</span>py <span style="color:#f92672">-</span>s compiler<span style="color:#f92672">.</span>toolset<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;v142&#34;</span> <span style="color:#f92672">-</span>pf<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;./package-release&#34;</span> <span style="color:#f92672">-</span>s build_type<span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> <span style="color:#f92672">-</span>f <span style="color:#f92672">&amp;&amp;</span> conan upload <span style="color:#f92672">%</span>system<span style="color:#f92672">.</span>projectName<span style="color:#f92672">%</span> <span style="color:#f92672">--</span>all <span style="color:#f92672">--</span>remote<span style="color:#66d9ef">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">CONAN</span><span style="color:#f92672">-</span><span style="color:#a6e22e">REMOTE</span> <span style="color:#f92672">--</span>check <span style="color:#f92672">--</span>confirm
+
+conan remove <span style="color:#e6db74">&#34;%system.projectName%*&#34;</span> <span style="color:#f92672">-</span>f</code></pre></div>
+<p>Setting the package version with <code>sed</code> is explained in <a href="#conanfile">conanfile</a> description.</p>
+<p>Removing the package (<em><code>conan remove</code></em>) from <a href="https://docs.conan.io/en/latest/cheatsheet.html?highlight=cache#the-local-cache">local cache</a> after publishing it to Artifactory is optional.</p>
+<p>As usual, on Mac OS Bash commands behave differently, so you&rsquo;ll need to adjust <code>sed</code> arguments and use <code>rsync</code> instead of <code>cp</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span>
+mkdir ./package-debug
+sed -i <span style="color:#e6db74">&#34;&#34;</span> -E <span style="color:#e6db74">&#39;s/.*install\///g&#39;</span> ./install-manifest-debug.txt
+
+mkdir ./package-release
+sed -i <span style="color:#e6db74">&#34;&#34;</span> -E <span style="color:#e6db74">&#39;s/.*install\///g&#39;</span> ./install-manifest-release.txt
+
+cd install
+rsync -R <span style="color:#66d9ef">$(</span>&lt;../install-manifest-debug.txt<span style="color:#66d9ef">)</span> ../package-debug <span style="color:#f92672">||</span> :
+rsync -R <span style="color:#66d9ef">$(</span>&lt;../install-manifest-release.txt<span style="color:#66d9ef">)</span> ../package-release <span style="color:#f92672">||</span> :
+cd ..
+
+sed -i <span style="color:#e6db74">&#34;&#34;</span> -E <span style="color:#e6db74">&#39;s/version = &#34;0\.0\.0&#34;$/version = &#34;%system.current-version%&#34;/&#39;</span> ./conanfile.py
+conan export-pkg conanfile.py -s arch<span style="color:#f92672">=</span>armv8 -pf<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;./package-debug&#34;</span> -s build_type<span style="color:#f92672">=</span>Debug -f <span style="color:#f92672">&amp;&amp;</span> conan upload %system.projectName% --all --remote<span style="color:#f92672">=</span>YOUR-CONAN-REMOTE --check --confirm
+conan export-pkg conanfile.py -s arch<span style="color:#f92672">=</span>armv8 -pf<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;./package-release&#34;</span> -s build_type<span style="color:#f92672">=</span>Release -f <span style="color:#f92672">&amp;&amp;</span> conan upload %system.projectName% --all --remote<span style="color:#f92672">=</span>YOUR-CONAN-REMOTE --check --confirm
+
+conan remove <span style="color:#e6db74">&#34;%system.projectName%*&#34;</span> -f</code></pre></div>
+<p>By the way, since we are talking about Mac OS special needs, if you&rsquo;ll need to RegEx a <code>\w+</code> pattern, for example this one: <code>'s/.*install\/\w\+\///g'</code>, then you&rsquo;ll have to do it like that: <code>'s/.*install\/[a-zA-Z0-9_]+\///g'</code>.</p>
+<p>After you run building and packing steps on all the platforms/targets, here&rsquo;s what you&rsquo;ll get in the Artifactory:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/artifactory-conan-package.png" alt="JFrog Artifactory, Conan package">
+
+
+<p>So it is 10 packages in total: 5 platforms, each having 2 configurations (<em>Debug/Release</em>).</p>
+<h1 id="resolving-dependencies-in-a-project">Resolving dependencies in a project</h1>
+<p>As an example, let&rsquo;s take the <a href="https://github.com/retifrav/glfw-imgui-example">same application</a> that was used for benchmarking build times <a href="#why-bother">in the beginning</a>.</p>
+<p>I have all of its dependencies pre-built and published in Artifactory, so I can fetch them with Conan. For that I can either create <a href="https://docs.conan.io/en/latest/reference/conanfile_txt.html">conanfile.txt</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[requires]</span>
+<span style="color:#a6e22e">glad/0.1.36@YOUR-PREFIX/public</span>
+<span style="color:#a6e22e">GLFW/3.3.5@YOUR-PREFIX/public</span>
+<span style="color:#a6e22e">DearImGui/1.86.0@YOUR-PREFIX/public</span></code></pre></div>
+<p>or <a href="https://docs.conan.io/en/latest/reference/conanfile.html">conanfile.py</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">from</span> conans <span style="color:#f92672">import</span> ConanFile, CMake
+
+prefixChannel <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;@YOUR-PREFIX/public&#34;</span>
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SandboxConan</span>(ConanFile):
+    settings <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;os&#34;</span>, <span style="color:#e6db74">&#34;arch&#34;</span>, <span style="color:#e6db74">&#34;compiler&#34;</span>
+    generators <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;cmake&#34;</span>
+    requires <span style="color:#f92672">=</span> [
+        <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;glad/0.1.36</span><span style="color:#e6db74">{</span>prefixChannel<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>,
+        <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;GLFW/3.3.5</span><span style="color:#e6db74">{</span>prefixChannel<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>,
+        <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;DearImGui/1.86.0</span><span style="color:#e6db74">{</span>prefixChannel<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>
+    ]</code></pre></div>
+<p>Now I can fetch them all:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-perl" data-lang="perl">$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd $_
+
+$ conan install <span style="color:#f92672">..</span> <span style="color:#f92672">-</span>r YOUR<span style="color:#f92672">-</span>CONAN<span style="color:#f92672">-</span>REMOTE
+Configuration:
+[settings]
+arch<span style="color:#f92672">=</span>x86_64
+build_type<span style="color:#f92672">=</span>Release
+compiler<span style="color:#f92672">=</span>apple<span style="color:#f92672">-</span>clang
+compiler<span style="color:#f92672">.</span>libcxx<span style="color:#f92672">=</span>libc<span style="color:#f92672">++</span>
+compiler<span style="color:#f92672">.</span>version<span style="color:#f92672">=</span><span style="color:#ae81ff">12.0</span>
+os<span style="color:#f92672">=</span>Macos
+[options]
+[build_requires]
+[env]
+
+glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public: Retrieving from server <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span>
+glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public: Trying with <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span><span style="color:#f92672">...</span>
+Downloading conanmanifest<span style="color:#f92672">.</span>txt completed [<span style="color:#ae81ff">0.06</span>k]
+Downloading conanfile<span style="color:#f92672">.</span>py completed [<span style="color:#ae81ff">0.94</span>k]
+glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public: Downloaded recipe revision <span style="color:#ae81ff">0</span>
+GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public: Retrieving from server <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span>
+GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public: Trying with <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span><span style="color:#f92672">...</span>
+Downloading conanmanifest<span style="color:#f92672">.</span>txt completed [<span style="color:#ae81ff">0.06</span>k]
+Downloading conanfile<span style="color:#f92672">.</span>py completed [<span style="color:#ae81ff">0.86</span>k]
+GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public: Downloaded recipe revision <span style="color:#ae81ff">0</span>
+DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public: Retrieving from server <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span>
+DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public: Trying with <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span><span style="color:#f92672">...</span>
+Downloading conanmanifest<span style="color:#f92672">.</span>txt completed [<span style="color:#ae81ff">0.06</span>k]
+Downloading conanfile<span style="color:#f92672">.</span>py completed [<span style="color:#ae81ff">0.92</span>k]
+DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public: Downloaded recipe revision <span style="color:#ae81ff">0</span>
+conanfile<span style="color:#f92672">.</span>py: Installing <span style="color:#66d9ef">package</span>
+Requirements
+    DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public from <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span> <span style="color:#f92672">-</span> Downloaded
+    GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public from <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span> <span style="color:#f92672">-</span> Downloaded
+    glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public from <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span> <span style="color:#f92672">-</span> Downloaded
+Packages
+    DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public:f83037eff23ab3a94190d7f3f7b37a2d6d522241 <span style="color:#f92672">-</span> Download
+    GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public:f83037eff23ab3a94190d7f3f7b37a2d6d522241 <span style="color:#f92672">-</span> Download
+    glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public:f83037eff23ab3a94190d7f3f7b37a2d6d522241 <span style="color:#f92672">-</span> Download
+
+Installing (downloading, building) binaries<span style="color:#f92672">...</span>
+DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public: Retrieving <span style="color:#66d9ef">package</span> f83037eff23ab3a94190d7f3f7b37a2d6d522241 from remote <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span>
+Downloading conanmanifest<span style="color:#f92672">.</span>txt completed [<span style="color:#ae81ff">0.63</span>k]
+Downloading conaninfo<span style="color:#f92672">.</span>txt completed [<span style="color:#ae81ff">0.40</span>k]
+Downloading conan_package<span style="color:#f92672">.</span>tgz completed [<span style="color:#ae81ff">577.86</span>k]
+Decompressing conan_package<span style="color:#f92672">.</span>tgz completed [<span style="color:#ae81ff">0.00</span>k]
+DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public: Package installed f83037eff23ab3a94190d7f3f7b37a2d6d522241
+DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public: Downloaded <span style="color:#66d9ef">package</span> revision <span style="color:#ae81ff">0</span>
+GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public: Retrieving <span style="color:#66d9ef">package</span> f83037eff23ab3a94190d7f3f7b37a2d6d522241 from remote <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span>
+Downloading conanmanifest<span style="color:#f92672">.</span>txt completed [<span style="color:#ae81ff">0.56</span>k]
+Downloading conaninfo<span style="color:#f92672">.</span>txt completed [<span style="color:#ae81ff">0.40</span>k]
+Downloading conan_package<span style="color:#f92672">.</span>tgz completed [<span style="color:#ae81ff">123.99</span>k]
+Decompressing conan_package<span style="color:#f92672">.</span>tgz completed [<span style="color:#ae81ff">0.00</span>k]
+GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public: Package installed f83037eff23ab3a94190d7f3f7b37a2d6d522241
+GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public: Downloaded <span style="color:#66d9ef">package</span> revision <span style="color:#ae81ff">0</span>
+glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public: Retrieving <span style="color:#66d9ef">package</span> f83037eff23ab3a94190d7f3f7b37a2d6d522241 from remote <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span>
+Downloading conanmanifest<span style="color:#f92672">.</span>txt completed [<span style="color:#ae81ff">0.39</span>k]
+Downloading conaninfo<span style="color:#f92672">.</span>txt completed [<span style="color:#ae81ff">0.40</span>k]
+Downloading conan_package<span style="color:#f92672">.</span>tgz completed [<span style="color:#ae81ff">333.16</span>k]
+Decompressing conan_package<span style="color:#f92672">.</span>tgz completed [<span style="color:#ae81ff">0.00</span>k]
+glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public: Package installed f83037eff23ab3a94190d7f3f7b37a2d6d522241
+glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public: Downloaded <span style="color:#66d9ef">package</span> revision <span style="color:#ae81ff">0</span>
+conanfile<span style="color:#f92672">.</span>py: Generator cmake created conanbuildinfo<span style="color:#f92672">.</span>cmake
+conanfile<span style="color:#f92672">.</span>py: Generator txt created conanbuildinfo<span style="color:#f92672">.</span>txt
+conanfile<span style="color:#f92672">.</span>py: Aggregating env generators
+conanfile<span style="color:#f92672">.</span>py: Generated conaninfo<span style="color:#f92672">.</span>txt
+conanfile<span style="color:#f92672">.</span>py: Generated graphinfo</code></pre></div>
+<p>Lucky me, the auto-generated Conan profile for my environment matches the one on the buildbots, so I got everything found and installed.</p>
+<p>But actually it doesn&rsquo;t match, and here&rsquo;s what I was really getting with auto-generated profile:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-perl" data-lang="perl">Configuration:
+[settings]
+arch<span style="color:#f92672">=</span>x86_64
+arch_build<span style="color:#f92672">=</span>x86_64
+build_type<span style="color:#f92672">=</span>Release
+compiler<span style="color:#f92672">=</span>clang
+compiler<span style="color:#f92672">.</span>libcxx<span style="color:#f92672">=</span>libstdc<span style="color:#f92672">++</span>
+compiler<span style="color:#f92672">.</span>version<span style="color:#f92672">=</span><span style="color:#ae81ff">13</span>
+os<span style="color:#f92672">=</span>Macos
+os_build<span style="color:#f92672">=</span>Macos
+[options]
+[build_requires]
+[env]
+
+glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public: Retrieving from server <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span>
+glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public: Trying with <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span><span style="color:#f92672">...</span>
+Downloading conanmanifest<span style="color:#f92672">.</span>txt completed [<span style="color:#ae81ff">0.06</span>k]
+Downloading conanfile<span style="color:#f92672">.</span>py completed [<span style="color:#ae81ff">0.94</span>k]
+glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public: Downloaded recipe revision <span style="color:#ae81ff">0</span>
+GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public: Retrieving from server <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span>
+GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public: Trying with <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span><span style="color:#f92672">...</span>
+Downloading conanmanifest<span style="color:#f92672">.</span>txt completed [<span style="color:#ae81ff">0.06</span>k]
+Downloading conanfile<span style="color:#f92672">.</span>py completed [<span style="color:#ae81ff">0.86</span>k]
+GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public: Downloaded recipe revision <span style="color:#ae81ff">0</span>
+DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public: Retrieving from server <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span>
+DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public: Trying with <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span><span style="color:#f92672">...</span>
+Downloading conanmanifest<span style="color:#f92672">.</span>txt completed [<span style="color:#ae81ff">0.06</span>k]
+Downloading conanfile<span style="color:#f92672">.</span>py completed [<span style="color:#ae81ff">0.92</span>k]
+DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public: Downloaded recipe revision <span style="color:#ae81ff">0</span>
+conanfile<span style="color:#f92672">.</span>py: Installing <span style="color:#66d9ef">package</span>
+Requirements
+    DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public from <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span> <span style="color:#f92672">-</span> Downloaded
+    GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public from <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span> <span style="color:#f92672">-</span> Downloaded
+    glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public from <span style="color:#e6db74">&#39;YOUR-CONAN-REMOTE&#39;</span> <span style="color:#f92672">-</span> Downloaded
+Packages
+    DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public:c48a49ca4467bb2c7f002b84b691f213c49e91b4 <span style="color:#f92672">-</span> Missing
+    GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public:c48a49ca4467bb2c7f002b84b691f213c49e91b4 <span style="color:#f92672">-</span> Missing
+    glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public:c48a49ca4467bb2c7f002b84b691f213c49e91b4 <span style="color:#f92672">-</span> Missing
+
+Installing (downloading, building) binaries<span style="color:#f92672">...</span>
+ERROR: Missing binary: DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public:c48a49ca4467bb2c7f002b84b691f213c49e91b4
+ERROR: Missing binary: GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public:c48a49ca4467bb2c7f002b84b691f213c49e91b4
+ERROR: Missing binary: glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public:c48a49ca4467bb2c7f002b84b691f213c49e91b4
+
+DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public: WARN: Can<span style="color:#e6db74">&#39;t find a &#39;</span>DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public<span style="color:#e6db74">&#39; package for the specified settings, options and dependencies:
+</span><span style="color:#e6db74">- Settings: arch=x86_64, build_type=Release, compiler=clang, compiler.libcxx=libstdc++, compiler.version=13, os=Macos
+</span><span style="color:#e6db74">- Options:
+</span><span style="color:#e6db74">- Dependencies:
+</span><span style="color:#e6db74">- Requirements:
+</span><span style="color:#e6db74">- Package ID: c48a49ca4467bb2c7f002b84b691f213c49e91b4
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">ERROR: Missing prebuilt package for &#39;</span>DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public<span style="color:#e6db74">&#39;, &#39;</span>GLFW<span style="color:#e6db74">/3.3.5@YOUR-PREFIX/</span>public<span style="color:#e6db74">&#39;, &#39;</span>glad<span style="color:#e6db74">/0.1.36@YOUR-PREFIX/</span>public<span style="color:#e6db74">&#39;
+</span><span style="color:#e6db74">Use &#39;</span>conan search DearImGui<span style="color:#e6db74">/1.86.0@YOUR-PREFIX/</span>public <span style="color:#f92672">--</span>table<span style="color:#f92672">=</span>table<span style="color:#f92672">.</span>html <span style="color:#f92672">-</span>r<span style="color:#f92672">=</span>remote<span style="color:#e6db74">&#39; and open the table.html file to see available packages
+</span><span style="color:#e6db74">Or try to build locally from sources with &#39;</span><span style="color:#f92672">--</span>build<span style="color:#f92672">=</span>DearImGui <span style="color:#f92672">--</span>build<span style="color:#f92672">=</span>GLFW <span style="color:#f92672">--</span>build<span style="color:#f92672">=</span>glad<span style="color:#e6db74">&#39;
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">More Info at &#39;</span>https:<span style="color:#e6db74">//</span>docs<span style="color:#f92672">.</span>conan<span style="color:#f92672">.</span>io<span style="color:#e6db74">/en/</span>latest<span style="color:#e6db74">/faq/</span>troubleshooting<span style="color:#f92672">.</span>html<span style="color:#75715e">#error-missing-prebuilt-package&#39;</span></code></pre></div>
+<p>This command, for example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ conan search <span style="color:#a6e22e">DearImGui</span><span style="color:#f92672">/</span><span style="color:#ae81ff">1.86</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span><span style="color:#a6e22e">@YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PREFIX</span><span style="color:#f92672">/</span>public <span style="color:#f92672">--</span>table<span style="color:#66d9ef">=</span>table<span style="color:#f92672">.</span>html <span style="color:#f92672">-</span>r <span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">CONAN</span><span style="color:#f92672">-</span><span style="color:#a6e22e">REMOTE</span></code></pre></div>
+<p>will generate a table of all the packages available for Dear ImGui in your Conan remote:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/all-available-packages.png" alt="Conan, listing all available packages">
+
+
+<p>Ideally, I would need to add a build environment on the buildbots that matches mine, build all dependencies with it and publish them to Artifactory too, but it&rsquo;s bloody impossible to cover all possible configurations that users might have, so instead users (<em>and I</em>) can just adjust their local Conan profiles. In my case it would be <code>~/.conan/profiles/artifactory</code> with the following contents:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[settings]</span>
+    <span style="color:#a6e22e">arch</span><span style="color:#f92672">=</span><span style="color:#e6db74">x86_64
+</span><span style="color:#e6db74">    build_type=Release
+</span><span style="color:#e6db74">    compiler=apple-clang
+</span><span style="color:#e6db74">    compiler.libcxx=libc++
+</span><span style="color:#e6db74">    compiler.version=12.0
+</span><span style="color:#e6db74">    os=Macos</span></code></pre></div>
+<p>And then I can use this profile like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ conan install <span style="color:#f92672">..</span> <span style="color:#f92672">--</span>profile artifactory <span style="color:#f92672">-</span>r <span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">CONAN</span><span style="color:#f92672">-</span><span style="color:#a6e22e">REMOTE</span></code></pre></div>
+<p>However, getting ahead of myself a bit, while this helps to convince Conan to install the packages, such profile tinkering will cause CMake to fail on configuration with the following error:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">CMake</span> <span style="color:#a6e22e">Error</span> at build<span style="color:#f92672">/</span>conanbuildinfo<span style="color:#f92672">.</span>cmake<span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">731</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">message</span><span style="color:#f92672">)</span><span style="color:#66d9ef">:</span>
+  <span style="color:#a6e22e">Detected</span> a mismatch <span style="color:#66d9ef">for</span> the compiler version between your conan profile
+  settings and <span style="color:#a6e22e">CMake</span><span style="color:#66d9ef">:</span>
+
+  <span style="color:#66d9ef">Compiler</span> <span style="color:#66d9ef">version</span> <span style="color:#66d9ef">specified</span> <span style="color:#66d9ef">in</span> <span style="color:#66d9ef">your</span> <span style="color:#66d9ef">conan</span> <span style="color:#66d9ef">profile:</span> <span style="color:#960050;background-color:#1e0010">12</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span>
+
+  <span style="color:#66d9ef">Compiler</span> <span style="color:#66d9ef">version</span> <span style="color:#66d9ef">detected</span> <span style="color:#66d9ef">in</span> <span style="color:#66d9ef">CMake:</span> <span style="color:#960050;background-color:#1e0010">13</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span></code></pre></div>
+<p>But it&rsquo;s no worries, as this can be overcome with <code>-DCONAN_DISABLE_CHECK_COMPILER=1</code>.</p>
+<p>When the <code>conan install</code> succeeds, packages are installed to the local cache on your machine:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ tree <span style="color:#f92672">-</span>L <span style="color:#ae81ff">7</span> <span style="color:#f92672">~/.</span>conan<span style="color:#f92672">/</span>data<span style="color:#f92672">/</span>
+<span style="color:#f92672">/</span><span style="color:#a6e22e">Users</span><span style="color:#f92672">/</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">USERNAME</span><span style="color:#f92672">/.</span>conan<span style="color:#f92672">/</span>data<span style="color:#f92672">/</span>
+<span style="color:#f92672">├──</span> <span style="color:#a6e22e">DearImGui</span>
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#ae81ff">1.86</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span>
+<span style="color:#f92672">│</span>       <span style="color:#f92672">└──</span> <span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PREFIX</span>
+<span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> public
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> dl
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> export
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> pkg
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>       <span style="color:#f92672">└──</span> f83037eff23ab3a94190d7f3f7b37a2d6d522241
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> export
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> conanfile<span style="color:#f92672">.</span>py
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> conanmanifest<span style="color:#f92672">.</span>txt
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> locks
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> f83037eff23ab3a94190d7f3f7b37a2d6d522241
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> metadata<span style="color:#f92672">.</span>json
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> metadata<span style="color:#f92672">.</span>json<span style="color:#f92672">.</span>lock
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#66d9ef">package</span>
+<span style="color:#960050;background-color:#1e0010">│           │       └── </span>f83037eff23ab3a94190d7f3f7b37a2d6d522241
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> cmake
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> conaninfo<span style="color:#f92672">.</span>txt
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> conanmanifest<span style="color:#f92672">.</span>txt
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> include
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>           <span style="color:#f92672">└──</span> lib
+<span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> public<span style="color:#f92672">.</span>count
+<span style="color:#f92672">│</span>           <span style="color:#f92672">└──</span> public<span style="color:#f92672">.</span>count<span style="color:#f92672">.</span>lock
+<span style="color:#f92672">├──</span> <span style="color:#a6e22e">GLFW</span>
+<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#ae81ff">3.3</span><span style="color:#f92672">.</span><span style="color:#ae81ff">5</span>
+<span style="color:#f92672">│</span>       <span style="color:#f92672">└──</span> <span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PREFIX</span>
+<span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> public
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> dl
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> export
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> pkg
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>       <span style="color:#f92672">└──</span> f83037eff23ab3a94190d7f3f7b37a2d6d522241
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> export
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> conanfile<span style="color:#f92672">.</span>py
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> conanmanifest<span style="color:#f92672">.</span>txt
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> locks
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> f83037eff23ab3a94190d7f3f7b37a2d6d522241
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> metadata<span style="color:#f92672">.</span>json
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> metadata<span style="color:#f92672">.</span>json<span style="color:#f92672">.</span>lock
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#66d9ef">package</span>
+<span style="color:#960050;background-color:#1e0010">│           │       └── </span>f83037eff23ab3a94190d7f3f7b37a2d6d522241
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> conaninfo<span style="color:#f92672">.</span>txt
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> conanmanifest<span style="color:#f92672">.</span>txt
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> include
+<span style="color:#f92672">│</span>           <span style="color:#f92672">│</span>           <span style="color:#f92672">└──</span> lib
+<span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> public<span style="color:#f92672">.</span>count
+<span style="color:#f92672">│</span>           <span style="color:#f92672">└──</span> public<span style="color:#f92672">.</span>count<span style="color:#f92672">.</span>lock
+<span style="color:#f92672">└──</span> glad
+    <span style="color:#f92672">└──</span> <span style="color:#ae81ff">0.1</span><span style="color:#f92672">.</span><span style="color:#ae81ff">36</span>
+        <span style="color:#f92672">└──</span> <span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PREFIX</span>
+            <span style="color:#f92672">├──</span> public
+            <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> dl
+            <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> export
+            <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> pkg
+            <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>       <span style="color:#f92672">└──</span> f83037eff23ab3a94190d7f3f7b37a2d6d522241
+            <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> export
+            <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> conanfile<span style="color:#f92672">.</span>py
+            <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> conanmanifest<span style="color:#f92672">.</span>txt
+            <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> locks
+            <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> f83037eff23ab3a94190d7f3f7b37a2d6d522241
+            <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> metadata<span style="color:#f92672">.</span>json
+            <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> metadata<span style="color:#f92672">.</span>json<span style="color:#f92672">.</span>lock
+            <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#66d9ef">package</span>
+            <span style="color:#960050;background-color:#1e0010">│       └── </span>f83037eff23ab3a94190d7f3f7b37a2d6d522241
+            <span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> cmake
+            <span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> conaninfo<span style="color:#f92672">.</span>txt
+            <span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> conanmanifest<span style="color:#f92672">.</span>txt
+            <span style="color:#f92672">│</span>           <span style="color:#f92672">├──</span> include
+            <span style="color:#f92672">│</span>           <span style="color:#f92672">└──</span> lib
+            <span style="color:#f92672">├──</span> public<span style="color:#f92672">.</span>count
+            <span style="color:#f92672">└──</span> public<span style="color:#f92672">.</span>count<span style="color:#f92672">.</span>lock</code></pre></div>
+<p>You can also list them like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#960050;background-color:#1e0010">$</span> conan search
+Existing package recipes:
+
+DearImGui/<span style="color:#ae81ff">1.86</span>.<span style="color:#ae81ff">0</span>@YOUR-PREFIX/<span style="color:#66d9ef">public</span>
+GLFW/<span style="color:#ae81ff">3.3</span>.<span style="color:#ae81ff">5</span>@YOUR-PREFIX/<span style="color:#66d9ef">public</span>
+glad/<span style="color:#ae81ff">0.1</span>.<span style="color:#ae81ff">36</span>@YOUR-PREFIX/<span style="color:#66d9ef">public</span></code></pre></div>
+<p>And the project build directory now looks like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ ls <span style="color:#f92672">-</span>L1 <span style="color:#f92672">.</span>
+conan<span style="color:#f92672">.</span>lock
+conanbuildinfo<span style="color:#f92672">.</span>cmake
+conanbuildinfo<span style="color:#f92672">.</span>txt
+conaninfo<span style="color:#f92672">.</span>txt
+graph_info<span style="color:#f92672">.</span>json</code></pre></div>
+<p>The <code>conanbuildinfo.cmake</code> contains auto-generated CMake instructions for finding all the installed dependencies, and you need to add it to your project&rsquo;s <code>CMakeLists.txt</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">include(<span style="color:#f92672">${</span>CMAKE_CURRENT_BINARY_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/conanbuildinfo.cmake</span>)<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span>conan_basic_setup()</code></pre></div>
+<p>After that you can call <code>find_package()</code> as usual, for example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">find_package(<span style="color:#e6db74">glfw3</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)</code></pre></div>
+<p>And this is it, the project is ready to build, and it will only build its own sources and link to pre-built dependencies.</p>
+<p>Here are all the commands from the creation of the build folder:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd $_
+$ conan install .. --profile artifactory -r YOUR-CONAN-REMOTE
+$ cmake -G Ninja -DCMAKE_BUILD_TYPE<span style="color:#f92672">=</span>Release -DCMAKE_INSTALL_PREFIX<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../install&#34;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    -DUSING_CONAN<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> -DCONAN_DISABLE_CHECK_COMPILER<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> ..
+
+$ time cmake --build . --target install
+<span style="color:#f92672">[</span>3/4<span style="color:#f92672">]</span> Install the project...
+-- Install configuration: <span style="color:#e6db74">&#34;Release&#34;</span>
+-- Installing: /path/to/glfw-imgui/install/bin/glfw-imgui/glfw-imgui
+-- Installing: /path/to/glfw-imgui/install/bin/glfw-imgui/JetBrainsMono-ExtraLight.ttf
+
+real    0m1.166s
+
+$ ../install/bin/glfw-imgui/glfw-imgui</code></pre></div>
+<p>Absolutely magnificent.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/cpp/">cpp</a><a class="tag" href="https://retifrav.github.io/tags/cmake/">cmake</a><a class="tag" href="https://retifrav.github.io/tags/devops/">devops</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div style="border:2px orange solid; background-color: floralwhite; border-radius:0.5rem; padding: 10px 14px; font-style:italic; font-size:0.9em;">
+              If you'd like to comment the article, you can do it on the
+              <a href="https://decovar.dev/blog/2022/02/06/cpp-dependencies-with-conan/#remark42" style="font-weight:bold;">
+                  original website</a>. This one is just a mirror without comments.
+          </div>
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2022,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        <iframe src="https://github.com/sponsors/retifrav/button"
+            height="35" style="border:0;"
+            title="You can sponsor me">
+        </iframe>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5"
+                  data-telegram-post="decovar/306" data-width="100%" data-userpic="false">
+              </script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (63)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (39)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (32)</a></li>
+                  
+                  <li><a href="/tags/review">review (27)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (24)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (24)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (14)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (13)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (10)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (7)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/azure">azure (2)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>
