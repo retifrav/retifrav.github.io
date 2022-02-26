@@ -1,0 +1,877 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Querying astronomy databases in ADQL via TAP | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/" />
+
+    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="There are astronomy databases that store information about space objects such star systems and planets. Some of them allow to query the data via TAP interface using ADQL." />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Querying astronomy databases in ADQL via TAP" />
+<meta property="og:description" content="There are astronomy databases that store information about space objects such star systems and planets. Some of them allow to query the data via TAP interface using ADQL." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2022/02/26/astronomy-databases-tap-adql/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2022-02-26T18:34:15+01:00" />
+<meta property="article:modified_time" content="2022-02-26T18:34:15+01:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Querying astronomy databases in ADQL via TAP</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2022-02-26 18:34:15 &#43;0100</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 21 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>There are several astronomy databases that store various information about space objects such stars and planets. Some (<em>most?</em>) of those databases expose their data via <a href="https://www.ivoa.net/documents/TAP/">TAP</a> interface, so it can be queried using <a href="https://www.ivoa.net/documents/ADQL/">ADQL</a>.</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/26/astronomy-databases-tap-adql/images/tap-adql-sandbox.png" alt="TAP ADQL sandbox">
+
+
+<p>Here I&rsquo;ll be telling about how to get data from such sources and what sort of issues/problems one can encounter.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#how-to-query-data">How to query data</a>
+      <ul>
+        <li><a href="#sending-requests">Sending requests</a></li>
+        <li><a href="#pyvo">PyVO</a></li>
+        <li><a href="#a-sandbox-application">A sandbox application</a></li>
+      </ul>
+    </li>
+    <li><a href="#tap-services-with-astronomical-data">TAP services with astronomical data</a>
+      <ul>
+        <li><a href="#about-access-and-abusing-the-service">About access and abusing the service</a></li>
+        <li><a href="#problems-and-challenges">Problems and challenges</a>
+          <ul>
+            <li><a href="#nasa-exoplanet-archive">NASA Exoplanet Archive</a>
+              <ul>
+                <li><a href="#planetary-data-is-organized-by-publications">Planetary data is organized by publications</a></li>
+                <li><a href="#planets-from-the-same-system-have-different-stellar-data">Planets from the same system have different stellar data</a></li>
+                <li><a href="#no-way-to-get-the-latest-stellar-data">No way to get the latest stellar data</a></li>
+                <li><a href="#top-clause-is-broken">TOP clause is broken</a></li>
+              </ul>
+            </li>
+            <li><a href="#paris-astronomical-data-centre">Paris Astronomical Data Centre</a>
+              <ul>
+                <li><a href="#obsolete-data">Obsolete data</a></li>
+                <li><a href="#untrustworthy-data">Untrustworthy data</a></li>
+                <li><a href="#different-names-for-star-and-planets">Different names for star and planets</a></li>
+              </ul>
+            </li>
+            <li><a href="#overall">Overall</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h1 id="how-to-query-data">How to query data</h1>
+<h2 id="sending-requests">Sending requests</h2>
+<p>Very simplified description for how this works is that you send <a href="https://en.wikipedia.org/wiki/SQL">SQL-like queries</a> as a part of <a href="https://en.wikipedia.org/wiki/Query_string">query string</a> to a TAP-endpoint URL of a database/datasource via HTTP POST request (<em>or HTTP GET, if you are fine with <a href="https://www.ivoa.net/documents/TAP/20190927/REC-TAP-1.1.html#tth_sEc2.1">cached results</a></em>).</p>
+<p>An example of one such request being sent with cURL:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl -X <span style="color:#e6db74">&#34;POST&#34;</span> <span style="color:#e6db74">&#34;http://voparis-tap-planeto.obspm.fr/tap/sync?REQUEST=doQuery&amp;LANG=ADQL&amp;FORMAT=JSON&amp;QUERY=SELECT%20granule_uid,%20mass,%20radius%20FROM%20exoplanet.epn_core%20WHERE%20star_name%20%3D%20%27Kepler-107%27%20ORDER%20BY%20granule_uid&#34;</span></code></pre></div>
+<p>Here&rsquo;s the same request in a more readable form:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql">POST http:<span style="color:#f92672">//</span>voparis<span style="color:#f92672">-</span>tap<span style="color:#f92672">-</span>planeto.obspm.fr<span style="color:#f92672">/</span>tap<span style="color:#f92672">/</span>sync
+<span style="color:#f92672">?</span>REQUEST<span style="color:#f92672">=</span>doQuery
+<span style="color:#f92672">&amp;</span>LANG<span style="color:#f92672">=</span>ADQL
+<span style="color:#f92672">&amp;</span>FORMAT<span style="color:#f92672">=</span>JSON
+<span style="color:#f92672">&amp;</span>QUERY<span style="color:#f92672">=</span><span style="color:#66d9ef">SELECT</span> granule_uid, mass, radius <span style="color:#66d9ef">FROM</span> exoplanet.epn_core <span style="color:#66d9ef">WHERE</span> star_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-107&#39;</span> <span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> granule_uid</code></pre></div>
+<p>As you can see, the <code>QUERY</code> parameter is indeed a pretty much regular SQL query (<em>but here&rsquo;s some <a href="https://www.gaia.ac.uk/data/gaia-data-release-1/adql-cookbook">more information</a> about ADQL specifics</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> granule_uid, mass, radius
+<span style="color:#66d9ef">FROM</span> exoplanet.epn_core
+<span style="color:#66d9ef">WHERE</span> star_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-107&#39;</span>
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> granule_uid</code></pre></div>
+<p>And as the <code>FORMAT</code> parameter is set to <code>JSON</code>, the response to this request will look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">HTTP/1.1 <span style="color:#ae81ff">200</span> OK
+Transfer-Encoding: chunked
+Date: Sun, <span style="color:#ae81ff">20</span> Feb <span style="color:#ae81ff">2022</span> 17:31:52 GMT
+Content-Type: application/json
+Server: TwistedWeb/18.9.0
+
+<span style="color:#f92672">{</span>
+    <span style="color:#e6db74">&#34;data&#34;</span>:
+    <span style="color:#f92672">[</span>
+        <span style="color:#f92672">[</span>
+            <span style="color:#e6db74">&#34;Kepler-107 b&#34;</span>,
+            0.01104,
+            0.137
+        <span style="color:#f92672">]</span>,
+        <span style="color:#f92672">[</span>
+            <span style="color:#e6db74">&#34;Kepler-107 c&#34;</span>,
+            0.02954,
+            0.142
+        <span style="color:#f92672">]</span>,
+        <span style="color:#f92672">[</span>
+            <span style="color:#e6db74">&#34;Kepler-107 d&#34;</span>,
+            0.01196,
+            0.077
+        <span style="color:#f92672">]</span>,
+        <span style="color:#f92672">[</span>
+            <span style="color:#e6db74">&#34;Kepler-107 e&#34;</span>,
+            0.02706,
+            0.259
+        <span style="color:#f92672">]</span>
+    <span style="color:#f92672">]</span>,
+    <span style="color:#e6db74">&#34;contains&#34;</span>: <span style="color:#e6db74">&#34;table&#34;</span>,
+    <span style="color:#e6db74">&#34;params&#34;</span>:
+    <span style="color:#f92672">{</span>
+        <span style="color:#e6db74">&#34;contains&#34;</span>: <span style="color:#e6db74">&#34;params&#34;</span>
+    <span style="color:#f92672">}</span>,
+    <span style="color:#e6db74">&#34;columns&#34;</span>:
+    <span style="color:#f92672">[</span>
+        <span style="color:#f92672">{</span>
+            <span style="color:#e6db74">&#34;dbtype&#34;</span>: <span style="color:#e6db74">&#34;text&#34;</span>,
+            <span style="color:#e6db74">&#34;xtype&#34;</span>: null,
+            <span style="color:#e6db74">&#34;utype&#34;</span>: null,
+            <span style="color:#e6db74">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Internal table row index Unique ID in data service, also in v2. Can be alphanumeric.&#34;</span>,
+            <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;granule_uid&#34;</span>,
+            <span style="color:#e6db74">&#34;datatype&#34;</span>: <span style="color:#e6db74">&#34;char&#34;</span>,
+            <span style="color:#e6db74">&#34;ucd&#34;</span>: <span style="color:#e6db74">&#34;meta.id&#34;</span>,
+            <span style="color:#e6db74">&#34;arraysize&#34;</span>: <span style="color:#e6db74">&#34;*&#34;</span>,
+            <span style="color:#e6db74">&#34;ref&#34;</span>: null,
+            <span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;granule_uid&#34;</span>,
+            <span style="color:#e6db74">&#34;unit&#34;</span>: <span style="color:#e6db74">&#34;&#34;</span>
+        <span style="color:#f92672">}</span>,
+        <span style="color:#f92672">{</span>
+            <span style="color:#e6db74">&#34;dbtype&#34;</span>: <span style="color:#e6db74">&#34;double precision&#34;</span>,
+            <span style="color:#e6db74">&#34;xtype&#34;</span>: null,
+            <span style="color:#e6db74">&#34;utype&#34;</span>: null,
+            <span style="color:#e6db74">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Mass of the planet&#34;</span>,
+            <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;mass&#34;</span>,
+            <span style="color:#e6db74">&#34;datatype&#34;</span>: <span style="color:#e6db74">&#34;double&#34;</span>,
+            <span style="color:#e6db74">&#34;ucd&#34;</span>: <span style="color:#e6db74">&#34;phys.mass&#34;</span>,
+            <span style="color:#e6db74">&#34;arraysize&#34;</span>: null,
+            <span style="color:#e6db74">&#34;ref&#34;</span>: null,
+            <span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;mass&#34;</span>,
+            <span style="color:#e6db74">&#34;unit&#34;</span>: <span style="color:#e6db74">&#34;&#39;jupiterMass&#39;&#34;</span>
+        <span style="color:#f92672">}</span>,
+        <span style="color:#f92672">{</span>
+            <span style="color:#e6db74">&#34;dbtype&#34;</span>: <span style="color:#e6db74">&#34;double precision&#34;</span>,
+            <span style="color:#e6db74">&#34;xtype&#34;</span>: null,
+            <span style="color:#e6db74">&#34;utype&#34;</span>: null,
+            <span style="color:#e6db74">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Radius of the planet&#34;</span>,
+            <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;radius&#34;</span>,
+            <span style="color:#e6db74">&#34;datatype&#34;</span>: <span style="color:#e6db74">&#34;double&#34;</span>,
+            <span style="color:#e6db74">&#34;ucd&#34;</span>: <span style="color:#e6db74">&#34;phys.size.radius&#34;</span>,
+            <span style="color:#e6db74">&#34;arraysize&#34;</span>: null,
+            <span style="color:#e6db74">&#34;ref&#34;</span>: null,
+            <span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;radius&#34;</span>,
+            <span style="color:#e6db74">&#34;unit&#34;</span>: <span style="color:#e6db74">&#34;&#39;jupiterRad&#39;&#34;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">]</span>
+<span style="color:#f92672">}</span></code></pre></div>
+<p>But be aware that not all the services support JSON output. Other possible formats are CSV, XML and <a href="https://www.ivoa.net/documents/VOTable/">VOTable</a> - a semi-binary format (<em>meta-information in XML and Base64-encoded data</em>), which is actually the only format that <a href="https://www.ivoa.net/documents/TAP/20190927/REC-TAP-1.1.html#tth_sEc1">is required</a> to be supported by every TAP service (<em>all other formats are optional</em>).</p>
+<p>Sure enough, I needed an programmatic way to work with these queries, and as I wasn&rsquo;t too eager to implement sending requests and processing results myself, I started looking for a library that would do that for me, and preferably that would be a Python library, as I&rsquo;m doing my data analysis in <a href="/blog/2020/05/27/jupyter-notebook-nginx/">Jupyter notebooks</a>.</p>
+<h2 id="pyvo">PyVO</h2>
+<p>Almost immediately I discovered The Extrasolar Planets Encyclopaedia <a href="http://exoplanet.eu/API/">API tutorial</a>, which is referring to <a href="https://pypi.org/project/pyvo/">PyVO</a> library.</p>
+<p>It is rather easy to use. First, install it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ pip install pyvo</code></pre></div>
+<p>and then you can use it in your Python code:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> pyvo
+<span style="color:#f92672">import</span> pandas
+<span style="color:#f92672">from</span> tabulate <span style="color:#f92672">import</span> tabulate
+
+service <span style="color:#f92672">=</span> pyvo<span style="color:#f92672">.</span>dal<span style="color:#f92672">.</span>TAPService(<span style="color:#e6db74">&#34;http://voparis-tap-planeto.obspm.fr/tap&#34;</span>)
+
+tableName <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;exoplanet.epn_core&#34;</span>
+
+fields <span style="color:#f92672">=</span> [
+    <span style="color:#e6db74">&#34;star_name&#34;</span>,
+    <span style="color:#e6db74">&#34;star_teff&#34;</span>,
+    <span style="color:#e6db74">&#34;granule_uid&#34;</span>,
+    <span style="color:#e6db74">&#34;mass&#34;</span>,
+    <span style="color:#75715e">#&#34;mass_error_min&#34;,</span>
+    <span style="color:#75715e">#&#34;mass_error_max&#34;,</span>
+    <span style="color:#e6db74">&#34;radius&#34;</span>
+    <span style="color:#75715e">#&#34;radius_error_min&#34;,</span>
+    <span style="color:#75715e">#&#34;radius_error_max&#34;,</span>
+    <span style="color:#75715e">#&#34;semi_major_axis&#34;</span>
+]
+
+starName <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Kepler-106&#34;</span>
+
+queryPlanets <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34; &#34;</span><span style="color:#f92672">.</span>join((
+    <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;SELECT </span><span style="color:#e6db74">{</span><span style="color:#e6db74">&#39;, &#39;</span><span style="color:#f92672">.</span>join(fields)<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>,
+    <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;FROM </span><span style="color:#e6db74">{</span>tableName<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>,
+    <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;WHERE star_name = &#39;</span><span style="color:#e6db74">{</span>starName<span style="color:#e6db74">}</span><span style="color:#e6db74">&#39;&#34;</span>,
+    <span style="color:#e6db74">&#34;ORDER BY granule_uid&#34;</span>
+))
+<span style="color:#75715e"># check the final query string</span>
+<span style="color:#75715e">#print(&#34;Query to execute: &#34;, queryPlanets)</span>
+
+<span style="color:#75715e"># execute the query</span>
+results <span style="color:#f92672">=</span> service<span style="color:#f92672">.</span>search(queryPlanets)
+
+print(<span style="color:#e6db74">&#34;Total planets found:&#34;</span>, len(results))
+
+<span style="color:#75715e"># fields datatypes can be extracted too</span>
+<span style="color:#75715e">#print(resultPlanets.fielddescs)</span></code></pre></div>
+<p>The <a href="https://pyvo.readthedocs.io/en/latest/api/pyvo.dal.DALResults.html">PyVO results</a> can be then printed using <a href="https://pypi.org/project/tabulate/">tabulate</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># print results as a table</span>
+print(
+    tabulate(
+        resultPlanets<span style="color:#f92672">.</span>to_table(),
+        headers<span style="color:#f92672">=</span>resultPlanets<span style="color:#f92672">.</span>fieldnames,
+        tablefmt<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;psql&#34;</span>
+    )
+)
+
+<span style="color:#75715e"># +-------------+-------------+---------------+---------+----------+</span>
+<span style="color:#75715e"># | star_name   |   star_teff | granule_uid   |    mass |   radius |</span>
+<span style="color:#75715e"># |-------------+-------------+---------------+---------+----------|</span>
+<span style="color:#75715e"># | Kepler-106  |        5858 | Kepler-106 b  | 0.01668 |    0.073 |</span>
+<span style="color:#75715e"># | Kepler-106  |        5858 | Kepler-106 c  | 0.033   |    0.223 |</span>
+<span style="color:#75715e"># | Kepler-106  |        5858 | Kepler-106 d  | 0.02549 |    0.085 |</span>
+<span style="color:#75715e"># | Kepler-106  |        5858 | Kepler-106 e  | 0.035   |    0.228 |</span>
+<span style="color:#75715e"># +-------------+-------------+---------------+---------+----------+</span></code></pre></div>
+<p>or, better yet, it can be turned into a <a href="https://pypi.org/project/pandas/">Pandas</a> object:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">resultPandas <span style="color:#f92672">=</span> results<span style="color:#f92672">.</span>to_table()<span style="color:#f92672">.</span>to_pandas(<span style="color:#e6db74">&#34;granule_uid&#34;</span>)</code></pre></div>
+<p>which can be displayed in a nicer manner, if you are using a Jupyter notebook client that supports <code>display()</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">with</span> pandas<span style="color:#f92672">.</span>option_context(<span style="color:#e6db74">&#39;display.max_rows&#39;</span>, <span style="color:#66d9ef">None</span>, <span style="color:#e6db74">&#39;display.max_columns&#39;</span>, <span style="color:#66d9ef">None</span>):
+    display(resultPandas)</code></pre></div>
+
+
+
+    <img class="image-post" src="/blog/2022/02/26/astronomy-databases-tap-adql/images/dataspell-pandas-display.png" alt="DataSpell, displaying Pandas" style="border:1px solid black;">
+
+
+<p>This screenshot is taken from <a href="https://www.jetbrains.com/dataspell/">DataSpell</a>, but <a href="https://code.visualstudio.com/docs/datascience/jupyter-notebooks">VS Code</a> supports <code>display()</code> too (<em>even though it might be underlined there as unknown</em>).</p>
+<p>Finally, results can be saved to a file:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># as a NumPy object</span>
+<span style="color:#75715e">#import numpy</span>
+<span style="color:#75715e">#numpy.save(&#34;./results.npy&#34;, resultPlanets.to_table())</span>
+<span style="color:#75715e">#tbl = numpy.load(&#34;./results.npy&#34;)</span>
+
+<span style="color:#75715e"># or as a pickle (it&#39;s a pickle! pickle fiiiiiile!)</span>
+resultPandas<span style="color:#f92672">.</span>to_pickle(<span style="color:#e6db74">&#34;./results.pkl&#34;</span>)
+<span style="color:#75715e">#tbl = pandas.read_pickle(&#34;./results.pkl&#34;)</span></code></pre></div>
+<p>If you haven&rsquo;t used Pandas before, you absolutely definitely should, as it makes <a href="https://pandas.pydata.org/docs/getting_started/intro_tutorials/03_subset_data.html#min-tut-03-subset">working with table data</a> very <a href="https://github.com/retifrav/scraps/blob/master/python/pandas.md">convenient</a>.</p>
+<h2 id="a-sandbox-application">A sandbox application</h2>
+<p>Soon enough I discovered that I need a faster way to query data, for when I&rsquo;d like to quickly check some values.</p>
+<p>Opening a Jupyter notebook in Java-based DataSpell or in Electron-based VS Code is too damn slow. All the waiting for the environment to load and for Jupyter server to start, modifying queries in cells and scrolling between results and code, urgh.</p>
+<p>Running bare Python scripts from terminal is faster, but then viewing the results isn&rsquo;t that nice, especially if there are a lot of columns in the resulting table, so it gets wrapped in the terminal window. And again, constantly switching between code editor and terminal window isn&rsquo;t very convenient.</p>
+<p>Having been annoyed enough by the inconveniences of both options, I decided to write a small GUI application for the sole purpose of executing ADQL queries and browsing results in a scrollable table. There surely must be at least several already existing applications for that, but I&rsquo;ve managed to find only <a href="http://www.star.bristol.ac.uk/~mbt/topcat/">TOPCAT</a>, which in my opinion is quite ugly, clumsy (<em>no offense, that&rsquo;s just the way Java-based applications usually are</em>) and too overloaded with functionality (<em>but that&rsquo;s more of a compliment, really</em>). So yeah, I decided to make one of my own.</p>
+<p>At first I wanted to create a native Mac OS application using <a href="https://developer.apple.com/xcode/swiftui/">SwiftUI</a>, which I&rsquo;ve been wanting to try out for a long time. But even though Mac OS is my main environment, I often work on Windows too, and sometimes on GNU/Linux too, so a cross-platform framework would be a better choice.</p>
+<p>The next candidate was Qt, but then I remembered that I read about Python binding for <a href="https://github.com/ocornut/imgui">Dear ImGui</a> - <a href="https://github.com/hoffstadt/DearPyGui">Dear PyGui</a> - which was a perfect variant, because most of the work would be then taken care of by PyVO, and I&rsquo;d only need to handle the GUI part. It&rsquo;s true that I could&rsquo;ve taken <a href="https://doc.qt.io/qtforpython/">PySide</a> or <a href="https://riverbankcomputing.com/software/pyqt/">PyQt</a> and still benefit from relying on PyVO, but I reckoned that ImGui-based application will be more lightweight and responsive, plus I wanted to try something new.</p>
+<p>And so here&rsquo;s what I&rsquo;ve come up with:</p>
+
+
+
+
+
+
+    <video  controls="yes"   class="video">
+        <source src="/blog/2022/02/26/astronomy-databases-tap-adql/video/tap-adql-sandbox.mp4" type="video/mp4">
+    </video>
+    
+    <p class="video-fallback">If video doesn’t play in your browser, you can download it <a href="/blog/2022/02/26/astronomy-databases-tap-adql/video/tap-adql-sandbox.mp4">here</a></p>
+    
+
+
+<p>Very nice indeed! Cross-platform application (<em>powered by <a href="https://www.glfw.org/">GLFW</a></em>), with almost native performance (<em>but not quite, as I notice Python ears here and there</em>) and not too horrible GUI. Some might even say, beautifully ascetic.</p>
+<p>While we are here, I can say that Dear PyGui turned out to be even better than I expected. It is quite an easy and comfortable tooling for creating GUI application. It took me just <a href="https://github.com/retifrav/tap-adql-sandbox/commit/e3c6df19329f312e1b992bb2885ab81fde99c656">3 days</a> to get from the very scratch to the working application that was executing queries and displaying results in a table widget. And most of that time I was working on styling and theme customization, rather than on the actual functionality.</p>
+<p>You can install the current application version <a href="https://pypi.org/project/tap-adql-sandbox/">from PyPI</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ pip install tap<span style="color:#f92672">-</span>adql<span style="color:#f92672">-</span>sandbox
+$ tap<span style="color:#f92672">-</span>adql<span style="color:#f92672">-</span>sandbox <span style="color:#f92672">--</span>help</code></pre></div>
+<p>And here&rsquo;s the project <a href="https://github.com/retifrav/tap-adql-sandbox">source code</a>.</p>
+<h1 id="tap-services-with-astronomical-data">TAP services with astronomical data</h1>
+<p>There are several astronomical databases that expose their data via TAP interface. So far I&rsquo;ve been working with these two:</p>
+<ul>
+<li><a href="https://exoplanetarchive.ipac.caltech.edu/">NASA Exoplanet Archive</a>: <code>https://exoplanetarchive.ipac.caltech.edu/TAP</code></li>
+<li><a href="https://padc.obspm.fr/">Paris Astronomical Data Centre</a>: <code>http://voparis-tap-planeto.obspm.fr/tap</code></li>
+</ul>
+<p>All of the TAP-services (<em>should</em>) support a certain set of standard functions. For instance, you can query the service availability:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml">$ curl http://voparis-tap-planeto.obspm.fr/tap/availability
+
+<span style="color:#f92672">&lt;avl:availability</span> <span style="color:#a6e22e">xmlns:avl=</span><span style="color:#e6db74">&#34;http://www.ivoa.net/xml/VOSIAvailability/v1.0&#34;</span> <span style="color:#a6e22e">xmlns:xsi=</span><span style="color:#e6db74">&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span> <span style="color:#a6e22e">xsi:schemaLocation=</span><span style="color:#e6db74">&#34;http://www.ivoa.net/xml/VOSIAvailability/v1.0 http://vo.ari.uni-heidelberg.de/docs/schemata/VOSIAvailability-v1.0.xsd&#34;</span><span style="color:#f92672">&gt;</span>
+    <span style="color:#f92672">&lt;avl:available&gt;</span>true<span style="color:#f92672">&lt;/avl:available&gt;</span>
+    <span style="color:#f92672">&lt;avl:upSince&gt;</span>2022-02-05T12:44:11Z<span style="color:#f92672">&lt;/avl:upSince&gt;</span>
+<span style="color:#f92672">&lt;/avl:availability&gt;</span></code></pre></div>
+<p>And get a list of available tables:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl http://voparis-tap-planeto.obspm.fr/tap/tables</code></pre></div>
+<p>which can also be queried with ADQL:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">table_name</span>, description
+<span style="color:#66d9ef">FROM</span> tap_schema.tables
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">table_name</span></code></pre></div>
+<p>as well as columns from a particular table:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">column_name</span>, datatype, description
+<span style="color:#66d9ef">FROM</span> tap_schema.columns
+<span style="color:#66d9ef">WHERE</span> <span style="color:#66d9ef">table_name</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;exoplanet.epn_core&#39;</span>
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">column_name</span></code></pre></div>
+<h2 id="about-access-and-abusing-the-service">About access and abusing the service</h2>
+<p>I haven&rsquo;t yet encountered a service that would limit access to its data, and I believe that this is the way things should be - that kind of data must remain open for the scientific community.</p>
+<p>In turn, you too need to be a responsible user - do not execute crazy queries that fetch a milliard of columns with bazillion of rows. If your query doesn&rsquo;t have narrow enough <code>WHERE</code> clause, do add a <code>TOP</code> limiter to your <code>SELECT</code>, for example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> TOP <span style="color:#ae81ff">11</span>
+    star_name, granule_uid, mass, radius
+<span style="color:#66d9ef">FROM</span> exoplanet.epn_core</code></pre></div>
+<h2 id="problems-and-challenges">Problems and challenges</h2>
+<p>Working with the data, I did stumble upon various differences and peculiarities among TAP services.</p>
+<h3 id="nasa-exoplanet-archive">NASA Exoplanet Archive</h3>
+<p>Almost all the problems I had were with <a href="https://exoplanetarchive.ipac.caltech.edu/">NASA Exoplanet Archive</a> database. At the same time, the data from NASA seems to be the most updated and trustworthy, so I have mixed feelings about this source.</p>
+<h4 id="planetary-data-is-organized-by-publications">Planetary data is organized by publications</h4>
+<p>Say you&rsquo;d like to get mass and radius of the <code>Kepler-107 b</code> planet. With PADC service the query will be this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> star_name, granule_uid, mass, radius
+<span style="color:#66d9ef">FROM</span> exoplanet.epn_core
+<span style="color:#66d9ef">WHERE</span> granule_uid <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-107 b&#39;</span>
+
+<span style="color:#75715e">-- Results found: 1
+</span><span style="color:#75715e">-- +-------------+---------------+---------+----------+
+</span><span style="color:#75715e">-- | star_name   | granule_uid   |    mass |   radius |
+</span><span style="color:#75715e">-- |-------------+---------------+---------+----------|
+</span><span style="color:#75715e">-- | Kepler-107  | Kepler-107 b  | 0.01104 |    0.137 |
+</span><span style="color:#75715e">-- +-------------+---------------+---------+----------+</span></code></pre></div>
+<p>If you&rsquo;ll try to execute a similar query with NASA service, then all of a sudden you&rsquo;ll get more than one result:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_massj, pl_radj
+<span style="color:#66d9ef">FROM</span> ps
+<span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-107 b&#39;</span>
+
+<span style="color:#75715e">-- Results found: 13
+</span><span style="color:#75715e">-- +------------+--------------+------------+-----------+
+</span><span style="color:#75715e">-- | hostname   | pl_name      |   pl_massj |   pl_radj |
+</span><span style="color:#75715e">-- |------------+--------------+------------+-----------|
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |     0.138 |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |     0.142 |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |     0.139 |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |     0.141 |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |    0.01104 |     0.137 |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     |
+</span><span style="color:#75715e">-- +------------+--------------+------------+-----------+</span></code></pre></div>
+<p>What the hell, right? 13 results instead of just one. Turns out, the data is stored by publications, which can be determined by the <code>pl_pubdate</code> column. Let&rsquo;s add it to the query:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_massj, pl_radj, pl_pubdate
+<span style="color:#66d9ef">FROM</span> ps
+<span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-107 b&#39;</span>
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span>
+
+<span style="color:#75715e">-- Results found: 13
+</span><span style="color:#75715e">-- +------------+--------------+------------+-----------+------------------+
+</span><span style="color:#75715e">-- | hostname   | pl_name      |   pl_massj |   pl_radj | pl_pubdate       |
+</span><span style="color:#75715e">-- |------------+--------------+------------+-----------+------------------|
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     | 2019-03          |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |    0.01104 |     0.137 | 2019-02          |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |     0.142 | 2018-10          |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     | 2018-08-16       |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     | 2017-08-31 00:00 |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     | 2016-07          |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |     0.138 | 2016-05          |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     | 2015-09-24       |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |     0.141 | 2015-08          |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     | 2014-12-18       |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     | 2014-12-04       |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |     0.139 | 2014-03          |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |  nan       |   nan     | 2014-01-08       |
+</span><span style="color:#75715e">-- +------------+--------------+------------+-----------+------------------+</span></code></pre></div>
+<p>That is something you need to know about NASA&rsquo;s database, otherwise you might fetch obsolete/inaccurate data for your research.</p>
+<p>Furthermore, if you&rsquo;ll need, for example, the latest radius value, then you would execute the following query:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> TOP <span style="color:#ae81ff">1</span> pl_radj
+<span style="color:#66d9ef">FROM</span> ps
+<span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-107 b&#39;</span> <span style="color:#66d9ef">AND</span> pl_radj <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span></code></pre></div>
+<p>&hellip;you would, but the results will surprise you once again, because NASA&rsquo;s <a href="#top-clause-is-broken">TOP clause is broken</a>!</p>
+<p>It becomes especially complicated if you need to get the latest value of a parameter for all the planets in the system. For now, I&rsquo;ve come up with the following CTE (<em><a href="https://docs.microsoft.com/en-us/sql/t-sql/queries/with-common-table-expression-transact-sql">common table expression</a></em>) using ranking:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span>
+(<span style="color:#66d9ef">WITH</span> latestEntries <span style="color:#66d9ef">AS</span>
+    (<span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_radj, pl_pubdate,
+    ROW_NUMBER() OVER(
+        PARTITION <span style="color:#66d9ef">BY</span> pl_name <span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">CASE</span> <span style="color:#66d9ef">WHEN</span> pl_radj <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">THEN</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">ELSE</span> <span style="color:#ae81ff">0</span> <span style="color:#66d9ef">END</span>, pl_pubdate <span style="color:#66d9ef">DESC</span>
+    ) <span style="color:#66d9ef">AS</span> rank
+    <span style="color:#66d9ef">FROM</span> ps <span style="color:#66d9ef">WHERE</span> hostname <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-107&#39;</span>)
+<span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_radj, pl_pubdate <span style="color:#66d9ef">FROM</span> latestEntries <span style="color:#66d9ef">WHERE</span> rank <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_name)
+
+<span style="color:#75715e">-- Results found: 4
+</span><span style="color:#75715e">-- +------------+--------------+-----------+--------------+
+</span><span style="color:#75715e">-- | hostname   | pl_name      |   pl_radj | pl_pubdate   |
+</span><span style="color:#75715e">-- |------------+--------------+-----------+--------------|
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 b |     0.137 | 2019-02      |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 c |     0.142 | 2019-02      |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 d |     0.077 | 2019-02      |
+</span><span style="color:#75715e">-- | Kepler-107 | Kepler-107 e |     0.259 | 2019-02      |
+</span><span style="color:#75715e">-- +------------+--------------+-----------+--------------+</span></code></pre></div>
+<p>Looks pretty complex, but I am not sure if there is any other way.</p>
+<h4 id="planets-from-the-same-system-have-different-stellar-data">Planets from the same system have different stellar data</h4>
+<p>If we take <code>HR 8799</code> system as an example, then its planet <code>HR 8799 b</code> has <code>st_teff</code> value of <code>7204.58</code> from the publication on <code>2016-08</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span>
+(<span style="color:#66d9ef">WITH</span> latestEntries <span style="color:#66d9ef">AS</span>
+    (<span style="color:#66d9ef">SELECT</span> hostname, pl_name, st_teff, pl_pubdate,
+    ROW_NUMBER() OVER(
+        PARTITION <span style="color:#66d9ef">BY</span> pl_name <span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">CASE</span> <span style="color:#66d9ef">WHEN</span> st_teff <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">THEN</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">ELSE</span> <span style="color:#ae81ff">0</span> <span style="color:#66d9ef">END</span>, pl_pubdate <span style="color:#66d9ef">DESC</span>
+    ) <span style="color:#66d9ef">AS</span> rank
+    <span style="color:#66d9ef">FROM</span> ps <span style="color:#66d9ef">WHERE</span> hostname <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;HR 8799&#39;</span>)
+<span style="color:#66d9ef">SELECT</span> hostname, pl_name, st_teff, pl_pubdate <span style="color:#66d9ef">FROM</span> latestEntries <span style="color:#66d9ef">WHERE</span> rank <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_name)
+
+<span style="color:#75715e">-- Results found: 4
+</span><span style="color:#75715e">-- +------------+-----------+-----------+--------------+
+</span><span style="color:#75715e">-- | hostname   | pl_name   |   st_teff | pl_pubdate   |
+</span><span style="color:#75715e">-- |------------+-----------+-----------+--------------|
+</span><span style="color:#75715e">-- | HR 8799    | HR 8799 b |   7204.58 | 2016-08      |
+</span><span style="color:#75715e">-- | HR 8799    | HR 8799 c |   7204.58 | 2016-08      |
+</span><span style="color:#75715e">-- | HR 8799    | HR 8799 d |   7204.58 | 2016-08      |
+</span><span style="color:#75715e">-- | HR 8799    | HR 8799 e |   7400    | 2019-03      |
+</span><span style="color:#75715e">-- +------------+-----------+-----------+--------------+</span></code></pre></div>
+<p>As this is a stellar parameter, one would expect it to be the same for every planet in the system, but as you can see other planets in that system, such as <code>HR 8799 e</code>, have different values (<em>there also might be no value at all</em>). How to know which one is the right one? Because <code>pl_pubdate</code> filed name implies that it applies to planetary parameters, and there are no <code>host_pubdate</code> or <code>star_pubdate</code> fields in the table.</p>
+<p>So we can only assume that <code>pl_pubdate</code> applies to stellar parameters too, and that means that if you are working with just <code>HR 8799 b</code>, and you are not interested in other planets, still you cannot just take <code>7204.58</code> value, you&rsquo;ll need to execute an additional query to get the first not null <code>st_teff</code> value ordered by publication date (<em>yes, also with CTE and ranking, because <a href="#top-clause-is-broken">TOP is broken</a></em>) from all the planets in the system.</p>
+<h4 id="no-way-to-get-the-latest-stellar-data">No way to get the latest stellar data</h4>
+<p>Following the previous issue, there actually seems to no way to get the actually latest stellar data. For instance, on <a href="https://exoplanetarchive.ipac.caltech.edu/overview/HR%208799">this page</a> we can see that this very same <code>HR 8799</code> star has even newer publication from <a href="https://iopscience.iop.org/article/10.3847/1538-3881/abd802/pdf">Swastik et al. 2021</a>, which states <code>st_teff</code> value of <code>7339</code>:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/26/astronomy-databases-tap-adql/images/st_teff.png" alt="Unavailable st_teff values in NASA database">
+
+
+<p>How can one get this value from via TAP interface? Or the <code>7376.66</code> value from &ldquo;<em>Gaia DR2</em>&rdquo;? Neither of these are available in the <code>ps</code> table. Is there some other table with all the stellar data? And can it be joined with <code>ps</code> table by the <code>hostname</code> or some other identifier? I didn&rsquo;t find answers to that.</p>
+<h4 id="top-clause-is-broken">TOP clause is broken</h4>
+<p>So yeah, here are the radius values for the <code>Kepler-107 b</code> planet by publication date:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> pl_radj, pl_pubdate
+<span style="color:#66d9ef">FROM</span> ps
+<span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-107 b&#39;</span>
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span>
+
+<span style="color:#75715e">-- Results found: 13
+</span><span style="color:#75715e">-- +-----------+------------------+
+</span><span style="color:#75715e">-- |   pl_radj | pl_pubdate       |
+</span><span style="color:#75715e">-- |-----------+------------------|
+</span><span style="color:#75715e">-- |   nan     | 2019-03          |
+</span><span style="color:#75715e">-- |     0.137 | 2019-02          |
+</span><span style="color:#75715e">-- |     0.142 | 2018-10          |
+</span><span style="color:#75715e">-- |   nan     | 2018-08-16       |
+</span><span style="color:#75715e">-- |   nan     | 2017-08-31 00:00 |
+</span><span style="color:#75715e">-- |   nan     | 2016-07          |
+</span><span style="color:#75715e">-- |     0.138 | 2016-05          |
+</span><span style="color:#75715e">-- |   nan     | 2015-09-24       |
+</span><span style="color:#75715e">-- |     0.141 | 2015-08          |
+</span><span style="color:#75715e">-- |   nan     | 2014-12-18       |
+</span><span style="color:#75715e">-- |   nan     | 2014-12-04       |
+</span><span style="color:#75715e">-- |     0.139 | 2014-03          |
+</span><span style="color:#75715e">-- |   nan     | 2014-01-08       |
+</span><span style="color:#75715e">-- +-----------+------------------+</span></code></pre></div>
+<p>As you want to get the latest value, that would be the query you&rsquo;d normally execute:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> TOP <span style="color:#ae81ff">1</span> pl_radj, pl_pubdate
+<span style="color:#66d9ef">FROM</span> ps
+<span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-107 b&#39;</span> <span style="color:#66d9ef">AND</span> pl_radj <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span></code></pre></div>
+<p>but here are the results that you will actually get:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#75715e">-- Results found: 1
+</span><span style="color:#75715e">-- +-----------+--------------+
+</span><span style="color:#75715e">-- |   pl_radj | pl_pubdate   |
+</span><span style="color:#75715e">-- |-----------+--------------|
+</span><span style="color:#75715e">-- |     0.138 | 2016-05      |
+</span><span style="color:#75715e">-- +-----------+--------------+</span></code></pre></div>
+<p>I know, right, why in the ass did it return <code>0.138</code> value from <code>2016-05</code> instead of <code>0.137</code> from <code>2019-02</code>? Go figure!</p>
+<p>I sent a detailed bugreport with steps to reproduce the problem to <a href="https://exoplanetarchive.ipac.caltech.edu/cgi-bin/Helpdesk/nph-genTicketForm">their support</a> more than a month ago, but the issue is still not fixed. I did, however, received two e-mails from the support system with notifications that my bugreport is still being processed, so hopefully eventually this will be fixed. And who knows for how long it has been present already (<em>from the very beginning, I imagine</em>)? Could it even be that I&rsquo;m the first one who noticed and/or bothered to report it?</p>
+<p>As a workaround one can use the following CTE with ranking:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span>
+(<span style="color:#66d9ef">WITH</span> latestEntries <span style="color:#66d9ef">AS</span>
+    (<span style="color:#66d9ef">SELECT</span> pl_radj, pl_pubdate,
+    ROW_NUMBER() OVER(
+        PARTITION <span style="color:#66d9ef">BY</span> pl_name <span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">CASE</span> <span style="color:#66d9ef">WHEN</span> pl_radj <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">THEN</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">ELSE</span> <span style="color:#ae81ff">0</span> <span style="color:#66d9ef">END</span>, pl_pubdate <span style="color:#66d9ef">DESC</span>
+    ) <span style="color:#66d9ef">AS</span> rank
+    <span style="color:#66d9ef">FROM</span> ps <span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-107 b&#39;</span>)
+<span style="color:#66d9ef">SELECT</span> pl_radj, pl_pubdate <span style="color:#66d9ef">FROM</span> latestEntries <span style="color:#66d9ef">WHERE</span> rank <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">Results</span> found<span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">1</span>
+<span style="color:#66d9ef">+-----------+--------------+</span>
+<span style="color:#f92672">|</span>   pl_radj <span style="color:#f92672">|</span> pl_pubdate   <span style="color:#f92672">|</span>
+<span style="color:#f92672">|-----------+--------------|</span>
+<span style="color:#f92672">|</span>     <span style="color:#ae81ff">0.137</span> <span style="color:#f92672">|</span> <span style="color:#ae81ff">2019</span><span style="color:#f92672">-</span><span style="color:#ae81ff">02</span>      <span style="color:#f92672">|</span>
+<span style="color:#f92672">+-----------+--------------+</span></code></pre></div>
+<p>Yes, it is overcomplicated, but it works.</p>
+<h3 id="paris-astronomical-data-centre">Paris Astronomical Data Centre</h3>
+<p>The PADC database has issues too.</p>
+<h4 id="obsolete-data">Obsolete data</h4>
+<p>Quite often the data is just obsolete. If you compare mass, radius and other parameters for the same planets in PADC and then in NASA, you&rsquo;ll see that PADC data lags behind (<em>with years of delay</em>).</p>
+<p>Let&rsquo;s take <code>Kepler-11 d</code> planet as an example. Here are its mass and radius from PADC:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> granule_uid, mass, radius
+<span style="color:#66d9ef">FROM</span> exoplanet.epn_core
+<span style="color:#66d9ef">WHERE</span> granule_uid <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-11 d&#39;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">+---------------+--------+----------+
+| granule_uid   |   mass |   radius |
+|---------------+--------+----------|
+| Kepler-11 d   |  0.023 |    0.278 |
++---------------+--------+----------+</code></pre></div>
+<p>and here are its mass and radius from NASA:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> pl_name, pl_massj, pl_radj, pl_pubdate
+<span style="color:#66d9ef">FROM</span> ps
+<span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-11 d&#39;</span> <span style="color:#66d9ef">AND</span> (pl_massj <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">OR</span> pl_radj <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>)
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">+-------------+------------+-----------+--------------+
+| pl_name     |   pl_massj |   pl_radj | pl_pubdate   |
+|-------------+------------+-----------+--------------|
+| Kepler-11 d |   nan      |     0.3   | 2018-10      |
+| Kepler-11 d |     0.0214 |     0.294 | 2017-07      |
+| Kepler-11 d |   nan      |     0.301 | 2016-05      |
+| Kepler-11 d |     0.0228 |   nan     | 2014-08      |
+| Kepler-11 d |     0.021  |     0.265 | 2014-05      |
+<span style="display:block;width:100%;background-color:#3c3d38">| Kepler-11 d |     0.023  |     0.278 | 2013-06      |
+</span>| Kepler-11 d |     0.019  |     0.306 | 2011-02      |
++-------------+------------+-----------+--------------+</code></pre></div>
+<p>So what PADC has is the data from <code>2013-06</code> publication, while there were at least 5 new publications with updated data since then!</p>
+<p>Here&rsquo;s another example - planet <code>Kepler-10 b</code>. Data from PADC:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> granule_uid, mass, radius
+<span style="color:#66d9ef">FROM</span> exoplanet.epn_core
+<span style="color:#66d9ef">WHERE</span> granule_uid <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-10 b&#39;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">+---------------+--------+----------+
+| granule_uid   |   mass |   radius |
+|---------------+--------+----------|
+| Kepler-10 b   | 0.0145 |    0.132 |
++---------------+--------+----------+</code></pre></div>
+<p>and data from NASA:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> pl_name, pl_massj, pl_radj, pl_pubdate
+<span style="color:#66d9ef">FROM</span> ps
+<span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-10 b&#39;</span> <span style="color:#66d9ef">AND</span> (pl_massj <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">OR</span> pl_radj <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>)
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">+-------------+------------+-----------+--------------+
+| pl_name     |   pl_massj |   pl_radj | pl_pubdate   |
+|-------------+------------+-----------+--------------|
+| Kepler-10 b |    0.01123 |     0.133 | 2019-09      |
+| Kepler-10 b |  nan       |     0.133 | 2018-10      |
+| Kepler-10 b |    0.01019 |   nan     | 2017-10      |
+| Kepler-10 b |  nan       |     0.135 | 2016-05      |
+| Kepler-10 b |    0.0117  |     0.131 | 2016-03      |
+| Kepler-10 b |  nan       |     0.131 | 2015-08      |
+<span style="display:block;width:100%;background-color:#3c3d38">| Kepler-10 b |    0.0145  |     0.132 | 2015-05      |
+</span>| Kepler-10 b |    0.01    |     0.131 | 2014-07      |
+| Kepler-10 b |    0.01447 |     0.13  | 2014-02      |
+| Kepler-10 b |    0.014   |     0.126 | 2011-03      |
++-------------+------------+-----------+--------------+</code></pre></div>
+<p>Again, PADC&rsquo;s data is from <code>2015-05</code>, and since then there were at least 6 new publications with updated data!</p>
+<p>There are many planets whose data is like that in PADC. To make things worse, there is no way to determine in automated manner how old the data in PADC is, because it doesn&rsquo;t have a field similar to NASA&rsquo;s <code>pl_pubdate</code>. There are <code>updated</code> and <code>modification_date</code> fields, which look promising, but here&rsquo;s what they return for the <code>Kepler-10 b</code> planet:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> granule_uid, mass, radius, updated, modification_date
+<span style="color:#66d9ef">FROM</span> exoplanet.epn_core
+<span style="color:#66d9ef">WHERE</span> granule_uid <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-10 b&#39;</span>
+
+<span style="color:#75715e">-- +---------------+--------+----------+-----------+---------------------+
+</span><span style="color:#75715e">-- | granule_uid   |   mass |   radius | updated   | modification_date   |
+</span><span style="color:#75715e">-- |---------------+--------+----------+-----------+---------------------|
+</span><span style="color:#75715e">-- | Kepler-10 b   | 0.0145 |    0.132 |           | 2021-02-05T07:00:00 |
+</span><span style="color:#75715e">-- +---------------+--------+----------+-----------+---------------------+</span></code></pre></div>
+<p>So <code>updated</code> is just empty, and <code>modification_date</code> states a date that is later than the latest <code>pl_pubdate</code> from NASA, but still PADC stores values that have been obsolete for several years, so you cannot rely on this field either.</p>
+<h4 id="untrustworthy-data">Untrustworthy data</h4>
+<p>With <a href="http://exoplanet.eu/catalog/k2-266_b/">K2-266 b</a> planet as an example, there is mass value of <code>0.0355</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> granule_uid, mass
+<span style="color:#66d9ef">FROM</span> exoplanet.epn_core
+<span style="color:#66d9ef">WHERE</span> granule_uid <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;K2-266 b&#39;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">+---------------+--------+
+| granule_uid   |   mass |
+|---------------+--------|
+| K2-266 b      | 0.0355 |
++---------------+--------+</code></pre></div>
+<p>but there is no referred article, so it is unknown where this value originates from.</p>
+<p>If we query the same data from NASA, then it returns null/nan, which is correct, as there is no publication stating this mass:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> pl_name, pl_massj
+<span style="color:#66d9ef">FROM</span> ps
+<span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;K2-266 b&#39;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">+-----------+------------+
+| pl_name   |   pl_massj |
+|-----------+------------|
+| K2-266 b  |        nan |
++-----------+------------+</code></pre></div>
+<p>So where did PADC got the <code>0.0355</code> value from?</p>
+<p>Or here&rsquo;s another example, with <a href="http://exoplanet.eu/catalog/kepler-167_e/">Kepler-167 e</a> planet. This one does have a <a href="https://arxiv.org/pdf/1603.00042.pdf">source article</a>, but in there it&rsquo;s only a theory that this planet mass might be in a range from 0.3 to 50 mass of Jupiter, and yet PADC states that the mass is <code>4.0</code> (<em>why on earth exactly <code>4.0</code>?</em>) with the error of <code>-3.7</code>/<code>+46.0</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> granule_uid, mass, mass_error_min, mass_error_max
+<span style="color:#66d9ef">FROM</span> exoplanet.epn_core
+<span style="color:#66d9ef">WHERE</span> granule_uid <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-167 e&#39;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">+---------------+--------+------------------+------------------+
+| granule_uid   |   mass |   mass_error_min |   mass_error_max |
+|---------------+--------+------------------+------------------|
+| Kepler-167 e  |      <span style="color:#ae81ff">4</span> |              3.7 |               <span style="color:#ae81ff">46</span> |
++---------------+--------+------------------+------------------+</code></pre></div>
+<p>Here&rsquo;s what NASA has for this planet:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> pl_name, pl_massj, pl_massjerr2, pl_massjerr1, pl_pubdate
+<span style="color:#66d9ef">FROM</span> ps
+<span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-167 e&#39;</span>
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">+--------------+------------+----------------+----------------+------------------+
+| pl_name      |   pl_massj |   pl_massjerr2 |   pl_massjerr1 | pl_pubdate       |
+|--------------+------------+----------------+----------------+------------------|
+| Kepler-167 e |        nan |            nan |            nan | 2019-03          |
+| Kepler-167 e |        nan |            nan |            nan | 2018-10          |
+| Kepler-167 e |        nan |            nan |            nan | 2018-08-16       |
+| Kepler-167 e |        nan |            nan |            nan | 2017-08-31 00:00 |
+| Kepler-167 e |        nan |            nan |            nan | 2016-04          |
+| Kepler-167 e |        nan |            nan |            nan | 2014-12-18       |
+| Kepler-167 e |        nan |            nan |            nan | 2014-12-04       |
+| Kepler-167 e |        nan |            nan |            nan | 2014-01-08       |
++--------------+------------+----------------+----------------+------------------+</code></pre></div>
+<p>null/nan values for mass and errors, as it should be, because neither of the publications states these values.</p>
+<h4 id="different-names-for-star-and-planets">Different names for star and planets</h4>
+<p>In NASA database there is a system <a href="https://exoplanetarchive.ipac.caltech.edu/overview/Kepler-89">Kepler-89</a>. It&rsquo;s a binary system, meaning that it has 2 stars, <code>Kepler-89 B</code> and <code>KOI-94</code>:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/26/astronomy-databases-tap-adql/images/nasa-binary-system.png" alt="Binary system in NASA" style="border:1px solid black;">
+
+
+<p>If you query planets from <code>KOI-94</code> system in NASA database, then you&rsquo;ll get this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> pl_name
+<span style="color:#66d9ef">FROM</span> ps
+<span style="color:#66d9ef">WHERE</span> hostname <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;KOI-94&#39;</span>
+<span style="color:#66d9ef">GROUP</span> <span style="color:#66d9ef">BY</span> pl_name
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_name</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">+-----------+
+| pl_name   |
+|-----------|
+| KOI-94 b  |
+| KOI-94 c  |
+| KOI-94 d  |
+| KOI-94 e  |
++-----------+</code></pre></div>
+<p>But if you query the same from PADC:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> granule_uid
+<span style="color:#66d9ef">FROM</span> exoplanet.epn_core
+<span style="color:#66d9ef">WHERE</span> star_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;KOI-94&#39;</span>
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> granule_uid</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">+---------------+
+| granule_uid   |
+|---------------|
+| Kepler-89 b   |
+| Kepler-89 c   |
+| Kepler-89 d   |
+| Kepler-89 e   |
++---------------+</code></pre></div>
+<p>then all of the sudden the planets names are different. Wut.</p>
+<p>And so if you&rsquo;ll want to cross-check or enrich the data you got from one database with the data from another, you&rsquo;ll need to keep in mind that that the planets might have different names there. For automated processing that means that you&rsquo;ll need to keep a list of such mismatches to map names between databases (<em>as if you didn&rsquo;t have enough things to worry about already</em>).</p>
+<h3 id="overall">Overall</h3>
+<p>Pretty concerning, right, that being a astronomer / planetary scientist you don&rsquo;t have a reliable source of data about stars and planets.</p>
+<p>Why there is more than one database about space objects, each containing intersecting/overlapping data? Why it is not one common database instead?</p>
+<p>Why these databases first of all have different numbers of stars and planets, and secondly have different data about the same stars and planets? How can researcher know which one to use, which one has the most recent / trustworthy data? Why there is no even an agreement about naming, as different databases have different names for the same stars and planets?</p>
+<p>C такими базулями нам не летать к далёкому космосу.</p>
+<p>On the bright side, though, having at least these databases free to use for any researcher is tremendously better than having closed/private databases or no databases at all. And hopefully the problems that I described in the article will eventually find a solution.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/science/">science</a><a class="tag" href="https://retifrav.github.io/tags/python/">python</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div style="border:2px orange solid; background-color: floralwhite; border-radius:0.5rem; padding: 10px 14px; font-style:italic; font-size:0.9em;">
+              If you'd like to comment the article, you can do it on the
+              <a href="https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#remark42" style="font-weight:bold;">
+                  original website</a>. This one is just a mirror without comments.
+          </div>
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2022,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        <iframe src="https://github.com/sponsors/retifrav/button"
+            height="35" style="border:0;"
+            title="You can sponsor me">
+        </iframe>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5"
+                  data-telegram-post="decovar/306" data-width="100%" data-userpic="false">
+              </script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (63)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (39)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (35)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (32)</a></li>
+                  
+                  <li><a href="/tags/review">review (27)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (24)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (24)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (14)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (13)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (11)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (7)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/azure">azure (2)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/science">science (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>
