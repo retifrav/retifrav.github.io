@@ -60,7 +60,7 @@
 </svg> 2022-02-26 18:34:15 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 21 min read</div>
+</svg> 22 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -92,6 +92,7 @@
                 <li><a href="#planets-from-the-same-system-have-different-stellar-data">Planets from the same system have different stellar data</a></li>
                 <li><a href="#no-way-to-get-the-latest-stellar-data">No way to get the latest stellar data</a></li>
                 <li><a href="#top-clause-is-broken">TOP clause is broken</a></li>
+                <li><a href="#missing-uncertainties-columns">Missing uncertainties columns</a></li>
               </ul>
             </li>
             <li><a href="#paris-astronomical-data-centre">Paris Astronomical Data Centre</a>
@@ -350,7 +351,7 @@ $ tap<span style="color:#f92672">-</span>adql<span style="color:#f92672">-</span
 <h2 id="problems-and-challenges">Problems and challenges</h2>
 <p>Working with the data, I did stumble upon various differences and peculiarities among TAP services.</p>
 <h3 id="nasa-exoplanet-archive">NASA Exoplanet Archive</h3>
-<p>Almost all the problems I had were with <a href="https://exoplanetarchive.ipac.caltech.edu/">NASA Exoplanet Archive</a> database. At the same time, the data from NASA seems to be the most updated and trustworthy, so I have mixed feelings about this source.</p>
+<p>Almost all the problems I had were with NASA Exoplanet Archive database. At the same time, the data from NASA seems to be the most updated and trustworthy, so I have mixed feelings about this source.</p>
 <h4 id="planetary-data-is-organized-by-publications">Planetary data is organized by publications</h4>
 <p>Say you&rsquo;d like to get mass and radius of the <code>Kepler-107 b</code> planet. With PADC service the query will be this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> star_name, granule_uid, mass, radius
@@ -517,6 +518,40 @@ $ tap<span style="color:#f92672">-</span>adql<span style="color:#f92672">-</span
 |     0.137 | 2019-02      |
 +-----------+--------------+</code></pre></div>
 <p>Yes, it is overcomplicated, but it works.</p>
+<h4 id="missing-uncertainties-columns">Missing uncertainties columns</h4>
+<p>Documentation <a href="https://exoplanetarchive.ipac.caltech.edu/docs/API_PS_columns.html">claims</a> that there are uncertainties values for parameters like <code>ra</code>, <code>dec</code>, <code>glat</code>, <code>glon</code> and others:</p>
+
+
+
+    <img class="image-post" src="/blog/2022/02/26/astronomy-databases-tap-adql/images/nasa-missing-uncertainties.png" alt="NASA, missing uncertainties columns">
+
+
+<p>However, in reality you will get the following error trying to <code>SELECT</code> them:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">ORA-00904: <span style="color:#e6db74">&#39;DECERR1&#39;</span>: invalid identifier</code></pre></div>
+<p>And indeed, there are no such columns in the table:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">column_name</span>, datatype, description
+<span style="color:#66d9ef">FROM</span> tap_schema.columns
+<span style="color:#66d9ef">WHERE</span> <span style="color:#66d9ef">table_name</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;ps&#39;</span> <span style="color:#66d9ef">AND</span>
+(
+    <span style="color:#66d9ef">column_name</span> <span style="color:#66d9ef">LIKE</span> <span style="color:#e6db74">&#39;ra%&#39;</span>
+    <span style="color:#66d9ef">OR</span> <span style="color:#66d9ef">column_name</span> <span style="color:#66d9ef">LIKE</span> <span style="color:#e6db74">&#39;dec%&#39;</span>
+    <span style="color:#66d9ef">OR</span> <span style="color:#66d9ef">column_name</span> <span style="color:#66d9ef">LIKE</span> <span style="color:#e6db74">&#39;glat%&#39;</span>
+    <span style="color:#66d9ef">OR</span> <span style="color:#66d9ef">column_name</span> <span style="color:#66d9ef">LIKE</span> <span style="color:#e6db74">&#39;glon%&#39;</span>
+    <span style="color:#66d9ef">OR</span> <span style="color:#66d9ef">column_name</span> <span style="color:#66d9ef">LIKE</span> <span style="color:#e6db74">&#39;elat%&#39;</span>
+    <span style="color:#66d9ef">OR</span> <span style="color:#66d9ef">column_name</span> <span style="color:#66d9ef">LIKE</span> <span style="color:#e6db74">&#39;elon%&#39;</span>
+)
+<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">column_name</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">+---------------+------------+--------------------------+
+| column_name   | datatype   | description              |
+|---------------+------------+--------------------------|
+| dec           | double     | Dec <span style="color:#f92672">[</span>decimal<span style="color:#f92672">]</span>            |
+| elat          | double     | Ecliptic Latitude <span style="color:#f92672">[</span>deg<span style="color:#f92672">]</span>  |
+| elon          | double     | Ecliptic Longitude <span style="color:#f92672">[</span>deg<span style="color:#f92672">]</span> |
+| glat          | double     | Galactic Latitude <span style="color:#f92672">[</span>deg<span style="color:#f92672">]</span>  |
+| glon          | double     | Galactic Longitude <span style="color:#f92672">[</span>deg<span style="color:#f92672">]</span> |
+| ra            | double     | RA <span style="color:#f92672">[</span>decimal<span style="color:#f92672">]</span>             |
++---------------+------------+--------------------------+</code></pre></div>
+<p>Why then they are listed in the documentation?</p>
 <h3 id="paris-astronomical-data-centre">Paris Astronomical Data Centre</h3>
 <p>The PADC database has issues too.</p>
 <h4 id="obsolete-data">Obsolete data</h4>
