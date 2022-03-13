@@ -5,7 +5,7 @@
     <title>How to create a Windows service | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2017/02/06/how-to-create-a-windows-service/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -85,9 +85,7 @@
 <p>Open Visual Studio and create new <em>Windows Service</em> project:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-new-project.png" alt="Visual Studio - New Project">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-new-project.png" alt="Visual Studio - New Project">
 
 <p>I named it <code>SillyService</code>.</p>
 <p>The project starts with opened <code>Service1.cs</code>. Rename it to <code>Service.cs</code>. Actually, it does not matter, but looks better.</p>
@@ -99,130 +97,116 @@
 <p>But now we need <em>Design</em>-mode. Click with right button on any free space of the edit area (it&rsquo;s all free, because we haven&rsquo;t added anything yet) and choose <code>Properties</code>. Edit them like this (just change the <code>ServiceName</code>):</p>
 
 
-
-    <img class="image-post" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-properties.png" alt="Visual Studio - Service Properties">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-properties.png" alt="Visual Studio - Service Properties">
 
 <p>Now find the sliding <strong>Toolbox</strong> on the left and drag the <code>EventLog</code> element from there into edit area of <code>Service.cs</code> opened in <em>Design</em> mode:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-toolbox-log.png" alt="Visual Studio - Toolbox">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-toolbox-log.png" alt="Visual Studio - Toolbox">
 
 <p>Click on it and choose <code>Properties</code>. Edit them like this:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-log-properties.png" alt="Visual Studio - EventLog Properties">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-log-properties.png" alt="Visual Studio - EventLog Properties">
 
 <p>From all my experiments I got that <code>Log</code> and <code>Source</code> should have different names (and be different from the name of service itself). So, I added <code>_log</code> and <code>_source</code> suffixes accordingly.</p>
 <p>Ok, that&rsquo;s done. Now right-click somewhere at free space of the edit area of <code>Service.cs</code> (still in <em>Design</em> mode) and choose <code>Add Installer</code>:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-add-installer.png" alt="Visual Studio - Add Installer">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-add-installer.png" alt="Visual Studio - Add Installer">
 
 <p>A new document will appear in a separate tab containing two elements: <strong>serviceProcessInstaller</strong> and <strong>serviceInstaller</strong>, both also available in two modes (<em>Design</em> and <em>View Code</em>). Edit <code>Properties</code> for both elements like this:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-installer-properties.png" alt="Visual Studio - Installer Properties">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-installer-properties.png" alt="Visual Studio - Installer Properties">
 
 <p>It&rsquo;s about giving proper names, description and choosing the right authority level (<code>LocalSystem</code>).</p>
 <p>Now let&rsquo;s create some settings for the service. Right-click on project and choose <code>Properties</code>:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-project-properties.png" alt="Visual Studio - Project Properties">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-project-properties.png" alt="Visual Studio - Project Properties">
 
 <p>Go to <code>Settings</code> tab and click on the only label there (<em>This project does not contain&hellip;</em>). The settings file will be created, and it will be displayed as a table. We will create an <strong>int</strong> parameter there - <code>timerInterval</code> - which will store a value for timer (how often our service should perform some action):</p>
 
 
-
-    <img class="image-post" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-settings.png" alt="Visual Studio - Project Settings">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-settings.png" alt="Visual Studio - Project Settings">
 
 <p>Save everything and open <code>Service.cs</code> in <em>View Code</em> mode (right-click on the file in <strong>Solution Explorer</strong>). We will implement some actual stuff that our service will do, which is to write a text string to the <strong>Events Log</strong> every 10 seconds:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">using</span> System.Diagnostics;
-<span style="color:#66d9ef">using</span> System.Reflection;
-<span style="color:#66d9ef">using</span> System.ServiceProcess;
-<span style="color:#66d9ef">using</span> System.Text;
-
-<span style="color:#66d9ef">namespace</span> SillyService
-{
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">partial</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Service</span> : ServiceBase
-    {
-        <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">/// Main timer
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">private</span> System.Timers.Timer timer2nextUpdate;
-        <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">/// Timer interval in seconds
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> timerInterval = Properties.Settings.Default.timerInterval;
-        <span style="color:#75715e">// here you can see how this value is being pulled out from Settings
-</span><span style="color:#75715e"></span>
-        <span style="color:#66d9ef">public</span> Service()
-        {
-            InitializeComponent();
-
-            <span style="color:#75715e">// create new Source if it doesn&#39;t exist
-</span><span style="color:#75715e"></span>            EventSourceCreationData escd = <span style="color:#66d9ef">new</span> EventSourceCreationData(eventLog.Source, eventLog.Log);
-            <span style="color:#75715e">// eventLog instance was created in Service.cs in Design mode, as you remember
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">if</span> (!EventLog.SourceExists(eventLog.Source))
-            {
-                EventLog.CreateEventSource(escd);
-            }
-        }
-
-        <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnStart(<span style="color:#66d9ef">string</span>[] args)
-        {
-            <span style="color:#75715e">// using System.Text;
-</span><span style="color:#75715e"></span>            StringBuilder greet = <span style="color:#66d9ef">new</span> StringBuilder()
-                .Append(<span style="color:#e6db74">&#34;SillyService has been started.\n\n&#34;</span>)
-                .Append(<span style="color:#66d9ef">string</span>.Format(<span style="color:#e6db74">&#34;Timer interval (in seconds): {0}\n&#34;</span>, timerInterval))
-                <span style="color:#75715e">// using System.Reflection;
-</span><span style="color:#75715e"></span>                .Append(<span style="color:#66d9ef">string</span>.Format(<span style="color:#e6db74">&#34;Path to the executable: {0}&#34;</span>, Assembly.GetExecutingAssembly().Location));
-            write2log(greet.ToString(), EventLogEntryType.Information);
-
-            <span style="color:#75715e">// timer settings
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">this</span>.timer2nextUpdate = <span style="color:#66d9ef">new</span> System.Timers.Timer(timerInterval * <span style="color:#ae81ff">1000</span>);
-            <span style="color:#66d9ef">this</span>.timer2nextUpdate.AutoReset = <span style="color:#66d9ef">true</span>;
-            <span style="color:#66d9ef">this</span>.timer2nextUpdate.Elapsed
-                <span style="color:#75715e">// what timer&#39;s event will do
-</span><span style="color:#75715e"></span>                += <span style="color:#66d9ef">new</span> System.Timers.ElapsedEventHandler(<span style="color:#66d9ef">this</span>.timer2nextUpdate_tick);
-            <span style="color:#66d9ef">this</span>.timer2nextUpdate.Start();
-        }
-
-        <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnStop()
-        {
-            write2log(<span style="color:#e6db74">&#34;SillyService has been stopped&#34;</span>, EventLogEntryType.Information);
-        }
-
-        <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">/// Writing to log
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">/// &lt;param name=&#34;message&#34;&gt;message text&lt;/param&gt;
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">/// &lt;param name=&#34;type&#34;&gt;type of the event&lt;/param&gt;
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> write2log(<span style="color:#66d9ef">string</span> message, EventLogEntryType type)
-        {
-            <span style="color:#66d9ef">try</span> { eventLog.WriteEntry(message, type); } <span style="color:#66d9ef">catch</span> { }
-        }
-
-        <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">/// timer&#39;s event
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> timer2nextUpdate_tick(<span style="color:#66d9ef">object</span> sender, System.Timers.ElapsedEventArgs e)
-        {
-            write2log(<span style="color:#e6db74">&#34;ololo&#34;</span>, EventLogEntryType.Information);
-        }
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Diagnostics;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Reflection;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.ServiceProcess;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Text;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> SillyService
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">partial</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Service</span> : ServiceBase
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// Main timer</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> System.Timers.Timer timer2nextUpdate;
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// Timer interval in seconds</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> timerInterval = Properties.Settings.Default.timerInterval;
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// here you can see how this value is being pulled out from Settings</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> Service()
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            InitializeComponent();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// create new Source if it doesn&#39;t exist</span>
+</span></span><span style="display:flex;"><span>            EventSourceCreationData escd = <span style="color:#66d9ef">new</span> EventSourceCreationData(eventLog.Source, eventLog.Log);
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// eventLog instance was created in Service.cs in Design mode, as you remember</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (!EventLog.SourceExists(eventLog.Source))
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                EventLog.CreateEventSource(escd);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnStart(<span style="color:#66d9ef">string</span>[] args)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// using System.Text;</span>
+</span></span><span style="display:flex;"><span>            StringBuilder greet = <span style="color:#66d9ef">new</span> StringBuilder()
+</span></span><span style="display:flex;"><span>                .Append(<span style="color:#e6db74">&#34;SillyService has been started.\n\n&#34;</span>)
+</span></span><span style="display:flex;"><span>                .Append(<span style="color:#66d9ef">string</span>.Format(<span style="color:#e6db74">&#34;Timer interval (in seconds): {0}\n&#34;</span>, timerInterval))
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// using System.Reflection;</span>
+</span></span><span style="display:flex;"><span>                .Append(<span style="color:#66d9ef">string</span>.Format(<span style="color:#e6db74">&#34;Path to the executable: {0}&#34;</span>, Assembly.GetExecutingAssembly().Location));
+</span></span><span style="display:flex;"><span>            write2log(greet.ToString(), EventLogEntryType.Information);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// timer settings</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">this</span>.timer2nextUpdate = <span style="color:#66d9ef">new</span> System.Timers.Timer(timerInterval * <span style="color:#ae81ff">1000</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">this</span>.timer2nextUpdate.AutoReset = <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">this</span>.timer2nextUpdate.Elapsed
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// what timer&#39;s event will do</span>
+</span></span><span style="display:flex;"><span>                += <span style="color:#66d9ef">new</span> System.Timers.ElapsedEventHandler(<span style="color:#66d9ef">this</span>.timer2nextUpdate_tick);
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">this</span>.timer2nextUpdate.Start();
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnStop()
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            write2log(<span style="color:#e6db74">&#34;SillyService has been stopped&#34;</span>, EventLogEntryType.Information);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// Writing to log</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// &lt;param name=&#34;message&#34;&gt;message text&lt;/param&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// &lt;param name=&#34;type&#34;&gt;type of the event&lt;/param&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> write2log(<span style="color:#66d9ef">string</span> message, EventLogEntryType type)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">try</span> { eventLog.WriteEntry(message, type); } <span style="color:#66d9ef">catch</span> { }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// timer&#39;s event</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> timer2nextUpdate_tick(<span style="color:#66d9ef">object</span> sender, System.Timers.ElapsedEventArgs e)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            write2log(<span style="color:#e6db74">&#34;ololo&#34;</span>, EventLogEntryType.Information);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Build the project.</p>
 <h1 id="installing-and-launching-the-service">Installing and launching the service</h1>
 <p>Now you have 2 files in the <code>path\to\SillyService\bin\Debug</code> directory:</p>
@@ -233,28 +217,22 @@
 <p>There are actually more files there, but you don&rsquo;t need them. Copy these 2 into some new directory, like <code>C:\services\SillyService\</code>. By the way, later you might want to use <em>Release</em> build rather then <em>Debug</em>.</p>
 <p>Make sure, that <strong>Services</strong> and <strong>Event Viewer</strong> applications are closed.</p>
 <p>Open command line with administrator rights (or, if you don&rsquo;t want to deal with command line, use <a href="/blog/2015/05/23/nwshelper/">my application</a>), find <code>InstallUtil.exe</code> path (mine was here: <code>C:\Windows\Microsoft.NET\Framework\v4.0.30319\</code>) and execute the following:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">C:<span style="color:#ae81ff">\W</span>indows<span style="color:#ae81ff">\M</span>icrosoft.NET<span style="color:#ae81ff">\F</span>ramework<span style="color:#ae81ff">\v</span>4.0.30319&gt;InstallUtil.exe c:<span style="color:#ae81ff">\s</span>ervices<span style="color:#ae81ff">\S</span>illyService.exe</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>C:<span style="color:#ae81ff">\W</span>indows<span style="color:#ae81ff">\M</span>icrosoft.NET<span style="color:#ae81ff">\F</span>ramework<span style="color:#ae81ff">\v</span>4.0.30319&gt;InstallUtil.exe c:<span style="color:#ae81ff">\s</span>ervices<span style="color:#ae81ff">\S</span>illyService.exe</span></span></code></pre></div>
 <p>You&rsquo;ll get something like this:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-install-service.png" alt="Windows Service install">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-install-service.png" alt="Windows Service install">
 
 <p>Sorry for russian text on the screenshots (some UI on my Windows is in russian), but there is nothing important there anyway.</p>
 <p>Now you can start the service from <strong>Services</strong> (<code>services.msc</code>). Just in case, run <strong>Services</strong> with administrator rights:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-services.png" alt="Windows Services">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-services.png" alt="Windows Services">
 
 <p>After the start of the service you can open <strong>Event Viewer</strong> to see your service&rsquo;s log there:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-eventlog.png" alt="Windows Event Viewer">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/02/06/how-to-create-a-windows-service/images/windows-service-eventlog.png" alt="Windows Event Viewer">
 
 <p>So, service is running, it will start automatically each time you reboot your computer and it will write a line of text to the <strong>Event Log</strong> every 10 seconds.</p>
 <h2 id="possible-problems">Possible problems</h2>
@@ -265,7 +243,7 @@
 <li>Some other access problems. Try to set administrator&rsquo;s credentials at <code>Log On</code> tab of service <code>Properties</code> in <strong>Services</strong>.</li>
 </ul>
 <p>If you would like to uninstall service, use the same command, but just add <code>/u</code> key:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">C:<span style="color:#ae81ff">\W</span>indows<span style="color:#ae81ff">\M</span>icrosoft.NET<span style="color:#ae81ff">\F</span>ramework<span style="color:#ae81ff">\v</span>4.0.30319&gt;InstallUtil.exe /u c:<span style="color:#ae81ff">\s</span>ervices<span style="color:#ae81ff">\S</span>illyService.exe</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>C:<span style="color:#ae81ff">\W</span>indows<span style="color:#ae81ff">\M</span>icrosoft.NET<span style="color:#ae81ff">\F</span>ramework<span style="color:#ae81ff">\v</span>4.0.30319&gt;InstallUtil.exe /u c:<span style="color:#ae81ff">\s</span>ervices<span style="color:#ae81ff">\S</span>illyService.exe</span></span></code></pre></div>
 <h1 id="sources">Sources</h1>
 <p>The source code of described <code>SillyService</code> is available <a href="https://github.com/retifrav/SillyService">here</a>.</p>
       </div>

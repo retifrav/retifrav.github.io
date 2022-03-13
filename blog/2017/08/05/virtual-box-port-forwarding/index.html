@@ -5,7 +5,7 @@
     <title>VirtualBox port forwarding | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2017/08/05/virtual-box-port-forwarding/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -17,7 +17,6 @@
 
     <meta property="og:title" content="VirtualBox port forwarding" />
 <meta property="og:description" content="A Windows host runs a VirtualBox guest Linux machine. And you want to connect to this Linux guest machine via SSH from your other PC (or Mac) remotely:
-
 
 
     " />
@@ -71,9 +70,7 @@
         <p>A Windows <em>host</em> runs a <strong>VirtualBox</strong> <em>guest</em> Linux machine. And you want to connect to this Linux <em>guest</em> machine via SSH from your other PC (or Mac) remotely:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/08/05/virtual-box-port-forwarding/images/schema.png" alt="VirtualBox SSH port forwarding">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/08/05/virtual-box-port-forwarding/images/schema.png" alt="VirtualBox SSH port forwarding">
 
 <p>The problem is that by default VirtualBox <em>guest</em> machine is hidden behind the NAT and doesn&rsquo;t have its ports accessible.</p>
 <p>So, we need to:</p>
@@ -89,63 +86,49 @@
 <p>Open VirtualBox&rsquo;s <strong>Preferences</strong> and check if you have everything like on the following screenshots:</p>
 <p>
 
-
-    <img class="image-post" src="/blog/2017/08/05/virtual-box-port-forwarding/images/vbox-preferences-nat.png" alt="VirtualBox Preferences NAT">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/08/05/virtual-box-port-forwarding/images/vbox-preferences-nat.png" alt="VirtualBox Preferences NAT">
 
 <br/>
 
 
-
-    <img class="image-post" src="/blog/2017/08/05/virtual-box-port-forwarding/images/vbox-preferences-host.png" alt="VirtualBox Preferences host">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/08/05/virtual-box-port-forwarding/images/vbox-preferences-host.png" alt="VirtualBox Preferences host">
 
 <br/>
 
 
-
-    <img class="image-post" src="/blog/2017/08/05/virtual-box-port-forwarding/images/vbox-preferences-adapter.png" alt="VirtualBox Preferences adapter">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/08/05/virtual-box-port-forwarding/images/vbox-preferences-adapter.png" alt="VirtualBox Preferences adapter">
 
 <br/>
 
 
-
-    <img class="image-post" src="/blog/2017/08/05/virtual-box-port-forwarding/images/vbox-preferences-dhcp.png" alt="VirtualBox Preferences DHCP">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/08/05/virtual-box-port-forwarding/images/vbox-preferences-dhcp.png" alt="VirtualBox Preferences DHCP">
 </p>
 <p>I had a default network already set up, but it didn&rsquo;t work for me, so I deleted it and created a new one.</p>
 <h1 id="enable-additional-network-adapter">Enable additional network adapter</h1>
 <p>Open the machine&rsquo;s <strong>Settings</strong>. Skip the <strong>Adapter 1</strong> tab (the one with NAT) and go to <strong>Adapter 2</strong> tab. Enable <code>Host-only Adapter</code>:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/08/05/virtual-box-port-forwarding/images/vbox-settings-adapter-2.png" alt="VirtualBox Settings Host-only">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/08/05/virtual-box-port-forwarding/images/vbox-settings-adapter-2.png" alt="VirtualBox Settings Host-only">
 
 <h1 id="add-port-forwarding">Add port forwarding</h1>
 <p>And now finally the port forwarding. We will forward from <em>host</em> machine&rsquo;s port <code>3022</code> to <em>guest</em> machine&rsquo;s standard SSH port <code>22</code>:</p>
 <p>
 
-
-    <img class="image-post" src="/blog/2017/08/05/virtual-box-port-forwarding/images/vbox-settings-adapter-1-port-forwarding.png" alt="VirtualBox NAT port forwarding">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/08/05/virtual-box-port-forwarding/images/vbox-settings-adapter-1-port-forwarding.png" alt="VirtualBox NAT port forwarding">
 
 <br/>
 
 
-
-    <img class="image-post" src="/blog/2017/08/05/virtual-box-port-forwarding/images/vbox-port-forwarding.png" alt="VirtualBox port forwarding">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/08/05/virtual-box-port-forwarding/images/vbox-port-forwarding.png" alt="VirtualBox port forwarding">
 </p>
 <p>After that start your <em>guest</em> machine with Linux and edit <code>/etc/network/interfaces</code> file (in the <em>guest</em> machine Linux environment). Add these 2 lines to the end (note, that you might need to replace <code>enp0s8</code> with your interface name, that you can look up in <code>ifconfig</code> / <code>ip a</code>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">auto enp0s8
-iface enp0s8 inet dhcp</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>auto enp0s8
+</span></span><span style="display:flex;"><span>iface enp0s8 inet dhcp</span></span></code></pre></div>
 <p>or, if you want it to have a static address (considering that your VirtualBox host-only adapter has <code>192.168.56.100</code> network):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">auto enp0s8
-iface enp0s8 inet static
-address 192.168.56.105
-netmask 255.255.255.0</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>auto enp0s8
+</span></span><span style="display:flex;"><span>iface enp0s8 inet static
+</span></span><span style="display:flex;"><span>address 192.168.56.105
+</span></span><span style="display:flex;"><span>netmask 255.255.255.0</span></span></code></pre></div>
 <p>Save the file and restart the machine. Check if it got the IP address (<code>ifconfig</code> / <code>ip a</code>) and try to ping it from the host.</p>
 <p>Now let&rsquo;s look at IP-addresses we have:</p>
 <ul>
@@ -154,7 +137,7 @@ netmask 255.255.255.0</code></pre></div>
 <li><code>192.168.1.3</code> - external address of the <em>host</em> Windows machine.</li>
 </ul>
 <p>So, in order to reach Linux <em>guest</em> machine from any other workstation (beside <em>host</em>) from the same network you need to connect like that:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ssh root@192.168.1.3 -p <span style="color:#ae81ff">3022</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ssh root@192.168.1.3 -p <span style="color:#ae81ff">3022</span></span></span></code></pre></div>
 <p>That will get you connected to <code>3022</code> port of the Windows <em>host</em> machine which will forward to <code>22</code> port of the Linux <em>guest</em> machine.</p>
 <p>Same thing applies to any other port and service. For example, if you have Apache/NGINX/whatever listenning on <code>80</code> port inside the <em>guest</em> machine, you can forward to it from <code>8080</code> port of the <em>host</em> machine.</p>
       </div>

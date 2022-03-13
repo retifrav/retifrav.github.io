@@ -5,7 +5,7 @@
     <title>Починка таймстампов в SRT после Google Translate | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2015/03/21/fix-timing-in-translated-subs/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -74,27 +74,27 @@
 <li>Разделитель начала и конца титра сокращает на один дефис.</li>
 </ol>
 <p>Вот так выглядит нормальный:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#ae81ff">00</span>:<span style="color:#ae81ff">57</span>:<span style="color:#ae81ff">15</span>,<span style="color:#ae81ff">600</span> <span style="color:#f92672">--&gt;</span> <span style="color:#ae81ff">00</span>:<span style="color:#ae81ff">57</span>:<span style="color:#ae81ff">21</span>,<span style="color:#ae81ff">840</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#ae81ff">00</span>:<span style="color:#ae81ff">57</span>:<span style="color:#ae81ff">15</span>,<span style="color:#ae81ff">600</span> <span style="color:#f92672">--&gt;</span> <span style="color:#ae81ff">00</span>:<span style="color:#ae81ff">57</span>:<span style="color:#ae81ff">21</span>,<span style="color:#ae81ff">840</span></span></span></code></pre></div>
 <p>А вот так выглядит изломанный Гуголом:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#ae81ff">00</span>: <span style="color:#ae81ff">57</span>: <span style="color:#ae81ff">15</span>,<span style="color:#ae81ff">600</span> <span style="color:#f92672">-&gt;</span> <span style="color:#ae81ff">00</span>: <span style="color:#ae81ff">57</span>: <span style="color:#ae81ff">21.840</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#ae81ff">00</span>: <span style="color:#ae81ff">57</span>: <span style="color:#ae81ff">15</span>,<span style="color:#ae81ff">600</span> <span style="color:#f92672">-&gt;</span> <span style="color:#ae81ff">00</span>: <span style="color:#ae81ff">57</span>: <span style="color:#ae81ff">21.840</span></span></span></code></pre></div>
 <p>Для исправления этого я использовал поиск по регулярному выражению с заменой найденных поломанных таймстампов на нормальные. Некоторая сложность была в том, чтобы не просто выцепить из текста таймстампы, а исправить их. Так я открыл для себя, что функция JavaScript <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/replace">replace()</a> вторым аргументом может принимать другую функцию, которая может выполнять действия с найденными фрагментами.</p>
 <p>Так и сделаем:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">fixSubsAfterGoogle</span> ()
-{
-	<span style="color:#75715e">// вот тут идёт починка всех трёх пунктов, которые Гугол ломает после перевода
-</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">function</span> <span style="color:#a6e22e">fixTime</span>(<span style="color:#a6e22e">match</span>) {
-	    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">match</span>.<span style="color:#a6e22e">replace</span>(<span style="color:#e6db74">/: /g</span>, <span style="color:#e6db74">&#34;:&#34;</span>).<span style="color:#a6e22e">replace</span>(<span style="color:#e6db74">&#34;-&gt;&#34;</span>, <span style="color:#e6db74">&#34;--\&gt;&#34;</span>).<span style="color:#a6e22e">replace</span>(<span style="color:#e6db74">/\./g</span>, <span style="color:#e6db74">&#34;,&#34;</span>);
-	}
-	<span style="color:#75715e">// предположим, в resultsOfGoogleTranslations лежит результат перевода
-</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">fixedSRT</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">resultsOfGoogleTranslations</span>.<span style="color:#a6e22e">replace</span>(
-	    <span style="color:#75715e">// или можно задать выражение сразу так: /\d{2}: \d{2}: \d{2}.\d{3} -&gt; \d{2}: \d{2}: \d{2}.\d{3}/g
-</span><span style="color:#75715e"></span>	    <span style="color:#66d9ef">new</span> RegExp(
-	        <span style="color:#e6db74">&#34;\d{2}: \d{2}: \d{2}.\d{3} -&gt; \d{2}: \d{2}: \d{2}.\d{3}&#34;</span>,
-	        <span style="color:#e6db74">&#34;g&#34;</span>
-	        ),
-	    <span style="color:#a6e22e">fixTime</span> <span style="color:#75715e">// вот этот второй аргумент, здесь вызывает функция, которая повыше
-</span><span style="color:#75715e"></span>	    );
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">fixSubsAfterGoogle</span> ()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// вот тут идёт починка всех трёх пунктов, которые Гугол ломает после перевода
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#66d9ef">function</span> <span style="color:#a6e22e">fixTime</span>(<span style="color:#a6e22e">match</span>) {
+</span></span><span style="display:flex;"><span>	    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">match</span>.<span style="color:#a6e22e">replace</span>(<span style="color:#e6db74">/: /g</span>, <span style="color:#e6db74">&#34;:&#34;</span>).<span style="color:#a6e22e">replace</span>(<span style="color:#e6db74">&#34;-&gt;&#34;</span>, <span style="color:#e6db74">&#34;--\&gt;&#34;</span>).<span style="color:#a6e22e">replace</span>(<span style="color:#e6db74">/\./g</span>, <span style="color:#e6db74">&#34;,&#34;</span>);
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// предположим, в resultsOfGoogleTranslations лежит результат перевода
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">fixedSRT</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">resultsOfGoogleTranslations</span>.<span style="color:#a6e22e">replace</span>(
+</span></span><span style="display:flex;"><span>	    <span style="color:#75715e">// или можно задать выражение сразу так: /\d{2}: \d{2}: \d{2}.\d{3} -&gt; \d{2}: \d{2}: \d{2}.\d{3}/g
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	    <span style="color:#66d9ef">new</span> RegExp(
+</span></span><span style="display:flex;"><span>	        <span style="color:#e6db74">&#34;\d{2}: \d{2}: \d{2}.\d{3} -&gt; \d{2}: \d{2}: \d{2}.\d{3}&#34;</span>,
+</span></span><span style="display:flex;"><span>	        <span style="color:#e6db74">&#34;g&#34;</span>
+</span></span><span style="display:flex;"><span>	        ),
+</span></span><span style="display:flex;"><span>	    <span style="color:#a6e22e">fixTime</span> <span style="color:#75715e">// вот этот второй аргумент, здесь вызывает функция, которая повыше
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	    );
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>В виде функции это ни сильно интересно и пригодно к использованию, потому я запилил страницу, на которой всё это можно проделать более-менее удобно и красиво.</p>
 <p style="text-align: center;"><a href="/wapps/google-translate-srt-fix/index.html">Страница исправления таймстампов в SRT 🌐</a></p>
       </div>

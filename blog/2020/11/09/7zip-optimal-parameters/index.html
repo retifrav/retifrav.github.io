@@ -5,7 +5,7 @@
     <title>Finding optimal 7-Zip parameters for creating a ZIP archive | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2020/11/09/7zip-optimal-parameters/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -19,9 +19,7 @@
 <meta property="og:description" content="We were packing our builds into ZIP archives for distribution right in TeamCity using its built-in artifact packaging. But then we decided to try to do that explicitly with 7-Zip as a dedicated build step, and that turned out to be a faster option, providing a better compression ratio too.
 
 
-
     
-
 
 The only question remaining was finding the right balance between compression level and compression time." />
 <meta property="og:type" content="article" />
@@ -74,9 +72,7 @@ The only question remaining was finding the right balance between compression le
         <p>We were packing our builds into ZIP archives for distribution right in TeamCity using its built-in <a href="https://blog.jetbrains.com/teamcity/2010/02/artifact-packaging-with-teamcity/">artifact packaging</a>. But then we decided to try to do that explicitly with <a href="https://www.7-zip.org/">7-Zip</a> as a dedicated build step, and that turned out to be a faster option, providing a better compression ratio too.</p>
 
 
-
-    <img class="image-post" src="/blog/2020/11/09/7zip-optimal-parameters/images/7zip-packing.png" alt="7-Zip packing">
-
+    <img class="image-post" loading="lazy" src="/blog/2020/11/09/7zip-optimal-parameters/images/7zip-packing.png" alt="7-Zip packing">
 
 <p>The only question remaining was finding the right balance between compression level and compression time.</p>
 <p>So, the goal is to create a ZIP archive with a good balance between compression ratio and packing time using 7-Zip (<em>on Linux</em>). Our build artifacts are mostly binary <code>.dll</code>&rsquo;s and plain-text files (<em><code>.h</code>, <code>.cmake</code>, etc</em>).</p>
@@ -95,20 +91,20 @@ The only question remaining was finding the right balance between compression le
 </nav>
 <h1 id="7-zip-command-line-parameters">7-Zip command line parameters</h1>
 <h2 id="how-to-create-a-zip-archive">How to create a ZIP archive</h2>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ <span style="color:#ae81ff">7</span>z a <span style="color:#f92672">-</span>tzip some<span style="color:#f92672">-</span>build<span style="color:#f92672">.</span>zip some<span style="color:#f92672">-</span>build<span style="color:#f92672">-</span>artifacts</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ <span style="color:#ae81ff">7</span>z a <span style="color:#f92672">-</span>tzip some<span style="color:#f92672">-</span>build<span style="color:#f92672">.</span>zip some<span style="color:#f92672">-</span>build<span style="color:#f92672">-</span>artifacts</span></span></code></pre></div>
 <p>here:</p>
 <ul>
 <li><code>-tzip</code> - type of archive: <strong>ZIP</strong></li>
 </ul>
 <h2 id="maximum-compression-level">Maximum compression level</h2>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ <span style="color:#ae81ff">7</span>z a <span style="color:#f92672">-</span>tzip <span style="color:#f92672">-</span>mx9 some<span style="color:#f92672">-</span>build<span style="color:#f92672">.</span>zip some<span style="color:#f92672">-</span>build<span style="color:#f92672">-</span>artifacts</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ <span style="color:#ae81ff">7</span>z a <span style="color:#f92672">-</span>tzip <span style="color:#f92672">-</span>mx9 some<span style="color:#f92672">-</span>build<span style="color:#f92672">.</span>zip some<span style="color:#f92672">-</span>build<span style="color:#f92672">-</span>artifacts</span></span></code></pre></div>
 <p>here:</p>
 <ul>
 <li><code>-mx9</code> - compression level: <strong>9</strong> (<em>maximum compression</em>)</li>
 </ul>
 <h2 id="specific-number-of-threads">Specific number of threads</h2>
 <p>If you won&rsquo;t set the number of threads explicitly, 7-Zip seems to default to all the available threads, which I think is a good default behaviour. You can set a specific number of threads too:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ <span style="color:#ae81ff">7</span>z a <span style="color:#f92672">-</span>tzip <span style="color:#f92672">-</span>mx9 <span style="color:#f92672">-</span>mmt12 some<span style="color:#f92672">-</span>build<span style="color:#f92672">.</span>zip some<span style="color:#f92672">-</span>build<span style="color:#f92672">-</span>artifacts</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ <span style="color:#ae81ff">7</span>z a <span style="color:#f92672">-</span>tzip <span style="color:#f92672">-</span>mx9 <span style="color:#f92672">-</span>mmt12 some<span style="color:#f92672">-</span>build<span style="color:#f92672">.</span>zip some<span style="color:#f92672">-</span>build<span style="color:#f92672">-</span>artifacts</span></span></code></pre></div>
 <p>here:</p>
 <ul>
 <li><code>-mmt12</code> - number of threads to use: <strong>12</strong></li>
@@ -199,13 +195,11 @@ The only question remaining was finding the right balance between compression le
 <p>Graphical representation of the results:</p>
 
 
-
-    <img class="image-post" src="/blog/2020/11/09/7zip-optimal-parameters/images/comparing-compression-levels.png" alt="Comparing 7-Zip compression levels">
-
+    <img class="image-post" loading="lazy" src="/blog/2020/11/09/7zip-optimal-parameters/images/comparing-compression-levels.png" alt="Comparing 7-Zip compression levels">
 
 <p>Given quite a little difference in resulting archived size and a quite huge difference in time, the option <strong>#3</strong> is the most optimal in terms of time/compression for our case.</p>
 <p>So, the resulting set of parameters:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ <span style="color:#ae81ff">7</span>z a <span style="color:#f92672">-</span>tzip <span style="color:#f92672">-</span>mx3 some<span style="color:#f92672">-</span>build<span style="color:#f92672">.</span>zip some<span style="color:#f92672">-</span>build<span style="color:#f92672">-</span>artifacts</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ <span style="color:#ae81ff">7</span>z a <span style="color:#f92672">-</span>tzip <span style="color:#f92672">-</span>mx3 some<span style="color:#f92672">-</span>build<span style="color:#f92672">.</span>zip some<span style="color:#f92672">-</span>build<span style="color:#f92672">-</span>artifacts</span></span></code></pre></div>
       </div>
     </article>
     <div><div id="tags">

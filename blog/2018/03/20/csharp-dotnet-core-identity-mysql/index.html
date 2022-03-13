@@ -5,7 +5,7 @@
     <title>C# / .NET Core Identity with MySQL | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2018/03/20/csharp-dotnet-core-identity-mysql/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -20,9 +20,7 @@
 Official manual guides you through the process pretty nicely, however it only tells about setting it up with MS SQL Server. But we, of course, would like to use MySQL for that.
 
 
-
     
-
 
 I tried to use MySQL with .NET Core Identity before, but something was really wrong with its support back then, and now it actually works (more or less)." />
 <meta property="og:type" content="article" />
@@ -76,9 +74,7 @@ I tried to use MySQL with .NET Core Identity before, but something was really wr
 <p><a href="https://docs.microsoft.com/en-us/aspnet/core/security/authentication/identity?tabs=visual-studio%2Caspnetcore2x">Official manual</a> guides you through the process pretty nicely, however it only tells about setting it up with MS SQL Server. But we, of course, would like to use MySQL for that.</p>
 
 
-
-    <img class="image-post" src="/blog/2018/03/20/csharp-dotnet-core-identity-mysql/images/dotnet-core-identity-mysql.png" alt=".NET Core Identity MySQL">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/03/20/csharp-dotnet-core-identity-mysql/images/dotnet-core-identity-mysql.png" alt=".NET Core Identity MySQL">
 
 <p>I tried to use MySQL with .NET Core Identity before, but something was really wrong with its support back then, and now it actually works (more or less).</p>
 <p>Why use <a href="https://docs.microsoft.com/en-us/aspnet/identity/overview/getting-started/introduction-to-aspnet-identity">Identity</a> at all? Of course, you can create your own username/password authentication yourself, but your own custom bicycle is unlikely to be as good as <code>Identity</code>, which takes care of lots of stuff, including proper passwords storing (<em>you didn&rsquo;t plan to store them as plain text, did you</em>), ready-made views and models, already implemented roles mechanism, social logins and so on.</p>
@@ -90,24 +86,24 @@ I tried to use MySQL with .NET Core Identity before, but something was really wr
 </nav>
 <h1 id="net-core-20">.NET Core 2.0</h1>
 <p>Before we start, here&rsquo;s my <code>dotnet</code> version just in case:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ dotnet --info
-.NET Command Line Tools <span style="color:#f92672">(</span>2.1.4<span style="color:#f92672">)</span>
-
-Product Information:
- Version:            2.1.4
- Commit SHA-1 hash:  5e8add2190
-
-Runtime Environment:
- OS Name:     Mac OS X
- OS Version:  10.13
- OS Platform: Darwin
- RID:         osx.10.12-x64
- Base Path:   /usr/local/share/dotnet/sdk/2.1.4/
-
-Microsoft .NET Core Shared Framework Host
-
-  Version  : 2.0.5
-  Build    : 17373eb129b3b05aa18ece963f8795d65ef8ea54</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ dotnet --info
+</span></span><span style="display:flex;"><span>.NET Command Line Tools <span style="color:#f92672">(</span>2.1.4<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Product Information:
+</span></span><span style="display:flex;"><span> Version:            2.1.4
+</span></span><span style="display:flex;"><span> Commit SHA-1 hash:  5e8add2190
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Runtime Environment:
+</span></span><span style="display:flex;"><span> OS Name:     Mac OS X
+</span></span><span style="display:flex;"><span> OS Version:  10.13
+</span></span><span style="display:flex;"><span> OS Platform: Darwin
+</span></span><span style="display:flex;"><span> RID:         osx.10.12-x64
+</span></span><span style="display:flex;"><span> Base Path:   /usr/local/share/dotnet/sdk/2.1.4/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Microsoft .NET Core Shared Framework Host
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Version  : 2.0.5
+</span></span><span style="display:flex;"><span>  Build    : 17373eb129b3b05aa18ece963f8795d65ef8ea54</span></span></code></pre></div>
 <p>Assuming you have used the template with a built-in <code>Identity</code> authentication/authorization (<code>dotnet new mvc --auth Individual</code>), I&rsquo;ll skip the controllers, models and views. If you already have an existing project and want to add it there, then no problems, just create a new one using this template anyway and simply copy its models and views to your project.</p>
 <p>Install the following NuGet packages:</p>
 <ul>
@@ -118,175 +114,175 @@ Microsoft .NET Core Shared Framework Host
 </ul>
 <p>Those are the versions I have, but most probably other version will be fine too.</p>
 <p>Add connection string to your database in <code>appsettings.json</code></p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json"><span style="color:#e6db74">&#34;ConnectionStrings&#34;</span><span style="color:#960050;background-color:#1e0010">:</span> {
-    <span style="color:#f92672">&#34;DefaultConnection&#34;</span>: <span style="color:#e6db74">&#34;server=localhost;port=3306;database=some;user=some;password=some;CharSet=utf8;&#34;</span>
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span><span style="color:#e6db74">&#34;ConnectionStrings&#34;</span><span style="color:#960050;background-color:#1e0010">:</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;DefaultConnection&#34;</span>: <span style="color:#e6db74">&#34;server=localhost;port=3306;database=some;user=some;password=some;CharSet=utf8;&#34;</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Add <code>IdentityContext</code> class to your project, <code>/Data/IdentityContext.cs</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">using</span> Microsoft.AspNetCore.Identity;
-<span style="color:#66d9ef">using</span> Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-<span style="color:#66d9ef">using</span> Microsoft.EntityFrameworkCore;
-
-<span style="color:#66d9ef">namespace</span> YOUR-PROJECT-NAMESPACE.Data
-{
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IdentityContext</span> : IdentityDbContext&lt;IdentityUser&gt;
-    {
-        <span style="color:#66d9ef">public</span> IdentityContext(DbContextOptions&lt;IdentityContext&gt; options)
-            : <span style="color:#66d9ef">base</span>(options)
-        {
-        }
-
-        <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnModelCreating(ModelBuilder builder)
-        {
-            <span style="color:#66d9ef">base</span>.OnModelCreating(builder);
-        }
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">using</span> Microsoft.AspNetCore.Identity;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> Microsoft.EntityFrameworkCore;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> YOUR-PROJECT-NAMESPACE.Data
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IdentityContext</span> : IdentityDbContext&lt;IdentityUser&gt;
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> IdentityContext(DbContextOptions&lt;IdentityContext&gt; options)
+</span></span><span style="display:flex;"><span>            : <span style="color:#66d9ef">base</span>(options)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnModelCreating(ModelBuilder builder)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">base</span>.OnModelCreating(builder);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>I did not create my own <code>ApplicationUser</code> class, because I decided to take the default <code>IdentityUser</code>, so I replaced it in views <code>Login.cshtml</code> and <code>_LoginPartial.cshtml</code> and also changed the <code>AccountController</code> (and <code>ManageController</code>) constructor as follows:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">namespace</span> YOUR-PROJECT-NAMESPACE.Controllers
-{
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AccountController</span> : Controller
-    {
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> UserManager&lt;IdentityUser&gt; <span style="color:#ae81ff">_</span>userManager;
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> RoleManager&lt;IdentityRole&gt; <span style="color:#ae81ff">_</span>roleManager;
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> SignInManager&lt;IdentityUser&gt; <span style="color:#ae81ff">_</span>signInManager;
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> ILogger <span style="color:#ae81ff">_l</span>ogger;
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IdentityContext <span style="color:#ae81ff">_</span>context;
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IConfiguration <span style="color:#ae81ff">_</span>configuration;
-
-        <span style="color:#66d9ef">public</span> AccountController(
-            UserManager&lt;IdentityUser&gt; userManager,
-            RoleManager&lt;IdentityRole&gt; roleManager,
-            SignInManager&lt;IdentityUser&gt; signInManager,
-            ILoggerFactory loggerFactory,
-            IdentityContext context,
-            IConfiguration configuration
-            )
-        {
-            <span style="color:#ae81ff">_</span>userManager = userManager;
-            <span style="color:#ae81ff">_</span>roleManager = roleManager;
-            <span style="color:#ae81ff">_</span>signInManager = signInManager;
-            <span style="color:#ae81ff">_l</span>ogger = loggerFactory.CreateLogger&lt;AccountController&gt;();
-            <span style="color:#ae81ff">_</span>context = context;
-            <span style="color:#ae81ff">_</span>configuration = configuration;
-        }
-
-        <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> YOUR-PROJECT-NAMESPACE.Controllers
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AccountController</span> : Controller
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> UserManager&lt;IdentityUser&gt; <span style="color:#ae81ff">_</span>userManager;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> RoleManager&lt;IdentityRole&gt; <span style="color:#ae81ff">_</span>roleManager;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> SignInManager&lt;IdentityUser&gt; <span style="color:#ae81ff">_</span>signInManager;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> ILogger <span style="color:#ae81ff">_l</span>ogger;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IdentityContext <span style="color:#ae81ff">_</span>context;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IConfiguration <span style="color:#ae81ff">_</span>configuration;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> AccountController(
+</span></span><span style="display:flex;"><span>            UserManager&lt;IdentityUser&gt; userManager,
+</span></span><span style="display:flex;"><span>            RoleManager&lt;IdentityRole&gt; roleManager,
+</span></span><span style="display:flex;"><span>            SignInManager&lt;IdentityUser&gt; signInManager,
+</span></span><span style="display:flex;"><span>            ILoggerFactory loggerFactory,
+</span></span><span style="display:flex;"><span>            IdentityContext context,
+</span></span><span style="display:flex;"><span>            IConfiguration configuration
+</span></span><span style="display:flex;"><span>            )
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_</span>userManager = userManager;
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_</span>roleManager = roleManager;
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_</span>signInManager = signInManager;
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_l</span>ogger = loggerFactory.CreateLogger&lt;AccountController&gt;();
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_</span>context = context;
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_</span>configuration = configuration;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Enable <code>Identity</code> authentication/authorization in <code>Startup.cs</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> ConfigureServices(IServiceCollection services)
-{
-    <span style="color:#75715e">// that&#39;s where you tell that you want to use MySQL
-</span><span style="color:#75715e"></span>    services.AddDbContext&lt;IdentityContext&gt;(
-        options =&gt; options.UseMySQL(Configuration.GetConnectionString(<span style="color:#e6db74">&#34;DefaultConnection&#34;</span>))
-    );
-    services.AddIdentity&lt;IdentityUser, IdentityRole&gt;().AddEntityFrameworkStores&lt;IdentityContext&gt;();
-
-    services.Configure&lt;IdentityOptions&gt;(options =&gt;
-    {
-        <span style="color:#75715e">// Password settings
-</span><span style="color:#75715e"></span>        options.Password.RequireDigit = <span style="color:#66d9ef">true</span>;
-        options.Password.RequiredLength = <span style="color:#ae81ff">8</span>;
-        options.Password.RequireNonAlphanumeric = <span style="color:#66d9ef">true</span>;
-        options.Password.RequireUppercase = <span style="color:#66d9ef">true</span>;
-        options.Password.RequireLowercase = <span style="color:#66d9ef">true</span>;
-
-        <span style="color:#75715e">// Lockout settings
-</span><span style="color:#75715e"></span>        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(<span style="color:#ae81ff">30</span>);
-        options.Lockout.MaxFailedAccessAttempts = <span style="color:#ae81ff">10</span>;
-
-        <span style="color:#75715e">// User settings
-</span><span style="color:#75715e"></span>        options.User.RequireUniqueEmail = <span style="color:#66d9ef">true</span>;
-    });
-
-    <span style="color:#75715e">// If you want to tweak Identity cookies, they&#39;re no longer part of IdentityOptions.
-</span><span style="color:#75715e"></span>    services.ConfigureApplicationCookie(options =&gt; options.LoginPath = <span style="color:#e6db74">&#34;/Account/Login&#34;</span>);
-
-    <span style="color:#75715e">// If you don&#39;t want the cookie to be automatically authenticated and assigned to HttpContext.User,
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">// remove the CookieAuthenticationDefaults.AuthenticationScheme parameter passed to AddAuthentication.
-</span><span style="color:#75715e"></span>    services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-            .AddCookie(options =&gt; {
-                options.LoginPath = <span style="color:#e6db74">&#34;/Account/Login&#34;</span>;
-                options.LogoutPath = <span style="color:#e6db74">&#34;/Account/Logout&#34;</span>;
-                options.ExpireTimeSpan = TimeSpan.FromDays(<span style="color:#ae81ff">150</span>);
-            });
-
-    services.AddMvc(
-        options =&gt;
-        {
-            <span style="color:#66d9ef">var</span> policy = <span style="color:#66d9ef">new</span> AuthorizationPolicyBuilder()
-                .RequireAuthenticatedUser()
-                .Build();
-            options.Filters.Add(<span style="color:#66d9ef">new</span> AuthorizeFilter(policy));
-            <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>        }
-    );
-
-    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}
-
-<span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> Configure(
-    IApplicationBuilder app,
-    IHostingEnvironment env,
-    ILoggerFactory loggerFactory
-    )
-{
-    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>
-    app.UseAuthentication();
-
-    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> ConfigureServices(IServiceCollection services)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// that&#39;s where you tell that you want to use MySQL</span>
+</span></span><span style="display:flex;"><span>    services.AddDbContext&lt;IdentityContext&gt;(
+</span></span><span style="display:flex;"><span>        options =&gt; options.UseMySQL(Configuration.GetConnectionString(<span style="color:#e6db74">&#34;DefaultConnection&#34;</span>))
+</span></span><span style="display:flex;"><span>    );
+</span></span><span style="display:flex;"><span>    services.AddIdentity&lt;IdentityUser, IdentityRole&gt;().AddEntityFrameworkStores&lt;IdentityContext&gt;();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    services.Configure&lt;IdentityOptions&gt;(options =&gt;
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// Password settings</span>
+</span></span><span style="display:flex;"><span>        options.Password.RequireDigit = <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>        options.Password.RequiredLength = <span style="color:#ae81ff">8</span>;
+</span></span><span style="display:flex;"><span>        options.Password.RequireNonAlphanumeric = <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>        options.Password.RequireUppercase = <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>        options.Password.RequireLowercase = <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// Lockout settings</span>
+</span></span><span style="display:flex;"><span>        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(<span style="color:#ae81ff">30</span>);
+</span></span><span style="display:flex;"><span>        options.Lockout.MaxFailedAccessAttempts = <span style="color:#ae81ff">10</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// User settings</span>
+</span></span><span style="display:flex;"><span>        options.User.RequireUniqueEmail = <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>    });
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// If you want to tweak Identity cookies, they&#39;re no longer part of IdentityOptions.</span>
+</span></span><span style="display:flex;"><span>    services.ConfigureApplicationCookie(options =&gt; options.LoginPath = <span style="color:#e6db74">&#34;/Account/Login&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// If you don&#39;t want the cookie to be automatically authenticated and assigned to HttpContext.User,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// remove the CookieAuthenticationDefaults.AuthenticationScheme parameter passed to AddAuthentication.</span>
+</span></span><span style="display:flex;"><span>    services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+</span></span><span style="display:flex;"><span>            .AddCookie(options =&gt; {
+</span></span><span style="display:flex;"><span>                options.LoginPath = <span style="color:#e6db74">&#34;/Account/Login&#34;</span>;
+</span></span><span style="display:flex;"><span>                options.LogoutPath = <span style="color:#e6db74">&#34;/Account/Logout&#34;</span>;
+</span></span><span style="display:flex;"><span>                options.ExpireTimeSpan = TimeSpan.FromDays(<span style="color:#ae81ff">150</span>);
+</span></span><span style="display:flex;"><span>            });
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    services.AddMvc(
+</span></span><span style="display:flex;"><span>        options =&gt;
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> policy = <span style="color:#66d9ef">new</span> AuthorizationPolicyBuilder()
+</span></span><span style="display:flex;"><span>                .RequireAuthenticatedUser()
+</span></span><span style="display:flex;"><span>                .Build();
+</span></span><span style="display:flex;"><span>            options.Filters.Add(<span style="color:#66d9ef">new</span> AuthorizeFilter(policy));
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> Configure(
+</span></span><span style="display:flex;"><span>    IApplicationBuilder app,
+</span></span><span style="display:flex;"><span>    IHostingEnvironment env,
+</span></span><span style="display:flex;"><span>    ILoggerFactory loggerFactory
+</span></span><span style="display:flex;"><span>    )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    app.UseAuthentication();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Couple of (lame) words about Entity Framework. <code>Identity</code> can use various storages for its users/passwords/roles/whatever information. Here we use a MySQL database. And by using so-called <strong>code-first</strong> approach Entity Framework generates SQL statements from <code>Identity</code> internal C# models (tables for users, roles, etc and relations between them). The process of generating these statements and applying them to database is called <strong>migration</strong>. At least that&rsquo;s how I understand the process, so better read some books on the subject.</p>
 <p>We have our <code>Identity</code> models ready for migration, so let&rsquo;s perform one. Make sure that you have <code>dotnet</code> version <code>2.x.x</code> and not <code>1.x.x</code>, and also that you are in the directory with <code>YOUR-PROJECT.csproj</code>. Run this command:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dotnet ef migrations add InitialCreate</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>dotnet ef migrations add InitialCreate</span></span></code></pre></div>
 <p>Most likely you will get the following error:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">No executable found matching command <span style="color:#e6db74">&#34;dotnet-ef&#34;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>No executable found matching command <span style="color:#e6db74">&#34;dotnet-ef&#34;</span></span></span></code></pre></div>
 <p>The solution for that was found in <a href="https://github.com/aspnet/EntityFrameworkCore/issues/8996#issuecomment-334562755">this thread</a> (and other places): make sure that you have the following lines in <code>YOUR-PROJECT.csproj</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#f92672">&lt;ItemGroup&gt;</span>
-    <span style="color:#f92672">&lt;DotNetCliToolReference</span> <span style="color:#a6e22e">Include=</span><span style="color:#e6db74">&#34;Microsoft.VisualStudio.Web.CodeGeneration.Tools&#34;</span> <span style="color:#a6e22e">Version=</span><span style="color:#e6db74">&#34;2.0.0&#34;</span> <span style="color:#f92672">/&gt;</span>
-    <span style="color:#f92672">&lt;DotNetCliToolReference</span> <span style="color:#a6e22e">Include=</span><span style="color:#e6db74">&#34;Microsoft.EntityFrameworkCore.Tools.DotNet&#34;</span> <span style="color:#a6e22e">Version=</span><span style="color:#e6db74">&#34;2.0.0&#34;</span> <span style="color:#f92672">/&gt;</span>
-<span style="color:#f92672">&lt;/ItemGroup&gt;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#f92672">&lt;ItemGroup&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;DotNetCliToolReference</span> <span style="color:#a6e22e">Include=</span><span style="color:#e6db74">&#34;Microsoft.VisualStudio.Web.CodeGeneration.Tools&#34;</span> <span style="color:#a6e22e">Version=</span><span style="color:#e6db74">&#34;2.0.0&#34;</span> <span style="color:#f92672">/&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;DotNetCliToolReference</span> <span style="color:#a6e22e">Include=</span><span style="color:#e6db74">&#34;Microsoft.EntityFrameworkCore.Tools.DotNet&#34;</span> <span style="color:#a6e22e">Version=</span><span style="color:#e6db74">&#34;2.0.0&#34;</span> <span style="color:#f92672">/&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/ItemGroup&gt;</span></span></span></code></pre></div>
 <p>Run <code>dotnet restore</code>. Mine failed with this error:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">error MSB4024: The imported project file <span style="color:#e6db74">&#34;project/obj/project.csproj.EntityFrameworkCore.targets&#34;</span> could not be loaded. Unexpected end tag.</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>error MSB4024: The imported project file <span style="color:#e6db74">&#34;project/obj/project.csproj.EntityFrameworkCore.targets&#34;</span> could not be loaded. Unexpected end tag.</span></span></code></pre></div>
 <p>I openned the file, deleted this &ldquo;unexpected&rdquo; tag, and cleaned and rebuilt the project (just in case).</p>
 <p>Having done that, try to check EF tools:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ dotnet ef
-
-                     _/<span style="color:#ae81ff">\_</span>_
-               ---<span style="color:#f92672">==</span>/    <span style="color:#ae81ff">\\</span>
-         ___  ___   |.    <span style="color:#ae81ff">\|\
-</span><span style="color:#ae81ff"></span>        | __<span style="color:#f92672">||</span> __|  |  <span style="color:#f92672">)</span>   <span style="color:#ae81ff">\\\
-</span><span style="color:#ae81ff"></span>        | _| | _|   <span style="color:#ae81ff">\_</span>/ |  //|<span style="color:#ae81ff">\\</span>
-        |___<span style="color:#f92672">||</span>_|       /   <span style="color:#ae81ff">\\\/\\</span>
-
-Entity Framework Core .NET Command Line Tools 2.0.0-rtm-26452
-
-Usage: dotnet ef <span style="color:#f92672">[</span>options<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>command<span style="color:#f92672">]</span>
-
-Options:
-  --version        Show version information
-  -h|--help        Show help information
-  -v|--verbose     Show verbose output.
-  --no-color       Don<span style="color:#960050;background-color:#1e0010">&#39;</span>t colorize output.
-  --prefix-output  Prefix output with level.
-
-Commands:
-  database    Commands to manage the database.
-  dbcontext   Commands to manage DbContext types.
-  migrations  Commands to manage migrations.
-
-Use <span style="color:#e6db74">&#34;dotnet ef [command] --help&#34;</span> <span style="color:#66d9ef">for</span> more information about a command.</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ dotnet ef
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                     _/<span style="color:#ae81ff">\_</span>_
+</span></span><span style="display:flex;"><span>               ---<span style="color:#f92672">==</span>/    <span style="color:#ae81ff">\\</span>
+</span></span><span style="display:flex;"><span>         ___  ___   |.    <span style="color:#ae81ff">\|\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>        | __<span style="color:#f92672">||</span> __|  |  <span style="color:#f92672">)</span>   <span style="color:#ae81ff">\\\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>        | _| | _|   <span style="color:#ae81ff">\_</span>/ |  //|<span style="color:#ae81ff">\\</span>
+</span></span><span style="display:flex;"><span>        |___<span style="color:#f92672">||</span>_|       /   <span style="color:#ae81ff">\\\/\\</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Entity Framework Core .NET Command Line Tools 2.0.0-rtm-26452
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Usage: dotnet ef <span style="color:#f92672">[</span>options<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>command<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Options:
+</span></span><span style="display:flex;"><span>  --version        Show version information
+</span></span><span style="display:flex;"><span>  -h|--help        Show help information
+</span></span><span style="display:flex;"><span>  -v|--verbose     Show verbose output.
+</span></span><span style="display:flex;"><span>  --no-color       Don<span style="color:#960050;background-color:#1e0010">&#39;</span>t colorize output.
+</span></span><span style="display:flex;"><span>  --prefix-output  Prefix output with level.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Commands:
+</span></span><span style="display:flex;"><span>  database    Commands to manage the database.
+</span></span><span style="display:flex;"><span>  dbcontext   Commands to manage DbContext types.
+</span></span><span style="display:flex;"><span>  migrations  Commands to manage migrations.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Use <span style="color:#e6db74">&#34;dotnet ef [command] --help&#34;</span> <span style="color:#66d9ef">for</span> more information about a command.</span></span></code></pre></div>
 <p>Okay! Now perform your initial migration (stop debugging if you have it running in Visual Studio, otherwise you&rsquo;ll get an error <code>The process cannot access the file</code>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ dotnet ef migrations add InitialCreate
-
-info: Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager<span style="color:#f92672">[</span>0<span style="color:#f92672">]</span>
-      User profile is available. Using <span style="color:#e6db74">&#39;/Users/vasya/.aspnet/DataProtection-Keys&#39;</span> as key repository; keys will not be encrypted at rest.
-info: Microsoft.EntityFrameworkCore.Infrastructure<span style="color:#f92672">[</span>10403<span style="color:#f92672">]</span>
-      Entity Framework Core 2.0.2-rtm-10011 initialized <span style="color:#e6db74">&#39;IdentityContext&#39;</span> using provider <span style="color:#e6db74">&#39;MySql.Data.EntityFrameworkCore&#39;</span> with options: None
-info: Microsoft.EntityFrameworkCore.Infrastructure<span style="color:#f92672">[</span>10403<span style="color:#f92672">]</span>
-      Entity Framework Core 2.0.2-rtm-10011 initialized <span style="color:#e6db74">&#39;IdentityContext&#39;</span> using provider <span style="color:#e6db74">&#39;MySql.Data.EntityFrameworkCore&#39;</span> with options: None
-Done. To undo this action, use <span style="color:#e6db74">&#39;ef migrations remove&#39;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ dotnet ef migrations add InitialCreate
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>info: Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager<span style="color:#f92672">[</span>0<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>      User profile is available. Using <span style="color:#e6db74">&#39;/Users/vasya/.aspnet/DataProtection-Keys&#39;</span> as key repository; keys will not be encrypted at rest.
+</span></span><span style="display:flex;"><span>info: Microsoft.EntityFrameworkCore.Infrastructure<span style="color:#f92672">[</span>10403<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>      Entity Framework Core 2.0.2-rtm-10011 initialized <span style="color:#e6db74">&#39;IdentityContext&#39;</span> using provider <span style="color:#e6db74">&#39;MySql.Data.EntityFrameworkCore&#39;</span> with options: None
+</span></span><span style="display:flex;"><span>info: Microsoft.EntityFrameworkCore.Infrastructure<span style="color:#f92672">[</span>10403<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>      Entity Framework Core 2.0.2-rtm-10011 initialized <span style="color:#e6db74">&#39;IdentityContext&#39;</span> using provider <span style="color:#e6db74">&#39;MySql.Data.EntityFrameworkCore&#39;</span> with options: None
+</span></span><span style="display:flex;"><span>Done. To undo this action, use <span style="color:#e6db74">&#39;ef migrations remove&#39;</span></span></span></code></pre></div>
 <p>Good. You should get the following files generated:</p>
 <ul>
 <li><code>/Migrations/20180318174058_InitialCreate.cs</code>;</li>
@@ -294,128 +290,124 @@ Done. To undo this action, use <span style="color:#e6db74">&#39;ef migrations re
 <li><code>/Migrations/IdentityContextModelSnapshot.cs</code>.</li>
 </ul>
 <p>Apply this migration to the database:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dotnet ef database update</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>dotnet ef database update</span></span></code></pre></div>
 <p>&hellip;At least, try to. Because for me that produced the whole bunch of errors:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">MySql.Data.MySqlClient.MySqlException <span style="color:#f92672">(</span>0x80004005<span style="color:#f92672">)</span>: Table <span style="color:#e6db74">&#39;YOUR-PROJECT-NAMESPACE.__efmigrationshistory&#39;</span> doesn<span style="color:#960050;background-color:#1e0010">&#39;</span>t exist</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>MySql.Data.MySqlClient.MySqlException <span style="color:#f92672">(</span>0x80004005<span style="color:#f92672">)</span>: Table <span style="color:#e6db74">&#39;YOUR-PROJECT-NAMESPACE.__efmigrationshistory&#39;</span> doesn<span style="color:#960050;background-color:#1e0010">&#39;</span>t exist</span></span></code></pre></div>
 <p>From <a href="https://stackoverflow.com/a/42955124">this answer</a> I got that MySQL (or whoever) doesn&rsquo;t properly support migrations yet, so you need to create this table manually (via <code>mysql</code> or DBMS of your choice):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#f92672">`</span>__EFMigrationsHistory<span style="color:#f92672">`</span> (
-    <span style="color:#f92672">`</span>MigrationId<span style="color:#f92672">`</span> NVARCHAR (<span style="color:#ae81ff">150</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
-    <span style="color:#f92672">`</span>ProductVersion<span style="color:#f92672">`</span> NVARCHAR (<span style="color:#ae81ff">32</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
-    <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span> (<span style="color:#f92672">`</span>MigrationId<span style="color:#f92672">`</span>)
-);</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#f92672">`</span>__EFMigrationsHistory<span style="color:#f92672">`</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">`</span>MigrationId<span style="color:#f92672">`</span> NVARCHAR (<span style="color:#ae81ff">150</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">`</span>ProductVersion<span style="color:#f92672">`</span> NVARCHAR (<span style="color:#ae81ff">32</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span> (<span style="color:#f92672">`</span>MigrationId<span style="color:#f92672">`</span>)
+</span></span><span style="display:flex;"><span>);</span></span></code></pre></div>
 <p>Having run <code>dotnet ef database update</code> after that, I got a new error:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">MySql.Data.MySqlClient.MySqlException <span style="color:#f92672">(</span>0x80004005<span style="color:#f92672">)</span>: Specified key was too long; max key length is <span style="color:#ae81ff">3072</span> bytes</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>MySql.Data.MySqlClient.MySqlException <span style="color:#f92672">(</span>0x80004005<span style="color:#f92672">)</span>: Specified key was too long; max key length is <span style="color:#ae81ff">3072</span> bytes</span></span></code></pre></div>
 <p>This one happened because somewhere in MySQL EF (or wherever) there is some mess with the composite keys, so they have total length that exceeds the limit. I hope that will be fixed in future, but meanwhile here&rsquo;s a <a href="https://github.com/PomeloFoundation/Pomelo.EntityFrameworkCore.MySql/issues/136#issuecomment-264785858">workaround</a>: edit your <code>/Data/IdentityContext.cs</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnModelCreating(ModelBuilder builder)
-{
-      <span style="color:#66d9ef">base</span>.OnModelCreating(builder);
-
-      builder.Entity&lt;IdentityUser&gt;(entity =&gt; entity.Property(m =&gt; m.Id).HasMaxLength(<span style="color:#ae81ff">85</span>));
-      builder.Entity&lt;IdentityUser&gt;(entity =&gt; entity.Property(m =&gt; m.NormalizedEmail).HasMaxLength(<span style="color:#ae81ff">85</span>));
-      builder.Entity&lt;IdentityUser&gt;(entity =&gt; entity.Property(m =&gt; m.NormalizedUserName).HasMaxLength(<span style="color:#ae81ff">85</span>));
-
-      builder.Entity&lt;IdentityRole&gt;(entity =&gt; entity.Property(m =&gt; m.Id).HasMaxLength(<span style="color:#ae81ff">85</span>));
-      builder.Entity&lt;IdentityRole&gt;(entity =&gt; entity.Property(m =&gt; m.NormalizedName).HasMaxLength(<span style="color:#ae81ff">85</span>));
-
-      builder.Entity&lt;IdentityUserLogin&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.LoginProvider).HasMaxLength(<span style="color:#ae81ff">85</span>));
-      builder.Entity&lt;IdentityUserLogin&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.ProviderKey).HasMaxLength(<span style="color:#ae81ff">85</span>));
-      builder.Entity&lt;IdentityUserLogin&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.UserId).HasMaxLength(<span style="color:#ae81ff">85</span>));
-      builder.Entity&lt;IdentityUserRole&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.UserId).HasMaxLength(<span style="color:#ae81ff">85</span>));
-
-      builder.Entity&lt;IdentityUserRole&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.RoleId).HasMaxLength(<span style="color:#ae81ff">85</span>));
-
-      builder.Entity&lt;IdentityUserToken&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.UserId).HasMaxLength(<span style="color:#ae81ff">85</span>));
-      builder.Entity&lt;IdentityUserToken&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.LoginProvider).HasMaxLength(<span style="color:#ae81ff">85</span>));
-      builder.Entity&lt;IdentityUserToken&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.Name).HasMaxLength(<span style="color:#ae81ff">85</span>));
-
-      builder.Entity&lt;IdentityUserClaim&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.Id).HasMaxLength(<span style="color:#ae81ff">85</span>));
-      builder.Entity&lt;IdentityUserClaim&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.UserId).HasMaxLength(<span style="color:#ae81ff">85</span>));
-      builder.Entity&lt;IdentityRoleClaim&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.Id).HasMaxLength(<span style="color:#ae81ff">85</span>));
-      builder.Entity&lt;IdentityRoleClaim&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.RoleId).HasMaxLength(<span style="color:#ae81ff">85</span>));
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnModelCreating(ModelBuilder builder)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">base</span>.OnModelCreating(builder);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityUser&gt;(entity =&gt; entity.Property(m =&gt; m.Id).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityUser&gt;(entity =&gt; entity.Property(m =&gt; m.NormalizedEmail).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityUser&gt;(entity =&gt; entity.Property(m =&gt; m.NormalizedUserName).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityRole&gt;(entity =&gt; entity.Property(m =&gt; m.Id).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityRole&gt;(entity =&gt; entity.Property(m =&gt; m.NormalizedName).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityUserLogin&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.LoginProvider).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityUserLogin&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.ProviderKey).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityUserLogin&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.UserId).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityUserRole&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.UserId).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityUserRole&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.RoleId).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityUserToken&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.UserId).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityUserToken&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.LoginProvider).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityUserToken&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.Name).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityUserClaim&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.Id).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityUserClaim&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.UserId).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityRoleClaim&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.Id).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>      builder.Entity&lt;IdentityRoleClaim&lt;<span style="color:#66d9ef">string</span>&gt;&gt;(entity =&gt; entity.Property(m =&gt; m.RoleId).HasMaxLength(<span style="color:#ae81ff">85</span>));
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Now you can finally run <code>dotnet ef database update</code> and it will create all the necessary tables with no problems (at least, it did for me). Here&rsquo;re the tables you should get:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mysql&gt; show tables;
-+------------------------+
-| Tables_in_project      |
-+------------------------+
-| AspNetRoleClaims       |
-| AspNetRoles            |
-| AspNetUserClaims       |
-| AspNetUserLogins       |
-| AspNetUserRoles        |
-| AspNetUserTokens       |
-| AspNetUsers            |
-| __EFMigrationsHistory  |
-+------------------------+
-<span style="color:#ae81ff">8</span> rows in set <span style="color:#f92672">(</span>0.00 sec<span style="color:#f92672">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>mysql&gt; show tables;
+</span></span><span style="display:flex;"><span>+------------------------+
+</span></span><span style="display:flex;"><span>| Tables_in_project      |
+</span></span><span style="display:flex;"><span>+------------------------+
+</span></span><span style="display:flex;"><span>| AspNetRoleClaims       |
+</span></span><span style="display:flex;"><span>| AspNetRoles            |
+</span></span><span style="display:flex;"><span>| AspNetUserClaims       |
+</span></span><span style="display:flex;"><span>| AspNetUserLogins       |
+</span></span><span style="display:flex;"><span>| AspNetUserRoles        |
+</span></span><span style="display:flex;"><span>| AspNetUserTokens       |
+</span></span><span style="display:flex;"><span>| AspNetUsers            |
+</span></span><span style="display:flex;"><span>| __EFMigrationsHistory  |
+</span></span><span style="display:flex;"><span>+------------------------+
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">8</span> rows in set <span style="color:#f92672">(</span>0.00 sec<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>If you want to rollback migrations to perform a new one, try to run <code>dotnet ef migrations remove</code> or simply remove the files from <code>/Migrations/</code>. But that won&rsquo;t touch the half-created tables in the database, so you&rsquo;ll need to delete those manually.</p>
 <p>Migration part is done. However, you might get the following errors after trying to run your application:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">One or more compilation references are missing. Ensure that your project is referencing <span style="color:#e6db74">&#39;Microsoft.NET.Sdk.Web&#39;</span> and the <span style="color:#e6db74">&#39;PreserveCompilationContext&#39;</span> property is not set to false.
-The type or namespace name <span style="color:#e6db74">&#39;LoginViewModel&#39;</span> could not be found <span style="color:#f92672">(</span>are you missing a using directive or an assembly reference?<span style="color:#f92672">)</span>
-The type or namespace name <span style="color:#e6db74">&#39;SignInManager&lt;&gt;&#39;</span> could not be found <span style="color:#f92672">(</span>are you missing a using directive or an assembly reference?<span style="color:#f92672">)</span>
-The type or namespace name <span style="color:#e6db74">&#39;IdentityUser&#39;</span> could not be found <span style="color:#f92672">(</span>are you missing a using directive or an assembly reference?<span style="color:#f92672">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>One or more compilation references are missing. Ensure that your project is referencing <span style="color:#e6db74">&#39;Microsoft.NET.Sdk.Web&#39;</span> and the <span style="color:#e6db74">&#39;PreserveCompilationContext&#39;</span> property is not set to false.
+</span></span><span style="display:flex;"><span>The type or namespace name <span style="color:#e6db74">&#39;LoginViewModel&#39;</span> could not be found <span style="color:#f92672">(</span>are you missing a using directive or an assembly reference?<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>The type or namespace name <span style="color:#e6db74">&#39;SignInManager&lt;&gt;&#39;</span> could not be found <span style="color:#f92672">(</span>are you missing a using directive or an assembly reference?<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>The type or namespace name <span style="color:#e6db74">&#39;IdentityUser&#39;</span> could not be found <span style="color:#f92672">(</span>are you missing a using directive or an assembly reference?<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>Most probably, you were adding <code>Identity</code> views and models to an existing project and forgot to copy the contents of  <code>/Views/_ViewImports.cshtml</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs">@using YOUR-PROJECT-NAMESPACE
-@using YOUR-PROJECT-NAMESPACE.Models
-@using YOUR-PROJECT-NAMESPACE.Models.AccountViewModels
-@using YOUR-PROJECT-NAMESPACE.Models.ManageViewModels
-@using Microsoft.AspNetCore.Identity
-@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span>@using YOUR-PROJECT-NAMESPACE
+</span></span><span style="display:flex;"><span>@using YOUR-PROJECT-NAMESPACE.Models
+</span></span><span style="display:flex;"><span>@using YOUR-PROJECT-NAMESPACE.Models.AccountViewModels
+</span></span><span style="display:flex;"><span>@using YOUR-PROJECT-NAMESPACE.Models.ManageViewModels
+</span></span><span style="display:flex;"><span>@using Microsoft.AspNetCore.Identity
+</span></span><span style="display:flex;"><span>@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers</span></span></code></pre></div>
 <p>Now everything should be fine.</p>
 <p>So, how to use it?</p>
 <p>You already are using it. All the actions of your controllers now require user to be logged-in.</p>
 <p>Probably, you would like to keep the actions of <code>HomeController</code> publicly available, because most likely that&rsquo;s the one that handles the main page and also error pages in your project. If that&rsquo;s the case, add <code>[AllowAnonymous]</code> attribute to the whole controller:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">namespace</span> YOUR-PROJECT-NAMESPACE.Controllers
-{
-<span style="color:#a6e22e">    [AllowAnonymous]</span>
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">HomeController</span> : Controller
-    {
-        <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> YOUR-PROJECT-NAMESPACE.Controllers
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">    [AllowAnonymous]</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">HomeController</span> : Controller
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Same goes for the <code>Login</code> actions of <code>AccountController</code>, otherwise no-one will be able to login to your website. In order to do so, add <code>[AllowAnonymous]</code> attribute to the actions, so they would be available for anonymous users:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">namespace</span> YOUR-PROJECT-NAMESPACE.Controllers
-{
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AccountController</span> : Controller
-    {
-        <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span><span style="color:#a6e22e">
-</span><span style="color:#a6e22e">        [HttpGet]</span>
-<span style="color:#a6e22e">        [AllowAnonymous]</span>
-        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;IActionResult&gt; Login(<span style="color:#66d9ef">string</span> returnUrl = <span style="color:#66d9ef">null</span>)
-        {
-            <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>        }
-<span style="color:#a6e22e">
-</span><span style="color:#a6e22e">        [HttpPost]</span>
-<span style="color:#a6e22e">        [AllowAnonymous]</span>
-        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;IActionResult&gt; Login(LoginViewModel model, <span style="color:#66d9ef">string</span> returnUrl = <span style="color:#66d9ef">null</span>)
-        {
-            <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>        }
-
-        <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> YOUR-PROJECT-NAMESPACE.Controllers
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AccountController</span> : Controller
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">        [HttpGet]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">        [AllowAnonymous]</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;IActionResult&gt; Login(<span style="color:#66d9ef">string</span> returnUrl = <span style="color:#66d9ef">null</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">        [HttpPost]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">        [AllowAnonymous]</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;IActionResult&gt; Login(LoginViewModel model, <span style="color:#66d9ef">string</span> returnUrl = <span style="color:#66d9ef">null</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>And when user tries to open a page that requires him to authenticate himself (actions without <code>[AllowAnonymous]</code> attribute), your application will show him login page:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/03/20/csharp-dotnet-core-identity-mysql/images/dotnet-core-mvc-login-view.png" alt=".NET Core MVC login page">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/03/20/csharp-dotnet-core-identity-mysql/images/dotnet-core-mvc-login-view.png" alt=".NET Core MVC login page">
 
 <p>As I already mentioned, <code>Identity</code> comes with roles support out-of-the-box, so you can control access even for already logged-in users based on their roles. For example, the following action is only available for users with the role <code>admin</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#a6e22e">[Authorize(Roles = &#34;admin&#34;)]</span>
-<span style="color:#66d9ef">public</span> ActionResult DeleteUser(<span style="color:#66d9ef">string</span> email)
-{
-    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#a6e22e">[Authorize(Roles = &#34;admin&#34;)]</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> ActionResult DeleteUser(<span style="color:#66d9ef">string</span> email)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>And thanks to <code>Identity</code>, you are provided with everything you need to manage roles. For instance, if you open <code>/Account/Index</code> (or just <code>/Account</code>) page in your browser, you&rsquo;ll see something like this:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/03/20/csharp-dotnet-core-identity-mysql/images/dotnet-core-mvc-users-view.png" alt=".NET Core MVC account page">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/03/20/csharp-dotnet-core-identity-mysql/images/dotnet-core-mvc-users-view.png" alt=".NET Core MVC account page">
 
 <p>You can register new user, delete existing ones and control the roles they have. And there are views for creating/deleting roles as well.</p>
 <p>So, using .NET Core Identity with MySQL database is definitely possible, even though the process overall still has some problems.</p>
@@ -429,78 +421,78 @@ The type or namespace name <span style="color:#e6db74">&#39;IdentityUser&#39;</s
 
 <h1 id="net-core-21">.NET Core 2.1</h1>
 <p>So, <a href="https://blogs.msdn.microsoft.com/dotnet/2018/05/30/announcing-net-core-2-1/">.NET Core 2.1</a> was released:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ dotnet --info
-.NET Core SDK <span style="color:#f92672">(</span>reflecting any global.json<span style="color:#f92672">)</span>:
- Version:   2.1.403
- Commit:    04e15494b6
-
-Runtime Environment:
- OS Name:     Mac OS X
- OS Version:  10.14
- OS Platform: Darwin
- RID:         osx-x64
- Base Path:   /usr/local/share/dotnet/sdk/2.1.403/
-
-Host <span style="color:#f92672">(</span>useful <span style="color:#66d9ef">for</span> support<span style="color:#f92672">)</span>:
-  Version: 2.1.5
-  Commit:  290303f510
-
-.NET Core SDKs installed:
-  2.1.403 <span style="color:#f92672">[</span>/usr/local/share/dotnet/sdk<span style="color:#f92672">]</span>
-
-.NET Core runtimes installed:
-  Microsoft.AspNetCore.All 2.1.5 <span style="color:#f92672">[</span>/usr/local/share/dotnet/shared/Microsoft.AspNetCore.All<span style="color:#f92672">]</span>
-  Microsoft.AspNetCore.App 2.1.5 <span style="color:#f92672">[</span>/usr/local/share/dotnet/shared/Microsoft.AspNetCore.App<span style="color:#f92672">]</span>
-  Microsoft.NETCore.App 2.1.5 <span style="color:#f92672">[</span>/usr/local/share/dotnet/shared/Microsoft.NETCore.App<span style="color:#f92672">]</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ dotnet --info
+</span></span><span style="display:flex;"><span>.NET Core SDK <span style="color:#f92672">(</span>reflecting any global.json<span style="color:#f92672">)</span>:
+</span></span><span style="display:flex;"><span> Version:   2.1.403
+</span></span><span style="display:flex;"><span> Commit:    04e15494b6
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Runtime Environment:
+</span></span><span style="display:flex;"><span> OS Name:     Mac OS X
+</span></span><span style="display:flex;"><span> OS Version:  10.14
+</span></span><span style="display:flex;"><span> OS Platform: Darwin
+</span></span><span style="display:flex;"><span> RID:         osx-x64
+</span></span><span style="display:flex;"><span> Base Path:   /usr/local/share/dotnet/sdk/2.1.403/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Host <span style="color:#f92672">(</span>useful <span style="color:#66d9ef">for</span> support<span style="color:#f92672">)</span>:
+</span></span><span style="display:flex;"><span>  Version: 2.1.5
+</span></span><span style="display:flex;"><span>  Commit:  290303f510
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>.NET Core SDKs installed:
+</span></span><span style="display:flex;"><span>  2.1.403 <span style="color:#f92672">[</span>/usr/local/share/dotnet/sdk<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>.NET Core runtimes installed:
+</span></span><span style="display:flex;"><span>  Microsoft.AspNetCore.All 2.1.5 <span style="color:#f92672">[</span>/usr/local/share/dotnet/shared/Microsoft.AspNetCore.All<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>  Microsoft.AspNetCore.App 2.1.5 <span style="color:#f92672">[</span>/usr/local/share/dotnet/shared/Microsoft.AspNetCore.App<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>  Microsoft.NETCore.App 2.1.5 <span style="color:#f92672">[</span>/usr/local/share/dotnet/shared/Microsoft.NETCore.App<span style="color:#f92672">]</span></span></span></code></pre></div>
 <p>&hellip;and of course it broke some things. While some can be fixed by following the <a href="https://docs.microsoft.com/en-us/aspnet/core/migration/20_21?view=aspnetcore-2.1">migration manual</a>, MySQL EntityFramework from Oracle got broken for good.</p>
 <p>For instance, I got the following error (<em>also noted by someone in comments</em>) after the update to .NET Core 2.1:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">The <span style="color:#e6db74">&#39;MySQLNumberTypeMapping&#39;</span> does not support value conversions. Support <span style="color:#66d9ef">for</span> value conversions typically requires changes in the database provider.</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>The <span style="color:#e6db74">&#39;MySQLNumberTypeMapping&#39;</span> does not support value conversions. Support <span style="color:#66d9ef">for</span> value conversions typically requires changes in the database provider.</span></span></code></pre></div>
 <p>Googling the error I found <a href="https://github.com/aspnet/EntityFrameworkCore/issues/11078">this thread</a>, from where I got to <a href="https://bugs.mysql.com/bug.php?id=89855">this bugreport</a> at Oracle tracker, which basically says that Oracle doesn&rsquo;t give a flying rat about fixing it.</p>
 <p>But good news Pomelo Foundation <a href="https://github.com/PomeloFoundation/Pomelo.EntityFrameworkCore.MySql/issues/514">does</a>, and they actually fixed the problem in their package, so the solution is just to give up on Oracle and switch to Pomelo.</p>
 <p>Let&rsquo;s see that on an example of a new project created from scratch:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir some-project <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#e6db74">&#34;</span>$_<span style="color:#e6db74">&#34;</span>
-dotnet new mvc --auth Individual
-dotnet add package Pomelo.EntityFrameworkCore.MySql
-dotnet restore</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>mkdir some-project <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#e6db74">&#34;</span>$_<span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>dotnet new mvc --auth Individual
+</span></span><span style="display:flex;"><span>dotnet add package Pomelo.EntityFrameworkCore.MySql
+</span></span><span style="display:flex;"><span>dotnet restore</span></span></code></pre></div>
 <p>Modify the connection string in <code>appsettings.json</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-  <span style="color:#f92672">&#34;ConnectionStrings&#34;</span>: {
-    <span style="color:#f92672">&#34;DefaultConnection&#34;</span>: <span style="color:#e6db74">&#34;server=localhost;port=3306;database=DATABASE;user=USERNAME;password=PASSWORD;CharSet=utf8;SslMode=none;&#34;</span>
-  },
-
-  <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;ConnectionStrings&#34;</span>: {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;DefaultConnection&#34;</span>: <span style="color:#e6db74">&#34;server=localhost;port=3306;database=DATABASE;user=USERNAME;password=PASSWORD;CharSet=utf8;SslMode=none;&#34;</span>
+</span></span><span style="display:flex;"><span>  },
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}</span></span></code></pre></div>
 <p>And perform migration:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dotnet ef migrations add InitialCreate
-dotnet ef database update</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>dotnet ef migrations add InitialCreate
+</span></span><span style="display:flex;"><span>dotnet ef database update</span></span></code></pre></div>
 <p>That will create something like this in your database:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mysql&gt; show tables;
-+-----------------------+
-| Tables_in_DATABASE    |
-+-----------------------+
-| AspNetRoleClaims      |
-| AspNetRoles           |
-| AspNetUserClaims      |
-| AspNetUserLogins      |
-| AspNetUserRoles       |
-| AspNetUserTokens      |
-| AspNetUsers           |
-| __EFMigrationsHistory |
-+-----------------------+
-<span style="color:#ae81ff">8</span> rows in set <span style="color:#f92672">(</span>0.00 sec<span style="color:#f92672">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>mysql&gt; show tables;
+</span></span><span style="display:flex;"><span>+-----------------------+
+</span></span><span style="display:flex;"><span>| Tables_in_DATABASE    |
+</span></span><span style="display:flex;"><span>+-----------------------+
+</span></span><span style="display:flex;"><span>| AspNetRoleClaims      |
+</span></span><span style="display:flex;"><span>| AspNetRoles           |
+</span></span><span style="display:flex;"><span>| AspNetUserClaims      |
+</span></span><span style="display:flex;"><span>| AspNetUserLogins      |
+</span></span><span style="display:flex;"><span>| AspNetUserRoles       |
+</span></span><span style="display:flex;"><span>| AspNetUserTokens      |
+</span></span><span style="display:flex;"><span>| AspNetUsers           |
+</span></span><span style="display:flex;"><span>| __EFMigrationsHistory |
+</span></span><span style="display:flex;"><span>+-----------------------+
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">8</span> rows in set <span style="color:#f92672">(</span>0.00 sec<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>Then change from <code>UseSqlite()</code> to <code>UseMySql()</code> in <code>Startup.cs</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> ConfigureServices(IServiceCollection services)
-{
-    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>
-    services.AddDbContext&lt;ApplicationDbContext&gt;(options =&gt;
-        options.UseMySql(Configuration.GetConnectionString(<span style="color:#e6db74">&#34;DefaultConnection&#34;</span>))
-        );
-    services.AddDefaultIdentity&lt;IdentityUser&gt;()
-        .AddEntityFrameworkStores&lt;ApplicationDbContext&gt;();
-
-    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> ConfigureServices(IServiceCollection services)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    services.AddDbContext&lt;ApplicationDbContext&gt;(options =&gt;
+</span></span><span style="display:flex;"><span>        options.UseMySql(Configuration.GetConnectionString(<span style="color:#e6db74">&#34;DefaultConnection&#34;</span>))
+</span></span><span style="display:flex;"><span>        );
+</span></span><span style="display:flex;"><span>    services.AddDefaultIdentity&lt;IdentityUser&gt;()
+</span></span><span style="display:flex;"><span>        .AddEntityFrameworkStores&lt;ApplicationDbContext&gt;();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>And that&rsquo;s it, there is no even need to override <code>OnModelCreating()</code> with those weird data types customization - everything just works out of the box.</p>
 
 

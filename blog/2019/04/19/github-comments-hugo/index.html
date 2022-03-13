@@ -5,7 +5,7 @@
     <title>GitHub comments for a Hugo-based blog | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2019/04/19/github-comments-hugo/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -19,9 +19,7 @@
 <meta property="og:description" content="From the dawn of times (when I started this blog) I was using Disqus solution for comments on pages. I had almost no complains towards it, but recently I learnt that one can use GitHub issues as a source of comments! That sounds just too cool not to try.
 
 
-
     
-
 
 This article will focus on adding GitHub comments to a Hugo-based blog, but actually you can add those anywhere you want, would it be a different blog-engine or something completely different altogether." />
 <meta property="og:type" content="article" />
@@ -74,9 +72,7 @@ This article will focus on adding GitHub comments to a Hugo-based blog, but actu
         <p>From the dawn of times (<em>when I started this blog</em>) I was using <a href="https://disqus.com">Disqus</a> solution for comments on pages. I had almost no complains towards it, but recently I learnt that one can use <a href="https://help.github.com/en/articles/about-issues">GitHub issues</a> as a source of comments! That sounds just too cool not to try.</p>
 
 
-
-    <img class="image-post" src="/blog/2019/04/19/github-comments-hugo/images/comments.png" alt="GitHub comments">
-
+    <img class="image-post" loading="lazy" src="/blog/2019/04/19/github-comments-hugo/images/comments.png" alt="GitHub comments">
 
 <p>This article will focus on adding GitHub comments to a Hugo-based blog, but actually you can add those anywhere you want, would it be a different blog-engine or something completely different altogether.</p>
 <nav id="TableOfContents">
@@ -100,9 +96,7 @@ This article will focus on adding GitHub comments to a Hugo-based blog, but actu
 <p>Others <a href="https://victorzhou.com/blog/replacing-disqus/">complain</a> about performance. There are <a href="http://donw.io/img/GithubComments/DisqusLoadLogHigh.png">graphs</a> showing enormous amount of network requests done by Disqus on people&rsquo;s pages. I cannot confirm these complains because here&rsquo;s what I see in my browser:</p>
 
 
-
-    <img class="image-post" src="/blog/2019/04/19/github-comments-hugo/images/disqus-network.png" alt="Disqus network performance">
-
+    <img class="image-post" loading="lazy" src="/blog/2019/04/19/github-comments-hugo/images/disqus-network.png" alt="Disqus network performance">
 
 <p>Which is not too bad. Perhaps Disqus improved this issue over the time, and it was nastier in past.</p>
 <p>Finally, almost everyone complains about the tracking issue, that Disqus collects data and uses it in all the bad ways possible, which is most likely to be the truth. But then again, using a free subscription plan, I cannot really complain about it - that&rsquo;s the usual price for the free stuff on the internet.</p>
@@ -113,9 +107,7 @@ This article will focus on adding GitHub comments to a Hugo-based blog, but actu
 <p>And then I discovered that once you added a bank card to your Commento account, it is not that easy to delete it:</p>
 
 
-
-    <img class="image-post" src="/blog/2019/04/19/github-comments-hugo/images/commento-billing-information.png" alt="Commento billing information">
-
+    <img class="image-post" loading="lazy" src="/blog/2019/04/19/github-comments-hugo/images/commento-billing-information.png" alt="Commento billing information">
 
 <p>I also didn&rsquo;t like this part:</p>
 <blockquote>
@@ -134,9 +126,7 @@ This article will focus on adding GitHub comments to a Hugo-based blog, but actu
 <p>And then every such page just calls this API to fetch the comments:</p>
 
 
-
-    <img class="image-post" src="/blog/2019/04/19/github-comments-hugo/images/fetching-comments-from-github.png" alt="Fetching comments from GitHub issues">
-
+    <img class="image-post" loading="lazy" src="/blog/2019/04/19/github-comments-hugo/images/fetching-comments-from-github.png" alt="Fetching comments from GitHub issues">
 
 <p>Simple and nice, but there are some obvious downsides:</p>
 <ul>
@@ -146,141 +136,141 @@ This article will focus on adding GitHub comments to a Hugo-based blog, but actu
 <p>Other than these two problems - what a splendid idea! Let&rsquo;s see how to implement it.</p>
 <h2 id="how-to-add-it-to-hugo">How to add it to Hugo</h2>
 <p>Create the following partial (<code>/layouts/partials/comments.html</code>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">script</span>&gt;
-  <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">id</span> <span style="color:#f92672">=</span> {{ .<span style="color:#a6e22e">Params</span>.<span style="color:#a6e22e">GHissueID</span> }};
-
-  <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">id</span>)
-  {
-    <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">url</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;https://github.com/YOUR-ACCOUNT/YOUR-REPOSITORY/issues/&#34;</span>.<span style="color:#a6e22e">concat</span>(<span style="color:#a6e22e">id</span>);
-    <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">api_url</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;https://api.github.com/repos/YOUR-ACCOUNT/YOUR-REPOSITORY/issues/&#34;</span>.<span style="color:#a6e22e">concat</span>(<span style="color:#a6e22e">id</span>, <span style="color:#e6db74">&#34;/comments&#34;</span>);
-    
-    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">commentsDiv</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">getElementById</span>(<span style="color:#e6db74">&#34;comments&#34;</span>);
-
-    <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">xhr</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">XMLHttpRequest</span>();
-    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">responseType</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;json&#34;</span>;
-    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">open</span>(<span style="color:#e6db74">&#34;GET&#34;</span>, <span style="color:#a6e22e">api_url</span>);
-    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">setRequestHeader</span>(<span style="color:#e6db74">&#34;Accept&#34;</span>, <span style="color:#e6db74">&#34;application/vnd.github.v3.html+json&#34;</span>);
-    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">send</span>();
-
-    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">onload</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
-    {
-      <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">status</span> <span style="color:#f92672">!=</span> <span style="color:#ae81ff">200</span>)
-      {
-        <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">errorText</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">createElement</span>(<span style="color:#e6db74">&#34;p&#34;</span>);
-        <span style="color:#a6e22e">errorText</span>.<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&lt;i&gt;Comments for this post yet are not opened yet (or you have GitHub scripts disabled).&lt;/i&gt;&#34;</span>;
-        <span style="color:#a6e22e">commentsDiv</span>.<span style="color:#a6e22e">appendChild</span>(<span style="color:#a6e22e">errorText</span>);
-      }
-      <span style="color:#66d9ef">else</span>
-      {
-        <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">comments</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">response</span>;
-
-        <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">mainHeader</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">createElement</span>(<span style="color:#e6db74">&#34;h2&#34;</span>);
-        <span style="color:#a6e22e">mainHeader</span>.<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Comments: &#34;</span>.<span style="color:#a6e22e">concat</span>(<span style="color:#a6e22e">comments</span>.<span style="color:#a6e22e">length</span>);
-        <span style="color:#a6e22e">commentsDiv</span>.<span style="color:#a6e22e">appendChild</span>(<span style="color:#a6e22e">mainHeader</span>);
-
-        <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">issueLink</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">createElement</span>(<span style="color:#e6db74">&#34;p&#34;</span>);
-        <span style="color:#a6e22e">issueLink</span>.<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&lt;i&gt;You can leave a comment using this &lt;a href=&#39;&#34;</span>.<span style="color:#a6e22e">concat</span>(<span style="color:#a6e22e">url</span>, <span style="color:#e6db74">&#34;&#39;&gt;GitHub issue&lt;/a&gt;.&lt;/i&gt;&#34;</span>);
-        <span style="color:#a6e22e">commentsDiv</span>.<span style="color:#a6e22e">appendChild</span>(<span style="color:#a6e22e">issueLink</span>);
-        
-        <span style="color:#a6e22e">comments</span>.<span style="color:#a6e22e">forEach</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">comment</span>)
-        {
-            <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">commentContent</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">createElement</span>(<span style="color:#e6db74">&#34;div&#34;</span>);
-            <span style="color:#a6e22e">commentContent</span>.<span style="color:#a6e22e">setAttribute</span>(<span style="color:#e6db74">&#39;class&#39;</span>, <span style="color:#e6db74">&#39;gh-comment&#39;</span>)
-            <span style="color:#a6e22e">commentContent</span>.<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span>.<span style="color:#a6e22e">concat</span>(
-                <span style="color:#e6db74">&#34;&lt;div class=&#39;gh-header&#39;&gt;&#34;</span>,
-                  <span style="color:#e6db74">&#34;&lt;img src=&#39;&#34;</span>, <span style="color:#a6e22e">comment</span>.<span style="color:#a6e22e">user</span>.<span style="color:#a6e22e">avatar_url</span>, <span style="color:#e6db74">&#34;&#39; /&gt;&#34;</span>,
-                  <span style="color:#e6db74">&#34;&lt;div style=&#39;margin:auto 0;&#39;&gt;&#34;</span>,
-                    <span style="color:#e6db74">&#34;&lt;b&gt;&lt;a class=&#39;gh-username&#39; href=&#39;&#34;</span>, <span style="color:#a6e22e">comment</span>.<span style="color:#a6e22e">user</span>.<span style="color:#a6e22e">html_url</span>, <span style="color:#e6db74">&#34;&#39;&gt;&#34;</span>, <span style="color:#a6e22e">comment</span>.<span style="color:#a6e22e">user</span>.<span style="color:#a6e22e">login</span>, <span style="color:#e6db74">&#34;&lt;/a&gt;&lt;/b&gt;&#34;</span>,
-                    <span style="color:#e6db74">&#34; commented at &lt;em&gt;&#34;</span>, <span style="color:#66d9ef">new</span> Date(<span style="color:#a6e22e">comment</span>.<span style="color:#a6e22e">created_at</span>), <span style="color:#e6db74">&#34;&lt;/em&gt;&#34;</span>,
-                  <span style="color:#e6db74">&#34;&lt;/div&gt;&#34;</span>,
-                <span style="color:#e6db74">&#34;&lt;/div&gt;&#34;</span>,
-                <span style="color:#e6db74">&#34;&lt;div class=&#39;gh-body&#39;&gt;&#34;</span>,
-                  <span style="color:#a6e22e">comment</span>.<span style="color:#a6e22e">body_html</span>,
-                <span style="color:#e6db74">&#34;&lt;/div&gt;&#34;</span>
-            );
-            <span style="color:#a6e22e">commentsDiv</span>.<span style="color:#a6e22e">appendChild</span>(<span style="color:#a6e22e">commentContent</span>);
-        });
-      }
-    };
-
-    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">onerror</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
-    {
-      <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">errorText</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">createElement</span>(<span style="color:#e6db74">&#34;p&#34;</span>);
-      <span style="color:#a6e22e">errorText</span>.<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&lt;i&gt;Some error loading comments.&lt;/i&gt;&#34;</span>;
-      <span style="color:#a6e22e">commentsDiv</span>.<span style="color:#a6e22e">appendChild</span>(<span style="color:#a6e22e">errorText</span>);
-    };
-  }
-&lt;/<span style="color:#f92672">script</span>&gt;</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span>&lt;<span style="color:#f92672">script</span>&gt;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">id</span> <span style="color:#f92672">=</span> {{ .<span style="color:#a6e22e">Params</span>.<span style="color:#a6e22e">GHissueID</span> }};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">id</span>)
+</span></span><span style="display:flex;"><span>  {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">url</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;https://github.com/YOUR-ACCOUNT/YOUR-REPOSITORY/issues/&#34;</span>.<span style="color:#a6e22e">concat</span>(<span style="color:#a6e22e">id</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">api_url</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;https://api.github.com/repos/YOUR-ACCOUNT/YOUR-REPOSITORY/issues/&#34;</span>.<span style="color:#a6e22e">concat</span>(<span style="color:#a6e22e">id</span>, <span style="color:#e6db74">&#34;/comments&#34;</span>);
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">commentsDiv</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">getElementById</span>(<span style="color:#e6db74">&#34;comments&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">xhr</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">XMLHttpRequest</span>();
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">responseType</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;json&#34;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">open</span>(<span style="color:#e6db74">&#34;GET&#34;</span>, <span style="color:#a6e22e">api_url</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">setRequestHeader</span>(<span style="color:#e6db74">&#34;Accept&#34;</span>, <span style="color:#e6db74">&#34;application/vnd.github.v3.html+json&#34;</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">send</span>();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">onload</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">status</span> <span style="color:#f92672">!=</span> <span style="color:#ae81ff">200</span>)
+</span></span><span style="display:flex;"><span>      {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">errorText</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">createElement</span>(<span style="color:#e6db74">&#34;p&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">errorText</span>.<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&lt;i&gt;Comments for this post yet are not opened yet (or you have GitHub scripts disabled).&lt;/i&gt;&#34;</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">commentsDiv</span>.<span style="color:#a6e22e">appendChild</span>(<span style="color:#a6e22e">errorText</span>);
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>      {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">comments</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">response</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">mainHeader</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">createElement</span>(<span style="color:#e6db74">&#34;h2&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">mainHeader</span>.<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Comments: &#34;</span>.<span style="color:#a6e22e">concat</span>(<span style="color:#a6e22e">comments</span>.<span style="color:#a6e22e">length</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">commentsDiv</span>.<span style="color:#a6e22e">appendChild</span>(<span style="color:#a6e22e">mainHeader</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">issueLink</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">createElement</span>(<span style="color:#e6db74">&#34;p&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">issueLink</span>.<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&lt;i&gt;You can leave a comment using this &lt;a href=&#39;&#34;</span>.<span style="color:#a6e22e">concat</span>(<span style="color:#a6e22e">url</span>, <span style="color:#e6db74">&#34;&#39;&gt;GitHub issue&lt;/a&gt;.&lt;/i&gt;&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">commentsDiv</span>.<span style="color:#a6e22e">appendChild</span>(<span style="color:#a6e22e">issueLink</span>);
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">comments</span>.<span style="color:#a6e22e">forEach</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">comment</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">commentContent</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">createElement</span>(<span style="color:#e6db74">&#34;div&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">commentContent</span>.<span style="color:#a6e22e">setAttribute</span>(<span style="color:#e6db74">&#39;class&#39;</span>, <span style="color:#e6db74">&#39;gh-comment&#39;</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">commentContent</span>.<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span>.<span style="color:#a6e22e">concat</span>(
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;&lt;div class=&#39;gh-header&#39;&gt;&#34;</span>,
+</span></span><span style="display:flex;"><span>                  <span style="color:#e6db74">&#34;&lt;img src=&#39;&#34;</span>, <span style="color:#a6e22e">comment</span>.<span style="color:#a6e22e">user</span>.<span style="color:#a6e22e">avatar_url</span>, <span style="color:#e6db74">&#34;&#39; /&gt;&#34;</span>,
+</span></span><span style="display:flex;"><span>                  <span style="color:#e6db74">&#34;&lt;div style=&#39;margin:auto 0;&#39;&gt;&#34;</span>,
+</span></span><span style="display:flex;"><span>                    <span style="color:#e6db74">&#34;&lt;b&gt;&lt;a class=&#39;gh-username&#39; href=&#39;&#34;</span>, <span style="color:#a6e22e">comment</span>.<span style="color:#a6e22e">user</span>.<span style="color:#a6e22e">html_url</span>, <span style="color:#e6db74">&#34;&#39;&gt;&#34;</span>, <span style="color:#a6e22e">comment</span>.<span style="color:#a6e22e">user</span>.<span style="color:#a6e22e">login</span>, <span style="color:#e6db74">&#34;&lt;/a&gt;&lt;/b&gt;&#34;</span>,
+</span></span><span style="display:flex;"><span>                    <span style="color:#e6db74">&#34; commented at &lt;em&gt;&#34;</span>, <span style="color:#66d9ef">new</span> Date(<span style="color:#a6e22e">comment</span>.<span style="color:#a6e22e">created_at</span>), <span style="color:#e6db74">&#34;&lt;/em&gt;&#34;</span>,
+</span></span><span style="display:flex;"><span>                  <span style="color:#e6db74">&#34;&lt;/div&gt;&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;&lt;/div&gt;&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;&lt;div class=&#39;gh-body&#39;&gt;&#34;</span>,
+</span></span><span style="display:flex;"><span>                  <span style="color:#a6e22e">comment</span>.<span style="color:#a6e22e">body_html</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;&lt;/div&gt;&#34;</span>
+</span></span><span style="display:flex;"><span>            );
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">commentsDiv</span>.<span style="color:#a6e22e">appendChild</span>(<span style="color:#a6e22e">commentContent</span>);
+</span></span><span style="display:flex;"><span>        });
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>    };
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">onerror</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">errorText</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">createElement</span>(<span style="color:#e6db74">&#34;p&#34;</span>);
+</span></span><span style="display:flex;"><span>      <span style="color:#a6e22e">errorText</span>.<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&lt;i&gt;Some error loading comments.&lt;/i&gt;&#34;</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#a6e22e">commentsDiv</span>.<span style="color:#a6e22e">appendChild</span>(<span style="color:#a6e22e">errorText</span>);
+</span></span><span style="display:flex;"><span>    };
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>&lt;/<span style="color:#f92672">script</span>&gt;</span></span></code></pre></div>
 <p>Maybe add some styles:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-css" data-lang="css">#comments {
-    <span style="color:#66d9ef">margin-top</span>: <span style="color:#ae81ff">30</span><span style="color:#66d9ef">px</span>;
-}
-
-.<span style="color:#a6e22e">gh-comment</span> {
-  <span style="color:#66d9ef">border</span>: <span style="color:#ae81ff">1</span><span style="color:#66d9ef">px</span> <span style="color:#66d9ef">solid</span> <span style="color:#ae81ff">#d1d5da</span>;
-  <span style="color:#66d9ef">margin-top</span>: <span style="color:#ae81ff">15</span><span style="color:#66d9ef">px</span>;
-}
-
-.<span style="color:#a6e22e">gh-header</span> {
-  <span style="color:#66d9ef">display</span>: <span style="color:#66d9ef">flex</span>;
-  <span style="color:#66d9ef">color</span>: <span style="color:#ae81ff">#586069</span>;
-  <span style="color:#66d9ef">background-color</span>: <span style="color:#ae81ff">#f6f8fa</span>;
-  <span style="color:#66d9ef">border-bottom</span>: <span style="color:#ae81ff">1</span><span style="color:#66d9ef">px</span> <span style="color:#66d9ef">solid</span> <span style="color:#ae81ff">#d1d5da</span>;
-  <span style="color:#66d9ef">padding</span>: <span style="color:#ae81ff">10</span><span style="color:#66d9ef">px</span>;
-  <span style="color:#66d9ef">font-size</span>: <span style="color:#ae81ff">85</span><span style="color:#66d9ef">%</span>;
-}
-
-.<span style="color:#a6e22e">gh-username</span> {
-  <span style="color:#66d9ef">color</span>: <span style="color:#ae81ff">#586069</span>;
-}
-
-.<span style="color:#a6e22e">gh-body</span> {
-  <span style="color:#66d9ef">padding</span>: <span style="color:#ae81ff">10</span><span style="color:#66d9ef">px</span> <span style="color:#ae81ff">15</span><span style="color:#66d9ef">px</span>;
-}
-
-.<span style="color:#a6e22e">gh-body</span> <span style="color:#f92672">code</span> {
-  <span style="color:#66d9ef">font-size</span>: <span style="color:#ae81ff">120</span><span style="color:#66d9ef">%</span>;
-}
-.<span style="color:#a6e22e">gh-body</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">div</span>.<span style="color:#a6e22e">highlight</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">pre</span> {
-  <span style="color:#66d9ef">padding</span>: <span style="color:#ae81ff">10</span><span style="color:#66d9ef">px</span>;
-  <span style="color:#66d9ef">color</span>: <span style="color:#66d9ef">lime</span>;
-  <span style="color:#66d9ef">font-size</span>: <span style="color:#ae81ff">120</span><span style="color:#66d9ef">%</span>;
-  <span style="color:#66d9ef">background-color</span>: <span style="color:#ae81ff">#000</span>;
-  <span style="color:#66d9ef">border-radius</span>: <span style="color:#ae81ff">5</span><span style="color:#66d9ef">px</span>;
-}
-
-.<span style="color:#a6e22e">gh-comment</span> <span style="color:#f92672">p</span> {
-  <span style="color:#66d9ef">margin</span>: <span style="color:#ae81ff">0</span><span style="color:#66d9ef">px</span> <span style="color:#ae81ff">0</span><span style="color:#66d9ef">px</span> <span style="color:#ae81ff">10</span><span style="color:#66d9ef">px</span> <span style="color:#ae81ff">0</span><span style="color:#66d9ef">px</span>;
-}
-.<span style="color:#a6e22e">gh-comment</span> <span style="color:#f92672">p</span>:<span style="color:#a6e22e">last-child</span> {
-  <span style="color:#66d9ef">margin</span>: <span style="color:#ae81ff">0</span>;
-}
-
-.<span style="color:#a6e22e">gh-header</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">img</span> {
-  <span style="color:#66d9ef">width</span>: <span style="color:#ae81ff">24</span><span style="color:#66d9ef">px</span>;
-  <span style="color:#66d9ef">height</span>: <span style="color:#ae81ff">24</span><span style="color:#66d9ef">px</span>;
-  <span style="color:#66d9ef">margin-right</span>: <span style="color:#ae81ff">10</span><span style="color:#66d9ef">px</span>;
-  <span style="color:#66d9ef">vertical-align</span>: <span style="color:#66d9ef">middle</span>;
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-css" data-lang="css"><span style="display:flex;"><span>#comments {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">margin-top</span>: <span style="color:#ae81ff">30</span><span style="color:#66d9ef">px</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>.<span style="color:#a6e22e">gh-comment</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">border</span>: <span style="color:#ae81ff">1</span><span style="color:#66d9ef">px</span> <span style="color:#66d9ef">solid</span> <span style="color:#ae81ff">#d1d5da</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">margin-top</span>: <span style="color:#ae81ff">15</span><span style="color:#66d9ef">px</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>.<span style="color:#a6e22e">gh-header</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">display</span>: <span style="color:#66d9ef">flex</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">color</span>: <span style="color:#ae81ff">#586069</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">background-color</span>: <span style="color:#ae81ff">#f6f8fa</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">border-bottom</span>: <span style="color:#ae81ff">1</span><span style="color:#66d9ef">px</span> <span style="color:#66d9ef">solid</span> <span style="color:#ae81ff">#d1d5da</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">padding</span>: <span style="color:#ae81ff">10</span><span style="color:#66d9ef">px</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">font-size</span>: <span style="color:#ae81ff">85</span><span style="color:#66d9ef">%</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>.<span style="color:#a6e22e">gh-username</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">color</span>: <span style="color:#ae81ff">#586069</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>.<span style="color:#a6e22e">gh-body</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">padding</span>: <span style="color:#ae81ff">10</span><span style="color:#66d9ef">px</span> <span style="color:#ae81ff">15</span><span style="color:#66d9ef">px</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>.<span style="color:#a6e22e">gh-body</span> <span style="color:#f92672">code</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">font-size</span>: <span style="color:#ae81ff">120</span><span style="color:#66d9ef">%</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>.<span style="color:#a6e22e">gh-body</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">div</span>.<span style="color:#a6e22e">highlight</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">pre</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">padding</span>: <span style="color:#ae81ff">10</span><span style="color:#66d9ef">px</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">color</span>: <span style="color:#66d9ef">lime</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">font-size</span>: <span style="color:#ae81ff">120</span><span style="color:#66d9ef">%</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">background-color</span>: <span style="color:#ae81ff">#000</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">border-radius</span>: <span style="color:#ae81ff">5</span><span style="color:#66d9ef">px</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>.<span style="color:#a6e22e">gh-comment</span> <span style="color:#f92672">p</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">margin</span>: <span style="color:#ae81ff">0</span><span style="color:#66d9ef">px</span> <span style="color:#ae81ff">0</span><span style="color:#66d9ef">px</span> <span style="color:#ae81ff">10</span><span style="color:#66d9ef">px</span> <span style="color:#ae81ff">0</span><span style="color:#66d9ef">px</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>.<span style="color:#a6e22e">gh-comment</span> <span style="color:#f92672">p</span>:<span style="color:#a6e22e">last-child</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">margin</span>: <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>.<span style="color:#a6e22e">gh-header</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">img</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">width</span>: <span style="color:#ae81ff">24</span><span style="color:#66d9ef">px</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">height</span>: <span style="color:#ae81ff">24</span><span style="color:#66d9ef">px</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">margin-right</span>: <span style="color:#ae81ff">10</span><span style="color:#66d9ef">px</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">vertical-align</span>: <span style="color:#66d9ef">middle</span>;
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>And then edit the page layout (<code>/themes/YOUR-THEME/layouts/_default/single.html</code>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">...</span>
-<span style="color:#f92672">&lt;</span>div id<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;comments&#34;</span><span style="color:#f92672">&gt;</span>
-<span style="color:#f92672">{{</span> <span style="color:#66d9ef">with</span> <span style="color:#f92672">.</span><span style="color:#a6e22e">Params</span><span style="color:#f92672">.</span><span style="color:#a6e22e">GHissueID</span> <span style="color:#f92672">}}</span>
-  <span style="color:#f92672">{{</span> partial <span style="color:#e6db74">&#34;comments.html&#34;</span> $ <span style="color:#f92672">}}</span>
-<span style="color:#f92672">{{</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">}}</span>
-  <span style="color:#f92672">{{</span> template <span style="color:#e6db74">&#34;_internal/disqus.html&#34;</span> <span style="color:#f92672">.</span> <span style="color:#f92672">}}</span>
-<span style="color:#f92672">{{</span> end <span style="color:#f92672">}}</span>
-<span style="color:#f92672">&lt;/</span>div<span style="color:#f92672">&gt;</span>
-<span style="color:#f92672">...</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;</span>div id<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;comments&#34;</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{{</span> <span style="color:#66d9ef">with</span> <span style="color:#f92672">.</span><span style="color:#a6e22e">Params</span><span style="color:#f92672">.</span><span style="color:#a6e22e">GHissueID</span> <span style="color:#f92672">}}</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">{{</span> partial <span style="color:#e6db74">&#34;comments.html&#34;</span> $ <span style="color:#f92672">}}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{{</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">}}</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">{{</span> template <span style="color:#e6db74">&#34;_internal/disqus.html&#34;</span> <span style="color:#f92672">.</span> <span style="color:#f92672">}}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{{</span> end <span style="color:#f92672">}}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/</span>div<span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">...</span></span></span></code></pre></div>
 <p>What&rsquo;s convenient here is that if you (<em>like me</em>) already have some old comments in Disqus which you would like to keep, then you have a choice - when Hugo doesn&rsquo;t find a <code>GHissueID</code> parameter on the page, it will fallback to Disqus.</p>
 <p>But what is this <code>GHissueID</code> parameter? Oh, that&rsquo;s just a GitHub issue ID which you need to put to the page&rsquo;s <a href="https://gohugo.io/content-management/front-matter/">front matter</a>. For example, here&rsquo;s how it looks like in this very post:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">---
-<span style="color:#f92672">title</span>: <span style="color:#e6db74">&#34;GitHub comments for a Hugo-based blog&#34;</span>
-<span style="color:#f92672">date</span>: <span style="color:#e6db74">2019-04-19T12:57:21</span><span style="color:#ae81ff">+02</span>:<span style="color:#ae81ff">00</span>
-<span style="color:#f92672">tags</span>: [<span style="color:#ae81ff">hugo, web]</span>
-<span style="color:#f92672">GHissueID</span>: <span style="color:#ae81ff">2</span>
----
-...</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">title</span>: <span style="color:#e6db74">&#34;GitHub comments for a Hugo-based blog&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">date</span>: <span style="color:#e6db74">2019-04-19T12:57:21</span><span style="color:#ae81ff">+02</span>:<span style="color:#ae81ff">00</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">tags</span>: [<span style="color:#ae81ff">hugo, web]</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">GHissueID</span>: <span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span>...</span></span></code></pre></div>
 <p>Which means that comments for this page are collected in the <a href="https://github.com/retifrav/retifrav.github.io/issues/2">GitHub issue</a> with the ID <code>2</code>. And if you delete this line from the front matter, then Disqus comments will be used instead.</p>
 <p>Below you can see the GitHub comments for this page in action.</p>
       </div>

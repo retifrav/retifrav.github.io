@@ -5,7 +5,7 @@
     <title>Скрытие комментариев в Woo Tabs | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2015/10/10/wordpress-woo-tabs-hide-comments/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -68,46 +68,44 @@
 <p>Вот этот виджет:</p>
 
 
-
-    <img class="image-post" src="/blog/2015/10/10/wordpress-woo-tabs-hide-comments/images/comments.png" alt="Виджет комментариев в теме WordPress Continuum">
-
+    <img class="image-post" loading="lazy" src="/blog/2015/10/10/wordpress-woo-tabs-hide-comments/images/comments.png" alt="Виджет комментариев в теме WordPress Continuum">
 
 <p>То есть, если пост с ограниченным доступом, и в нём есть комментарии, то они будут видны в этом виджете для всех посетителей сайта.</p>
 <p>На самом деле, у нас эта тема давно не обновлялась, потому в новых версиях, возможно, это уже исправлено. Но мы тему уже так закастомизировали, что обновиться теперь будет непросто.</p>
 <p>В общем, нам понадобилось внести изменения в файле <code>/path2wordpress/wp-content/themes/сontinuum/includes/theme-functions.php</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#75715e">/*-----------------------------------------------------------------------------------*/</span>
-<span style="color:#75715e">/* WooTabs - Latest Comments */</span>
-<span style="color:#75715e">/*-----------------------------------------------------------------------------------*/</span>
-<span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>function_exists<span style="color:#f92672">(</span>&#39;woo_tabs_comments<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
-	function woo_tabs_comments<span style="color:#f92672">(</span> <span style="color:#a6e22e">$posts</span> <span style="color:#66d9ef">=</span> <span style="color:#ae81ff">5</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">$size</span> <span style="color:#66d9ef">=</span> <span style="color:#ae81ff">35</span> <span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-		global <span style="color:#a6e22e">$wpdb</span><span style="color:#f92672">;</span>
-		<span style="color:#a6e22e">$sql</span> <span style="color:#66d9ef">=</span> <span style="color:#e6db74">&#34;SELECT DISTINCT ID, post_title, post_password, comment_ID,
-</span><span style="color:#e6db74">		comment_post_ID, comment_author, comment_author_email, comment_date_gmt, comment_approved,
-</span><span style="color:#e6db74">		comment_type,comment_author_url,
-</span><span style="color:#e6db74">		SUBSTRING(comment_content,1,50) AS com_excerpt
-</span><span style="color:#e6db74">		FROM $wpdb-&gt;comments
-</span><span style="color:#e6db74">		LEFT OUTER JOIN $wpdb-&gt;posts ON ($wpdb-&gt;comments.comment_post_ID =
-</span><span style="color:#e6db74">		$wpdb-&gt;posts.ID)
-</span><span style="color:#e6db74">		WHERE comment_approved = &#39;1&#39; AND comment_type = &#39;&#39; AND post_password = &#39;&#39;
-</span><span style="color:#e6db74">		AND NOT EXISTS(SELECT * FROM wp_uam_accessgroup_to_object WHERE object_id = ID)
-</span><span style="color:#e6db74">		ORDER BY comment_date_gmt DESC LIMIT &#34;</span><span style="color:#f92672">.</span><span style="color:#a6e22e">$posts</span><span style="color:#f92672">;</span>
-		
-		<span style="color:#a6e22e">$comments</span> <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">$wpdb</span><span style="color:#f92672">-&gt;</span>get_results<span style="color:#f92672">(</span><span style="color:#a6e22e">$sql</span><span style="color:#f92672">);</span>
-		
-		foreach <span style="color:#f92672">(</span><span style="color:#a6e22e">$comments</span> as <span style="color:#a6e22e">$comment</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-		<span style="color:#f92672">?&gt;</span>
-		<span style="color:#f92672">&lt;</span>li<span style="color:#f92672">&gt;</span>
-			<span style="color:#f92672">&lt;?</span>php echo get_avatar<span style="color:#f92672">(</span> <span style="color:#a6e22e">$comment</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">$size</span> <span style="color:#f92672">);</span> <span style="color:#f92672">?&gt;</span>
-		
-			<span style="color:#f92672">&lt;</span>a href<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&lt;?php echo get_permalink($comment-&gt;ID); ?&gt;#comment-&lt;?php echo $comment-&gt;comment_ID; ?&gt;&#34;</span> title<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&lt;?php _e(&#39;on &#39;, &#39;woothemes&#39;); ?&gt; &lt;?php echo $comment-&gt;post_title; ?&gt;&#34;</span><span style="color:#f92672">&gt;</span>
-				<span style="color:#f92672">&lt;?</span>php echo strip_tags<span style="color:#f92672">(</span><span style="color:#a6e22e">$comment</span><span style="color:#f92672">-&gt;</span>comment_author<span style="color:#f92672">);</span> <span style="color:#f92672">?&gt;:</span> <span style="color:#f92672">&lt;?</span>php echo strip_tags<span style="color:#f92672">(</span><span style="color:#a6e22e">$comment</span><span style="color:#f92672">-&gt;</span>com_excerpt<span style="color:#f92672">);</span> <span style="color:#f92672">?&gt;...</span>
-			<span style="color:#f92672">&lt;/</span>a<span style="color:#f92672">&gt;</span>
-			<span style="color:#f92672">&lt;</span>div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;fix&#34;</span><span style="color:#f92672">&gt;&lt;/</span>div<span style="color:#f92672">&gt;</span>
-		<span style="color:#f92672">&lt;/</span>li<span style="color:#f92672">&gt;</span>
-		<span style="color:#f92672">&lt;?</span>php 
-		<span style="color:#f92672">}</span>
-	<span style="color:#f92672">}</span>
-<span style="color:#f92672">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#75715e">/*-----------------------------------------------------------------------------------*/</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/* WooTabs - Latest Comments */</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/*-----------------------------------------------------------------------------------*/</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(!</span>function_exists<span style="color:#f92672">(</span>&#39;woo_tabs_comments<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">))</span> <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>	function woo_tabs_comments<span style="color:#f92672">(</span> <span style="color:#a6e22e">$posts</span> <span style="color:#66d9ef">=</span> <span style="color:#ae81ff">5</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">$size</span> <span style="color:#66d9ef">=</span> <span style="color:#ae81ff">35</span> <span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>		global <span style="color:#a6e22e">$wpdb</span><span style="color:#f92672">;</span>
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">$sql</span> <span style="color:#66d9ef">=</span> <span style="color:#e6db74">&#34;SELECT DISTINCT ID, post_title, post_password, comment_ID,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">		comment_post_ID, comment_author, comment_author_email, comment_date_gmt, comment_approved,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">		comment_type,comment_author_url,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">		SUBSTRING(comment_content,1,50) AS com_excerpt
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">		FROM $wpdb-&gt;comments
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">		LEFT OUTER JOIN $wpdb-&gt;posts ON ($wpdb-&gt;comments.comment_post_ID =
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">		$wpdb-&gt;posts.ID)
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">		WHERE comment_approved = &#39;1&#39; AND comment_type = &#39;&#39; AND post_password = &#39;&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">		AND NOT EXISTS(SELECT * FROM wp_uam_accessgroup_to_object WHERE object_id = ID)
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">		ORDER BY comment_date_gmt DESC LIMIT &#34;</span><span style="color:#f92672">.</span><span style="color:#a6e22e">$posts</span><span style="color:#f92672">;</span>
+</span></span><span style="display:flex;"><span>		
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">$comments</span> <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">$wpdb</span><span style="color:#f92672">-&gt;</span>get_results<span style="color:#f92672">(</span><span style="color:#a6e22e">$sql</span><span style="color:#f92672">);</span>
+</span></span><span style="display:flex;"><span>		
+</span></span><span style="display:flex;"><span>		foreach <span style="color:#f92672">(</span><span style="color:#a6e22e">$comments</span> as <span style="color:#a6e22e">$comment</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>		<span style="color:#f92672">?&gt;</span>
+</span></span><span style="display:flex;"><span>		<span style="color:#f92672">&lt;</span>li<span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>			<span style="color:#f92672">&lt;?</span>php echo get_avatar<span style="color:#f92672">(</span> <span style="color:#a6e22e">$comment</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">$size</span> <span style="color:#f92672">);</span> <span style="color:#f92672">?&gt;</span>
+</span></span><span style="display:flex;"><span>		
+</span></span><span style="display:flex;"><span>			<span style="color:#f92672">&lt;</span>a href<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&lt;?php echo get_permalink($comment-&gt;ID); ?&gt;#comment-&lt;?php echo $comment-&gt;comment_ID; ?&gt;&#34;</span> title<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&lt;?php _e(&#39;on &#39;, &#39;woothemes&#39;); ?&gt; &lt;?php echo $comment-&gt;post_title; ?&gt;&#34;</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>				<span style="color:#f92672">&lt;?</span>php echo strip_tags<span style="color:#f92672">(</span><span style="color:#a6e22e">$comment</span><span style="color:#f92672">-&gt;</span>comment_author<span style="color:#f92672">);</span> <span style="color:#f92672">?&gt;:</span> <span style="color:#f92672">&lt;?</span>php echo strip_tags<span style="color:#f92672">(</span><span style="color:#a6e22e">$comment</span><span style="color:#f92672">-&gt;</span>com_excerpt<span style="color:#f92672">);</span> <span style="color:#f92672">?&gt;...</span>
+</span></span><span style="display:flex;"><span>			<span style="color:#f92672">&lt;/</span>a<span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>			<span style="color:#f92672">&lt;</span>div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;fix&#34;</span><span style="color:#f92672">&gt;&lt;/</span>div<span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>		<span style="color:#f92672">&lt;/</span>li<span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>		<span style="color:#f92672">&lt;?</span>php 
+</span></span><span style="display:flex;"><span>		<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span></span></span></code></pre></div>
 <p>Решение несколько топорное, изящней было бы составить запрос так, чтобы комментарии всё-таки показывали тем, кому можно, но для начала сойдёт и так.</p>
       </div>
     </article>

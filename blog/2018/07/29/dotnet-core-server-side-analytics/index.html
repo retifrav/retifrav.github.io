@@ -5,7 +5,7 @@
     <title>Server-side analytics in .NET Core | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2018/07/29/dotnet-core-server-side-analytics/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -19,9 +19,7 @@
 <meta property="og:description" content="Google Analytics is a good tool for analyzing your website audience, but it uses client-side code (JS), which is not always reliable, because you don&rsquo;t control what&rsquo;s happening there, and users can simply disable GA scripts (web-browsers even start to block such tracking out-of-the-box).
 
 
-
     
-
 
 More reliable way to analyze your visitors would be a server-side analytics." />
 <meta property="og:type" content="article" />
@@ -74,9 +72,7 @@ More reliable way to analyze your visitors would be a server-side analytics." />
         <p>Google Analytics is a good tool for analyzing your website audience, but it uses client-side code (JS), which is not always reliable, because you don&rsquo;t control what&rsquo;s happening there, and users can simply disable GA scripts (web-browsers even start to block such tracking out-of-the-box).</p>
 
 
-
-    <img class="image-post" src="/blog/2018/07/29/dotnet-core-server-side-analytics/images/dotnet-core-analytics.png" alt=".NET Core analytics">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/07/29/dotnet-core-server-side-analytics/images/dotnet-core-analytics.png" alt=".NET Core analytics">
 
 <p>More reliable way to analyze your visitors would be a server-side analytics.</p>
 <nav id="TableOfContents">
@@ -112,119 +108,118 @@ More reliable way to analyze your visitors would be a server-side analytics." />
 <p><font color="blue"><strong>Request</strong></font> (<em>bowl</em>) goes to the first middleware (<em>viking</em>), gets processed (<em>spitted into</em>), then goes to the next middleware (<em>next viking</em>), and so on. The last middleware (<em>viking</em>) in the chain/queue gets absolutely horrible bowl full of nasty things, does his part and sends it back via the same queue/chain (<em>so it goes in reverse order</em>). Others can add something to the bowl (<em>now it&rsquo;s a <font color="green"><strong>response</strong></font></em>) on its way back, but they prefer not touch it much.</p>
 <p>So, what we will be doing here is adding a new middleware - a new viking to sit at the table, wash from the bowl and spit into it.</p>
 <p>Take a look at your <code>Startup.cs</code> file. You&rsquo;ll see something like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> Configure(
-    IApplicationBuilder app,
-    IHostingEnvironment env,
-    ILoggerFactory loggerFactory
-    )
-{
-    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>    app.UseStaticFiles(); <span style="color:#75715e">// middleware #1
-</span><span style="color:#75715e"></span>    app.UseStatusCodePages(); <span style="color:#75715e">// middleware #2
-</span><span style="color:#75715e"></span>    app.UseAuthentication(); <span style="color:#75715e">// middleware #3
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> Configure(
+</span></span><span style="display:flex;"><span>    IApplicationBuilder app,
+</span></span><span style="display:flex;"><span>    IHostingEnvironment env,
+</span></span><span style="display:flex;"><span>    ILoggerFactory loggerFactory
+</span></span><span style="display:flex;"><span>    )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>    app.UseStaticFiles(); <span style="color:#75715e">// middleware #1</span>
+</span></span><span style="display:flex;"><span>    app.UseStatusCodePages(); <span style="color:#75715e">// middleware #2</span>
+</span></span><span style="display:flex;"><span>    app.UseAuthentication(); <span style="color:#75715e">// middleware #3</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>These <code>app.UseSOMETHING()</code> are middlewares. Their order is important, so <code>UseStaticFiles()</code> middleware gets the request first, then <code>UseStatusCodePages()</code>, then <code>UseAuthentication()</code>, and so on.</p>
 <p>So where should we put our middleware? Of course, in the very beginning of this chain/queue, so every request is counted:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> Configure(
-    IApplicationBuilder app,
-    IHostingEnvironment env,
-    ILoggerFactory loggerFactory
-    )
-{
-    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>    app.UseAnalytics(); <span style="color:#75715e">// now this is middleware #1
-</span><span style="color:#75715e"></span>    app.UseStaticFiles(); <span style="color:#75715e">// middleware #2
-</span><span style="color:#75715e"></span>    app.UseStatusCodePages(); <span style="color:#75715e">// middleware #3
-</span><span style="color:#75715e"></span>    app.UseAuthentication(); <span style="color:#75715e">// middleware #4
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> Configure(
+</span></span><span style="display:flex;"><span>    IApplicationBuilder app,
+</span></span><span style="display:flex;"><span>    IHostingEnvironment env,
+</span></span><span style="display:flex;"><span>    ILoggerFactory loggerFactory
+</span></span><span style="display:flex;"><span>    )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>    app.UseAnalytics(); <span style="color:#75715e">// now this is middleware #1</span>
+</span></span><span style="display:flex;"><span>    app.UseStaticFiles(); <span style="color:#75715e">// middleware #2</span>
+</span></span><span style="display:flex;"><span>    app.UseStatusCodePages(); <span style="color:#75715e">// middleware #3</span>
+</span></span><span style="display:flex;"><span>    app.UseAuthentication(); <span style="color:#75715e">// middleware #4</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Now we need to actually implement it. Create the <code>Middleware/AnalyticsMiddleware.cs</code> file in your project:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">namespace</span> YOUR-PROJECT.Middleware
-{
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AnalyticsMiddleware</span>
-    {
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> RequestDelegate <span style="color:#ae81ff">_</span>next;
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> ILogger <span style="color:#ae81ff">_l</span>ogger;
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>connectionString { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
-        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IConfiguration <span style="color:#ae81ff">_</span>configuration;
-
-        <span style="color:#66d9ef">public</span> AnalyticsMiddleware(
-            RequestDelegate next,
-            ILoggerFactory loggerFactory,
-            IConfiguration configuration
-            )
-        {
-            <span style="color:#ae81ff">_</span>next = next;
-            <span style="color:#ae81ff">_l</span>ogger = loggerFactory.CreateLogger&lt;AnalyticsMiddleware&gt;();
-            <span style="color:#ae81ff">_</span>configuration = configuration;
-            <span style="color:#ae81ff">_</span>connectionString = <span style="color:#ae81ff">_</span>configuration.GetConnectionString(<span style="color:#e6db74">&#34;DefaultConnection&#34;</span>);
-        }
-
-        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task InvokeAsync(HttpContext context)
-        {
-            <span style="color:#66d9ef">try</span>
-            {
-                StringBuilder info = <span style="color:#66d9ef">new</span> StringBuilder(<span style="color:#e6db74">$&#34;Got a request{Environment.NewLine}---{Environment.NewLine}&#34;</span>);
-                info.Append(<span style="color:#e6db74">$&#34;- remote IP: {context.Connection.RemoteIpAddress}{Environment.NewLine}&#34;</span>);
-                info.Append(<span style="color:#e6db74">$&#34;- path: {context.Request.Path}{Environment.NewLine}&#34;</span>);
-                info.Append(<span style="color:#e6db74">$&#34;- query string: {context.Request.QueryString}{Environment.NewLine}&#34;</span>);
-                info.Append(<span style="color:#e6db74">$&#34;- [headers] ua: {context.Request.Headers[HeaderNames.UserAgent]}{Environment.NewLine}&#34;</span>);
-                info.Append(<span style="color:#e6db74">$&#34;- [headers] referer: {context.Request.Headers[HeaderNames.Referer]}{Environment.NewLine}&#34;</span>);
-                <span style="color:#ae81ff">_l</span>ogger.LogWarning(info.ToString());
-            }
-            <span style="color:#66d9ef">catch</span> (Exception ex)
-            {
-                <span style="color:#75715e">// we don&#39;t care much about exceptions in analytics
-</span><span style="color:#75715e"></span>                <span style="color:#ae81ff">_l</span>ogger.LogError(<span style="color:#e6db74">$&#34;Some error in analytics middleware. {ex.Message}&#34;</span>);
-            }
-
-            <span style="color:#66d9ef">await</span> <span style="color:#ae81ff">_</span>next(context);
-        }
-    }
-
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AnalyticsMiddlewareExtensions</span>
-    {
-        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> IApplicationBuilder UseAnalytics(<span style="color:#66d9ef">this</span> IApplicationBuilder builder)
-        {
-            <span style="color:#66d9ef">return</span> builder.UseMiddleware&lt;AnalyticsMiddleware&gt;();
-        }
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> YOUR-PROJECT.Middleware
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AnalyticsMiddleware</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> RequestDelegate <span style="color:#ae81ff">_</span>next;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> ILogger <span style="color:#ae81ff">_l</span>ogger;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>connectionString { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IConfiguration <span style="color:#ae81ff">_</span>configuration;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> AnalyticsMiddleware(
+</span></span><span style="display:flex;"><span>            RequestDelegate next,
+</span></span><span style="display:flex;"><span>            ILoggerFactory loggerFactory,
+</span></span><span style="display:flex;"><span>            IConfiguration configuration
+</span></span><span style="display:flex;"><span>            )
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_</span>next = next;
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_l</span>ogger = loggerFactory.CreateLogger&lt;AnalyticsMiddleware&gt;();
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_</span>configuration = configuration;
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_</span>connectionString = <span style="color:#ae81ff">_</span>configuration.GetConnectionString(<span style="color:#e6db74">&#34;DefaultConnection&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task InvokeAsync(HttpContext context)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">try</span>
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                StringBuilder info = <span style="color:#66d9ef">new</span> StringBuilder(<span style="color:#e6db74">$&#34;Got a request{Environment.NewLine}---{Environment.NewLine}&#34;</span>);
+</span></span><span style="display:flex;"><span>                info.Append(<span style="color:#e6db74">$&#34;- remote IP: {context.Connection.RemoteIpAddress}{Environment.NewLine}&#34;</span>);
+</span></span><span style="display:flex;"><span>                info.Append(<span style="color:#e6db74">$&#34;- path: {context.Request.Path}{Environment.NewLine}&#34;</span>);
+</span></span><span style="display:flex;"><span>                info.Append(<span style="color:#e6db74">$&#34;- query string: {context.Request.QueryString}{Environment.NewLine}&#34;</span>);
+</span></span><span style="display:flex;"><span>                info.Append(<span style="color:#e6db74">$&#34;- [headers] ua: {context.Request.Headers[HeaderNames.UserAgent]}{Environment.NewLine}&#34;</span>);
+</span></span><span style="display:flex;"><span>                info.Append(<span style="color:#e6db74">$&#34;- [headers] referer: {context.Request.Headers[HeaderNames.Referer]}{Environment.NewLine}&#34;</span>);
+</span></span><span style="display:flex;"><span>                <span style="color:#ae81ff">_l</span>ogger.LogWarning(info.ToString());
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">catch</span> (Exception ex)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// we don&#39;t care much about exceptions in analytics</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ae81ff">_l</span>ogger.LogError(<span style="color:#e6db74">$&#34;Some error in analytics middleware. {ex.Message}&#34;</span>);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">await</span> <span style="color:#ae81ff">_</span>next(context);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AnalyticsMiddlewareExtensions</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> IApplicationBuilder UseAnalytics(<span style="color:#66d9ef">this</span> IApplicationBuilder builder)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> builder.UseMiddleware&lt;AnalyticsMiddleware&gt;();
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Now every time your server (<em>website</em>) gets a request, you&rsquo;ll see the following in your log:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs">WARN  [<span style="color:#ae81ff">2018</span>-<span style="color:#ae81ff">07</span>-<span style="color:#ae81ff">27</span> <span style="color:#ae81ff">21</span>:<span style="color:#ae81ff">13</span>:<span style="color:#ae81ff">19</span>] Got a visitor
----
-- remote IP: <span style="color:#ae81ff">127.0</span>.<span style="color:#ae81ff">0.1</span>
-- path: /some/path
-- query <span style="color:#66d9ef">string</span>: ?some=param
-- [headers] ua: Mozilla/<span style="color:#ae81ff">5.0</span> (Macintosh; Intel Mac OS X <span style="color:#ae81ff">10.13</span>; rv:<span style="color:#ae81ff">62.0</span>) Gecko/<span style="color:#ae81ff">20100101</span> Firefox/<span style="color:#ae81ff">62.0</span>
-- [headers] referer: http:<span style="color:#75715e">//some-source
-</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span>WARN  [<span style="color:#ae81ff">2018</span>-<span style="color:#ae81ff">07</span>-<span style="color:#ae81ff">27</span> <span style="color:#ae81ff">21</span>:<span style="color:#ae81ff">13</span>:<span style="color:#ae81ff">19</span>] Got a visitor
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span>- remote IP: <span style="color:#ae81ff">127.0</span>.<span style="color:#ae81ff">0.1</span>
+</span></span><span style="display:flex;"><span>- path: /some/path
+</span></span><span style="display:flex;"><span>- query <span style="color:#66d9ef">string</span>: ?some=param
+</span></span><span style="display:flex;"><span>- [headers] ua: Mozilla/<span style="color:#ae81ff">5.0</span> (Macintosh; Intel Mac OS X <span style="color:#ae81ff">10.13</span>; rv:<span style="color:#ae81ff">62.0</span>) Gecko/<span style="color:#ae81ff">20100101</span> Firefox/<span style="color:#ae81ff">62.0</span>
+</span></span><span style="display:flex;"><span>- [headers] referer: http:<span style="color:#75715e">//some-source</span></span></span></code></pre></div>
 <p>But such a log-wall is rather hard to analyze, better to store this data in a database instead:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">using</span> (MySqlConnection sqlConn = <span style="color:#66d9ef">new</span> MySqlConnection(<span style="color:#ae81ff">_</span>connectionString))
-{
-    sqlConn.Open();
-
-    MySqlCommand cmd = <span style="color:#66d9ef">new</span> MySqlCommand(<span style="color:#e6db74">&#34;INSERT INTO analytics(dt, ip, path, query, referer, ua) VALUES(@dt, @ip, @path, @query, @referer, @ua);&#34;</span>, sqlConn);
-    cmd.Parameters.AddWithValue(<span style="color:#e6db74">&#34;@dt&#34;</span>, DateTime.Now);
-    cmd.Parameters.AddWithValue(<span style="color:#e6db74">&#34;@ip&#34;</span>, context.Connection.RemoteIpAddress);
-    cmd.Parameters.AddWithValue(<span style="color:#e6db74">&#34;@path&#34;</span>, context.Request.Path);
-    cmd.Parameters.AddWithValue(<span style="color:#e6db74">&#34;@query&#34;</span>, context.Request.QueryString);
-    cmd.Parameters.AddWithValue(<span style="color:#e6db74">&#34;@referer&#34;</span>, context.Request.Headers[HeaderNames.Referer]);
-    cmd.Parameters.AddWithValue(<span style="color:#e6db74">&#34;@ua&#34;</span>, context.Request.Headers[HeaderNames.UserAgent]);
-    cmd.ExecuteNonQuery();
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">using</span> (MySqlConnection sqlConn = <span style="color:#66d9ef">new</span> MySqlConnection(<span style="color:#ae81ff">_</span>connectionString))
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    sqlConn.Open();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    MySqlCommand cmd = <span style="color:#66d9ef">new</span> MySqlCommand(<span style="color:#e6db74">&#34;INSERT INTO analytics(dt, ip, path, query, referer, ua) VALUES(@dt, @ip, @path, @query, @referer, @ua);&#34;</span>, sqlConn);
+</span></span><span style="display:flex;"><span>    cmd.Parameters.AddWithValue(<span style="color:#e6db74">&#34;@dt&#34;</span>, DateTime.Now);
+</span></span><span style="display:flex;"><span>    cmd.Parameters.AddWithValue(<span style="color:#e6db74">&#34;@ip&#34;</span>, context.Connection.RemoteIpAddress);
+</span></span><span style="display:flex;"><span>    cmd.Parameters.AddWithValue(<span style="color:#e6db74">&#34;@path&#34;</span>, context.Request.Path);
+</span></span><span style="display:flex;"><span>    cmd.Parameters.AddWithValue(<span style="color:#e6db74">&#34;@query&#34;</span>, context.Request.QueryString);
+</span></span><span style="display:flex;"><span>    cmd.Parameters.AddWithValue(<span style="color:#e6db74">&#34;@referer&#34;</span>, context.Request.Headers[HeaderNames.Referer]);
+</span></span><span style="display:flex;"><span>    cmd.Parameters.AddWithValue(<span style="color:#e6db74">&#34;@ua&#34;</span>, context.Request.Headers[HeaderNames.UserAgent]);
+</span></span><span style="display:flex;"><span>    cmd.ExecuteNonQuery();
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>And here&rsquo;s the table for that:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#f92672">`</span>analytics<span style="color:#f92672">`</span> (
-  <span style="color:#f92672">`</span>id<span style="color:#f92672">`</span> bigint(<span style="color:#ae81ff">11</span>) unsigned <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> AUTO_INCREMENT,
-  <span style="color:#f92672">`</span>dt<span style="color:#f92672">`</span> datetime <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
-  <span style="color:#f92672">`</span>ip<span style="color:#f92672">`</span> varchar(<span style="color:#ae81ff">45</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#e6db74">&#39;&#39;</span>,
-  <span style="color:#f92672">`</span>path<span style="color:#f92672">`</span> varchar(<span style="color:#ae81ff">250</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#e6db74">&#39;&#39;</span>,
-  <span style="color:#f92672">`</span>query<span style="color:#f92672">`</span> varchar(<span style="color:#ae81ff">500</span>) <span style="color:#66d9ef">DEFAULT</span> <span style="color:#66d9ef">NULL</span>,
-  <span style="color:#f92672">`</span>referer<span style="color:#f92672">`</span> varchar(<span style="color:#ae81ff">500</span>) <span style="color:#66d9ef">DEFAULT</span> <span style="color:#66d9ef">NULL</span>,
-  <span style="color:#f92672">`</span>ua<span style="color:#f92672">`</span> varchar(<span style="color:#ae81ff">250</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
-  <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span> (<span style="color:#f92672">`</span>id<span style="color:#f92672">`</span>)
-);</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#f92672">`</span>analytics<span style="color:#f92672">`</span> (
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">`</span>id<span style="color:#f92672">`</span> bigint(<span style="color:#ae81ff">11</span>) unsigned <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> AUTO_INCREMENT,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">`</span>dt<span style="color:#f92672">`</span> datetime <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">`</span>ip<span style="color:#f92672">`</span> varchar(<span style="color:#ae81ff">45</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#e6db74">&#39;&#39;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">`</span>path<span style="color:#f92672">`</span> varchar(<span style="color:#ae81ff">250</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#e6db74">&#39;&#39;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">`</span>query<span style="color:#f92672">`</span> varchar(<span style="color:#ae81ff">500</span>) <span style="color:#66d9ef">DEFAULT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">`</span>referer<span style="color:#f92672">`</span> varchar(<span style="color:#ae81ff">500</span>) <span style="color:#66d9ef">DEFAULT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">`</span>ua<span style="color:#f92672">`</span> varchar(<span style="color:#ae81ff">250</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span> (<span style="color:#f92672">`</span>id<span style="color:#f92672">`</span>)
+</span></span><span style="display:flex;"><span>);</span></span></code></pre></div>
 <p>Oh, by the way, since you&rsquo;re now collecting and storing your users data directly - it would be a good idea if you described that in your <code>/privacy.txt</code>.</p>
 <h2 id="how-to-deal-with-a-reverse-proxy">How to deal with a reverse proxy</h2>
 <p>If your Kestrel is running behind a reverse proxy (<em>which is recommended</em>), then all the IP addresses you get from it by default are <code>127.0.0.1</code>. To forward real IP addresses from the reverse proxy to your website you need to:</p>
@@ -234,28 +229,27 @@ More reliable way to analyze your visitors would be a server-side analytics." />
 </ol>
 <p>Here&rsquo;s a <a href="https://docs.microsoft.com/en-us/aspnet/core/host-and-deploy/linux-nginx?view=aspnetcore-2.1&amp;tabs=aspnetcore2x#configure-a-reverse-proxy-server">manual</a> from Microsoft.</p>
 <p>Start with NGINX by <code>nano /etc/nginx/sites-available/WEBSITE</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">location</span> <span style="color:#e6db74">/</span> {
-    <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://localhost:5000</span>;
-    <span style="color:#f92672">proxy_http_version</span> <span style="color:#ae81ff">1</span><span style="color:#e6db74">.1</span>;
-    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Upgrade</span> $http_upgrade;
-    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Connection</span> <span style="color:#e6db74">keep-alive</span>;
-    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Host</span> $host;
-    <span style="color:#f92672">proxy_cache_bypass</span> $http_upgrade;
-    <span style="color:#75715e"># forward real IP address
-</span><span style="color:#75715e"></span>    <span style="color:#f92672">proxy_set_header</span>  <span style="color:#e6db74">X-Forwarded-For</span> $proxy_add_x_forwarded_for;
-    <span style="color:#f92672">proxy_set_header</span>  <span style="color:#e6db74">X-Forwarded-Proto</span> $scheme;
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">location</span> <span style="color:#e6db74">/</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://localhost:5000</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_http_version</span> <span style="color:#ae81ff">1</span><span style="color:#e6db74">.1</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Upgrade</span> $http_upgrade;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Connection</span> <span style="color:#e6db74">keep-alive</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Host</span> $host;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_cache_bypass</span> $http_upgrade;
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># forward real IP address
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#f92672">proxy_set_header</span>  <span style="color:#e6db74">X-Forwarded-For</span> $proxy_add_x_forwarded_for;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_set_header</span>  <span style="color:#e6db74">X-Forwarded-Proto</span> $scheme;
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>And then add a <code>UseForwardedHeaders()</code> middleware (<em>yes, yet another, but this time a standard one</em>) in <code>Startup.cs</code> <em>before</em> your <code>UseAnalytics()</code> middleware:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#75715e">// ...
-</span><span style="color:#75715e">// get real IP from reverse proxy
-</span><span style="color:#75715e"></span>app.UseForwardedHeaders(<span style="color:#66d9ef">new</span> ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
-<span style="color:#75715e">// our custom analytics middleware
-</span><span style="color:#75715e"></span>app.UseAnalytics();
-<span style="color:#75715e">// ...
-</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// get real IP from reverse proxy</span>
+</span></span><span style="display:flex;"><span>app.UseForwardedHeaders(<span style="color:#66d9ef">new</span> ForwardedHeadersOptions
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+</span></span><span style="display:flex;"><span>});
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// our custom analytics middleware</span>
+</span></span><span style="display:flex;"><span>app.UseAnalytics();
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// ...</span></span></span></code></pre></div>
 <p>Now you will be getting real IP addresses forwarded from NGINX.</p>
 <h2 id="analyzing-collected-data">Analyzing collected data</h2>
 <p>Soon enough you&rsquo;ll discover, that quite a portion of requests:</p>
@@ -265,104 +259,102 @@ More reliable way to analyze your visitors would be a server-side analytics." />
 </ol>
 <p>That trashes your analytics data a bit. But you can improve the situation.</p>
 <p>First type of requests (<em>not interesting resources</em>) can be filtered by adding the following RegExp check:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">if</span> (!Regex.IsMatch(
-    context.Request.Path,
-    <span style="color:#e6db74">@&#34;(^\/css\/.*)|(^\/fonts\/.*)|(^\/images\/.*)|(^\/js\/.*)|(^\/lib\/.*)|(^\/favicon(-.*|.ico$))|(^\/robots.txt$)|(^\/rss.xml$)&#34;</span>,
-    RegexOptions.IgnoreCase
-    ))
-{
-    <span style="color:#75715e">// only requests for &#34;good&#34; resources get processed here
-</span><span style="color:#75715e"></span>}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">if</span> (!Regex.IsMatch(
+</span></span><span style="display:flex;"><span>    context.Request.Path,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">@&#34;(^\/css\/.*)|(^\/fonts\/.*)|(^\/images\/.*)|(^\/js\/.*)|(^\/lib\/.*)|(^\/favicon(-.*|.ico$))|(^\/robots.txt$)|(^\/rss.xml$)&#34;</span>,
+</span></span><span style="display:flex;"><span>    RegexOptions.IgnoreCase
+</span></span><span style="display:flex;"><span>    ))
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// only requests for &#34;good&#34; resources get processed here</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Second type of requests (<em>robots</em>) cannot be filtered out reliably enough. The only thing you can do about here is to check the <code>User-Agent</code>, but that is not reliable as you cannot know all the possible values for crawlers, and on top of that users can modify <code>User-Agent</code> value in their browsers. So you can only approximately assume that if this value contains <code>/bot</code> substring, then likely it is a bot:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">if</span> (Regex.IsMatch(
-    context.Request.Headers[HeaderNames.UserAgent],
-    <span style="color:#e6db74">@&#34;(\/bot)|(bot\/)&#34;</span>,
-    RegexOptions.IgnoreCase
-    ))
-{
-    <span style="color:#75715e">// do something with it, or actually simply don&#39;t analyze such requests
-</span><span style="color:#75715e"></span>}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">if</span> (Regex.IsMatch(
+</span></span><span style="display:flex;"><span>    context.Request.Headers[HeaderNames.UserAgent],
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">@&#34;(\/bot)|(bot\/)&#34;</span>,
+</span></span><span style="display:flex;"><span>    RegexOptions.IgnoreCase
+</span></span><span style="display:flex;"><span>    ))
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// do something with it, or actually simply don&#39;t analyze such requests</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>I decided to save and analyze those anyway. For instance, in my view for analytics I just mark such requests with a different color:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/07/29/dotnet-core-server-side-analytics/images/bots.png" alt="Requests from bots">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/07/29/dotnet-core-server-side-analytics/images/bots.png" alt="Requests from bots">
 
 <p>By the way, looking at statistics so far, bots/crawlers from Yandex are requesting my website several fucking times per hour. Google bots are much more humble in that regard.</p>
 <h1 id="bonus-part">Bonus part</h1>
 <h2 id="some-interesting-requests">Some interesting requests</h2>
 <p>I added server-side analytics to my website just a couple of days ago, but I can already see some interesting requests in the collected data:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-css" data-lang="css"><span style="color:#f92672">/</span><span style="color:#f92672">a2billing</span><span style="color:#f92672">/</span><span style="color:#f92672">admin</span><span style="color:#f92672">/</span><span style="color:#f92672">Public</span><span style="color:#f92672">/</span><span style="color:#f92672">PP_error</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">c</span><span style="color:#f92672">=</span><span style="color:#f92672">accessdenied</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">wp-includes</span><span style="color:#f92672">/</span><span style="color:#f92672">js</span><span style="color:#f92672">/</span><span style="color:#f92672">wpdialog</span>.<span style="color:#a6e22e">js</span>
-<span style="color:#f92672">//</span><span style="color:#f92672">xmlrpc</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">rsd</span>
-<span style="color:#f92672">//</span><span style="color:#f92672">wp-includes</span><span style="color:#f92672">/</span><span style="color:#f92672">wlwmanifest</span>.<span style="color:#a6e22e">xml</span>
-<span style="color:#f92672">//</span><span style="color:#f92672">blog</span><span style="color:#f92672">/</span><span style="color:#f92672">wp-includes</span><span style="color:#f92672">/</span><span style="color:#f92672">wlwmanifest</span>.<span style="color:#a6e22e">xml</span>
-<span style="color:#f92672">//</span><span style="color:#f92672">wordpress</span><span style="color:#f92672">/</span><span style="color:#f92672">wp-includes</span><span style="color:#f92672">/</span><span style="color:#f92672">wlwmanifest</span>.<span style="color:#a6e22e">xml</span>
-<span style="color:#f92672">//</span><span style="color:#f92672">wp</span><span style="color:#f92672">/</span><span style="color:#f92672">wp-includes</span><span style="color:#f92672">/</span><span style="color:#f92672">wlwmanifest</span>.<span style="color:#a6e22e">xml</span>
-<span style="color:#f92672">//</span><span style="color:#f92672">site</span><span style="color:#f92672">/</span><span style="color:#f92672">wp-includes</span><span style="color:#f92672">/</span><span style="color:#f92672">wlwmanifest</span>.<span style="color:#a6e22e">xml</span>
-<span style="color:#f92672">//</span><span style="color:#f92672">cms</span><span style="color:#f92672">/</span><span style="color:#f92672">wp-includes</span><span style="color:#f92672">/</span><span style="color:#f92672">wlwmanifest</span>.<span style="color:#a6e22e">xml</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">index</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">c</span><span style="color:#f92672">=</span><span style="color:#f92672">58</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">viewtopic</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">t</span><span style="color:#f92672">=</span><span style="color:#f92672">9377</span><span style="color:#f92672">&amp;</span><span style="color:#f92672">dl</span><span style="color:#f92672">=</span><span style="color:#f92672">names</span><span style="color:#f92672">&amp;</span><span style="color:#f92672">spmode</span><span style="color:#f92672">=</span><span style="color:#f92672">full</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">viewtopic</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">p</span><span style="color:#f92672">=</span><span style="color:#f92672">17478</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">viewtopic</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">p</span><span style="color:#f92672">=</span><span style="color:#f92672">13965</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">viewtopic</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">t</span><span style="color:#f92672">=</span><span style="color:#f92672">20277</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">manager</span><span style="color:#f92672">/</span><span style="color:#f92672">index</span>.<span style="color:#a6e22e">php</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">viewforum</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">f</span><span style="color:#f92672">=</span><span style="color:#f92672">927</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">viewforum</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">f</span><span style="color:#f92672">=</span><span style="color:#f92672">915</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">viewforum</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">f</span><span style="color:#f92672">=</span><span style="color:#f92672">1132</span>
-<span style="color:#f92672">//</span><span style="color:#f92672">connectors</span><span style="color:#f92672">/</span><span style="color:#f92672">system</span><span style="color:#f92672">/</span><span style="color:#f92672">phpthumb</span>.<span style="color:#a6e22e">php</span>
-<span style="color:#f92672">//</span><span style="color:#f92672">libs</span><span style="color:#f92672">/</span><span style="color:#f92672">js</span><span style="color:#f92672">/</span><span style="color:#f92672">iframe</span>.<span style="color:#a6e22e">js</span>
-<span style="color:#f92672">//</span><span style="color:#f92672">dbs</span>.<span style="color:#a6e22e">php</span>
-<span style="color:#f92672">/</span>.<span style="color:#a6e22e">idea</span><span style="color:#f92672">/</span><span style="color:#f92672">WebServers</span>.<span style="color:#a6e22e">xml</span>
-<span style="color:#f92672">/</span>.<span style="color:#a6e22e">ssh</span><span style="color:#f92672">/</span><span style="color:#f92672">id_dsa</span>
-<span style="color:#f92672">/</span>.<span style="color:#a6e22e">ssh</span><span style="color:#f92672">/</span><span style="color:#f92672">id_ecdsa</span>
-<span style="color:#f92672">/</span>.<span style="color:#a6e22e">ssh</span><span style="color:#f92672">/</span><span style="color:#f92672">id_ed25519</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">id_dsa</span>
-<span style="color:#f92672">/</span>.<span style="color:#a6e22e">ssh</span><span style="color:#f92672">/</span><span style="color:#f92672">id_rsa</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">winscp</span>.<span style="color:#a6e22e">ini</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">WinSCP</span>.<span style="color:#a6e22e">ini</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">id_rsa</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">filezilla</span>.<span style="color:#a6e22e">xml</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">FileZilla</span>.<span style="color:#a6e22e">xml</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">sitemanager</span>.<span style="color:#a6e22e">xml</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">WS_FTP</span>.<span style="color:#a6e22e">ini</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">ws_ftp</span>.<span style="color:#a6e22e">ini</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">WS_FTP</span>.<span style="color:#a6e22e">INI</span>
-<span style="color:#f92672">/</span>.<span style="color:#a6e22e">vscode</span><span style="color:#f92672">/</span><span style="color:#f92672">sftp</span>.<span style="color:#a6e22e">json</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">deployment-config</span>.<span style="color:#a6e22e">json</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">ftpsync</span>.<span style="color:#a6e22e">settings</span>
-<span style="color:#f92672">/</span>.<span style="color:#a6e22e">ftpconfig</span>
-<span style="color:#f92672">/</span>.<span style="color:#a6e22e">remote-sync</span>.<span style="color:#a6e22e">json</span>
-<span style="color:#f92672">/</span>.<span style="color:#a6e22e">vscode</span><span style="color:#f92672">/</span><span style="color:#f92672">ftp-sync</span>.<span style="color:#a6e22e">json</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">lfm</span>.<span style="color:#a6e22e">php</span>
-<span style="color:#f92672">/</span>.<span style="color:#a6e22e">env</span>
-<span style="color:#f92672">/</span><span style="color:#f92672">sftp-config</span>.<span style="color:#a6e22e">json</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-css" data-lang="css"><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">a2billing</span><span style="color:#f92672">/</span><span style="color:#f92672">admin</span><span style="color:#f92672">/</span><span style="color:#f92672">Public</span><span style="color:#f92672">/</span><span style="color:#f92672">PP_error</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">c</span><span style="color:#f92672">=</span><span style="color:#f92672">accessdenied</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">wp-includes</span><span style="color:#f92672">/</span><span style="color:#f92672">js</span><span style="color:#f92672">/</span><span style="color:#f92672">wpdialog</span>.<span style="color:#a6e22e">js</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">//</span><span style="color:#f92672">xmlrpc</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">rsd</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">//</span><span style="color:#f92672">wp-includes</span><span style="color:#f92672">/</span><span style="color:#f92672">wlwmanifest</span>.<span style="color:#a6e22e">xml</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">//</span><span style="color:#f92672">blog</span><span style="color:#f92672">/</span><span style="color:#f92672">wp-includes</span><span style="color:#f92672">/</span><span style="color:#f92672">wlwmanifest</span>.<span style="color:#a6e22e">xml</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">//</span><span style="color:#f92672">wordpress</span><span style="color:#f92672">/</span><span style="color:#f92672">wp-includes</span><span style="color:#f92672">/</span><span style="color:#f92672">wlwmanifest</span>.<span style="color:#a6e22e">xml</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">//</span><span style="color:#f92672">wp</span><span style="color:#f92672">/</span><span style="color:#f92672">wp-includes</span><span style="color:#f92672">/</span><span style="color:#f92672">wlwmanifest</span>.<span style="color:#a6e22e">xml</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">//</span><span style="color:#f92672">site</span><span style="color:#f92672">/</span><span style="color:#f92672">wp-includes</span><span style="color:#f92672">/</span><span style="color:#f92672">wlwmanifest</span>.<span style="color:#a6e22e">xml</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">//</span><span style="color:#f92672">cms</span><span style="color:#f92672">/</span><span style="color:#f92672">wp-includes</span><span style="color:#f92672">/</span><span style="color:#f92672">wlwmanifest</span>.<span style="color:#a6e22e">xml</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">index</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">c</span><span style="color:#f92672">=</span><span style="color:#f92672">58</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">viewtopic</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">t</span><span style="color:#f92672">=</span><span style="color:#f92672">9377</span><span style="color:#f92672">&amp;</span><span style="color:#f92672">dl</span><span style="color:#f92672">=</span><span style="color:#f92672">names</span><span style="color:#f92672">&amp;</span><span style="color:#f92672">spmode</span><span style="color:#f92672">=</span><span style="color:#f92672">full</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">viewtopic</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">p</span><span style="color:#f92672">=</span><span style="color:#f92672">17478</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">viewtopic</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">p</span><span style="color:#f92672">=</span><span style="color:#f92672">13965</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">viewtopic</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">t</span><span style="color:#f92672">=</span><span style="color:#f92672">20277</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">manager</span><span style="color:#f92672">/</span><span style="color:#f92672">index</span>.<span style="color:#a6e22e">php</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">viewforum</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">f</span><span style="color:#f92672">=</span><span style="color:#f92672">927</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">viewforum</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">f</span><span style="color:#f92672">=</span><span style="color:#f92672">915</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">viewforum</span>.<span style="color:#a6e22e">php</span><span style="color:#f92672">?</span><span style="color:#f92672">f</span><span style="color:#f92672">=</span><span style="color:#f92672">1132</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">//</span><span style="color:#f92672">connectors</span><span style="color:#f92672">/</span><span style="color:#f92672">system</span><span style="color:#f92672">/</span><span style="color:#f92672">phpthumb</span>.<span style="color:#a6e22e">php</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">//</span><span style="color:#f92672">libs</span><span style="color:#f92672">/</span><span style="color:#f92672">js</span><span style="color:#f92672">/</span><span style="color:#f92672">iframe</span>.<span style="color:#a6e22e">js</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">//</span><span style="color:#f92672">dbs</span>.<span style="color:#a6e22e">php</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span>.<span style="color:#a6e22e">idea</span><span style="color:#f92672">/</span><span style="color:#f92672">WebServers</span>.<span style="color:#a6e22e">xml</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span>.<span style="color:#a6e22e">ssh</span><span style="color:#f92672">/</span><span style="color:#f92672">id_dsa</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span>.<span style="color:#a6e22e">ssh</span><span style="color:#f92672">/</span><span style="color:#f92672">id_ecdsa</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span>.<span style="color:#a6e22e">ssh</span><span style="color:#f92672">/</span><span style="color:#f92672">id_ed25519</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">id_dsa</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span>.<span style="color:#a6e22e">ssh</span><span style="color:#f92672">/</span><span style="color:#f92672">id_rsa</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">winscp</span>.<span style="color:#a6e22e">ini</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">WinSCP</span>.<span style="color:#a6e22e">ini</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">id_rsa</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">filezilla</span>.<span style="color:#a6e22e">xml</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">FileZilla</span>.<span style="color:#a6e22e">xml</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">sitemanager</span>.<span style="color:#a6e22e">xml</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">WS_FTP</span>.<span style="color:#a6e22e">ini</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">ws_ftp</span>.<span style="color:#a6e22e">ini</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">WS_FTP</span>.<span style="color:#a6e22e">INI</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span>.<span style="color:#a6e22e">vscode</span><span style="color:#f92672">/</span><span style="color:#f92672">sftp</span>.<span style="color:#a6e22e">json</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">deployment-config</span>.<span style="color:#a6e22e">json</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">ftpsync</span>.<span style="color:#a6e22e">settings</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span>.<span style="color:#a6e22e">ftpconfig</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span>.<span style="color:#a6e22e">remote-sync</span>.<span style="color:#a6e22e">json</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span>.<span style="color:#a6e22e">vscode</span><span style="color:#f92672">/</span><span style="color:#f92672">ftp-sync</span>.<span style="color:#a6e22e">json</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">lfm</span>.<span style="color:#a6e22e">php</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span>.<span style="color:#a6e22e">env</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span><span style="color:#f92672">sftp-config</span>.<span style="color:#a6e22e">json</span></span></span></code></pre></div>
 <p>Silly twats just assume there is Wordpress or some other PHP-based CMS (<em>what else, right?</em>) behind the website and they try to open commonly known pages (<em>with random IDs?</em>). So far I didn&rsquo;t see <code>/wp-admin</code> among those, which is surprising, but I guess it&rsquo;s just a matter of time before I get it.</p>
 <h2 id="headers-override">Headers override</h2>
 <p>By the way, since we&rsquo;ve touched the subject of middlewares. You can actually override some response headers to make the life of silly twats even more miserable by adding the following middleware:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#75715e">// rewrite some headers for more security
-</span><span style="color:#75715e"></span>app.Use(<span style="color:#66d9ef">async</span> (context, next) =&gt;
-{
-    context.Response.OnStarting(() =&gt;
-    {
-        <span style="color:#75715e">// if Antiforgery hasn&#39;t already set this header
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> (<span style="color:#66d9ef">string</span>.IsNullOrEmpty(context.Response.Headers[<span style="color:#e6db74">&#34;X-Frame-Options&#34;</span>]))
-        {
-            <span style="color:#75715e">// do not allow to put your website pages into frames (prevents clickjacking)
-</span><span style="color:#75715e"></span>            context.Response.Headers.Add(<span style="color:#e6db74">&#34;X-Frame-Options&#34;</span>, <span style="color:#e6db74">&#34;DENY&#34;</span>);
-        }
-        <span style="color:#75715e">// check MIME types (prevents MIME-based attacks)
-</span><span style="color:#75715e"></span>        context.Response.Headers.Add(<span style="color:#e6db74">&#34;X-Content-Type-Options&#34;</span>, <span style="color:#e6db74">&#34;nosniff&#34;</span>);
-        <span style="color:#75715e">// hide server information
-</span><span style="color:#75715e"></span>        context.Response.Headers.Add(<span style="color:#e6db74">&#34;Server&#34;</span>, <span style="color:#e6db74">&#34;ololo&#34;</span>);
-        <span style="color:#75715e">// allow to load scripts only from listed sources
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">//context.Response.Headers.Add(&#34;Content-Security-Policy&#34;, &#34;default-src &#39;self&#39; *.google-analytics.com; style-src &#39;self&#39; &#39;unsafe-inline&#39;; script-src &#39;self&#39; &#39;unsafe-inline&#39;&#34;);
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">return</span> Task.FromResult(<span style="color:#ae81ff">0</span>);
-    });
-
-    <span style="color:#66d9ef">await</span> next();
-});</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#75715e">// rewrite some headers for more security</span>
+</span></span><span style="display:flex;"><span>app.Use(<span style="color:#66d9ef">async</span> (context, next) =&gt;
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    context.Response.OnStarting(() =&gt;
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// if Antiforgery hasn&#39;t already set this header</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (<span style="color:#66d9ef">string</span>.IsNullOrEmpty(context.Response.Headers[<span style="color:#e6db74">&#34;X-Frame-Options&#34;</span>]))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// do not allow to put your website pages into frames (prevents clickjacking)</span>
+</span></span><span style="display:flex;"><span>            context.Response.Headers.Add(<span style="color:#e6db74">&#34;X-Frame-Options&#34;</span>, <span style="color:#e6db74">&#34;DENY&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// check MIME types (prevents MIME-based attacks)</span>
+</span></span><span style="display:flex;"><span>        context.Response.Headers.Add(<span style="color:#e6db74">&#34;X-Content-Type-Options&#34;</span>, <span style="color:#e6db74">&#34;nosniff&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// hide server information</span>
+</span></span><span style="display:flex;"><span>        context.Response.Headers.Add(<span style="color:#e6db74">&#34;Server&#34;</span>, <span style="color:#e6db74">&#34;ololo&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// allow to load scripts only from listed sources</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//context.Response.Headers.Add(&#34;Content-Security-Policy&#34;, &#34;default-src &#39;self&#39; *.google-analytics.com; style-src &#39;self&#39; &#39;unsafe-inline&#39;; script-src &#39;self&#39; &#39;unsafe-inline&#39;&#34;);</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> Task.FromResult(<span style="color:#ae81ff">0</span>);
+</span></span><span style="display:flex;"><span>    });
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">await</span> next();
+</span></span><span style="display:flex;"><span>});</span></span></code></pre></div>
 <p>Note, however, that if you have a reverse proxy web-server, then most likely it will send its name in the <code>Server</code> header anyway (<em>so you need to change it there</em>).</p>
       </div>
     </article>

@@ -5,7 +5,7 @@
     <title>Mac OS service for resizing pictures | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2017/03/20/macos-service-for-resizing-pictures/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -66,63 +66,59 @@
       <div class="post-content">
         <p>So, there is a need to quickly resize some pictures - for example, scale a bunch of photos to width of 800px (preserving the aspect ratio). And of course we want a <strong>Mac OS service</strong> for that, so we could just right-click selected pictures and do it.</p>
 <p>Well, it&rsquo;s all the same like it was with in the article &ldquo;<a href="/blog/2016/08/25/macos-automator-ffmgeg-files/">Convert video with service in Mac OS</a>&rdquo;. Basically, the only thing that is different - the main script. And here it is:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-applescript" data-lang="applescript"><span style="color:#66d9ef">on</span> run {input, parameters}
-    
-    <span style="color:#66d9ef">set</span> logScript <span style="color:#66d9ef">to</span> load script <span style="color:#e6db74">&#34;/path/to/your/scripts/write2log.scpt&#34;</span>
-    <span style="color:#66d9ef">set</span> fnameScript <span style="color:#66d9ef">to</span> load script <span style="color:#e6db74">&#34;/path/to/your/scripts/getFname.scpt&#34;</span>
-    
-    <span style="color:#66d9ef">set</span> fcount <span style="color:#66d9ef">to</span> <span style="color:#ae81ff">0</span>
-    
-    <span style="color:#66d9ef">try</span> <span style="color:#75715e"># resizing</span>
-    
-        <span style="color:#75715e">#repeat with i from 1 to the count of input</span>
-        <span style="color:#66d9ef">repeat</span> <span style="color:#66d9ef">with</span> i <span style="color:#66d9ef">in</span> input
-            <span style="color:#66d9ef">set</span> fname <span style="color:#66d9ef">to</span> POSIX <span style="color:#a6e22e">path</span> <span style="color:#66d9ef">of</span> i
-            <span style="color:#75715e"># [debug]</span>
-            <span style="color:#75715e">#write2log(&#34;/path/to/some.log&#34;, fname) of logScript</span>
-            <span style="color:#75715e"># filepath without extension</span>
-            <span style="color:#66d9ef">set</span> fnameWE <span style="color:#66d9ef">to</span> getPathWithoutExtension(fname) <span style="color:#66d9ef">of</span> fnameScript
-            <span style="color:#75715e"># extension</span>
-            <span style="color:#66d9ef">set</span> fext <span style="color:#66d9ef">to</span> getExtension(fname) <span style="color:#66d9ef">of</span> fnameScript
-            <span style="color:#75715e"># new file (resized picture)</span>
-            <span style="color:#66d9ef">set</span> new_fname <span style="color:#66d9ef">to</span> fnameWE <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34;_w800.&#34;</span> <span style="color:#f92672">&amp;</span> fext
-            <span style="color:#75715e"># [debug]</span>
-            <span style="color:#75715e">#write2log(&#34;/path/to/some.log&#34;, new_fname) of logScript</span>
-            do shell script <span style="color:#e6db74">&#34;sips --resampleWidth 800 -s formatOptions high \&#34;&#34;</span> <span style="color:#f92672">&amp;</span> fname <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34;\&#34; --out \&#34;&#34;</span> <span style="color:#f92672">&amp;</span> new_fname <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34;\&#34;&#34;</span>
-            <span style="color:#66d9ef">set</span> fcount <span style="color:#66d9ef">to</span> fcount <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
-        <span style="color:#66d9ef">end</span> <span style="color:#66d9ef">repeat</span>
-    
-     on <span style="color:#66d9ef">error</span> ex
-        write2log(<span style="color:#e6db74">&#34;/path/to/some.log&#34;</span>, ex) <span style="color:#66d9ef">of</span> logScript
-        <span style="color:#66d9ef">error</span> <span style="color:#e6db74">&#34;failed&#34;</span>
-    <span style="color:#66d9ef">end</span> <span style="color:#66d9ef">try</span>
-    
-    <span style="color:#66d9ef">try</span> <span style="color:#75715e"># play sound</span>
-        <span style="color:#66d9ef">set</span> doneSound <span style="color:#66d9ef">to</span> quoted form <span style="color:#66d9ef">of</span> <span style="color:#e6db74">&#34;/path/to/some/sound.mp3&#34;</span>
-        do shell script <span style="color:#e6db74">&#34;afplay &#34;</span> <span style="color:#f92672">&amp;</span> doneSound
-     on <span style="color:#66d9ef">error</span> ex
-         write2log(<span style="color:#e6db74">&#34;/path/to/some.log&#34;</span>, ex) <span style="color:#66d9ef">of</span> logScript
-    <span style="color:#66d9ef">end</span> <span style="color:#66d9ef">try</span>
-    <span style="color:#75715e">#say &#34;Done&#34;</span>
-    <span style="color:#75715e">#beep</span>
-    
-    <span style="color:#66d9ef">return</span> fcount
-<span style="color:#66d9ef">end</span> run</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-applescript" data-lang="applescript"><span style="display:flex;"><span><span style="color:#66d9ef">on</span> run {input, parameters}
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">set</span> logScript <span style="color:#66d9ef">to</span> load script <span style="color:#e6db74">&#34;/path/to/your/scripts/write2log.scpt&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">set</span> fnameScript <span style="color:#66d9ef">to</span> load script <span style="color:#e6db74">&#34;/path/to/your/scripts/getFname.scpt&#34;</span>
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">set</span> fcount <span style="color:#66d9ef">to</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span> <span style="color:#75715e"># resizing</span>
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">#repeat with i from 1 to the count of input</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">repeat</span> <span style="color:#66d9ef">with</span> i <span style="color:#66d9ef">in</span> input
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">set</span> fname <span style="color:#66d9ef">to</span> POSIX <span style="color:#a6e22e">path</span> <span style="color:#66d9ef">of</span> i
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e"># [debug]</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">#write2log(&#34;/path/to/some.log&#34;, fname) of logScript</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e"># filepath without extension</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">set</span> fnameWE <span style="color:#66d9ef">to</span> getPathWithoutExtension(fname) <span style="color:#66d9ef">of</span> fnameScript
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e"># extension</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">set</span> fext <span style="color:#66d9ef">to</span> getExtension(fname) <span style="color:#66d9ef">of</span> fnameScript
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e"># new file (resized picture)</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">set</span> new_fname <span style="color:#66d9ef">to</span> fnameWE <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34;_w800.&#34;</span> <span style="color:#f92672">&amp;</span> fext
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e"># [debug]</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">#write2log(&#34;/path/to/some.log&#34;, new_fname) of logScript</span>
+</span></span><span style="display:flex;"><span>            do shell script <span style="color:#e6db74">&#34;sips --resampleWidth 800 -s formatOptions high \&#34;&#34;</span> <span style="color:#f92672">&amp;</span> fname <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34;\&#34; --out \&#34;&#34;</span> <span style="color:#f92672">&amp;</span> new_fname <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34;\&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">set</span> fcount <span style="color:#66d9ef">to</span> fcount <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">end</span> <span style="color:#66d9ef">repeat</span>
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>     on <span style="color:#66d9ef">error</span> ex
+</span></span><span style="display:flex;"><span>        write2log(<span style="color:#e6db74">&#34;/path/to/some.log&#34;</span>, ex) <span style="color:#66d9ef">of</span> logScript
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">error</span> <span style="color:#e6db74">&#34;failed&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">end</span> <span style="color:#66d9ef">try</span>
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span> <span style="color:#75715e"># play sound</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">set</span> doneSound <span style="color:#66d9ef">to</span> quoted form <span style="color:#66d9ef">of</span> <span style="color:#e6db74">&#34;/path/to/some/sound.mp3&#34;</span>
+</span></span><span style="display:flex;"><span>        do shell script <span style="color:#e6db74">&#34;afplay &#34;</span> <span style="color:#f92672">&amp;</span> doneSound
+</span></span><span style="display:flex;"><span>     on <span style="color:#66d9ef">error</span> ex
+</span></span><span style="display:flex;"><span>         write2log(<span style="color:#e6db74">&#34;/path/to/some.log&#34;</span>, ex) <span style="color:#66d9ef">of</span> logScript
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">end</span> <span style="color:#66d9ef">try</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">#say &#34;Done&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">#beep</span>
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> fcount
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">end</span> run</span></span></code></pre></div>
 <p>And also change the filter for acceptable files to <code>image files</code>:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/03/20/macos-service-for-resizing-pictures/images/automator-service-image-files.png" alt="Automator service input">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/03/20/macos-service-for-resizing-pictures/images/automator-service-image-files.png" alt="Automator service input">
 
 <p>Another difference from previous version is that I got rid of crutches for getting filename and extension and instead used <a href="https://github.com/retifrav/ASs/blob/master/scripts/get-extension.applescript">getExtension()</a> and <a href="https://github.com/retifrav/ASs/blob/master/scripts/get-path-without-extension.applescript">getPathWithoutExtension()</a> functions.</p>
 <p>The core of the resizing process is <a href="https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man1/sips.1.html">sips</a> - a CLI-utility for image processing, and option <code>--resampleWidth 800</code> resizes given pictures to 800px width (preserving the aspect ratio). Option <code>-s formatOptions high</code> controls the quality and that&rsquo;s the default value, so you can just delete it - result will be the same.</p>
 <p>Save the service and that&rsquo;s it, now it is available in <strong>Finder</strong> under right-click menu for pictures:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/03/20/macos-service-for-resizing-pictures/images/automator-service-resize.png" alt="Finder service for resizing pictures">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/03/20/macos-service-for-resizing-pictures/images/automator-service-resize.png" alt="Finder service for resizing pictures">
 
 <p>&hellip;By the way, you could&rsquo;ve just used <a href="https://css-tricks.com/making-simple-image-resizingoptimizing-service-automator/">a ready-made script from the Automator library</a>. It gives you the same result (and most probably uses <strong>sips</strong> utility too), but with my custom service you have control over naming and quality settings, so it was still worth creating it.</p>
       </div>

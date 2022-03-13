@@ -5,7 +5,7 @@
     <title>Fixing &#34;corrupted&#34; JPG files on Mac OS | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2019/01/03/fixing-corrupted-jpg-on-macos/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -100,9 +100,7 @@ So far my solution was to re-save the picture on Windows using GIMP or something
 <p>Anyway, that&rsquo;s how a JPG file looks like there:</p>
 
 
-
-    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/hex-fiend-jpg-header.png" alt="JPG file opened in Hex Fiend">
-
+    <img class="image-post" loading="lazy" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/hex-fiend-jpg-header.png" alt="JPG file opened in Hex Fiend">
 
 <p>And you guessed it right, the selected part is the one that causes troubles. Let&rsquo;s investigate it.</p>
 <p>If you don&rsquo;t want (<em>but why?</em>) to read the full <a href="https://www.w3.org/Graphics/JPEG/jfif3.pdf">JPEG File Interchange Format specification</a>, it is enough to rely just on <a href="https://en.wikipedia.org/wiki/JPEG_File_Interchange_Format#File_format_structure">Wikipedia</a> and <a href="http://www.file-recovery.com/jpg-signature-format.htm">this page</a>. Also, if you know russian, <a href="https://habr.com/post/102521/">this article</a> can be of help, although it&rsquo;s a bit too heavy for our purpose.</p>
@@ -110,34 +108,26 @@ So far my solution was to re-save the picture on Windows using GIMP or something
 <p>Here&rsquo;s a detailed explanation of the header bytes:</p>
 
 
-
-    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/fixing-jpg-on-macos-broken.png" alt="JPG header in HEX">
-
+    <img class="image-post" loading="lazy" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/fixing-jpg-on-macos-broken.png" alt="JPG header in HEX">
 
 <p>After reading those two article, I don&rsquo;t see any problems here. But since the file does not open on Mac OS, obviously there are some.</p>
 <p>In order to find the problem, I uploaded the file to this <a href="https://ezgif.com/optijpeg">online JPEG image optimizer</a> and tried to optimize it without compression:</p>
 
 
-
-    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/jpeg-optimizer.png" alt="Online JPEG image optimizer">
-
+    <img class="image-post" loading="lazy" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/jpeg-optimizer.png" alt="Online JPEG image optimizer">
 
 <p>Having downloaded the &ldquo;optimized&rdquo; file, I discovered that it opens on Mac OS just fine!</p>
 <p>Okay then, let&rsquo;s compare it with its broken original version in Hex Fiend:</p>
 
 
-
-    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/hex-fiend-compare.png" alt="HEX Fiend compare mode">
-
+    <img class="image-post" loading="lazy" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/hex-fiend-compare.png" alt="HEX Fiend compare mode">
 
 <p>From that comparison I discovered that the length byte in the &ldquo;fixed&rdquo; file is <code>0x10</code> (<code>16</code>) instead of <code>0xE</code> (<code>14</code>), and also there are 2 null bytes in the end of <code>APP0</code> section (<em>which makes it exactly 16 bytes for the whole section</em>).</p>
 <p>JPEG specification states that these 2 bytes are responsible for storing the size of a thumbnail. And it is my guess that Mac OS is sensitive to this, so even if there is no thumbnail embedded into the file, these 2 bytes should be present anyway, despite the fact that they will simply store nulls.</p>
 <p>So the correct header of the file should look like this:</p>
 
 
-
-    <img class="image-post" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/fixing-jpg-on-macos-fixed.png" alt="JPG header in HEX">
-
+    <img class="image-post" loading="lazy" src="/blog/2019/01/03/fixing-corrupted-jpg-on-macos/images/fixing-jpg-on-macos-fixed.png" alt="JPG header in HEX">
 
 <p>Let&rsquo;s now try to &ldquo;fix&rdquo; the &ldquo;broken&rdquo; original by editing its header in HEX Fiend:</p>
 

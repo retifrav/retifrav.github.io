@@ -5,7 +5,7 @@
     <title>Making a deb package with CMake/CPack and hosting it in a private APT repository | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2021/09/23/cmake-cpack-package-deb-apt/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -67,9 +67,7 @@
         <p><a href="/blog/2021/03/08/cmake-cpp-library/">Last time</a> I needed to handle a C++ library project with CMake. This time I was tasked with creating a deb package for one of the libraries in our SDK.</p>
 
 
-
-    <img class="image-post" src="/blog/2021/09/23/cmake-cpack-package-deb-apt/images/cmake-cpack-deb.png" alt="CMake, CPack, deb package">
-
+    <img class="image-post" loading="lazy" src="/blog/2021/09/23/cmake-cpack-package-deb-apt/images/cmake-cpack-deb.png" alt="CMake, CPack, deb package">
 
 <p>And what would you know, CMake can handle packaging too - with <a href="https://cmake.org/cmake/help/latest/module/CPack.html">CPack</a> utility.</p>
 <nav id="TableOfContents">
@@ -115,265 +113,265 @@
 <h1 id="an-example-project">An example project</h1>
 <p>Let&rsquo;s take the <a href="/blog/2021/03/08/cmake-cpp-library/#from-internal-top-level-project">same project</a> that was used as an example in the C++ library article, but make it slightly more complex: now it will have one more library (<em>just to increase the number of components in the project, the main application doesn&rsquo;t even link to it</em>).</p>
 <p>Here&rsquo;s the project structure:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">├──</span> cmake
-<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">InstallingConfigs</span><span style="color:#f92672">.</span>cmake
-<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">InstallingGeneral</span><span style="color:#f92672">.</span>cmake
-<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">Packing</span><span style="color:#f92672">.</span>cmake
-<span style="color:#f92672">├──</span> libraries
-<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">AnotherLibrary</span>
-<span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> include
-<span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> another<span style="color:#f92672">.</span>h
-<span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> src
-<span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> another<span style="color:#f92672">.</span>cpp
-<span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> things<span style="color:#f92672">.</span>h
-<span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
-<span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">Config</span><span style="color:#f92672">.</span>cmake<span style="color:#f92672">.</span>in
-<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibrary</span>
-<span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> include
-<span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> some<span style="color:#f92672">.</span>h
-<span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> src
-<span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> some<span style="color:#f92672">.</span>cpp
-<span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> things<span style="color:#f92672">.</span>h
-<span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
-<span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">Config</span><span style="color:#f92672">.</span>cmake<span style="color:#f92672">.</span>in
-<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
-<span style="color:#f92672">├──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
-<span style="color:#f92672">├──</span> <span style="color:#a6e22e">LICENSE</span>
-<span style="color:#f92672">├──</span> <span style="color:#a6e22e">README</span><span style="color:#f92672">.</span>md
-<span style="color:#f92672">└──</span> main<span style="color:#f92672">.</span>cpp</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">├──</span> cmake
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">InstallingConfigs</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">InstallingGeneral</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">Packing</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> libraries
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">AnotherLibrary</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> include
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> another<span style="color:#f92672">.</span>h
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> src
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> another<span style="color:#f92672">.</span>cpp
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> things<span style="color:#f92672">.</span>h
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">Config</span><span style="color:#f92672">.</span>cmake<span style="color:#f92672">.</span>in
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibrary</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> include
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> some<span style="color:#f92672">.</span>h
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> src
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> some<span style="color:#f92672">.</span>cpp
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> things<span style="color:#f92672">.</span>h
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">Config</span><span style="color:#f92672">.</span>cmake<span style="color:#f92672">.</span>in
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
+</span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
+</span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> <span style="color:#a6e22e">LICENSE</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> <span style="color:#a6e22e">README</span><span style="color:#f92672">.</span>md
+</span></span><span style="display:flex;"><span><span style="color:#f92672">└──</span> main<span style="color:#f92672">.</span>cpp</span></span></code></pre></div>
 <p>For the reference, full project source code is available <a href="https://github.com/retifrav/cmake-cpack-example">here</a>.</p>
 <h2 id="what-is-needed-to-enable-packing">What is needed to enable packing</h2>
 <p>Most of the work is done by <code>install()</code> statements. So if you already have installation instructions in your project, then there is not much left for you to do.</p>
 <p>As a bare minimum, you need to set some variables for CPack, such as package name and the way you&rsquo;d like components to be (<em>or not to be</em>) grouped. Then you just include a standard module named <code>CPack</code> into your project.</p>
 <p>I put all that into a separate CMake module in the project (<code>/cmake/Packing.cmake</code>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#75715e"># these are cache variables, so they could be overwritten with -D,
-</span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_NAME</span> <span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>
-    <span style="color:#e6db74">CACHE</span> <span style="color:#e6db74">STRING</span> <span style="color:#e6db74">&#34;The resulting package name&#34;</span>
-)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># which is useful in case of packing only selected components instead of the whole thing
-</span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_DESCRIPTION_SUMMARY</span> <span style="color:#e6db74">&#34;Simple C++ application&#34;</span>
-    <span style="color:#e6db74">CACHE</span> <span style="color:#e6db74">STRING</span> <span style="color:#e6db74">&#34;Package description for the package metadata&#34;</span>
-)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_VENDOR</span> <span style="color:#e6db74">&#34;Some Company&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_VERBATIM_VARIABLES</span> <span style="color:#e6db74">YES</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_INSTALL_DIRECTORY</span> <span style="color:#f92672">${</span>CPACK_PACKAGE_NAME<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>SET(<span style="color:#e6db74">CPACK_OUTPUT_FILE_PREFIX</span> <span style="color:#e6db74">&#34;${CMAKE_SOURCE_DIR}/_packages&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># https://unix.stackexchange.com/a/11552/254512
-</span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CPACK_PACKAGING_INSTALL_PREFIX</span> <span style="color:#e6db74">&#34;/opt/some&#34;</span>)<span style="color:#75715e">#/${CMAKE_PROJECT_VERSION}&#34;)
-</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_VERSION_MAJOR</span> <span style="color:#f92672">${</span>PROJECT_VERSION_MAJOR<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_VERSION_MINOR</span> <span style="color:#f92672">${</span>PROJECT_VERSION_MINOR<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_VERSION_PATCH</span> <span style="color:#f92672">${</span>PROJECT_VERSION_PATCH<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_CONTACT</span> <span style="color:#e6db74">&#34;YOUR@E-MAIL.net&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_DEBIAN_PACKAGE_MAINTAINER</span> <span style="color:#e6db74">&#34;YOUR NAME&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_RESOURCE_FILE_LICENSE</span> <span style="color:#e6db74">&#34;${CMAKE_CURRENT_SOURCE_DIR}/LICENSE&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_RESOURCE_FILE_README</span> <span style="color:#e6db74">&#34;${CMAKE_CURRENT_SOURCE_DIR}/README.md&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># package name for deb
-</span><span style="color:#75715e"># if set, then instead of some-application-0.9.2-Linux.deb
-</span><span style="color:#75715e"># you&#39;ll get some-application_0.9.2_amd64.deb (note the underscores too)
-</span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CPACK_DEBIAN_FILE_NAME</span> <span style="color:#e6db74">DEB-DEFAULT</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># if you want every group to have its own package,
-</span><span style="color:#75715e"># although the same happens if this is not sent (so it defaults to ONE_PER_GROUP)
-</span><span style="color:#75715e"># and CPACK_DEB_COMPONENT_INSTALL is set to YES
-</span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CPACK_COMPONENTS_GROUPING</span> <span style="color:#e6db74">ALL_COMPONENTS_IN_ONE</span>)<span style="color:#75715e">#ONE_PER_GROUP)
-</span><span style="color:#75715e"># without this you won&#39;t be able to pack only specified component
-</span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CPACK_DEB_COMPONENT_INSTALL</span> <span style="color:#e6db74">YES</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>include(<span style="color:#e6db74">CPack</span>)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># these are cache variables, so they could be overwritten with -D,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_NAME</span> <span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CACHE</span> <span style="color:#e6db74">STRING</span> <span style="color:#e6db74">&#34;The resulting package name&#34;</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># which is useful in case of packing only selected components instead of the whole thing
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_DESCRIPTION_SUMMARY</span> <span style="color:#e6db74">&#34;Simple C++ application&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CACHE</span> <span style="color:#e6db74">STRING</span> <span style="color:#e6db74">&#34;Package description for the package metadata&#34;</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_VENDOR</span> <span style="color:#e6db74">&#34;Some Company&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_VERBATIM_VARIABLES</span> <span style="color:#e6db74">YES</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_INSTALL_DIRECTORY</span> <span style="color:#f92672">${</span>CPACK_PACKAGE_NAME<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>SET(<span style="color:#e6db74">CPACK_OUTPUT_FILE_PREFIX</span> <span style="color:#e6db74">&#34;${CMAKE_SOURCE_DIR}/_packages&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># https://unix.stackexchange.com/a/11552/254512
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CPACK_PACKAGING_INSTALL_PREFIX</span> <span style="color:#e6db74">&#34;/opt/some&#34;</span>)<span style="color:#75715e">#/${CMAKE_PROJECT_VERSION}&#34;)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_VERSION_MAJOR</span> <span style="color:#f92672">${</span>PROJECT_VERSION_MAJOR<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_VERSION_MINOR</span> <span style="color:#f92672">${</span>PROJECT_VERSION_MINOR<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_VERSION_PATCH</span> <span style="color:#f92672">${</span>PROJECT_VERSION_PATCH<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_CONTACT</span> <span style="color:#e6db74">&#34;YOUR@E-MAIL.net&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_DEBIAN_PACKAGE_MAINTAINER</span> <span style="color:#e6db74">&#34;YOUR NAME&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_RESOURCE_FILE_LICENSE</span> <span style="color:#e6db74">&#34;${CMAKE_CURRENT_SOURCE_DIR}/LICENSE&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_RESOURCE_FILE_README</span> <span style="color:#e6db74">&#34;${CMAKE_CURRENT_SOURCE_DIR}/README.md&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># package name for deb
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># if set, then instead of some-application-0.9.2-Linux.deb
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># you&#39;ll get some-application_0.9.2_amd64.deb (note the underscores too)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CPACK_DEBIAN_FILE_NAME</span> <span style="color:#e6db74">DEB-DEFAULT</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># if you want every group to have its own package,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># although the same happens if this is not sent (so it defaults to ONE_PER_GROUP)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># and CPACK_DEB_COMPONENT_INSTALL is set to YES
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CPACK_COMPONENTS_GROUPING</span> <span style="color:#e6db74">ALL_COMPONENTS_IN_ONE</span>)<span style="color:#75715e">#ONE_PER_GROUP)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># without this you won&#39;t be able to pack only specified component
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CPACK_DEB_COMPONENT_INSTALL</span> <span style="color:#e6db74">YES</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>include(<span style="color:#e6db74">CPack</span>)</span></span></code></pre></div>
 <p>According to <a href="https://refspecs.linuxfoundation.org/LSB_2.1.0/LSB-Core-generic/LSB-Core-generic/pkgnameconv.html">this</a>, the package name (<code>CPACK_PACKAGE_NAME</code>) should have at least one dash/hyphen, so you might want/need to set it like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#75715e"># ${namespace} could be your main project name, or company, or whatever
-</span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_NAME</span> <span style="color:#e6db74">&#34;${namespace}-${PROJECT_NAME}&#34;</span>
-    <span style="color:#e6db74">CACHE</span> <span style="color:#e6db74">STRING</span> <span style="color:#e6db74">&#34;The resulting package name&#34;</span>
-)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># ${namespace} could be your main project name, or company, or whatever
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CPACK_PACKAGE_NAME</span> <span style="color:#e6db74">&#34;${namespace}-${PROJECT_NAME}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CACHE</span> <span style="color:#e6db74">STRING</span> <span style="color:#e6db74">&#34;The resulting package name&#34;</span>
+</span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
 <p>And of course the same applies if you pass it as <code>-DCPACK_PACKAGE_NAME</code> on configuration.</p>
 <p>Once you have the <code>Packing.cmake</code> module, include it in the very end of the main project (<code>/CMakeLists.txt</code>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake"><span style="color:#75715e"># where to find our CMake modules
-</span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CMAKE_MODULE_PATH</span> <span style="color:#e6db74">&#34;${CMAKE_CURRENT_SOURCE_DIR}/cmake&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>include(<span style="color:#e6db74">Packing</span>)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># where to find our CMake modules
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CMAKE_MODULE_PATH</span> <span style="color:#e6db74">&#34;${CMAKE_CURRENT_SOURCE_DIR}/cmake&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>include(<span style="color:#e6db74">Packing</span>)</span></span></code></pre></div>
 <p>To create a package you need to configure the project, build it and then execute <code>cpack</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>cmake<span style="color:#f92672">-</span>cpack<span style="color:#f92672">-</span>example
-$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#a6e22e">$_</span>
-$ cmake <span style="color:#f92672">-</span>G <span style="color:#a6e22e">Ninja</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> <span style="color:#f92672">..</span>
-$ cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span>
-
-$ cpack <span style="color:#f92672">-</span>G <span style="color:#a6e22e">DEB</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span> <span style="color:#66d9ef">using</span> <span style="color:#66d9ef">DEB</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">projects</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">project:</span> <span style="color:#66d9ef">some-application</span> <span style="color:#f92672">[]</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">AnotherLibrary</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">SomeLibrary</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">some-application</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span>
-<span style="color:#f92672">--</span> <span style="color:#a6e22e">CPACK_DEBIAN_PACKAGE_DEPENDS</span> not set<span style="color:#f92672">,</span> the <span style="color:#66d9ef">package</span> will have no dependencies<span style="color:#f92672">.</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">package:</span> <span style="color:#66d9ef">/path/to/cmake-cpack-example/</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">packages/some-application_0.</span><span style="color:#960050;background-color:#1e0010">9</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">amd64.deb</span> <span style="color:#66d9ef">generated.</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>cmake<span style="color:#f92672">-</span>cpack<span style="color:#f92672">-</span>example
+</span></span><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#a6e22e">$_</span>
+</span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">-</span>G <span style="color:#a6e22e">Ninja</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> <span style="color:#f92672">..</span>
+</span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ cpack <span style="color:#f92672">-</span>G <span style="color:#a6e22e">DEB</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span> <span style="color:#66d9ef">using</span> <span style="color:#66d9ef">DEB</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">projects</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">project:</span> <span style="color:#66d9ef">some-application</span> <span style="color:#f92672">[]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">AnotherLibrary</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">SomeLibrary</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">some-application</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">CPACK_DEBIAN_PACKAGE_DEPENDS</span> not set<span style="color:#f92672">,</span> the <span style="color:#66d9ef">package</span> will have no dependencies<span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">package:</span> <span style="color:#66d9ef">/path/to/cmake-cpack-example/</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">packages/some-application_0.</span><span style="color:#960050;background-color:#1e0010">9</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">amd64.deb</span> <span style="color:#66d9ef">generated.</span></span></span></code></pre></div>
 <p>As you can guess, <code>-G DEB</code> means that CPack will create a deb package. The full list of supported package formats (<em>or rather CPack generators</em>) is available <a href="https://cmake.org/cmake/help/latest/manual/cpack-generators.7.html">here</a>.</p>
 <p>Note that even though packing depends on <code>install()</code> statements, actual installation step (<code>--target install</code>) wasn&rsquo;t required here.</p>
 <p>But building the target is required. If you try to call <code>cpack</code> without building anything, it will fail:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cpack <span style="color:#f92672">-</span>G <span style="color:#a6e22e">DEB</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span> <span style="color:#66d9ef">using</span> <span style="color:#66d9ef">DEB</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">projects</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">project:</span> <span style="color:#66d9ef">some-application</span> <span style="color:#f92672">[]</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">SomeLibrary</span>
-<span style="color:#a6e22e">CMake</span> <span style="color:#a6e22e">Error</span> at <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>cmake<span style="color:#f92672">-</span>cpack<span style="color:#f92672">-</span>example<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>libraries<span style="color:#f92672">/</span><span style="color:#a6e22e">SomeLibrary</span><span style="color:#f92672">/</span>cmake_install<span style="color:#f92672">.</span>cmake<span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">41</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">file</span><span style="color:#f92672">)</span><span style="color:#66d9ef">:</span>
-  file <span style="color:#a6e22e">INSTALL</span> cannot find
-  <span style="color:#e6db74">&#34;/path/to/cmake-cpack-example/build/libraries/SomeLibrary/libSomeLibrary.a&#34;</span><span style="color:#66d9ef">:</span>
-  <span style="color:#66d9ef">No</span> <span style="color:#66d9ef">such</span> <span style="color:#66d9ef">file</span> <span style="color:#66d9ef">or</span> <span style="color:#66d9ef">directory.</span>
-<span style="color:#66d9ef">Call</span> <span style="color:#66d9ef">Stack</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">most</span> <span style="color:#66d9ef">recent</span> <span style="color:#66d9ef">call</span> <span style="color:#66d9ef">first</span><span style="color:#f92672">)</span><span style="color:#66d9ef">:</span>
-  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>cmake<span style="color:#f92672">-</span>cpack<span style="color:#f92672">-</span>example<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>libraries<span style="color:#f92672">/</span>cmake_install<span style="color:#f92672">.</span>cmake<span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">42</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">include</span><span style="color:#f92672">)</span>
-  <span style="color:#66d9ef">/path/to/cmake-cpack-example/build/cmake_install.cmake:</span><span style="color:#960050;background-color:#1e0010">42</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">include</span><span style="color:#f92672">)</span>
-
-<span style="color:#66d9ef">CPack</span> <span style="color:#66d9ef">Error:</span> <span style="color:#66d9ef">Error</span> <span style="color:#66d9ef">when</span> <span style="color:#66d9ef">generating</span> <span style="color:#66d9ef">package:</span> <span style="color:#66d9ef">some-application</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cpack <span style="color:#f92672">-</span>G <span style="color:#a6e22e">DEB</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span> <span style="color:#66d9ef">using</span> <span style="color:#66d9ef">DEB</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">projects</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">project:</span> <span style="color:#66d9ef">some-application</span> <span style="color:#f92672">[]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">SomeLibrary</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CMake</span> <span style="color:#a6e22e">Error</span> at <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>cmake<span style="color:#f92672">-</span>cpack<span style="color:#f92672">-</span>example<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>libraries<span style="color:#f92672">/</span><span style="color:#a6e22e">SomeLibrary</span><span style="color:#f92672">/</span>cmake_install<span style="color:#f92672">.</span>cmake<span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">41</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">file</span><span style="color:#f92672">)</span><span style="color:#66d9ef">:</span>
+</span></span><span style="display:flex;"><span>  file <span style="color:#a6e22e">INSTALL</span> cannot find
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;/path/to/cmake-cpack-example/build/libraries/SomeLibrary/libSomeLibrary.a&#34;</span><span style="color:#66d9ef">:</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">No</span> <span style="color:#66d9ef">such</span> <span style="color:#66d9ef">file</span> <span style="color:#66d9ef">or</span> <span style="color:#66d9ef">directory.</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">Call</span> <span style="color:#66d9ef">Stack</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">most</span> <span style="color:#66d9ef">recent</span> <span style="color:#66d9ef">call</span> <span style="color:#66d9ef">first</span><span style="color:#f92672">)</span><span style="color:#66d9ef">:</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>cmake<span style="color:#f92672">-</span>cpack<span style="color:#f92672">-</span>example<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>libraries<span style="color:#f92672">/</span>cmake_install<span style="color:#f92672">.</span>cmake<span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">42</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">include</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">/path/to/cmake-cpack-example/build/cmake_install.cmake:</span><span style="color:#960050;background-color:#1e0010">42</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">include</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">CPack</span> <span style="color:#66d9ef">Error:</span> <span style="color:#66d9ef">Error</span> <span style="color:#66d9ef">when</span> <span style="color:#66d9ef">generating</span> <span style="color:#66d9ef">package:</span> <span style="color:#66d9ef">some-application</span></span></span></code></pre></div>
 <p>If everything required for the package was built, and packing went fine, then you&rsquo;ll get a package in the project root:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">_packages</span>
-<span style="color:#f92672">└──</span> some<span style="color:#f92672">-</span>application_0<span style="color:#f92672">.</span><span style="color:#ae81ff">9.2</span><span style="color:#a6e22e">_amd64</span><span style="color:#f92672">.</span>deb</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">_packages</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">└──</span> some<span style="color:#f92672">-</span>application_0<span style="color:#f92672">.</span><span style="color:#ae81ff">9.2</span><span style="color:#a6e22e">_amd64</span><span style="color:#f92672">.</span>deb</span></span></code></pre></div>
 <p>Let&rsquo;s take a look at what&rsquo;s inside:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cd <span style="color:#f92672">../</span><span style="color:#a6e22e">_packages</span><span style="color:#f92672">/</span>
-$ dpkg<span style="color:#f92672">-</span>deb <span style="color:#f92672">-</span>R <span style="color:#f92672">./</span>some<span style="color:#f92672">-</span>application_0<span style="color:#f92672">.</span><span style="color:#ae81ff">9.2</span><span style="color:#a6e22e">_amd64</span><span style="color:#f92672">.</span>deb <span style="color:#f92672">./</span><span style="color:#66d9ef">package</span>
-$ tree <span style="color:#f92672">./</span>package<span style="color:#f92672">/</span>
-<span style="color:#f92672">./</span>package<span style="color:#f92672">/</span>
-<span style="color:#f92672">├──</span> <span style="color:#a6e22e">DEBIAN</span>
-<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> control
-<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> md5sums
-<span style="color:#f92672">└──</span> opt
-    <span style="color:#f92672">└──</span> some
-        <span style="color:#f92672">├──</span> bin
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> some<span style="color:#f92672">-</span>application
-        <span style="color:#f92672">├──</span> cmake
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">AnotherLibraryConfig</span><span style="color:#f92672">.</span>cmake
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">AnotherLibraryConfigVersion</span><span style="color:#f92672">.</span>cmake
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">AnotherLibraryTargets</span><span style="color:#f92672">-</span>release<span style="color:#f92672">.</span>cmake
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">AnotherLibraryTargets</span><span style="color:#f92672">.</span>cmake
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryConfig</span><span style="color:#f92672">.</span>cmake
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryConfigVersion</span><span style="color:#f92672">.</span>cmake
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryTargets</span><span style="color:#f92672">-</span>release<span style="color:#f92672">.</span>cmake
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">SomeLibraryTargets</span><span style="color:#f92672">.</span>cmake
-        <span style="color:#f92672">├──</span> include
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">AnotherLibrary</span>
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> another<span style="color:#f92672">.</span>h
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">SomeLibrary</span>
-        <span style="color:#f92672">│</span>       <span style="color:#f92672">└──</span> some<span style="color:#f92672">.</span>h
-        <span style="color:#f92672">└──</span> lib
-            <span style="color:#f92672">├──</span> libAnotherLibrary<span style="color:#f92672">.</span>a
-            <span style="color:#f92672">└──</span> libSomeLibrary<span style="color:#f92672">.</span>a</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">../</span><span style="color:#a6e22e">_packages</span><span style="color:#f92672">/</span>
+</span></span><span style="display:flex;"><span>$ dpkg<span style="color:#f92672">-</span>deb <span style="color:#f92672">-</span>R <span style="color:#f92672">./</span>some<span style="color:#f92672">-</span>application_0<span style="color:#f92672">.</span><span style="color:#ae81ff">9.2</span><span style="color:#a6e22e">_amd64</span><span style="color:#f92672">.</span>deb <span style="color:#f92672">./</span><span style="color:#66d9ef">package</span>
+</span></span><span style="display:flex;"><span>$ tree <span style="color:#f92672">./</span>package<span style="color:#f92672">/</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">./</span>package<span style="color:#f92672">/</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> <span style="color:#a6e22e">DEBIAN</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> control
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> md5sums
+</span></span><span style="display:flex;"><span><span style="color:#f92672">└──</span> opt
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">└──</span> some
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">├──</span> bin
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> some<span style="color:#f92672">-</span>application
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">├──</span> cmake
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">AnotherLibraryConfig</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">AnotherLibraryConfigVersion</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">AnotherLibraryTargets</span><span style="color:#f92672">-</span>release<span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">AnotherLibraryTargets</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryConfig</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryConfigVersion</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryTargets</span><span style="color:#f92672">-</span>release<span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">SomeLibraryTargets</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">├──</span> include
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">AnotherLibrary</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> another<span style="color:#f92672">.</span>h
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">SomeLibrary</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>       <span style="color:#f92672">└──</span> some<span style="color:#f92672">.</span>h
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">└──</span> lib
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">├──</span> libAnotherLibrary<span style="color:#f92672">.</span>a
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">└──</span> libSomeLibrary<span style="color:#f92672">.</span>a</span></span></code></pre></div>
 <p>As you can see, it&rsquo;s the same content as what we would get in the install folder after running <code>--install</code>/<code>--target install</code>, but prefixed with the specified installation path (<code>/opt/some</code>) and with the package meta-information and checksums in <code>DEBIAN</code> folder on top.</p>
 <h2 id="components">Components</h2>
 <p>Well, that was easy. But what wasn&rsquo;t easy is to find out how to tell CPack to pack only selected components instead of the entire project.</p>
 <p>For selective packing you need to define so-called components in the <code>install()</code> statements. If an <code>install()</code> statement doesn&rsquo;t have a <code>COMPONENT</code> set, then it will default to <code>Unspecified</code> component. So by default the entire project is an <code>Unspecified</code> component, and that is what will get packed.</p>
 <p>Here&rsquo;s how you can set <code>COMPONENT</code> in an <code>install()</code> statement:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">install(
-    <span style="color:#e6db74">TARGETS</span> <span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>
-    <span style="color:#e6db74">EXPORT</span> <span style="color:#e6db74">&#34;${PROJECT_NAME}Targets&#34;</span>
-<span style="display:block;width:100%;background-color:#3c3d38">    <span style="color:#e6db74">COMPONENT</span> <span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#75715e"># must be here, not any line lower
-</span></span><span style="color:#75715e"></span>    <span style="color:#75715e"># these get default values from GNUInstallDirs, no need to set them
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">#RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} # bin
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">#LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # lib
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">#ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} # lib
-</span><span style="color:#75715e"></span>    <span style="color:#75715e"># except for public headers, as we want them to be inside a library folder
-</span><span style="color:#75715e"></span>    <span style="color:#e6db74">PUBLIC_HEADER</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_INCLUDEDIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>
-    <span style="color:#e6db74">INCLUDES</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_INCLUDEDIR<span style="color:#f92672">}</span> <span style="color:#75715e"># include
-</span><span style="color:#75715e"></span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ...
-</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>install(
-    <span style="color:#e6db74">FILES</span>
-    <span style="color:#e6db74">&#34;${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake&#34;</span>
-    <span style="color:#e6db74">&#34;${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake&#34;</span>
-    <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">cmake</span>
-<span style="display:block;width:100%;background-color:#3c3d38">    <span style="color:#e6db74">COMPONENT</span> <span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>
-</span>)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>install(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">TARGETS</span> <span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">EXPORT</span> <span style="color:#e6db74">&#34;${PROJECT_NAME}Targets&#34;</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#e6db74">COMPONENT</span> <span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#75715e"># must be here, not any line lower
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e"># these get default values from GNUInstallDirs, no need to set them
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">#RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} # bin
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">#LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # lib
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">#ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} # lib
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e"># except for public headers, as we want them to be inside a library folder
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#e6db74">PUBLIC_HEADER</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_INCLUDEDIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">INCLUDES</span> <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_INCLUDEDIR<span style="color:#f92672">}</span> <span style="color:#75715e"># include
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>install(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">FILES</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">cmake</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#e6db74">COMPONENT</span> <span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
 <p>It is important that in case of <code>install(TARGETS ...)</code> the <code>COMPONENT</code> value should go right after <code>EXPORT</code>, otherwise it kind of doesn&rsquo;t apply or applies to something else?.. I don&rsquo;t quite understand, what is going on here, but that&rsquo;s how it worked for me.</p>
 <p>To check what components will get packed, you can print the <code>CPACK_COMPONENTS_ALL</code> variable:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;Components to pack: ${CPACK_COMPONENTS_ALL}&#34;</span>)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;Components to pack: ${CPACK_COMPONENTS_ALL}&#34;</span>)</span></span></code></pre></div>
 <p>So here I&rsquo;ve set <code>COMPONENT</code> to every single <code>install()</code> statement in the project, and here&rsquo;s what I get on configuring the project:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">-- Components to pack: AnotherLibrary;SomeLibrary;some-application</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>-- Components to pack: AnotherLibrary;SomeLibrary;some-application</span></span></code></pre></div>
 <p>Out of curiosity, let&rsquo;s comment out <code>COMPONENT</code> for the application&rsquo;s <code>install()</code> and run configure again:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">-- Components to pack: AnotherLibrary;SomeLibrary;Unspecified</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>-- Components to pack: AnotherLibrary;SomeLibrary;Unspecified</span></span></code></pre></div>
 <p>So if you get <code>Unspecified</code> in the <code>CPACK_COMPONENTS_ALL</code> variable, then most definitely you have at least one <code>install()</code> statement somewhere in the project without <code>COMPONENT</code> set.</p>
 <p>The very same <code>CPACK_COMPONENTS_ALL</code> variable is how you control which components need to be packed. If I want to pack only <code>SomeLibrary</code> and <code>some-application</code> components, then I need to pass <code>-DCPACK_COMPONENTS_ALL=&quot;SomeLibrary;some-application&quot;</code> on configure (<em>you might need to update your CMake for multi-target <code>--build</code> instruction to work</em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>cmake<span style="color:#f92672">-</span>cpack<span style="color:#f92672">-</span>example<span style="color:#f92672">/</span>build
-
-$ cmake <span style="color:#f92672">-</span>G <span style="color:#a6e22e">Ninja</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> \
-<span style="color:#f92672">-</span><span style="color:#a6e22e">DCPACK_COMPONENTS_ALL</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SomeLibrary;some-application&#34;</span> \
-<span style="color:#f92672">..</span>
-
-$ cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target <span style="color:#e6db74">&#34;SomeLibrary;some-application&#34;</span>
-
-$ cpack <span style="color:#f92672">-</span>G <span style="color:#a6e22e">DEB</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span> <span style="color:#66d9ef">using</span> <span style="color:#66d9ef">DEB</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">projects</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">project:</span> <span style="color:#66d9ef">some-application</span> <span style="color:#f92672">[]</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">SomeLibrary</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">some-application</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span>
-<span style="color:#f92672">--</span> <span style="color:#a6e22e">CPACK_DEBIAN_PACKAGE_DEPENDS</span> not set<span style="color:#f92672">,</span> the <span style="color:#66d9ef">package</span> will have no dependencies<span style="color:#f92672">.</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">package:</span> <span style="color:#66d9ef">/path/to/cmake-cpack-example/</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">packages/some-application_0.</span><span style="color:#960050;background-color:#1e0010">9</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">amd64.deb</span> <span style="color:#66d9ef">generated.</span>
-
-<span style="color:#66d9ef">$</span> <span style="color:#66d9ef">dpkg-deb</span> <span style="color:#66d9ef">-R</span> <span style="color:#66d9ef">../</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">packages/some-application_0.</span><span style="color:#960050;background-color:#1e0010">9</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">amd64.deb</span> <span style="color:#66d9ef">../</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">packages/package</span>
-$ tree <span style="color:#f92672">../</span><span style="color:#a6e22e">_packages</span><span style="color:#f92672">/</span>package<span style="color:#f92672">/</span>
-<span style="color:#f92672">../</span><span style="color:#a6e22e">_packages</span><span style="color:#f92672">/</span>package<span style="color:#f92672">/</span>
-<span style="color:#f92672">├──</span> <span style="color:#a6e22e">DEBIAN</span>
-<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> control
-<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> md5sums
-<span style="color:#f92672">└──</span> opt
-    <span style="color:#f92672">└──</span> some
-        <span style="color:#f92672">├──</span> bin
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> some<span style="color:#f92672">-</span>application
-        <span style="color:#f92672">├──</span> cmake
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryConfig</span><span style="color:#f92672">.</span>cmake
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryConfigVersion</span><span style="color:#f92672">.</span>cmake
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryTargets</span><span style="color:#f92672">-</span>release<span style="color:#f92672">.</span>cmake
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">SomeLibraryTargets</span><span style="color:#f92672">.</span>cmake
-        <span style="color:#f92672">├──</span> include
-        <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">SomeLibrary</span>
-        <span style="color:#f92672">│</span>       <span style="color:#f92672">└──</span> some<span style="color:#f92672">.</span>h
-        <span style="color:#f92672">└──</span> lib
-            <span style="color:#f92672">└──</span> libSomeLibrary<span style="color:#f92672">.</span>a</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>cmake<span style="color:#f92672">-</span>cpack<span style="color:#f92672">-</span>example<span style="color:#f92672">/</span>build
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">-</span>G <span style="color:#a6e22e">Ninja</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> \
+</span></span><span style="display:flex;"><span><span style="color:#f92672">-</span><span style="color:#a6e22e">DCPACK_COMPONENTS_ALL</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SomeLibrary;some-application&#34;</span> \
+</span></span><span style="display:flex;"><span><span style="color:#f92672">..</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target <span style="color:#e6db74">&#34;SomeLibrary;some-application&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ cpack <span style="color:#f92672">-</span>G <span style="color:#a6e22e">DEB</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span> <span style="color:#66d9ef">using</span> <span style="color:#66d9ef">DEB</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">projects</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">project:</span> <span style="color:#66d9ef">some-application</span> <span style="color:#f92672">[]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">SomeLibrary</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">some-application</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">CPACK_DEBIAN_PACKAGE_DEPENDS</span> not set<span style="color:#f92672">,</span> the <span style="color:#66d9ef">package</span> will have no dependencies<span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">package:</span> <span style="color:#66d9ef">/path/to/cmake-cpack-example/</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">packages/some-application_0.</span><span style="color:#960050;background-color:#1e0010">9</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">amd64.deb</span> <span style="color:#66d9ef">generated.</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">$</span> <span style="color:#66d9ef">dpkg-deb</span> <span style="color:#66d9ef">-R</span> <span style="color:#66d9ef">../</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">packages/some-application_0.</span><span style="color:#960050;background-color:#1e0010">9</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">amd64.deb</span> <span style="color:#66d9ef">../</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">packages/package</span>
+</span></span><span style="display:flex;"><span>$ tree <span style="color:#f92672">../</span><span style="color:#a6e22e">_packages</span><span style="color:#f92672">/</span>package<span style="color:#f92672">/</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">../</span><span style="color:#a6e22e">_packages</span><span style="color:#f92672">/</span>package<span style="color:#f92672">/</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> <span style="color:#a6e22e">DEBIAN</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> control
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> md5sums
+</span></span><span style="display:flex;"><span><span style="color:#f92672">└──</span> opt
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">└──</span> some
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">├──</span> bin
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> some<span style="color:#f92672">-</span>application
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">├──</span> cmake
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryConfig</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryConfigVersion</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryTargets</span><span style="color:#f92672">-</span>release<span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">SomeLibraryTargets</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">├──</span> include
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">SomeLibrary</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">│</span>       <span style="color:#f92672">└──</span> some<span style="color:#f92672">.</span>h
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">└──</span> lib
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">└──</span> libSomeLibrary<span style="color:#f92672">.</span>a</span></span></code></pre></div>
 <p>Here we go, <code>AnotherLibrary</code> wasn&rsquo;t packed this time.</p>
 <p>Sadly, <code>CPACK_COMPONENTS_ALL</code> (<em>and other useful CPack variables</em>) can be set only on project configuration, not on <code>cpack</code> run.</p>
 <h3 id="preinstall-target">Preinstall target</h3>
 <p>As at first I ran CMake with default generator, it was using <code>Unix Makefiles</code> (<em>which is the default one on some systems, such as Mac OS</em>). And for a long time I couldn&rsquo;t understand why, even though I have set specific components to pack and built required targets, I was getting a <code>Run preinstall target</code> step, which was building the entire project before packing the components I asked.</p>
 <p>Here&rsquo;s how this can be reproduced:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cmake <span style="color:#f92672">-</span>G <span style="color:#e6db74">&#34;Unix Makefiles&#34;</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> \
-<span style="color:#f92672">-</span><span style="color:#a6e22e">DCPACK_COMPONENTS_ALL</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SomeLibrary;some-application&#34;</span> \
-<span style="color:#f92672">..</span>
-
-$ cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target <span style="color:#e6db74">&#34;SomeLibrary;some-application&#34;</span>
-
-$ cpack <span style="color:#f92672">-</span>G <span style="color:#a6e22e">DEB</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span> <span style="color:#66d9ef">using</span> <span style="color:#66d9ef">DEB</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">projects</span>
-<span style="display:block;width:100%;background-color:#3c3d38"><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">Run</span> <span style="color:#66d9ef">preinstall</span> <span style="color:#66d9ef">target</span> <span style="color:#66d9ef">for:</span> <span style="color:#66d9ef">some-application</span>
-</span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">project:</span> <span style="color:#66d9ef">some-application</span> <span style="color:#f92672">[]</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">SomeLibrary</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">some-application</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span>
-<span style="color:#f92672">--</span> <span style="color:#a6e22e">CPACK_DEBIAN_PACKAGE_DEPENDS</span> not set<span style="color:#f92672">,</span> the <span style="color:#66d9ef">package</span> will have no dependencies<span style="color:#f92672">.</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">package:</span> <span style="color:#66d9ef">/path/to/cmake-cpack-example/</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">packages/some-application_0.</span><span style="color:#960050;background-color:#1e0010">9</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">amd64.deb</span> <span style="color:#66d9ef">generated.</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cmake <span style="color:#f92672">-</span>G <span style="color:#e6db74">&#34;Unix Makefiles&#34;</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> \
+</span></span><span style="display:flex;"><span><span style="color:#f92672">-</span><span style="color:#a6e22e">DCPACK_COMPONENTS_ALL</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SomeLibrary;some-application&#34;</span> \
+</span></span><span style="display:flex;"><span><span style="color:#f92672">..</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target <span style="color:#e6db74">&#34;SomeLibrary;some-application&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ cpack <span style="color:#f92672">-</span>G <span style="color:#a6e22e">DEB</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span> <span style="color:#66d9ef">using</span> <span style="color:#66d9ef">DEB</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">projects</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">Run</span> <span style="color:#66d9ef">preinstall</span> <span style="color:#66d9ef">target</span> <span style="color:#66d9ef">for:</span> <span style="color:#66d9ef">some-application</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">project:</span> <span style="color:#66d9ef">some-application</span> <span style="color:#f92672">[]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">SomeLibrary</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">some-application</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">CPACK_DEBIAN_PACKAGE_DEPENDS</span> not set<span style="color:#f92672">,</span> the <span style="color:#66d9ef">package</span> will have no dependencies<span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">package:</span> <span style="color:#66d9ef">/path/to/cmake-cpack-example/</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">packages/some-application_0.</span><span style="color:#960050;background-color:#1e0010">9</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">amd64.deb</span> <span style="color:#66d9ef">generated.</span></span></span></code></pre></div>
 <p>In fact, even if you won&rsquo;t explicitly build required targets (<em>or anything at all</em>), <code>cpack</code> will be still fine, because this &ldquo;preinstall target&rdquo; will anyway build the entire project.</p>
 <p>It will pack only what was passed in <code>CPACK_COMPONENTS_ALL</code>, no problem here, but it will always build the entire project. That&rsquo;s absolutely not good news, because our SDK takes quite some time to build, and either way it&rsquo;s just a waste of resources to build everything, when you only need a (<em>small</em>) part of the project.</p>
 <p>I don&rsquo;t know if such behavior is by design or is it a bug, but <a href="https://stackoverflow.com/a/57531164/1688203">solution/workaround</a> is simple: do not use <code>Unix Makefiles</code> generator. Instead, use <code>Ninja</code>, <code>Visual Studio *</code>, <code>Xcode</code> - none of these invoke that &ldquo;preinstall target&rdquo;. Alternatively, you can still use <code>Unix Makefiles</code> for configuring and building the project, but pass <code>-DCPACK_CMAKE_GENERATOR=Ninja</code> to <code>cpack</code>.</p>
 <h1 id="keeping-lintian-happy">Keeping Lintian happy</h1>
 <p>The deb package produced by CPack above is already fine and can be installed with <code>dpkg</code>. However, there is a tool for running checks on packages - <a href="https://en.wikipedia.org/wiki/Lintian">Lintian</a> - and it will not be happy about that package quality:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ lintian /path/to/cmake-cpack-example/_packages/some-application_0.9.2_amd64.deb
-E: some-application: changelog-file-missing-in-native-package
-E: some-application: dir-or-file-in-opt opt/some/
-E: some-application: dir-or-file-in-opt opt/some/bin/
-E: some-application: dir-or-file-in-opt ... use --no-tag-display-limit to see all <span style="color:#f92672">(</span>or pipe to a file/program<span style="color:#f92672">)</span>
-E: some-application: extended-description-is-empty
-E: some-application: maintainer-address-missing YOUR NAME
-E: some-application: no-copyright-file
-E: some-application: unstripped-binary-or-object opt/some/bin/some-application
-W: some-application: missing-depends-line
-W: some-application: non-standard-dir-perm opt/ <span style="color:#ae81ff">0775</span> !<span style="color:#f92672">=</span> <span style="color:#ae81ff">0755</span>
-W: some-application: non-standard-dir-perm opt/some/ <span style="color:#ae81ff">0775</span> !<span style="color:#f92672">=</span> <span style="color:#ae81ff">0755</span>
-W: some-application: non-standard-dir-perm ... use --no-tag-display-limit to see all <span style="color:#f92672">(</span>or pipe to a file/program<span style="color:#f92672">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ lintian /path/to/cmake-cpack-example/_packages/some-application_0.9.2_amd64.deb
+</span></span><span style="display:flex;"><span>E: some-application: changelog-file-missing-in-native-package
+</span></span><span style="display:flex;"><span>E: some-application: dir-or-file-in-opt opt/some/
+</span></span><span style="display:flex;"><span>E: some-application: dir-or-file-in-opt opt/some/bin/
+</span></span><span style="display:flex;"><span>E: some-application: dir-or-file-in-opt ... use --no-tag-display-limit to see all <span style="color:#f92672">(</span>or pipe to a file/program<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>E: some-application: extended-description-is-empty
+</span></span><span style="display:flex;"><span>E: some-application: maintainer-address-missing YOUR NAME
+</span></span><span style="display:flex;"><span>E: some-application: no-copyright-file
+</span></span><span style="display:flex;"><span>E: some-application: unstripped-binary-or-object opt/some/bin/some-application
+</span></span><span style="display:flex;"><span>W: some-application: missing-depends-line
+</span></span><span style="display:flex;"><span>W: some-application: non-standard-dir-perm opt/ <span style="color:#ae81ff">0775</span> !<span style="color:#f92672">=</span> <span style="color:#ae81ff">0755</span>
+</span></span><span style="display:flex;"><span>W: some-application: non-standard-dir-perm opt/some/ <span style="color:#ae81ff">0775</span> !<span style="color:#f92672">=</span> <span style="color:#ae81ff">0755</span>
+</span></span><span style="display:flex;"><span>W: some-application: non-standard-dir-perm ... use --no-tag-display-limit to see all <span style="color:#f92672">(</span>or pipe to a file/program<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>Some things we can&rsquo;t / don&rsquo;t want to do anything about, as they are meant for proper system package maintainers (<em>which we are not</em>), such as:</p>
 <ul>
 <li><code>changelog-file-missing-in-native-package</code> - we don&rsquo;t really have a changelog in a form that is ready to be packed;</li>
@@ -384,25 +382,25 @@ W: some-application: non-standard-dir-perm ... use --no-tag-display-limit to see
 <p>But some warnings can be easily fixed with the right CPack variables in <code>/cmake/Packing.cmake</code>.</p>
 <h2 id="maintainer-address-missing">maintainer-address-missing</h2>
 <p>The maintainer name should contain not just his name but also his e-mail address. And you need to set <code>CPACK_DEBIAN_PACKAGE_MAINTAINER</code> exactly so:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">set(<span style="color:#e6db74">CPACK_PACKAGE_CONTACT</span> <span style="color:#e6db74">&#34;YOUR@E-MAIL.net&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_DEBIAN_PACKAGE_MAINTAINER</span> <span style="color:#e6db74">&#34;YOUR NAME &lt;${CPACK_PACKAGE_CONTACT}&gt;&#34;</span>)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">CPACK_PACKAGE_CONTACT</span> <span style="color:#e6db74">&#34;YOUR@E-MAIL.net&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPACK_DEBIAN_PACKAGE_MAINTAINER</span> <span style="color:#e6db74">&#34;YOUR NAME &lt;${CPACK_PACKAGE_CONTACT}&gt;&#34;</span>)</span></span></code></pre></div>
 <h2 id="unstripped-binary-or-object">unstripped-binary-or-object</h2>
 <p>The <code>some-application</code> executable needs to be stripped from debug symbols. I am a bit confused about the fact that it still has them despite the Release build configuration, but okay, you can explicitly strip binaries with this CPack variable:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">set(<span style="color:#e6db74">CPACK_STRIP_FILES</span> <span style="color:#e6db74">YES</span>)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">CPACK_STRIP_FILES</span> <span style="color:#e6db74">YES</span>)</span></span></code></pre></div>
 <h2 id="missing-depends-line">missing-depends-line</h2>
 <p>A good package should list its dependencies. This can be turned on with the following variable:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">set(<span style="color:#e6db74">CPACK_DEBIAN_PACKAGE_SHLIBDEPS</span> <span style="color:#e6db74">YES</span>)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">CPACK_DEBIAN_PACKAGE_SHLIBDEPS</span> <span style="color:#e6db74">YES</span>)</span></span></code></pre></div>
 <p>As a result, in the case of my silly project, the following line will get added to <code>/some-application_0.9.2_amd64.deb/DEBIAN/control</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">Depends: libc6 <span style="color:#f92672">(</span>&gt;<span style="color:#f92672">=</span> 2.2.5<span style="color:#f92672">)</span>, libstdc++6 <span style="color:#f92672">(</span>&gt;<span style="color:#f92672">=</span> 5.2<span style="color:#f92672">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Depends: libc6 <span style="color:#f92672">(</span>&gt;<span style="color:#f92672">=</span> 2.2.5<span style="color:#f92672">)</span>, libstdc++6 <span style="color:#f92672">(</span>&gt;<span style="color:#f92672">=</span> 5.2<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>For that to work you need to have <code>dpkg-shlibdeps</code> utility installed.</p>
 <h2 id="non-standard-dir-perm">non-standard-dir-perm</h2>
 <p>The installation path directory should have <code>0755</code> permissions:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cmake" data-lang="cmake">set(
-    <span style="color:#e6db74">CPACK_INSTALL_DEFAULT_DIRECTORY_PERMISSIONS</span>
-    <span style="color:#e6db74">OWNER_READ</span> <span style="color:#e6db74">OWNER_WRITE</span> <span style="color:#e6db74">OWNER_EXECUTE</span>
-    <span style="color:#e6db74">GROUP_READ</span> <span style="color:#e6db74">GROUP_EXECUTE</span>
-    <span style="color:#e6db74">WORLD_READ</span> <span style="color:#e6db74">WORLD_EXECUTE</span>
-)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CPACK_INSTALL_DEFAULT_DIRECTORY_PERMISSIONS</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">OWNER_READ</span> <span style="color:#e6db74">OWNER_WRITE</span> <span style="color:#e6db74">OWNER_EXECUTE</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">GROUP_READ</span> <span style="color:#e6db74">GROUP_EXECUTE</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">WORLD_READ</span> <span style="color:#e6db74">WORLD_EXECUTE</span>
+</span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
 <h1 id="hosting-deb-packages-for-apt">Hosting deb packages for APT</h1>
 <p>This is a bonus part: how to set-up an APT repository with restricted access to host your deb packages. Mostly based on this <a href="https://earthly.dev/blog/creating-and-hosting-your-own-deb-packages-and-apt-repo/">beautiful blog post</a>.</p>
 <h2 id="repository">Repository</h2>
@@ -413,216 +411,216 @@ W: some-application: non-standard-dir-perm ... use --no-tag-display-limit to see
 </ul>
 <p>That&rsquo;s really what is there to it. The rest is just the way you make the repository available to users, what transport is used to fetch packages from it.</p>
 <p>Let&rsquo;s say we configured and packed only <code>SomeLibrary</code> component:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cmake <span style="color:#f92672">-</span>G <span style="color:#a6e22e">Ninja</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> \
-<span style="color:#f92672">-</span><span style="color:#a6e22e">DCPACK_COMPONENTS_ALL</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SomeLibrary&#34;</span> \
-<span style="color:#f92672">-</span><span style="color:#a6e22e">DCPACK_PACKAGE_NAME</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;some-library&#34;</span> \
-<span style="color:#f92672">-</span><span style="color:#a6e22e">DCPACK_PACKAGE_DESCRIPTION_SUMMARY</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Some library that prints a line of text&#34;</span> \
-<span style="color:#f92672">..</span>
-
-$ cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target <span style="color:#a6e22e">SomeLibrary</span>
-
-$ cpack <span style="color:#f92672">-</span>G <span style="color:#a6e22e">DEB</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span> <span style="color:#66d9ef">using</span> <span style="color:#66d9ef">DEB</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">projects</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">project:</span> <span style="color:#66d9ef">some-application</span> <span style="color:#f92672">[]</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">SomeLibrary</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span>
-<span style="color:#f92672">--</span> <span style="color:#a6e22e">CPACK_DEBIAN_PACKAGE_DEPENDS</span> not set<span style="color:#f92672">,</span> the <span style="color:#66d9ef">package</span> will have no dependencies<span style="color:#f92672">.</span>
-<span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">package:</span> <span style="color:#66d9ef">/path/to/cmake-cpack-example/</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">packages/some-library_0.</span><span style="color:#960050;background-color:#1e0010">9</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">amd64.deb</span> <span style="color:#66d9ef">generated.</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cmake <span style="color:#f92672">-</span>G <span style="color:#a6e22e">Ninja</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> \
+</span></span><span style="display:flex;"><span><span style="color:#f92672">-</span><span style="color:#a6e22e">DCPACK_COMPONENTS_ALL</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SomeLibrary&#34;</span> \
+</span></span><span style="display:flex;"><span><span style="color:#f92672">-</span><span style="color:#a6e22e">DCPACK_PACKAGE_NAME</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;some-library&#34;</span> \
+</span></span><span style="display:flex;"><span><span style="color:#f92672">-</span><span style="color:#a6e22e">DCPACK_PACKAGE_DESCRIPTION_SUMMARY</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Some library that prints a line of text&#34;</span> \
+</span></span><span style="display:flex;"><span><span style="color:#f92672">..</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target <span style="color:#a6e22e">SomeLibrary</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ cpack <span style="color:#f92672">-</span>G <span style="color:#a6e22e">DEB</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span> <span style="color:#66d9ef">using</span> <span style="color:#66d9ef">DEB</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">projects</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">project:</span> <span style="color:#66d9ef">some-application</span> <span style="color:#f92672">[]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span>   <span style="color:#66d9ef">Install</span> <span style="color:#66d9ef">component:</span> <span style="color:#66d9ef">SomeLibrary</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Create</span> <span style="color:#66d9ef">package</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">CPACK_DEBIAN_PACKAGE_DEPENDS</span> not set<span style="color:#f92672">,</span> the <span style="color:#66d9ef">package</span> will have no dependencies<span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">CPack</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">-</span> <span style="color:#66d9ef">package:</span> <span style="color:#66d9ef">/path/to/cmake-cpack-example/</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">packages/some-library_0.</span><span style="color:#960050;background-color:#1e0010">9</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">amd64.deb</span> <span style="color:#66d9ef">generated.</span></span></span></code></pre></div>
 <p>And now we want to put it into an APT repository, so people could fetch and install it on their machines with <code>apt install</code>, like any other package.</p>
 <p>We&rsquo;ll be of course using a Linux server for hosting and serving the repository, so let&rsquo;s start with creating the following structure on that server:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>somewhere<span style="color:#f92672">/</span>
-<span style="color:#f92672">└──</span> repository
-    <span style="color:#f92672">├──</span> dists
-    <span style="color:#f92672">│</span> <span style="color:#f92672">└──</span> stable
-    <span style="color:#f92672">│</span>     <span style="color:#f92672">└──</span> main
-    <span style="color:#f92672">│</span>         <span style="color:#f92672">└──</span> binary<span style="color:#f92672">-</span>amd64
-    <span style="color:#f92672">└──</span> pool
-        <span style="color:#f92672">└──</span> main
-            <span style="color:#f92672">└──</span> some<span style="color:#f92672">-</span>library_0<span style="color:#f92672">.</span><span style="color:#ae81ff">9.2</span><span style="color:#a6e22e">_amd64</span><span style="color:#f92672">.</span>deb</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>somewhere<span style="color:#f92672">/</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">└──</span> repository
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">├──</span> dists
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">│</span> <span style="color:#f92672">└──</span> stable
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">│</span>     <span style="color:#f92672">└──</span> main
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">│</span>         <span style="color:#f92672">└──</span> binary<span style="color:#f92672">-</span>amd64
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">└──</span> pool
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">└──</span> main
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">└──</span> some<span style="color:#f92672">-</span>library_0<span style="color:#f92672">.</span><span style="color:#ae81ff">9.2</span><span style="color:#a6e22e">_amd64</span><span style="color:#f92672">.</span>deb</span></span></code></pre></div>
 <p>So the deb packages go to <code>pool/main</code>, and we uploaded our first <code>some-library_0.9.2_amd64.deb</code> there.</p>
 <p>Now we need to create a list of available packages - the <code>Packages</code> file plus its compressed variant - it is generated by <code>dpkg-scanpackages</code> utility:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>somewhere<span style="color:#f92672">/</span>repository
-$ dpkg<span style="color:#f92672">-</span>scanpackages <span style="color:#f92672">-</span>m <span style="color:#f92672">--</span>arch amd64 pool<span style="color:#f92672">/</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span>dists<span style="color:#f92672">/</span>stable<span style="color:#f92672">/</span>main<span style="color:#f92672">/</span>binary<span style="color:#f92672">-</span>amd64<span style="color:#f92672">/</span><span style="color:#a6e22e">Packages</span>
-$ cat <span style="color:#f92672">./</span>dists<span style="color:#f92672">/</span>stable<span style="color:#f92672">/</span>main<span style="color:#f92672">/</span>binary<span style="color:#f92672">-</span>amd64<span style="color:#f92672">/</span><span style="color:#a6e22e">Packages</span> <span style="color:#f92672">|</span> gzip <span style="color:#f92672">-</span><span style="color:#ae81ff">9</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span>dists<span style="color:#f92672">/</span>stable<span style="color:#f92672">/</span>main<span style="color:#f92672">/</span>binary<span style="color:#f92672">-</span>amd64<span style="color:#f92672">/</span><span style="color:#a6e22e">Packages</span><span style="color:#f92672">.</span>gz</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>somewhere<span style="color:#f92672">/</span>repository
+</span></span><span style="display:flex;"><span>$ dpkg<span style="color:#f92672">-</span>scanpackages <span style="color:#f92672">-</span>m <span style="color:#f92672">--</span>arch amd64 pool<span style="color:#f92672">/</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span>dists<span style="color:#f92672">/</span>stable<span style="color:#f92672">/</span>main<span style="color:#f92672">/</span>binary<span style="color:#f92672">-</span>amd64<span style="color:#f92672">/</span><span style="color:#a6e22e">Packages</span>
+</span></span><span style="display:flex;"><span>$ cat <span style="color:#f92672">./</span>dists<span style="color:#f92672">/</span>stable<span style="color:#f92672">/</span>main<span style="color:#f92672">/</span>binary<span style="color:#f92672">-</span>amd64<span style="color:#f92672">/</span><span style="color:#a6e22e">Packages</span> <span style="color:#f92672">|</span> gzip <span style="color:#f92672">-</span><span style="color:#ae81ff">9</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span>dists<span style="color:#f92672">/</span>stable<span style="color:#f92672">/</span>main<span style="color:#f92672">/</span>binary<span style="color:#f92672">-</span>amd64<span style="color:#f92672">/</span><span style="color:#a6e22e">Packages</span><span style="color:#f92672">.</span>gz</span></span></code></pre></div>
 <p>The <code>-m</code> option allows to have several version of the package (<em>should be the default assumption, I think, otherwise how does one have several versions of the package in the repository?</em>). Without it, when you&rsquo;ll have the next version of your package (<code>some-library_0.9.3_amd64.deb</code>) and will scan the that folder again, you&rsquo;ll get a warning, and only one package will be written to <code>Packages</code> file:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">dpkg<span style="color:#f92672">-</span>scanpackages<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">warning:</span> <span style="color:#66d9ef">package</span> <span style="color:#66d9ef">some-library</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">filename</span> <span style="color:#66d9ef">./pool/main/some-library_0.</span><span style="color:#960050;background-color:#1e0010">9</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">amd64.deb</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">repeat</span><span style="color:#f92672">;</span> ignored that one and using data from <span style="color:#f92672">./</span>pool<span style="color:#f92672">/</span>main<span style="color:#f92672">/</span>some<span style="color:#f92672">-</span>library_0<span style="color:#f92672">.</span><span style="color:#ae81ff">9.3</span><span style="color:#a6e22e">_amd64</span><span style="color:#f92672">.</span>deb<span style="color:#f92672">!</span>
-dpkg<span style="color:#f92672">-</span>scanpackages<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">info:</span> <span style="color:#66d9ef">Wrote</span> <span style="color:#960050;background-color:#1e0010">1</span> <span style="color:#66d9ef">entries</span> <span style="color:#66d9ef">to</span> <span style="color:#66d9ef">output</span> <span style="color:#66d9ef">Packages</span> <span style="color:#66d9ef">file.</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>dpkg<span style="color:#f92672">-</span>scanpackages<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">warning:</span> <span style="color:#66d9ef">package</span> <span style="color:#66d9ef">some-library</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">filename</span> <span style="color:#66d9ef">./pool/main/some-library_0.</span><span style="color:#960050;background-color:#1e0010">9</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">_</span><span style="color:#66d9ef">amd64.deb</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">repeat</span><span style="color:#f92672">;</span> ignored that one and using data from <span style="color:#f92672">./</span>pool<span style="color:#f92672">/</span>main<span style="color:#f92672">/</span>some<span style="color:#f92672">-</span>library_0<span style="color:#f92672">.</span><span style="color:#ae81ff">9.3</span><span style="color:#a6e22e">_amd64</span><span style="color:#f92672">.</span>deb<span style="color:#f92672">!</span>
+</span></span><span style="display:flex;"><span>dpkg<span style="color:#f92672">-</span>scanpackages<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">info:</span> <span style="color:#66d9ef">Wrote</span> <span style="color:#960050;background-color:#1e0010">1</span> <span style="color:#66d9ef">entries</span> <span style="color:#66d9ef">to</span> <span style="color:#66d9ef">output</span> <span style="color:#66d9ef">Packages</span> <span style="color:#66d9ef">file.</span></span></span></code></pre></div>
 <p>And yes, the <code>Packages</code> file and its compressed variant need to be updated every time you upload a new package.</p>
 <p>Next thing we need to do is to prepare a <code>Release</code> file. Just like <code>Packages</code>, it also needs to be updated on every new uploaded package. And since its generation is a bit more complex, it&rsquo;s a good idea to make a script for this task:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e">#!/bin/sh
-</span><span style="color:#75715e"></span>
-set -e
-
-do_hash<span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
-    HASH_NAME<span style="color:#f92672">=</span>$1
-    HASH_CMD<span style="color:#f92672">=</span>$2
-    echo <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>HASH_NAME<span style="color:#e6db74">}</span><span style="color:#e6db74">:&#34;</span>
-    <span style="color:#66d9ef">for</span> f in <span style="color:#66d9ef">$(</span>find -type f<span style="color:#66d9ef">)</span>; <span style="color:#66d9ef">do</span>
-        f<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>echo $f | cut -c3-<span style="color:#66d9ef">)</span> <span style="color:#75715e"># remove ./ prefix</span>
-        <span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> <span style="color:#e6db74">&#34;</span>$f<span style="color:#e6db74">&#34;</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Release&#34;</span> <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
-            <span style="color:#66d9ef">continue</span>
-        <span style="color:#66d9ef">fi</span>
-        echo <span style="color:#e6db74">&#34; </span><span style="color:#66d9ef">$(</span><span style="color:#e6db74">${</span>HASH_CMD<span style="color:#e6db74">}</span> <span style="color:#e6db74">${</span>f<span style="color:#e6db74">}</span>  | cut -d<span style="color:#e6db74">&#34; &#34;</span> -f1<span style="color:#66d9ef">)</span><span style="color:#e6db74"> </span><span style="color:#66d9ef">$(</span>wc -c $f<span style="color:#66d9ef">)</span><span style="color:#e6db74">&#34;</span>
-    <span style="color:#66d9ef">done</span>
-<span style="color:#f92672">}</span>
-
-cat <span style="color:#e6db74">&lt;&lt; EOF
-</span><span style="color:#e6db74">Origin: Some repository
-</span><span style="color:#e6db74">Label: Some
-</span><span style="color:#e6db74">Suite: stable
-</span><span style="color:#e6db74">Codename: stable
-</span><span style="color:#e6db74">Version: 1.0
-</span><span style="color:#e6db74">Architectures: amd64
-</span><span style="color:#e6db74">Components: main
-</span><span style="color:#e6db74">Description: Some software repository
-</span><span style="color:#e6db74">Date: $(date -Ru)
-</span><span style="color:#e6db74">EOF</span>
-do_hash <span style="color:#e6db74">&#34;MD5Sum&#34;</span> <span style="color:#e6db74">&#34;md5sum&#34;</span>
-do_hash <span style="color:#e6db74">&#34;SHA1&#34;</span> <span style="color:#e6db74">&#34;sha1sum&#34;</span>
-do_hash <span style="color:#e6db74">&#34;SHA256&#34;</span> <span style="color:#e6db74">&#34;sha256sum&#34;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/sh
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>set -e
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>do_hash<span style="color:#f92672">()</span> <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>    HASH_NAME<span style="color:#f92672">=</span>$1
+</span></span><span style="display:flex;"><span>    HASH_CMD<span style="color:#f92672">=</span>$2
+</span></span><span style="display:flex;"><span>    echo <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>HASH_NAME<span style="color:#e6db74">}</span><span style="color:#e6db74">:&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> f in <span style="color:#66d9ef">$(</span>find -type f<span style="color:#66d9ef">)</span>; <span style="color:#66d9ef">do</span>
+</span></span><span style="display:flex;"><span>        f<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>echo $f | cut -c3-<span style="color:#66d9ef">)</span> <span style="color:#75715e"># remove ./ prefix</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> <span style="color:#e6db74">&#34;</span>$f<span style="color:#e6db74">&#34;</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Release&#34;</span> <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">continue</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">fi</span>
+</span></span><span style="display:flex;"><span>        echo <span style="color:#e6db74">&#34; </span><span style="color:#66d9ef">$(</span><span style="color:#e6db74">${</span>HASH_CMD<span style="color:#e6db74">}</span> <span style="color:#e6db74">${</span>f<span style="color:#e6db74">}</span>  | cut -d<span style="color:#e6db74">&#34; &#34;</span> -f1<span style="color:#66d9ef">)</span><span style="color:#e6db74"> </span><span style="color:#66d9ef">$(</span>wc -c $f<span style="color:#66d9ef">)</span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">done</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>cat <span style="color:#e6db74">&lt;&lt; EOF
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">Origin: Some repository
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">Label: Some
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">Suite: stable
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">Codename: stable
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">Version: 1.0
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">Architectures: amd64
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">Components: main
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">Description: Some software repository
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">Date: $(date -Ru)
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">EOF</span>
+</span></span><span style="display:flex;"><span>do_hash <span style="color:#e6db74">&#34;MD5Sum&#34;</span> <span style="color:#e6db74">&#34;md5sum&#34;</span>
+</span></span><span style="display:flex;"><span>do_hash <span style="color:#e6db74">&#34;SHA1&#34;</span> <span style="color:#e6db74">&#34;sha1sum&#34;</span>
+</span></span><span style="display:flex;"><span>do_hash <span style="color:#e6db74">&#34;SHA256&#34;</span> <span style="color:#e6db74">&#34;sha256sum&#34;</span></span></span></code></pre></div>
 <p>What the script does is it describes the repository and also provides checksums for the <code>Packages</code> files. Save it as <code>generate-release.sh</code> and execute to make the <code>Release</code> file:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>somewhere<span style="color:#f92672">/</span>repository<span style="color:#f92672">/</span>dists<span style="color:#f92672">/</span>stable<span style="color:#f92672">/</span>
-$ <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>elsewhere<span style="color:#f92672">/</span>generate<span style="color:#f92672">-</span>release<span style="color:#f92672">.</span>sh <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>somewhere<span style="color:#f92672">/</span>repository<span style="color:#f92672">/</span>dists<span style="color:#f92672">/</span>stable<span style="color:#f92672">/</span>
+</span></span><span style="display:flex;"><span>$ <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>elsewhere<span style="color:#f92672">/</span>generate<span style="color:#f92672">-</span>release<span style="color:#f92672">.</span>sh <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span></span></span></code></pre></div>
 <p>We should also sign the <code>Release</code> file with PGP, and that will be covered <a href="#secure-apt">a bit later</a>, but the repository can already serve packages to APT as it is - you only need to set-up a transport for it.</p>
 <h2 id="transport">Transport</h2>
 <p>APT supports several transports. SSH and HTTP/HTTPS I was aware of and will demonstrate them below, but apparently it can also use <a href="https://en.wikipedia.org/wiki/Amazon_S3">AWS S3</a> and <a href="https://en.wikipedia.org/wiki/Tor_(network)">Tor</a>, which was news to me.</p>
 <h3 id="ssh">SSH</h3>
 <p>At first I thought that I can just expose the repository via SFTP using a chrooted user, and so that&rsquo;s what I did on the repository server. My reasoning for going with SFTP was to use SSH keys (<em>instead of Basic authentication in case of HTTP/HTTPS</em>).</p>
 <p>Start with adding a &ldquo;guest&rdquo; user:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo addgroup packages
-$ sudo adduser --ingroup packages --home /home/packages packages</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo addgroup packages
+</span></span><span style="display:flex;"><span>$ sudo adduser --ingroup packages --home /home/packages packages</span></span></code></pre></div>
 <p>and move the repository to <code>/home/packages/</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ mv /path/to/somewhere/repository /home/packages/
-$ sudo chown -R packages:packages /home/packages</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mv /path/to/somewhere/repository /home/packages/
+</span></span><span style="display:flex;"><span>$ sudo chown -R packages:packages /home/packages</span></span></code></pre></div>
 <p>Allow chrooted SFTP access for that user in <code>/etc/ssh/sshd_config</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#a6e22e">...</span>
-
-<span style="color:#a6e22e">Subsystem sftp internal-sftp</span>
-
-<span style="color:#a6e22e">...</span>
-
-<span style="color:#a6e22e">Match Group packages</span>
-    <span style="color:#75715e"># force the connection to use SFTP and chroot to the required directory</span>
-<span style="display:block;width:100%;background-color:#3c3d38">    <span style="color:#a6e22e">ForceCommand internal-sftp</span>
-</span><span style="display:block;width:100%;background-color:#3c3d38">    <span style="color:#a6e22e">ChrootDirectory /home/packages</span>
-</span>    <span style="color:#75715e"># disable tunneling</span>
-    <span style="color:#a6e22e">PermitTunnel no</span>
-    <span style="color:#75715e"># disable authentication agent</span>
-    <span style="color:#a6e22e">AllowAgentForwarding no</span>
-    <span style="color:#75715e"># disable TCP forwarding</span>
-    <span style="color:#a6e22e">AllowTcpForwarding no</span>
-    <span style="color:#75715e"># disable X11 forwarding</span>
-    <span style="color:#a6e22e">X11Forwarding no</span>
-    <span style="color:#75715e"># disable password, only key is allowed</span>
-    <span style="color:#a6e22e">PasswordAuthentication no</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#a6e22e">...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Subsystem sftp internal-sftp</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Match Group packages</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># force the connection to use SFTP and chroot to the required directory</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#a6e22e">ForceCommand internal-sftp</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#a6e22e">ChrootDirectory /home/packages</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># disable tunneling</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">PermitTunnel no</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># disable authentication agent</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">AllowAgentForwarding no</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># disable TCP forwarding</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">AllowTcpForwarding no</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># disable X11 forwarding</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">X11Forwarding no</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># disable password, only key is allowed</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">PasswordAuthentication no</span></span></span></code></pre></div>
 <p>and restart SSH service:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo systemctl restart sshd.service</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo systemctl restart sshd.service</span></span></code></pre></div>
 <p>Generate SSH key, add its public part to <code>/home/packages/.ssh/authorized_keys</code> on server. Create an entry in <code>~/.ssh/config</code> on client/user machine with private key (<em>might need to do that for root user too, because <code>apt</code> is likely to be called with <code>sudo</code></em>).</p>
 <p>Add a new APT source on the client/user machine in <code>/etc/apt/sources.list.d/some.list</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">deb <span style="color:#f92672">[</span><span style="color:#66d9ef">arch=amd64</span> <span style="color:#66d9ef">trusted=yes</span><span style="color:#f92672">]</span> ssh<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//your.host/repository</span> <span style="color:#66d9ef">stable</span> <span style="color:#66d9ef">main</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>deb <span style="color:#f92672">[</span><span style="color:#66d9ef">arch=amd64</span> <span style="color:#66d9ef">trusted=yes</span><span style="color:#f92672">]</span> ssh<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//your.host/repository</span> <span style="color:#66d9ef">stable</span> <span style="color:#66d9ef">main</span></span></span></code></pre></div>
 <p>The <code>trusted=yes</code> parameter is required, since our repository is not signed yet.</p>
 <p>Now try to fetch the packages information:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo apt update</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt update</span></span></code></pre></div>
 <p>That might fail:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">The method <span style="color:#e6db74">&#39;ssh&#39;</span> is unsupported and disabled by default. Consider switching to http<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span>. Set Dir::Bin::Methods::ssh to <span style="color:#e6db74">&#34;ssh&#34;</span> to enable it again</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>The method <span style="color:#e6db74">&#39;ssh&#39;</span> is unsupported and disabled by default. Consider switching to http<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span>. Set Dir::Bin::Methods::ssh to <span style="color:#e6db74">&#34;ssh&#34;</span> to enable it again</span></span></code></pre></div>
 <p>If you got that error, create <code>/etc/apt/apt.conf.d/99ssh</code> file with the following content:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">Dir::Bin::Methods::ssh <span style="color:#e6db74">&#34;ssh&#34;</span>;</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Dir::Bin::Methods::ssh <span style="color:#e6db74">&#34;ssh&#34;</span>;</span></span></code></pre></div>
 <p>and try again:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo apt update
-<span style="color:#f92672">...</span>
-<span style="color:#a6e22e">Reading</span> <span style="color:#66d9ef">package</span> lists... <span style="color:#a6e22e">Done</span>
-E<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Method</span> <span style="color:#66d9ef">ssh</span> <span style="color:#66d9ef">has</span> <span style="color:#66d9ef">died</span> <span style="color:#66d9ef">unexpectedly!</span>
-E<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Sub-process</span> <span style="color:#66d9ef">ssh</span> <span style="color:#66d9ef">received</span> <span style="color:#66d9ef">signal</span> <span style="color:#960050;background-color:#1e0010">13</span><span style="color:#66d9ef">.</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ sudo apt update
+</span></span><span style="display:flex;"><span><span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Reading</span> <span style="color:#66d9ef">package</span> lists... <span style="color:#a6e22e">Done</span>
+</span></span><span style="display:flex;"><span>E<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Method</span> <span style="color:#66d9ef">ssh</span> <span style="color:#66d9ef">has</span> <span style="color:#66d9ef">died</span> <span style="color:#66d9ef">unexpectedly!</span>
+</span></span><span style="display:flex;"><span>E<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Sub-process</span> <span style="color:#66d9ef">ssh</span> <span style="color:#66d9ef">received</span> <span style="color:#66d9ef">signal</span> <span style="color:#960050;background-color:#1e0010">13</span><span style="color:#66d9ef">.</span></span></span></code></pre></div>
 <p>This error happens because APT cannot work via SFTP only, as it actually needs proper SSH to run <a href="https://unix.stackexchange.com/a/229572/254512">certain commands</a> on the repository host. I find it pretty amusing, considering that APT works via <a href="#https">HTTP/HTTPS</a> just fine without the necessity to run remote commands.</p>
 <p>But okay, our options then are to either make a &ldquo;jailed chroot&rdquo; (<em>a very limited and restricted system environment</em>) for the <code>packages</code> user or to give it proper SSH access. I didn&rsquo;t like either of these options, especially the last one, but just to finish this part, let&rsquo;s consider the latter, as it&rsquo;s the easiest.</p>
 <p>Go to <code>/etc/ssh/sshd_config</code> again and comment out these lines:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#75715e">#ForceCommand internal-sftp</span>
-<span style="color:#75715e">#ChrootDirectory /home/packages</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#75715e">#ForceCommand internal-sftp</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#ChrootDirectory /home/packages</span></span></span></code></pre></div>
 <p>Restart SSH service and now you should be able to fetch and install the packages:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo apt update
-$ sudo apt install some-library
-$ ls -l /opt/some</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt update
+</span></span><span style="display:flex;"><span>$ sudo apt install some-library
+</span></span><span style="display:flex;"><span>$ ls -l /opt/some</span></span></code></pre></div>
 <h3 id="https">HTTPS</h3>
 <p>That seems to be a more common way of connecting to APT repositories. Too bad <a href="#ssh">SSH option</a> turned out to be not what I expected.</p>
 <p>Of course, for HTTP/HTTPS you&rsquo;ll need a web-server, and I&rsquo;ll be using NGINX, but any other will be fine too (<em>as long as it supports Basic authentication</em>).</p>
 <p>Move the repository to website root:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ mv /path/to/somewhere/repository /var/www/your.host/files/packages/deb
-$ sudo chown -R www-data:www-data /var/www/your.host/files/packages</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mv /path/to/somewhere/repository /var/www/your.host/files/packages/deb
+</span></span><span style="display:flex;"><span>$ sudo chown -R www-data:www-data /var/www/your.host/files/packages</span></span></code></pre></div>
 <p>Create a password for Basic authentication:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo htpasswd -c /etc/nginx/packages.htpasswd packages</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo htpasswd -c /etc/nginx/packages.htpasswd packages</span></span></code></pre></div>
 <p>Edit NGINX site config (<code>/etc/nginx/sites-enabled/your.host</code>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">location</span> <span style="color:#e6db74">/files/packages/deb/</span> {
-    <span style="color:#f92672">root</span> <span style="color:#e6db74">/var/www/your.host</span>;
-    <span style="color:#f92672">auth_basic</span>           <span style="color:#e6db74">&#34;restricted</span> <span style="color:#e6db74">area&#34;</span>;
-    <span style="color:#f92672">auth_basic_user_file</span> <span style="color:#e6db74">/etc/nginx/packages.htpasswd</span>;
-    <span style="color:#75715e">#autoindex on;
-</span><span style="color:#75715e"></span>    <span style="color:#f92672">try_files</span> $uri $uri/ =<span style="color:#ae81ff">404</span>;
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">location</span> <span style="color:#e6db74">/files/packages/deb/</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">root</span> <span style="color:#e6db74">/var/www/your.host</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">auth_basic</span>           <span style="color:#e6db74">&#34;restricted</span> <span style="color:#e6db74">area&#34;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">auth_basic_user_file</span> <span style="color:#e6db74">/etc/nginx/packages.htpasswd</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">#autoindex on;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#f92672">try_files</span> $uri $uri/ =<span style="color:#ae81ff">404</span>;
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Add the new source on client/user machine to <code>/etc/apt/sources.list.d/some.list</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">deb <span style="color:#f92672">[</span>arch<span style="color:#f92672">=</span>amd64 trusted<span style="color:#f92672">=</span>yes<span style="color:#f92672">]</span> https://your.host/files/packages/deb stable main</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>deb <span style="color:#f92672">[</span>arch<span style="color:#f92672">=</span>amd64 trusted<span style="color:#f92672">=</span>yes<span style="color:#f92672">]</span> https://your.host/files/packages/deb stable main</span></span></code></pre></div>
 <p>The <code>trusted=yes</code> parameter is required, since our repository is not signed yet.</p>
 <p>Also add credentials (<em>Basic authentication</em>) for that host into <code>/etc/apt/auth.conf.d/some</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">machine your<span style="color:#f92672">.</span>host
-login packages
-password <span style="color:#a6e22e">HERE</span><span style="color:#f92672">-</span><span style="color:#a6e22e">GOES</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PASSWORD</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>machine your<span style="color:#f92672">.</span>host
+</span></span><span style="display:flex;"><span>login packages
+</span></span><span style="display:flex;"><span>password <span style="color:#a6e22e">HERE</span><span style="color:#f92672">-</span><span style="color:#a6e22e">GOES</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PASSWORD</span></span></span></code></pre></div>
 <p>Now you should be able to fetch and install packages:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo apt update
-$ sudo apt install some-library
-$ ls -l /opt/some</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt update
+</span></span><span style="display:flex;"><span>$ sudo apt install some-library
+</span></span><span style="display:flex;"><span>$ ls -l /opt/some</span></span></code></pre></div>
 <h2 id="secure-apt">Secure APT</h2>
 <p>It is recommended not to use <code>trusted=yes</code> parameter in APT source setting and instead to sign the repository with PGP key.</p>
 <p>For that you&rsquo;ll need to create a PGP key, if you don&rsquo;t already have one:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ gpg --full-generate-key</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ gpg --full-generate-key</span></span></code></pre></div>
 <p>If you are doing this on the server via SSH, you&rsquo;ll wait forever for the key generation to finish, because it expects some input from background activities to gain entropy. Connect to the same server from another tab and run something like:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ dd <span style="color:#66d9ef">if</span><span style="color:#f92672">=/</span>dev<span style="color:#f92672">/</span>sda of<span style="color:#f92672">=/</span>dev<span style="color:#f92672">/</span>zero</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ dd <span style="color:#66d9ef">if</span><span style="color:#f92672">=/</span>dev<span style="color:#f92672">/</span>sda of<span style="color:#f92672">=/</span>dev<span style="color:#f92672">/</span>zero</span></span></code></pre></div>
 <p>or maybe:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ find <span style="color:#f92672">/</span> <span style="color:#f92672">|</span> xargs file</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ find <span style="color:#f92672">/</span> <span style="color:#f92672">|</span> xargs file</span></span></code></pre></div>
 <p>Alternatively, you can just generate the key on your local machine and import it on the server.</p>
 <p>Once you have the key, export its public part:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ gpg <span style="color:#f92672">--</span>list<span style="color:#f92672">-</span>secret<span style="color:#f92672">-</span>keys <span style="color:#f92672">--</span>keyid<span style="color:#f92672">-</span>format<span style="color:#66d9ef">=</span>long
-<span style="color:#f92672">/</span>root<span style="color:#f92672">/.</span>gnupg<span style="color:#f92672">/</span>pubring<span style="color:#f92672">.</span>kbx
-<span style="color:#f92672">------------------------</span>
-sec   rsa4096<span style="color:#f92672">/</span><span style="color:#a6e22e">KEY</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span> <span style="color:#ae81ff">2021</span><span style="color:#f92672">-</span><span style="color:#ae81ff">09</span><span style="color:#f92672">-</span><span style="color:#ae81ff">18</span> <span style="color:#f92672">[</span><span style="color:#66d9ef">SCE</span><span style="color:#f92672">]</span>
-      <span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">OTHER</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span>
-uid                 <span style="color:#f92672">[</span><span style="color:#66d9ef">ultimate</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Some</span> <span style="color:#a6e22e">Software</span> <span style="color:#f92672">&lt;</span>admin<span style="color:#a6e22e">@your</span><span style="color:#f92672">.</span>host<span style="color:#f92672">&gt;</span>
-
-$ gpg <span style="color:#f92672">--</span>armor <span style="color:#f92672">--</span>export <span style="color:#a6e22e">KEY</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>somewhere<span style="color:#f92672">/</span>repository<span style="color:#f92672">/</span>some<span style="color:#f92672">-</span>public<span style="color:#f92672">.</span>asc
-$ cat <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>somewhere<span style="color:#f92672">/</span>repository<span style="color:#f92672">/</span>some<span style="color:#f92672">-</span>public<span style="color:#f92672">.</span>asc <span style="color:#f92672">|</span> gpg <span style="color:#f92672">--</span>list<span style="color:#f92672">-</span>packets</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ gpg <span style="color:#f92672">--</span>list<span style="color:#f92672">-</span>secret<span style="color:#f92672">-</span>keys <span style="color:#f92672">--</span>keyid<span style="color:#f92672">-</span>format<span style="color:#66d9ef">=</span>long
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span>root<span style="color:#f92672">/.</span>gnupg<span style="color:#f92672">/</span>pubring<span style="color:#f92672">.</span>kbx
+</span></span><span style="display:flex;"><span><span style="color:#f92672">------------------------</span>
+</span></span><span style="display:flex;"><span>sec   rsa4096<span style="color:#f92672">/</span><span style="color:#a6e22e">KEY</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span> <span style="color:#ae81ff">2021</span><span style="color:#f92672">-</span><span style="color:#ae81ff">09</span><span style="color:#f92672">-</span><span style="color:#ae81ff">18</span> <span style="color:#f92672">[</span><span style="color:#66d9ef">SCE</span><span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">OTHER</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span>
+</span></span><span style="display:flex;"><span>uid                 <span style="color:#f92672">[</span><span style="color:#66d9ef">ultimate</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">Some</span> <span style="color:#a6e22e">Software</span> <span style="color:#f92672">&lt;</span>admin<span style="color:#a6e22e">@your</span><span style="color:#f92672">.</span>host<span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ gpg <span style="color:#f92672">--</span>armor <span style="color:#f92672">--</span>export <span style="color:#a6e22e">KEY</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>somewhere<span style="color:#f92672">/</span>repository<span style="color:#f92672">/</span>some<span style="color:#f92672">-</span>public<span style="color:#f92672">.</span>asc
+</span></span><span style="display:flex;"><span>$ cat <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>somewhere<span style="color:#f92672">/</span>repository<span style="color:#f92672">/</span>some<span style="color:#f92672">-</span>public<span style="color:#f92672">.</span>asc <span style="color:#f92672">|</span> gpg <span style="color:#f92672">--</span>list<span style="color:#f92672">-</span>packets</span></span></code></pre></div>
 <p>Just in case, check that there is only one <code>:public key packet:</code> in the output, otherwise APT might get confused by such a key.</p>
 <p>You can now sign the <code>Release</code> file:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>somewhere<span style="color:#f92672">/</span>repository<span style="color:#f92672">/</span>dists<span style="color:#f92672">/</span>stable
-$ export <span style="color:#a6e22e">GPG_TTY</span><span style="color:#f92672">=</span>$<span style="color:#f92672">(</span>tty<span style="color:#f92672">)</span>
-$ cat <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span> <span style="color:#f92672">|</span> gpg <span style="color:#f92672">--</span>default<span style="color:#f92672">-</span>key <span style="color:#a6e22e">KEY</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span> <span style="color:#f92672">-</span>abs <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span><span style="color:#f92672">.</span>gpg
-$ cat <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span> <span style="color:#f92672">|</span> gpg <span style="color:#f92672">--</span>default<span style="color:#f92672">-</span>key <span style="color:#a6e22e">KEY</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span> <span style="color:#f92672">-</span>abs <span style="color:#f92672">--</span>clearsign <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span><span style="color:#a6e22e">InRelease</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>somewhere<span style="color:#f92672">/</span>repository<span style="color:#f92672">/</span>dists<span style="color:#f92672">/</span>stable
+</span></span><span style="display:flex;"><span>$ export <span style="color:#a6e22e">GPG_TTY</span><span style="color:#f92672">=</span>$<span style="color:#f92672">(</span>tty<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>$ cat <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span> <span style="color:#f92672">|</span> gpg <span style="color:#f92672">--</span>default<span style="color:#f92672">-</span>key <span style="color:#a6e22e">KEY</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span> <span style="color:#f92672">-</span>abs <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span><span style="color:#f92672">.</span>gpg
+</span></span><span style="display:flex;"><span>$ cat <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span> <span style="color:#f92672">|</span> gpg <span style="color:#f92672">--</span>default<span style="color:#f92672">-</span>key <span style="color:#a6e22e">KEY</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span> <span style="color:#f92672">-</span>abs <span style="color:#f92672">--</span>clearsign <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span><span style="color:#a6e22e">InRelease</span></span></span></code></pre></div>
 <p>If you protected the key with a password (<em>you should have</em>), then you&rsquo;ll get the key password prompt. And if you&rsquo;ll need to execute these commands &ldquo;unattended&rdquo; from a buildbot user in some CI/CD, then you&rsquo;ll need to add <code>--pinentry-mode=loopback</code> and <code>--passphrase</code> options:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ cat <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span> <span style="color:#f92672">|</span> gpg <span style="color:#f92672">--</span>default<span style="color:#f92672">-</span>key <span style="color:#a6e22e">KEY</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span> <span style="color:#f92672">--</span>pinentry<span style="color:#f92672">-</span>mode<span style="color:#66d9ef">=</span>loopback <span style="color:#f92672">--</span>passphrase <span style="color:#e6db74">&#34;PGP-KEY-PASSWORD&#34;</span> <span style="color:#f92672">-</span>abs <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span><span style="color:#f92672">.</span>gpg
-$ cat <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span> <span style="color:#f92672">|</span> gpg <span style="color:#f92672">--</span>default<span style="color:#f92672">-</span>key <span style="color:#a6e22e">KEY</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span> <span style="color:#f92672">--</span>pinentry<span style="color:#f92672">-</span>mode<span style="color:#66d9ef">=</span>loopback <span style="color:#f92672">--</span>passphrase <span style="color:#e6db74">&#34;PGP-KEY-PASSWORD&#34;</span> <span style="color:#f92672">-</span>abs <span style="color:#f92672">--</span>clear<span style="color:#f92672">-</span>sign <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span><span style="color:#a6e22e">InRelease</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cat <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span> <span style="color:#f92672">|</span> gpg <span style="color:#f92672">--</span>default<span style="color:#f92672">-</span>key <span style="color:#a6e22e">KEY</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span> <span style="color:#f92672">--</span>pinentry<span style="color:#f92672">-</span>mode<span style="color:#66d9ef">=</span>loopback <span style="color:#f92672">--</span>passphrase <span style="color:#e6db74">&#34;PGP-KEY-PASSWORD&#34;</span> <span style="color:#f92672">-</span>abs <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span><span style="color:#f92672">.</span>gpg
+</span></span><span style="display:flex;"><span>$ cat <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span> <span style="color:#f92672">|</span> gpg <span style="color:#f92672">--</span>default<span style="color:#f92672">-</span>key <span style="color:#a6e22e">KEY</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span> <span style="color:#f92672">--</span>pinentry<span style="color:#f92672">-</span>mode<span style="color:#66d9ef">=</span>loopback <span style="color:#f92672">--</span>passphrase <span style="color:#e6db74">&#34;PGP-KEY-PASSWORD&#34;</span> <span style="color:#f92672">-</span>abs <span style="color:#f92672">--</span>clear<span style="color:#f92672">-</span>sign <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span><span style="color:#a6e22e">InRelease</span></span></span></code></pre></div>
 <p>Since we are talking about buildbots, you&rsquo;ll also need to make sure that they have access to the keychain. You might need to either move <code>.gnupg</code> folder to buildbot&rsquo;s home folder or set the <code>GNUPGHOME</code> environment variable. In both cases don&rsquo;t forget to change the ownership of that folder or set required permissions.</p>
 <p>Now you can remove <code>trusted=yes</code> from <code>/etc/apt/sources.list.d/some.list</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">deb <span style="color:#f92672">[</span>arch<span style="color:#f92672">=</span>amd64<span style="color:#f92672">]</span> https://your.host/files/packages/deb stable main</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>deb <span style="color:#f92672">[</span>arch<span style="color:#f92672">=</span>amd64<span style="color:#f92672">]</span> https://your.host/files/packages/deb stable main</span></span></code></pre></div>
 <p>If then you try to run <code>apt update</code>, you&rsquo;ll get an error about unknown key:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">W<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">GPG</span> <span style="color:#66d9ef">error:</span> <span style="color:#66d9ef">https://your.host/files/packages/deb</span> <span style="color:#66d9ef">stable</span> <span style="color:#66d9ef">InRelease:</span> <span style="color:#66d9ef">The</span> <span style="color:#66d9ef">following</span> <span style="color:#66d9ef">signatures</span> <span style="color:#66d9ef">couldn</span><span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#66d9ef">t</span> <span style="color:#66d9ef">be</span> <span style="color:#66d9ef">verified</span> <span style="color:#66d9ef">because</span> <span style="color:#66d9ef">the</span> <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">key</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">available:</span> <span style="color:#66d9ef">NO_PUBKEY</span> <span style="color:#66d9ef">KEY-ID</span>
-W<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Failed</span> <span style="color:#66d9ef">to</span> <span style="color:#66d9ef">fetch</span> <span style="color:#66d9ef">https://your.host/files/packages/deb/dists/stable/InRelease</span>  <span style="color:#66d9ef">The</span> <span style="color:#66d9ef">following</span> <span style="color:#66d9ef">signatures</span> <span style="color:#66d9ef">couldn</span><span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#66d9ef">t</span> <span style="color:#66d9ef">be</span> <span style="color:#66d9ef">verified</span> <span style="color:#66d9ef">because</span> <span style="color:#66d9ef">the</span> <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">key</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">available:</span> <span style="color:#66d9ef">NO_PUBKEY</span> <span style="color:#66d9ef">KEY-ID</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>W<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">GPG</span> <span style="color:#66d9ef">error:</span> <span style="color:#66d9ef">https://your.host/files/packages/deb</span> <span style="color:#66d9ef">stable</span> <span style="color:#66d9ef">InRelease:</span> <span style="color:#66d9ef">The</span> <span style="color:#66d9ef">following</span> <span style="color:#66d9ef">signatures</span> <span style="color:#66d9ef">couldn</span><span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#66d9ef">t</span> <span style="color:#66d9ef">be</span> <span style="color:#66d9ef">verified</span> <span style="color:#66d9ef">because</span> <span style="color:#66d9ef">the</span> <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">key</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">available:</span> <span style="color:#66d9ef">NO_PUBKEY</span> <span style="color:#66d9ef">KEY-ID</span>
+</span></span><span style="display:flex;"><span>W<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Failed</span> <span style="color:#66d9ef">to</span> <span style="color:#66d9ef">fetch</span> <span style="color:#66d9ef">https://your.host/files/packages/deb/dists/stable/InRelease</span>  <span style="color:#66d9ef">The</span> <span style="color:#66d9ef">following</span> <span style="color:#66d9ef">signatures</span> <span style="color:#66d9ef">couldn</span><span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#66d9ef">t</span> <span style="color:#66d9ef">be</span> <span style="color:#66d9ef">verified</span> <span style="color:#66d9ef">because</span> <span style="color:#66d9ef">the</span> <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">key</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">available:</span> <span style="color:#66d9ef">NO_PUBKEY</span> <span style="color:#66d9ef">KEY-ID</span></span></span></code></pre></div>
 <p>Put the public key (<code>some-public.asc</code>) somewhere public on the server and import it on client:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ wget -O - https://your.host/some-public.asc 2&gt;/dev/null | gpg --dearmor - | sudo tee /usr/share/keyrings/some-keyring.gpg &gt;/dev/null</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ wget -O - https://your.host/some-public.asc 2&gt;/dev/null | gpg --dearmor - | sudo tee /usr/share/keyrings/some-keyring.gpg &gt;/dev/null</span></span></code></pre></div>
 <p>Add <code>signed-by</code> parameter to <code>/etc/apt/sources.list.d/some.list</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">deb <span style="color:#f92672">[</span>arch<span style="color:#f92672">=</span>amd64 signed-by<span style="color:#f92672">=</span>/usr/share/keyrings/some-keyring.gpg<span style="color:#f92672">]</span> https://your.host/files/packages/deb stable main</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>deb <span style="color:#f92672">[</span>arch<span style="color:#f92672">=</span>amd64 signed-by<span style="color:#f92672">=</span>/usr/share/keyrings/some-keyring.gpg<span style="color:#f92672">]</span> https://your.host/files/packages/deb stable main</span></span></code></pre></div>
 <p>Finally, it&rsquo;s all good:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo apt update
-$ sudo apt install some<span style="color:#f92672">-</span>library
-$ tree <span style="color:#f92672">/</span>opt<span style="color:#f92672">/</span>some
-<span style="color:#f92672">/</span>opt<span style="color:#f92672">/</span>some
-<span style="color:#f92672">├──</span> cmake
-<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryConfig</span><span style="color:#f92672">.</span>cmake
-<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryConfigVersion</span><span style="color:#f92672">.</span>cmake
-<span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryTargets</span><span style="color:#f92672">-</span>release<span style="color:#f92672">.</span>cmake
-<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">SomeLibraryTargets</span><span style="color:#f92672">.</span>cmake
-<span style="color:#f92672">├──</span> include
-<span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">SomeLibrary</span>
-<span style="color:#f92672">│</span>       <span style="color:#f92672">└──</span> some<span style="color:#f92672">.</span>h
-<span style="color:#f92672">└──</span> lib
-    <span style="color:#f92672">└──</span> libSomeLibrary<span style="color:#f92672">.</span>a</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ sudo apt update
+</span></span><span style="display:flex;"><span>$ sudo apt install some<span style="color:#f92672">-</span>library
+</span></span><span style="display:flex;"><span>$ tree <span style="color:#f92672">/</span>opt<span style="color:#f92672">/</span>some
+</span></span><span style="display:flex;"><span><span style="color:#f92672">/</span>opt<span style="color:#f92672">/</span>some
+</span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> cmake
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryConfig</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryConfigVersion</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> <span style="color:#a6e22e">SomeLibraryTargets</span><span style="color:#f92672">-</span>release<span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">SomeLibraryTargets</span><span style="color:#f92672">.</span>cmake
+</span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> include
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> <span style="color:#a6e22e">SomeLibrary</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>       <span style="color:#f92672">└──</span> some<span style="color:#f92672">.</span>h
+</span></span><span style="display:flex;"><span><span style="color:#f92672">└──</span> lib
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">└──</span> libSomeLibrary<span style="color:#f92672">.</span>a</span></span></code></pre></div>
       </div>
     </article>
     <div><div id="tags">

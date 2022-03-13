@@ -5,7 +5,7 @@
     <title>Mac OS service for displaying biggest files in the directory | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2017/05/29/macos-service-top10-biggest-files/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -66,27 +66,25 @@
       <div class="post-content">
         <p>Having solved the problem of <a href="https://github.com/retifrav/mac-os-terminal-recipes#using-gsort">locating the biggest files in a folder</a>, I decided to create a service that would do the same in <strong>Finder</strong>, showing results in a dialog window.</p>
 <p>So, the <strong>Terminal</strong>&rsquo;s command is the following:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">du -sh ~/* | gsort -rh | head -10</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>du -sh ~/* | gsort -rh | head -10</span></span></code></pre></div>
 <p>Now we just need to feed a folder path to it in the <strong>Automator</strong>&rsquo;s workflow:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/05/29/macos-service-top10-biggest-files/images/automator-workflow.png" alt="Automator workflow">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/05/29/macos-service-top10-biggest-files/images/automator-workflow.png" alt="Automator workflow">
 
 <p>Here&rsquo;s the script:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-applescript" data-lang="applescript"><span style="color:#66d9ef">on</span> run {input, parameters}
-    
-    <span style="color:#66d9ef">if</span> (count <span style="color:#66d9ef">of</span> input) <span style="color:#f92672">is not</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">then</span> <span style="color:#75715e"># if there are more (or less) than 1 folders selected, then show an error message end exit</span>
-        display dialog <span style="color:#e6db74">&#34;This works only with a single folder.&#34;</span> <span style="color:#66d9ef">with</span> icon stop <span style="color:#66d9ef">with</span> <span style="color:#a6e22e">title</span> <span style="color:#e6db74">&#34;Error&#34;</span> buttons {<span style="color:#e6db74">&#34;OK, jeez&#34;</span>} default button <span style="color:#e6db74">&#34;OK, jeez&#34;</span>
-        <span style="color:#66d9ef">return</span>
-    <span style="color:#66d9ef">else</span> <span style="color:#75715e"># do the shit</span>
-        <span style="color:#66d9ef">set</span> <span style="color:#66d9ef">result</span> <span style="color:#66d9ef">to</span> do shell script <span style="color:#e6db74">&#34;du -sh &#34;</span> <span style="color:#f92672">&amp;</span> quoted form <span style="color:#66d9ef">of</span> POSIX <span style="color:#a6e22e">path</span> <span style="color:#66d9ef">of</span> input <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34;* | /usr/local/bin/gsort -rh | head -10&#34;</span>
-        display dialog <span style="color:#66d9ef">result</span> <span style="color:#66d9ef">with</span> <span style="color:#a6e22e">title</span> <span style="color:#e6db74">&#34;Top 10 biggest files in this directory&#34;</span> buttons {<span style="color:#e6db74">&#34;OK&#34;</span>} default button <span style="color:#e6db74">&#34;OK&#34;</span>
-        <span style="color:#75715e">#return result</span>
-    <span style="color:#66d9ef">end</span> <span style="color:#66d9ef">if</span>
-    
-<span style="color:#66d9ef">end</span> run</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-applescript" data-lang="applescript"><span style="display:flex;"><span><span style="color:#66d9ef">on</span> run {input, parameters}
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (count <span style="color:#66d9ef">of</span> input) <span style="color:#f92672">is not</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">then</span> <span style="color:#75715e"># if there are more (or less) than 1 folders selected, then show an error message end exit</span>
+</span></span><span style="display:flex;"><span>        display dialog <span style="color:#e6db74">&#34;This works only with a single folder.&#34;</span> <span style="color:#66d9ef">with</span> icon stop <span style="color:#66d9ef">with</span> <span style="color:#a6e22e">title</span> <span style="color:#e6db74">&#34;Error&#34;</span> buttons {<span style="color:#e6db74">&#34;OK, jeez&#34;</span>} default button <span style="color:#e6db74">&#34;OK, jeez&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">else</span> <span style="color:#75715e"># do the shit</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">set</span> <span style="color:#66d9ef">result</span> <span style="color:#66d9ef">to</span> do shell script <span style="color:#e6db74">&#34;du -sh &#34;</span> <span style="color:#f92672">&amp;</span> quoted form <span style="color:#66d9ef">of</span> POSIX <span style="color:#a6e22e">path</span> <span style="color:#66d9ef">of</span> input <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34;* | /usr/local/bin/gsort -rh | head -10&#34;</span>
+</span></span><span style="display:flex;"><span>        display dialog <span style="color:#66d9ef">result</span> <span style="color:#66d9ef">with</span> <span style="color:#a6e22e">title</span> <span style="color:#e6db74">&#34;Top 10 biggest files in this directory&#34;</span> buttons {<span style="color:#e6db74">&#34;OK&#34;</span>} default button <span style="color:#e6db74">&#34;OK&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">#return result</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">end</span> <span style="color:#66d9ef">if</span>
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">end</span> run</span></span></code></pre></div>
 <p>Some explanation for the script:</p>
 <ul>
 <li><code>quoted form of</code> - wraps the string in quotes (in case of file names with spaces);</li>
@@ -97,8 +95,7 @@
 <p>And here it is in action:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/05/29/macos-service-top10-biggest-files/images/biggest-files-service.gif" alt="Mac OS service for showing biggest files">
+    <img class="image-post" loading="lazy" src="/blog/2017/05/29/macos-service-top10-biggest-files/images/biggest-files-service.gif" alt="Mac OS service for showing biggest files">
       </div>
     </article>
     <div><div id="tags">

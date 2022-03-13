@@ -5,7 +5,7 @@
     <title>How to add reCAPTCHA to your .NET Core MVC project | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2017/08/23/dotnet-core-mvc-recaptcha/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -81,16 +81,12 @@ I decided to use reCAPTCHA from Google." />
 <p>Go <a href="https://www.google.com/recaptcha/intro/">here</a> and click &ldquo;Get reCAPTCHA&rdquo;. Fill the form (with your domain):</p>
 
 
-
-    <img class="image-post" src="/blog/2017/08/23/dotnet-core-mvc-recaptcha/images/register-recaptcha.png" alt="Register reCAPTCHA">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/08/23/dotnet-core-mvc-recaptcha/images/register-recaptcha.png" alt="Register reCAPTCHA">
 
 <p>After that you&rsquo;ll see this page:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/08/23/dotnet-core-mvc-recaptcha/images/recaptcha-data.png" alt="reCAPTCHA data">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/08/23/dotnet-core-mvc-recaptcha/images/recaptcha-data.png" alt="reCAPTCHA data">
 
 <p>Here you need the take the following values:</p>
 <ul>
@@ -102,9 +98,7 @@ I decided to use reCAPTCHA from Google." />
 <p>Here&rsquo;s a schema of the whole process:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/08/23/dotnet-core-mvc-recaptcha/images/reCAPTHCA-schema.png" alt="How reCAPTCHA works">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/08/23/dotnet-core-mvc-recaptcha/images/reCAPTHCA-schema.png" alt="How reCAPTCHA works">
 
 <ol>
 <li>User makes an attempt to pass the reCAPTCHA, and script sends a request to reCAPTCHA server;</li>
@@ -114,132 +108,130 @@ I decided to use reCAPTCHA from Google." />
 <li>reCAPTCHA server will send you JSON response with results.</li>
 </ol>
 <p>And here&rsquo;s how this JSON response might look like:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-  <span style="color:#f92672">&#34;success&#34;</span>: <span style="color:#66d9ef">true</span>,
-  <span style="color:#f92672">&#34;challenge_ts&#34;</span>: <span style="color:#e6db74">&#34;2017-08-22T21:47:03Z&#34;</span>,
-  <span style="color:#f92672">&#34;hostname&#34;</span>: <span style="color:#e6db74">&#34;example.org&#34;</span>
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;success&#34;</span>: <span style="color:#66d9ef">true</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;challenge_ts&#34;</span>: <span style="color:#e6db74">&#34;2017-08-22T21:47:03Z&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;hostname&#34;</span>: <span style="color:#e6db74">&#34;example.org&#34;</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>From which you can see whether user has passed the check or not.</p>
 <h1 id="add-recaptcha-to-your-project">Add reCAPTCHA to your project</h1>
 <p>Put both values (<code>Secret key</code> and <code>Site key</code>) to your <code>appsettings.json</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-    <span style="color:#f92672">&#34;GoogleReCaptcha&#34;</span>: {
-        <span style="color:#f92672">&#34;key&#34;</span>: <span style="color:#e6db74">&#34;YOUR-KEY&#34;</span>,
-        <span style="color:#f92672">&#34;secret&#34;</span>: <span style="color:#e6db74">&#34;YOUR-SECRET&#34;</span>
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;GoogleReCaptcha&#34;</span>: {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;key&#34;</span>: <span style="color:#e6db74">&#34;YOUR-KEY&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;secret&#34;</span>: <span style="color:#e6db74">&#34;YOUR-SECRET&#34;</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Add this <strong>script</strong> to the <code>Scripts</code> section of the view you want to have reCAPTCHA (or maybe into a common layout shared among all such views):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">@section Scripts {
-    &lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://www.google.com/recaptcha/api.js&#39;</span>&gt;&lt;/<span style="color:#f92672">script</span>&gt;
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span>@section Scripts {
+</span></span><span style="display:flex;"><span>    &lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://www.google.com/recaptcha/api.js&#39;</span>&gt;&lt;/<span style="color:#f92672">script</span>&gt;
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Add reCAPTCHA&rsquo;s <strong>div</strong> to the form:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">&lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;g-recaptcha&#34;</span> data-sitekey<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;@ViewData[&#34;</span>ReCaptchaKey<span style="color:#e6db74">&#34;]&#34;</span>&gt;&lt;/div&gt;</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>&lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;g-recaptcha&#34;</span> data-sitekey<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;@ViewData[&#34;</span>ReCaptchaKey<span style="color:#e6db74">&#34;]&#34;</span>&gt;&lt;/div&gt;</span></span></code></pre></div>
 <p>So, now your view might look like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">@model SomeModel
-
-&lt;form asp-controller<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Home&#34;</span> asp-action<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Feedback&#34;</span> method<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;post&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-horizontal&#34;</span>&gt;
-    
-    &lt;div asp-validation-summary<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;All&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text-danger&#34;</span>&gt;&lt;/div&gt;
-
-    &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-group&#34;</span>&gt;
-        &lt;label asp-for<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;AuthorEmail&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col-md-2&#34;</span>&gt;&lt;/label&gt;
-        &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col-md-10&#34;</span>&gt;
-            &lt;input asp-for<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;AuthorEmail&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-control&#34;</span> /&gt;
-            &lt;span asp-validation-for<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;AuthorEmail&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text-danger&#34;</span>&gt;&lt;/span&gt;
-        &lt;/div&gt;
-    &lt;/div&gt;
-    &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-group&#34;</span>&gt;
-        &lt;label asp-for<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;FeedbackMsg&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col-md-2&#34;</span>&gt;&lt;/label&gt;
-        &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col-md-10&#34;</span>&gt;
-            &lt;textarea asp-for<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;FeedbackMsg&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-control&#34;</span> rows<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;5&#34;</span>&gt;&lt;/textarea&gt;
-            &lt;span asp-validation-for<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;FeedbackMsg&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text-danger&#34;</span>&gt;&lt;/span&gt;
-        &lt;/div&gt;
-    &lt;/div&gt;
-
-    &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-group&#34;</span>&gt;
-        &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col-md-2&#34;</span>&gt;&lt;/div&gt;
-        &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col-md-10&#34;</span>&gt;
-            &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;g-recaptcha&#34;</span> data-sitekey<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;@ViewData[&#34;</span>ReCaptchaKey<span style="color:#e6db74">&#34;]&#34;</span>&gt;&lt;/div&gt;
-        &lt;/div&gt;
-    &lt;/div&gt;
-    
-    &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-group&#34;</span>&gt;
-        &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col-md-offset-2 col-md-10&#34;</span>&gt;
-            &lt;button type<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;submit&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;btn btn-default&#34;</span>&gt;Send&lt;/button&gt;
-        &lt;/div&gt;
-    &lt;/div&gt;
-    
-&lt;/form&gt;
-
-@section Scripts <span style="color:#f92672">{</span>
-    &lt;script src<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://www.google.com/recaptcha/api.js&#39;</span>&gt;&lt;/script&gt;
-<span style="color:#f92672">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>@model SomeModel
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>&lt;form asp-controller<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Home&#34;</span> asp-action<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Feedback&#34;</span> method<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;post&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-horizontal&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    &lt;div asp-validation-summary<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;All&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text-danger&#34;</span>&gt;&lt;/div&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-group&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>        &lt;label asp-for<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;AuthorEmail&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col-md-2&#34;</span>&gt;&lt;/label&gt;
+</span></span><span style="display:flex;"><span>        &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col-md-10&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>            &lt;input asp-for<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;AuthorEmail&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-control&#34;</span> /&gt;
+</span></span><span style="display:flex;"><span>            &lt;span asp-validation-for<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;AuthorEmail&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text-danger&#34;</span>&gt;&lt;/span&gt;
+</span></span><span style="display:flex;"><span>        &lt;/div&gt;
+</span></span><span style="display:flex;"><span>    &lt;/div&gt;
+</span></span><span style="display:flex;"><span>    &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-group&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>        &lt;label asp-for<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;FeedbackMsg&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col-md-2&#34;</span>&gt;&lt;/label&gt;
+</span></span><span style="display:flex;"><span>        &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col-md-10&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>            &lt;textarea asp-for<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;FeedbackMsg&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-control&#34;</span> rows<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;5&#34;</span>&gt;&lt;/textarea&gt;
+</span></span><span style="display:flex;"><span>            &lt;span asp-validation-for<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;FeedbackMsg&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text-danger&#34;</span>&gt;&lt;/span&gt;
+</span></span><span style="display:flex;"><span>        &lt;/div&gt;
+</span></span><span style="display:flex;"><span>    &lt;/div&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-group&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>        &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col-md-2&#34;</span>&gt;&lt;/div&gt;
+</span></span><span style="display:flex;"><span>        &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col-md-10&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>            &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;g-recaptcha&#34;</span> data-sitekey<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;@ViewData[&#34;</span>ReCaptchaKey<span style="color:#e6db74">&#34;]&#34;</span>&gt;&lt;/div&gt;
+</span></span><span style="display:flex;"><span>        &lt;/div&gt;
+</span></span><span style="display:flex;"><span>    &lt;/div&gt;
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-group&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>        &lt;div class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col-md-offset-2 col-md-10&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>            &lt;button type<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;submit&#34;</span> class<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;btn btn-default&#34;</span>&gt;Send&lt;/button&gt;
+</span></span><span style="display:flex;"><span>        &lt;/div&gt;
+</span></span><span style="display:flex;"><span>    &lt;/div&gt;
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>&lt;/form&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>@section Scripts <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>    &lt;script src<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://www.google.com/recaptcha/api.js&#39;</span>&gt;&lt;/script&gt;
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span></span></span></code></pre></div>
 <p>And that&rsquo;s the controller for this view:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#75715e">// A function that checks reCAPTCHA results
-</span><span style="color:#75715e">// You might want to move it to some common class
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">bool</span> ReCaptchaPassed(<span style="color:#66d9ef">string</span> gRecaptchaResponse, <span style="color:#66d9ef">string</span> secret, ILogger logger)
-{
-    HttpClient httpClient = <span style="color:#66d9ef">new</span> HttpClient();
-    <span style="color:#66d9ef">var</span> res = httpClient.GetAsync(<span style="color:#e6db74">$&#34;https://www.google.com/recaptcha/api/siteverify?secret={secret}&amp;response={gRecaptchaResponse}&#34;</span>).Result;
-    <span style="color:#66d9ef">if</span> (res.StatusCode != HttpStatusCode.OK)
-    {
-        logger.LogError(<span style="color:#e6db74">&#34;Error while sending request to ReCaptcha&#34;</span>);
-        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
-    }
-    
-    <span style="color:#66d9ef">string</span> JSONres = res.Content.ReadAsStringAsync().Result;
-    <span style="color:#66d9ef">dynamic</span> JSONdata = JObject.Parse(JSONres);
-    <span style="color:#66d9ef">if</span> (JSONdata.success != <span style="color:#e6db74">&#34;true&#34;</span>)
-    {
-        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
-    }
-
-    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
-}
-<span style="color:#a6e22e">
-</span><span style="color:#a6e22e">[HttpGet(&#34;Home/Feedback&#34;)]</span>
-<span style="color:#a6e22e">[AllowAnonymous]</span>
-<span style="color:#66d9ef">public</span> IActionResult Feedback()
-{
-    <span style="color:#75715e">// get reCAPTHCA key from appsettings.json
-</span><span style="color:#75715e"></span>    ViewData[<span style="color:#e6db74">&#34;ReCaptchaKey&#34;</span>] = <span style="color:#ae81ff">_</span>configuration.GetSection(<span style="color:#e6db74">&#34;GoogleReCaptcha:key&#34;</span>).Value;
-    <span style="color:#66d9ef">return</span> View();
-}
-<span style="color:#a6e22e">
-</span><span style="color:#a6e22e">[HttpPost(&#34;Home/Feedback/&#34;)]</span>
-<span style="color:#a6e22e">[AllowAnonymous]</span>
-<span style="color:#66d9ef">public</span> IActionResult Feedback(SomeModel model)
-{
-    <span style="color:#75715e">// get reCAPTHCA key from appsettings.json
-</span><span style="color:#75715e"></span>    ViewData[<span style="color:#e6db74">&#34;ReCaptchaKey&#34;</span>] = <span style="color:#ae81ff">_</span>configuration.GetSection(<span style="color:#e6db74">&#34;GoogleReCaptcha:key&#34;</span>).Value;
-
-    <span style="color:#66d9ef">if</span> (ModelState.IsValid)
-    {
-        <span style="color:#66d9ef">if</span> (!ReCaptchaPassed(
-            Request.Form[<span style="color:#e6db74">&#34;g-recaptcha-response&#34;</span>], <span style="color:#75715e">// that&#39;s how you get it from the Request object
-</span><span style="color:#75715e"></span>            <span style="color:#ae81ff">_</span>configuration.GetSection(<span style="color:#e6db74">&#34;GoogleReCaptcha:secret&#34;</span>).Value,
-            <span style="color:#ae81ff">_l</span>ogger
-            ))
-        {
-            ModelState.AddModelError(<span style="color:#66d9ef">string</span>.Empty, <span style="color:#e6db74">&#34;You failed the CAPTCHA, stupid robot. Go play some 1x1 on SFs instead.&#34;</span>);
-            <span style="color:#66d9ef">return</span> View(model);
-        }
-
-        <span style="color:#75715e">// do your stuff with the model
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>
-        <span style="color:#66d9ef">return</span> View();
-    }
-
-    <span style="color:#66d9ef">return</span> View(model);
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#75715e">// A function that checks reCAPTCHA results</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// You might want to move it to some common class</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">bool</span> ReCaptchaPassed(<span style="color:#66d9ef">string</span> gRecaptchaResponse, <span style="color:#66d9ef">string</span> secret, ILogger logger)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    HttpClient httpClient = <span style="color:#66d9ef">new</span> HttpClient();
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> res = httpClient.GetAsync(<span style="color:#e6db74">$&#34;https://www.google.com/recaptcha/api/siteverify?secret={secret}&amp;response={gRecaptchaResponse}&#34;</span>).Result;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (res.StatusCode != HttpStatusCode.OK)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        logger.LogError(<span style="color:#e6db74">&#34;Error while sending request to ReCaptcha&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> JSONres = res.Content.ReadAsStringAsync().Result;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">dynamic</span> JSONdata = JObject.Parse(JSONres);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (JSONdata.success != <span style="color:#e6db74">&#34;true&#34;</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">[HttpGet(&#34;Home/Feedback&#34;)]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">[AllowAnonymous]</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> IActionResult Feedback()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// get reCAPTHCA key from appsettings.json</span>
+</span></span><span style="display:flex;"><span>    ViewData[<span style="color:#e6db74">&#34;ReCaptchaKey&#34;</span>] = <span style="color:#ae81ff">_</span>configuration.GetSection(<span style="color:#e6db74">&#34;GoogleReCaptcha:key&#34;</span>).Value;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> View();
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">[HttpPost(&#34;Home/Feedback/&#34;)]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">[AllowAnonymous]</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> IActionResult Feedback(SomeModel model)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// get reCAPTHCA key from appsettings.json</span>
+</span></span><span style="display:flex;"><span>    ViewData[<span style="color:#e6db74">&#34;ReCaptchaKey&#34;</span>] = <span style="color:#ae81ff">_</span>configuration.GetSection(<span style="color:#e6db74">&#34;GoogleReCaptcha:key&#34;</span>).Value;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (ModelState.IsValid)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (!ReCaptchaPassed(
+</span></span><span style="display:flex;"><span>            Request.Form[<span style="color:#e6db74">&#34;g-recaptcha-response&#34;</span>], <span style="color:#75715e">// that&#39;s how you get it from the Request object</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_</span>configuration.GetSection(<span style="color:#e6db74">&#34;GoogleReCaptcha:secret&#34;</span>).Value,
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_l</span>ogger
+</span></span><span style="display:flex;"><span>            ))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            ModelState.AddModelError(<span style="color:#66d9ef">string</span>.Empty, <span style="color:#e6db74">&#34;You failed the CAPTCHA, stupid robot. Go play some 1x1 on SFs instead.&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> View(model);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// do your stuff with the model</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> View();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> View(model);
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>That&rsquo;s it.</p>
 <p>And while I was looking for how to do it, I saw all sorts of crazy-rocket-science-complicated solutions like creating custom controller attributes / tag helpers, injecting some special access to HttpContext, or even using a NuGet package (there are NuGet packages for this!). And all that just for getting one POST parameter out of the <code>Request</code> object?</p>
 
 
-
-    <img class="image-post" src="/blog/2017/08/23/dotnet-core-mvc-recaptcha/images/g-recaptcha-response.png" alt="g-recaptcha-response as a POST parameter">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/08/23/dotnet-core-mvc-recaptcha/images/g-recaptcha-response.png" alt="g-recaptcha-response as a POST parameter">
 
 <p>I mean, how complicated can that be?</p>
       </div>

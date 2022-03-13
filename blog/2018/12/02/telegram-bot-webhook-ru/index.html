@@ -5,7 +5,7 @@
     <title>Telegram бот через webhook | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2018/12/02/telegram-bot-webhook-ru/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -19,9 +19,7 @@
 <meta property="og:description" content="Я тогда давно написал статью про создание Telegram бота, и обещал дополнить её описанием настройки работы через webhook, но так и не дополнил. Вот только сейчас дошли руки.
 
 
-
     
-
 
 This article in english 🇺🇸." />
 <meta property="og:type" content="article" />
@@ -74,9 +72,7 @@ This article in english 🇺🇸." />
         <p>Я тогда давно написал <a href="/blog/2015/10/24/telegram-bot/">статью</a> про создание Telegram бота, и обещал дополнить её описанием настройки работы через webhook, но так и не дополнил. Вот только сейчас дошли руки.</p>
 
 
-
-    <img class="image-post" src="/blog/2018/12/02/telegram-bot-webhook-ru/images/telegram-webhook.png" alt="Telegram bot webhook">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/12/02/telegram-bot-webhook-ru/images/telegram-webhook.png" alt="Telegram bot webhook">
 
 <p>This article <a href="/blog/2018/12/04/telegram-bot-webhook/">in english 🇺🇸</a>.</p>
 <nav id="TableOfContents">
@@ -100,9 +96,7 @@ This article in english 🇺🇸." />
 <p>Разницу можно изобразить следующим образом:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/12/02/telegram-bot-webhook-ru/images/telegram-getupdates-vs-setwebhook.png" alt="Telegram bot, getUpdates vs setWebhook">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/12/02/telegram-bot-webhook-ru/images/telegram-getupdates-vs-setwebhook.png" alt="Telegram bot, getUpdates vs setWebhook">
 
 <p>Очевидно, что второй способ (<code>setWebhook</code>) рациональнее для всех участников процесса. Однако в нём присутствует неявная сложность: кто-то должен принимать сообщения от Telegram на стороне бота, то есть необходим веб-сервер или его эквивалент.</p>
 <h1 id="как-настроить">Как настроить</h1>
@@ -118,66 +112,66 @@ This article in english 🇺🇸." />
 <h2 id="серверная-часть">Серверная часть</h2>
 <p>Серверная часть чуть посложнее. Я переделал текущую реализацию бота на <a href="https://github.com/eternnoir/pyTelegramBotAPI">pyTelegramBotAPI</a>, используя <a href="https://github.com/eternnoir/pyTelegramBotAPI/blob/master/examples/webhook_examples/webhook_aiohttp_echo_bot.py">пример</a> для <a href="https://aiohttp.readthedocs.io/">AIOHTTP</a>.</p>
 <p>Ставим необходимые пакеты:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">pip install pyTelegramBotAPI
-pip install aiohttp
-pip install cchardet
-pip install aiodns</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>pip install pyTelegramBotAPI
+</span></span><span style="display:flex;"><span>pip install aiohttp
+</span></span><span style="display:flex;"><span>pip install cchardet
+</span></span><span style="display:flex;"><span>pip install aiodns</span></span></code></pre></div>
 <p>И сокращённо код бота теперь такой:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> config
-<span style="color:#f92672">import</span> telebot
-<span style="color:#f92672">from</span> aiohttp <span style="color:#f92672">import</span> web
-<span style="color:#f92672">import</span> ssl
-
-WEBHOOK_LISTEN <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;0.0.0.0&#34;</span>
-WEBHOOK_PORT <span style="color:#f92672">=</span> <span style="color:#ae81ff">8443</span>
-
-WEBHOOK_SSL_CERT <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/etc/letsencrypt/live/YOUR.DOMAIN/fullchain.pem&#34;</span>
-WEBHOOK_SSL_PRIV <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/etc/letsencrypt/live/YOUR.DOMAIN/privkey.pem&#34;</span>
-
-API_TOKEN <span style="color:#f92672">=</span> config<span style="color:#f92672">.</span>token
-bot <span style="color:#f92672">=</span> telebot<span style="color:#f92672">.</span>TeleBot(API_TOKEN)
-
-app <span style="color:#f92672">=</span> web<span style="color:#f92672">.</span>Application()
-
-<span style="color:#75715e"># process only requests with correct bot token</span>
-<span style="color:#66d9ef">async</span> <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">handle</span>(request):
-    <span style="color:#66d9ef">if</span> request<span style="color:#f92672">.</span>match_info<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;token&#34;</span>) <span style="color:#f92672">==</span> bot<span style="color:#f92672">.</span>token:
-        request_body_dict <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> request<span style="color:#f92672">.</span>json()
-        update <span style="color:#f92672">=</span> telebot<span style="color:#f92672">.</span>types<span style="color:#f92672">.</span>Update<span style="color:#f92672">.</span>de_json(request_body_dict)
-        bot<span style="color:#f92672">.</span>process_new_updates([update])
-        <span style="color:#66d9ef">return</span> web<span style="color:#f92672">.</span>Response()
-    <span style="color:#66d9ef">else</span>:
-        <span style="color:#66d9ef">return</span> web<span style="color:#f92672">.</span>Response(status<span style="color:#f92672">=</span><span style="color:#ae81ff">403</span>)
-
-app<span style="color:#f92672">.</span>router<span style="color:#f92672">.</span>add_post(<span style="color:#e6db74">&#34;/</span><span style="color:#e6db74">{token}</span><span style="color:#e6db74">/&#34;</span>, handle)
-
-help_string <span style="color:#f92672">=</span> []
-help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;*Some bot* - just a bot.</span><span style="color:#ae81ff">\n\n</span><span style="color:#e6db74">&#34;</span>)
-help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/start - greetings</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
-help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/help - shows this help&#34;</span>)
-
-<span style="color:#75715e"># - - - messages</span>
-
-<span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;start&#34;</span>])
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_welcome</span>(message):
-    bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;Ololo, I am a bot&#34;</span>)
-
-<span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;help&#34;</span>])
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_help</span>(message):
-    bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join(help_string), parse_mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Markdown&#34;</span>)
-
-<span style="color:#75715e"># - - -</span>
-
-context <span style="color:#f92672">=</span> ssl<span style="color:#f92672">.</span>SSLContext(ssl<span style="color:#f92672">.</span>PROTOCOL_TLSv1_2)
-context<span style="color:#f92672">.</span>load_cert_chain(WEBHOOK_SSL_CERT, WEBHOOK_SSL_PRIV)
-
-<span style="color:#75715e"># start aiohttp server (our bot)</span>
-web<span style="color:#f92672">.</span>run_app(
-    app,
-    host<span style="color:#f92672">=</span>WEBHOOK_LISTEN,
-    port<span style="color:#f92672">=</span>WEBHOOK_PORT,
-    ssl_context<span style="color:#f92672">=</span>context,
-)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> config
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> telebot
+</span></span><span style="display:flex;"><span><span style="color:#f92672">from</span> aiohttp <span style="color:#f92672">import</span> web
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> ssl
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>WEBHOOK_LISTEN <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;0.0.0.0&#34;</span>
+</span></span><span style="display:flex;"><span>WEBHOOK_PORT <span style="color:#f92672">=</span> <span style="color:#ae81ff">8443</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>WEBHOOK_SSL_CERT <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/etc/letsencrypt/live/YOUR.DOMAIN/fullchain.pem&#34;</span>
+</span></span><span style="display:flex;"><span>WEBHOOK_SSL_PRIV <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/etc/letsencrypt/live/YOUR.DOMAIN/privkey.pem&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>API_TOKEN <span style="color:#f92672">=</span> config<span style="color:#f92672">.</span>token
+</span></span><span style="display:flex;"><span>bot <span style="color:#f92672">=</span> telebot<span style="color:#f92672">.</span>TeleBot(API_TOKEN)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>app <span style="color:#f92672">=</span> web<span style="color:#f92672">.</span>Application()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># process only requests with correct bot token</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">async</span> <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">handle</span>(request):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> request<span style="color:#f92672">.</span>match_info<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;token&#34;</span>) <span style="color:#f92672">==</span> bot<span style="color:#f92672">.</span>token:
+</span></span><span style="display:flex;"><span>        request_body_dict <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> request<span style="color:#f92672">.</span>json()
+</span></span><span style="display:flex;"><span>        update <span style="color:#f92672">=</span> telebot<span style="color:#f92672">.</span>types<span style="color:#f92672">.</span>Update<span style="color:#f92672">.</span>de_json(request_body_dict)
+</span></span><span style="display:flex;"><span>        bot<span style="color:#f92672">.</span>process_new_updates([update])
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> web<span style="color:#f92672">.</span>Response()
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">else</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> web<span style="color:#f92672">.</span>Response(status<span style="color:#f92672">=</span><span style="color:#ae81ff">403</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>app<span style="color:#f92672">.</span>router<span style="color:#f92672">.</span>add_post(<span style="color:#e6db74">&#34;/</span><span style="color:#e6db74">{token}</span><span style="color:#e6db74">/&#34;</span>, handle)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>help_string <span style="color:#f92672">=</span> []
+</span></span><span style="display:flex;"><span>help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;*Some bot* - just a bot.</span><span style="color:#ae81ff">\n\n</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/start - greetings</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/help - shows this help&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># - - - messages</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;start&#34;</span>])
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_welcome</span>(message):
+</span></span><span style="display:flex;"><span>    bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;Ololo, I am a bot&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;help&#34;</span>])
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_help</span>(message):
+</span></span><span style="display:flex;"><span>    bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join(help_string), parse_mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Markdown&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># - - -</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>context <span style="color:#f92672">=</span> ssl<span style="color:#f92672">.</span>SSLContext(ssl<span style="color:#f92672">.</span>PROTOCOL_TLSv1_2)
+</span></span><span style="display:flex;"><span>context<span style="color:#f92672">.</span>load_cert_chain(WEBHOOK_SSL_CERT, WEBHOOK_SSL_PRIV)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># start aiohttp server (our bot)</span>
+</span></span><span style="display:flex;"><span>web<span style="color:#f92672">.</span>run_app(
+</span></span><span style="display:flex;"><span>    app,
+</span></span><span style="display:flex;"><span>    host<span style="color:#f92672">=</span>WEBHOOK_LISTEN,
+</span></span><span style="display:flex;"><span>    port<span style="color:#f92672">=</span>WEBHOOK_PORT,
+</span></span><span style="display:flex;"><span>    ssl_context<span style="color:#f92672">=</span>context,
+</span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
 <p>Что здесь происходит: мы запускаем мини-веб-сервер, который слушает порт 8443 и отвечает на запросы через определённый endpoint, который образован токеном бота. Токен используется здесь как достаточно уникальный идентификатор, чтобы какой-нибудь мимокрокодил из интернета не навызывал бота и не натворил дел. Полный адрес endpoint&rsquo;а будет выглядеть вот так: <code>https://YOUR.DOMAIN:8443/YOUR-TOKEN/</code>.</p>
 <p>Обратите также внимание на отличия от стандартного примера из репозитория:</p>
 <ul>
@@ -185,70 +179,70 @@ web<span style="color:#f92672">.</span>run_app(
 <li>удалён код снятия и установки webhook&rsquo;а.</li>
 </ul>
 <p>Так как бота я запускаю не из-под root&rsquo;а, сервис начал валиться с такой ошибкой:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>: Traceback <span style="color:#f92672">(</span>most recent call last<span style="color:#f92672">)</span>:
-python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>:   File <span style="color:#e6db74">&#34;/usr/local/bin/bot/bot.py&#34;</span>, line 142, in &lt;module&gt;
-python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>:     context.load_cert_chain<span style="color:#f92672">(</span>WEBHOOK_SSL_CERT, WEBHOOK_SSL_PRIV<span style="color:#f92672">)</span>
-python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>: PermissionError: <span style="color:#f92672">[</span>Errno 13<span style="color:#f92672">]</span> Permission denied
-systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: telegram-bot.service: Main process exited, code<span style="color:#f92672">=</span>exited, status<span style="color:#f92672">=</span>1/FAILURE
-systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: telegram-bot.service: Failed with result <span style="color:#e6db74">&#39;exit-code&#39;</span>.</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>: Traceback <span style="color:#f92672">(</span>most recent call last<span style="color:#f92672">)</span>:
+</span></span><span style="display:flex;"><span>python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>:   File <span style="color:#e6db74">&#34;/usr/local/bin/bot/bot.py&#34;</span>, line 142, in &lt;module&gt;
+</span></span><span style="display:flex;"><span>python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>:     context.load_cert_chain<span style="color:#f92672">(</span>WEBHOOK_SSL_CERT, WEBHOOK_SSL_PRIV<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>: PermissionError: <span style="color:#f92672">[</span>Errno 13<span style="color:#f92672">]</span> Permission denied
+</span></span><span style="display:flex;"><span>systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: telegram-bot.service: Main process exited, code<span style="color:#f92672">=</span>exited, status<span style="color:#f92672">=</span>1/FAILURE
+</span></span><span style="display:flex;"><span>systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: telegram-bot.service: Failed with result <span style="color:#e6db74">&#39;exit-code&#39;</span>.</span></span></code></pre></div>
 <p>То есть, у пользователя, из-под которого выполняется скрипт, нет доступа к <code>/etc/letsencrypt/</code>, чтобы открыть файл сертификата. Я попытался дать доступ к каталогу для новой группы, включив в неё этого пользователя:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">groupadd letsencrypt
-usermod -a -G letsencrypt userforbot
-chgrp -R letsencrypt /etc/letsencrypt/</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>groupadd letsencrypt
+</span></span><span style="display:flex;"><span>usermod -a -G letsencrypt userforbot
+</span></span><span style="display:flex;"><span>chgrp -R letsencrypt /etc/letsencrypt/</span></span></code></pre></div>
 <p>Но он один фиг не мог открыть файлы оттуда, даже простой <code>ls</code> выдавал ошибку доступа. В общем, или мои познания Linux полный отстой, или одно из двух. Пришлось тупо назначить его владельцем:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">chown -R userforbot:letsencrypt /etc/letsencrypt/</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>chown -R userforbot:letsencrypt /etc/letsencrypt/</span></span></code></pre></div>
 <p>Тогда сервис запустился нормально.</p>
 <h2 id="регистрация">Регистрация</h2>
 <p>Теперь осталось самое, как оказалось, сложное - зарегистрировать endpoint бота в Telegram. Сложности возникли потому, что я сначала неправильно понял принцип составления endpoint&rsquo;а, а также из-за проблем с проверкой сертификата.</p>
 <p>Для установки/регистрации webhook&rsquo;а нужно выполнить следующий HTTP запрос (можно просто открыть этот URL в браузере):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/setWebhook?url</span><span style="color:#f92672">=</span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//YOUR.DOMAIN:</span><span style="color:#960050;background-color:#1e0010">8443</span><span style="color:#66d9ef">/YOUR-TOKEN/</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/setWebhook?url</span><span style="color:#f92672">=</span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//YOUR.DOMAIN:</span><span style="color:#960050;background-color:#1e0010">8443</span><span style="color:#66d9ef">/YOUR-TOKEN/</span></span></span></code></pre></div>
 <p>Пока я экспериментировал и разбирался с форматом endpoint&rsquo;а, Telegram возвращал мне нормальный результат:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-    <span style="color:#f92672">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Webhook was set&#34;</span>,
-    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">true</span>,
-    <span style="color:#f92672">&#34;result&#34;</span>: <span style="color:#66d9ef">true</span>
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Webhook was set&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">true</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;result&#34;</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Но потом я его видимо задолбал, и он стал возвращать мне следующее:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">false</span>,
-    <span style="color:#f92672">&#34;error_code&#34;</span>: <span style="color:#ae81ff">504</span>,
-    <span style="color:#f92672">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Gateway Timeout&#34;</span>
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">false</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;error_code&#34;</span>: <span style="color:#ae81ff">504</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Gateway Timeout&#34;</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Но оказалось, что это ни на что не влияет, и webhook нормально устанавливается, так что можно даже не дожидаться таймаута, а просто отменять запрос через пару секунд.</p>
 <p>Проверить статус webhook&rsquo;а можно таким запросом:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/getWebhookInfo</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/getWebhookInfo</span></span></span></code></pre></div>
 <p>Если всё нормально, должно вернуть такое:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">true</span>,
-    <span style="color:#f92672">&#34;result&#34;</span>: {
-        <span style="color:#f92672">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;https://YOUR.DOMAIN:8443/YOUR-TOKEN/&#34;</span>,
-        <span style="color:#f92672">&#34;has_custom_certificate&#34;</span>: <span style="color:#66d9ef">false</span>,
-        <span style="color:#f92672">&#34;pending_update_count&#34;</span>: <span style="color:#ae81ff">0</span>,
-        <span style="color:#f92672">&#34;max_connections&#34;</span>: <span style="color:#ae81ff">40</span>
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">true</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;result&#34;</span>: {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;https://YOUR.DOMAIN:8443/YOUR-TOKEN/&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;has_custom_certificate&#34;</span>: <span style="color:#66d9ef">false</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;pending_update_count&#34;</span>: <span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;max_connections&#34;</span>: <span style="color:#ae81ff">40</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Как видим, в поле <code>url</code> стоит наш endpoint.</p>
 <p>Однако, мне оно сейчас возвращает такое:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#f92672">{</span>
-    <span style="color:#e6db74">&#34;ok&#34;</span>: true,
-    <span style="color:#e6db74">&#34;result&#34;</span>: <span style="color:#f92672">{</span>
-        <span style="color:#e6db74">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;https://YOUR.DOMAIN:8443/YOUR-TOKEN/&#34;</span>,
-        <span style="color:#e6db74">&#34;has_custom_certificate&#34;</span>: false,
-        <span style="color:#e6db74">&#34;pending_update_count&#34;</span>: 0,
-        <span style="color:#e6db74">&#34;last_error_date&#34;</span>: 1543762687,
-        <span style="color:#e6db74">&#34;last_error_message&#34;</span>: <span style="color:#e6db74">&#34;SSL error {error:1416F086:SSL routines:tls_process_server_certificate:certificate verify failed}&#34;</span>,
-        <span style="color:#e6db74">&#34;max_connections&#34;</span>: <span style="color:#ae81ff">40</span>
-    <span style="color:#f92672">}</span>
-<span style="color:#f92672">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;ok&#34;</span>: true,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;result&#34;</span>: <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;https://YOUR.DOMAIN:8443/YOUR-TOKEN/&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;has_custom_certificate&#34;</span>: false,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;pending_update_count&#34;</span>: 0,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;last_error_date&#34;</span>: 1543762687,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;last_error_message&#34;</span>: <span style="color:#e6db74">&#34;SSL error {error:1416F086:SSL routines:tls_process_server_certificate:certificate verify failed}&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;max_connections&#34;</span>: <span style="color:#ae81ff">40</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span></span></span></code></pre></div>
 <p>Что указывает на некие проблемы с сертификатом. При этом бот работает нормально, то есть эта ошибка ни на что не влияет. Однако, если вместо <code>fullchain.pem</code> оставить <code>cert.pem</code> (как было указано в примере), то бот работать перестанет.</p>
 <p>Стоит также отметить, что если вы установили webhook, то опрос Telegram через <code>getUpdates</code> работать больше будет. Чтобы снять webhook, надо отправить тот же самый запрос, что и для установки, но на этот раз без параметра <code>url</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/setWebhook</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/setWebhook</span></span></span></code></pre></div>
 <p>В ответ придёт:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">true</span>,
-    <span style="color:#f92672">&#34;result&#34;</span>: <span style="color:#66d9ef">true</span>,
-    <span style="color:#f92672">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Webhook was deleted&#34;</span>
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">true</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;result&#34;</span>: <span style="color:#66d9ef">true</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Webhook was deleted&#34;</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Ну и всё, не так уж и сложно. Если бы в документации (и сторонних манулах из интернетов) была указана такая простая вещь, что для webhook&rsquo;а всего-то нужен лишь веб-сервер на стороне бота, я бы это сделал уже сто лет назад. Конечно, продвинутым чувакам это скорее всего было очевидно сразу, но мнe - нет.</p>
       </div>
     </article>

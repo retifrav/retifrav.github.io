@@ -5,7 +5,7 @@
     <title>Copying files with qmake | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2018/06/08/qmake-copy-files/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -19,9 +19,7 @@
 <meta property="og:description" content="Sometimes you need to copy certain files from source directory to build directory together with your application binaries. And Qt&rsquo;s qmake tool is capable of performing such operations.
 
 
-
     
-
 
 Some geniuses might actually want to use scripts for that, but it&rsquo;s better not to, because it&rsquo;s the cross-platform development we&rsquo;re talking about, and your xcopy from Windows works only on Windows, so it&rsquo;s better to find some universal method. And qmake has such a thing, although it is not properly documented." />
 <meta property="og:type" content="article" />
@@ -74,235 +72,233 @@ Some geniuses might actually want to use scripts for that, but it&rsquo;s better
         <p>Sometimes you need to copy certain files from <em>source</em> directory to <em>build</em> directory together with your application binaries. And Qt&rsquo;s <a href="http://doc.qt.io/qt-5/qmake-manual.html">qmake</a> tool is capable of performing such operations.</p>
 
 
-
-    <img class="image-post" src="/blog/2018/06/08/qmake-copy-files/images/qmake.png" alt="Qt qmake">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/06/08/qmake-copy-files/images/qmake.png" alt="Qt qmake">
 
 <p>Some geniuses might actually want to use scripts for that, but it&rsquo;s better not to, because it&rsquo;s the cross-platform development we&rsquo;re talking about, and your <code>xcopy</code> from Windows works only on Windows, so it&rsquo;s better to find some universal method. And <code>qmake</code> has such a thing, although it is not properly documented.</p>
 <p><code>QMAKE_COPY</code> - performs file copying, and on different platforms it transforms into <code>xcopy</code>, or <code>cp</code>, or else.</p>
 <p><code>QMAKE_COPY_DIR</code> - same thing, but for directories. For instance, on Linux/Mac it adds <code>-r</code> option to <code>cp</code>.</p>
 <p>So, let&rsquo;s take the following structure of the source folder:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">webengine-recipes/
-├── README.md
-├── main.cpp
-├── resources
-│   ├── pages
-│   │   ├── assets
-│   │   │   ├── 3rdparty
-│   │   │   │   ├── markdown.css
-│   │   │   │   ├── marked.min.js
-│   │   │   │   └── qt_attribution.json
-│   │   │   ├── custom.css
-│   │   │   └── custom.js
-│   │   ├── burger.html
-│   │   ├── cupcakes.html
-│   │   ├── images
-│   │   │   ├── burger.jpg
-│   │   │   ├── cupcakes.jpg
-│   │   │   ├── pasta.jpg
-│   │   │   ├── pizza.jpg
-│   │   │   ├── skewers.jpg
-│   │   │   ├── soup.jpg
-│   │   │   └── steak.jpg
-│   │   ├── pasta.html
-│   │   ├── pizza.html
-│   │   ├── skewers.html
-│   │   ├── soup.html
-│   │   └── steak.html
-│   ├── qml
-│   │   ├── RecipeList.qml
-│   │   └── main.qml
-│   └── resources.qrc
-├── webengine-recipes.pro
-└── webengine-recipes.pro.user</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>webengine-recipes/
+</span></span><span style="display:flex;"><span>├── README.md
+</span></span><span style="display:flex;"><span>├── main.cpp
+</span></span><span style="display:flex;"><span>├── resources
+</span></span><span style="display:flex;"><span>│   ├── pages
+</span></span><span style="display:flex;"><span>│   │   ├── assets
+</span></span><span style="display:flex;"><span>│   │   │   ├── 3rdparty
+</span></span><span style="display:flex;"><span>│   │   │   │   ├── markdown.css
+</span></span><span style="display:flex;"><span>│   │   │   │   ├── marked.min.js
+</span></span><span style="display:flex;"><span>│   │   │   │   └── qt_attribution.json
+</span></span><span style="display:flex;"><span>│   │   │   ├── custom.css
+</span></span><span style="display:flex;"><span>│   │   │   └── custom.js
+</span></span><span style="display:flex;"><span>│   │   ├── burger.html
+</span></span><span style="display:flex;"><span>│   │   ├── cupcakes.html
+</span></span><span style="display:flex;"><span>│   │   ├── images
+</span></span><span style="display:flex;"><span>│   │   │   ├── burger.jpg
+</span></span><span style="display:flex;"><span>│   │   │   ├── cupcakes.jpg
+</span></span><span style="display:flex;"><span>│   │   │   ├── pasta.jpg
+</span></span><span style="display:flex;"><span>│   │   │   ├── pizza.jpg
+</span></span><span style="display:flex;"><span>│   │   │   ├── skewers.jpg
+</span></span><span style="display:flex;"><span>│   │   │   ├── soup.jpg
+</span></span><span style="display:flex;"><span>│   │   │   └── steak.jpg
+</span></span><span style="display:flex;"><span>│   │   ├── pasta.html
+</span></span><span style="display:flex;"><span>│   │   ├── pizza.html
+</span></span><span style="display:flex;"><span>│   │   ├── skewers.html
+</span></span><span style="display:flex;"><span>│   │   ├── soup.html
+</span></span><span style="display:flex;"><span>│   │   └── steak.html
+</span></span><span style="display:flex;"><span>│   ├── qml
+</span></span><span style="display:flex;"><span>│   │   ├── RecipeList.qml
+</span></span><span style="display:flex;"><span>│   │   └── main.qml
+</span></span><span style="display:flex;"><span>│   └── resources.qrc
+</span></span><span style="display:flex;"><span>├── webengine-recipes.pro
+</span></span><span style="display:flex;"><span>└── webengine-recipes.pro.user</span></span></code></pre></div>
 <p>We want to copy <code>pages</code> directory to the build directory, so it would be near the application executable (so we could use relative paths to <code>.html</code> files).</p>
 <p>Here&rsquo;s how to do it in the <code>.pro</code> file:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">TEMPLATE</span> <span style="color:#66d9ef">=</span> app
-
-<span style="color:#a6e22e">QT</span> <span style="color:#f92672">+=</span> quick quickcontrols2 webengine
-
-<span style="color:#a6e22e">SOURCES</span> <span style="color:#f92672">+=</span> main<span style="color:#f92672">.</span>cpp
-
-<span style="color:#a6e22e">RESOURCES</span> <span style="color:#f92672">+=</span> resources<span style="color:#f92672">/</span>resources<span style="color:#f92672">.</span>qrc
-
-<span style="color:#a6e22e">DISTFILES</span> <span style="color:#f92672">+=</span>
-
-<span style="color:#a6e22e">OTHER_FILES</span> <span style="color:#f92672">+=</span> \
-    <span style="color:#a6e22e">$$PWD</span><span style="color:#f92672">/</span>resources<span style="color:#f92672">/</span>pages
-
-<span style="color:#f92672">!</span>isEmpty<span style="color:#f92672">(</span>target<span style="color:#f92672">.</span>path<span style="color:#f92672">)</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">INSTALLS</span> <span style="color:#66d9ef">+=</span> <span style="color:#66d9ef">target</span>
-
-<span style="color:#66d9ef">#</span> copies the given files to the destination directory
-defineTest<span style="color:#f92672">(</span>copyToDestDir<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-    files <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">$$1</span>
-    dir <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">$$2</span>
-    <span style="color:#66d9ef">#</span> replace slashes in destination path <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">Windows</span>
-    win32<span style="color:#66d9ef">:</span><span style="color:#66d9ef">dir</span> <span style="color:#66d9ef">~=</span> <span style="color:#66d9ef">s</span><span style="color:#f92672">,/,</span>\\<span style="color:#f92672">,</span>g
-
-    <span style="color:#66d9ef">for</span><span style="color:#f92672">(</span>file<span style="color:#f92672">,</span> files<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
-        <span style="color:#66d9ef">#</span> replace slashes in source path <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">Windows</span>
-        win32<span style="color:#66d9ef">:</span><span style="color:#66d9ef">file</span> <span style="color:#66d9ef">~=</span> <span style="color:#66d9ef">s</span><span style="color:#f92672">,/,</span>\\<span style="color:#f92672">,</span>g
-
-        <span style="color:#a6e22e">QMAKE_POST_LINK</span> <span style="color:#f92672">+=</span> <span style="color:#a6e22e">$$QMAKE_COPY_DIR</span> <span style="color:#a6e22e">$$shell_quote</span><span style="color:#f92672">(</span><span style="color:#a6e22e">$$file</span><span style="color:#f92672">)</span> <span style="color:#a6e22e">$$shell_quote</span><span style="color:#f92672">(</span><span style="color:#a6e22e">$$dir</span><span style="color:#f92672">)</span> <span style="color:#a6e22e">$$escape_expand</span><span style="color:#f92672">(</span><span style="color:#a6e22e">\\n\\t</span><span style="color:#f92672">)</span>
-    <span style="color:#f92672">}</span>
-
-    export<span style="color:#f92672">(</span><span style="color:#a6e22e">QMAKE_POST_LINK</span><span style="color:#f92672">)</span>
-<span style="color:#f92672">}</span>
-
-copyToDestDir<span style="color:#f92672">(</span><span style="color:#a6e22e">$$OTHER_FILES</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">$$OUT_PWD</span><span style="color:#f92672">/</span>resources<span style="color:#f92672">/)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">TEMPLATE</span> <span style="color:#66d9ef">=</span> app
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">QT</span> <span style="color:#f92672">+=</span> quick quickcontrols2 webengine
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">SOURCES</span> <span style="color:#f92672">+=</span> main<span style="color:#f92672">.</span>cpp
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">RESOURCES</span> <span style="color:#f92672">+=</span> resources<span style="color:#f92672">/</span>resources<span style="color:#f92672">.</span>qrc
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">DISTFILES</span> <span style="color:#f92672">+=</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">OTHER_FILES</span> <span style="color:#f92672">+=</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">$$PWD</span><span style="color:#f92672">/</span>resources<span style="color:#f92672">/</span>pages
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">!</span>isEmpty<span style="color:#f92672">(</span>target<span style="color:#f92672">.</span>path<span style="color:#f92672">)</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">INSTALLS</span> <span style="color:#66d9ef">+=</span> <span style="color:#66d9ef">target</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">#</span> copies the given files to the destination directory
+</span></span><span style="display:flex;"><span>defineTest<span style="color:#f92672">(</span>copyToDestDir<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>    files <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">$$1</span>
+</span></span><span style="display:flex;"><span>    dir <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">$$2</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">#</span> replace slashes in destination path <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">Windows</span>
+</span></span><span style="display:flex;"><span>    win32<span style="color:#66d9ef">:</span><span style="color:#66d9ef">dir</span> <span style="color:#66d9ef">~=</span> <span style="color:#66d9ef">s</span><span style="color:#f92672">,/,</span>\\<span style="color:#f92672">,</span>g
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span><span style="color:#f92672">(</span>file<span style="color:#f92672">,</span> files<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">#</span> replace slashes in source path <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">Windows</span>
+</span></span><span style="display:flex;"><span>        win32<span style="color:#66d9ef">:</span><span style="color:#66d9ef">file</span> <span style="color:#66d9ef">~=</span> <span style="color:#66d9ef">s</span><span style="color:#f92672">,/,</span>\\<span style="color:#f92672">,</span>g
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">QMAKE_POST_LINK</span> <span style="color:#f92672">+=</span> <span style="color:#a6e22e">$$QMAKE_COPY_DIR</span> <span style="color:#a6e22e">$$shell_quote</span><span style="color:#f92672">(</span><span style="color:#a6e22e">$$file</span><span style="color:#f92672">)</span> <span style="color:#a6e22e">$$shell_quote</span><span style="color:#f92672">(</span><span style="color:#a6e22e">$$dir</span><span style="color:#f92672">)</span> <span style="color:#a6e22e">$$escape_expand</span><span style="color:#f92672">(</span><span style="color:#a6e22e">\\n\\t</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    export<span style="color:#f92672">(</span><span style="color:#a6e22e">QMAKE_POST_LINK</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>copyToDestDir<span style="color:#f92672">(</span><span style="color:#a6e22e">$$OTHER_FILES</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">$$OUT_PWD</span><span style="color:#f92672">/</span>resources<span style="color:#f92672">/)</span></span></span></code></pre></div>
 <p>Thanks to <a href="https://stackoverflow.com/a/10058744/1688203">Jake</a> for the function. Although, I had to modify it a bit: replace <code>$$quote</code> with <code>$$shell_quote</code> and <code>$$DESTDIR</code>  with <code>$$OUT_PWD</code>.</p>
 <p>Note the trailing <code>/</code> and the absence of it in paths to source and destination. Turned out, Windows is quite sensitive to such things.</p>
 <p>So, files are copied, problem is solved.</p>
 <p>However, since I mentioned cross-platform development, you should know, that on different platforms build directory is organized differently.</p>
 <p><strong>Linux</strong> - everything is in the same directory:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">build-webengine-recipes-Desktop_Qt_5_11_0_GCC_64bit-Debug/
-├── <span style="color:#f92672">[</span>some-other-files<span style="color:#f92672">]</span>
-├── resources
-│   ├── assets
-│   │   ├── 3rdparty
-│   │   │   ├── markdown.css
-│   │   │   ├── marked.min.js
-│   │   │   └── qt_attribution.json
-│   │   ├── custom.css
-│   │   └── custom.js
-│   ├── burger.html
-│   ├── cupcakes.html
-│   ├── images
-│   │   ├── burger.jpg
-│   │   ├── cupcakes.jpg
-│   │   ├── pasta.jpg
-│   │   ├── pizza.jpg
-│   │   ├── skewers.jpg
-│   │   ├── soup.jpg
-│   │   └── steak.jpg
-│   ├── pasta.html
-│   ├── pizza.html
-│   ├── skewers.html
-│   ├── soup.html
-│   └── steak.html
-└── webengine-recipes</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>build-webengine-recipes-Desktop_Qt_5_11_0_GCC_64bit-Debug/
+</span></span><span style="display:flex;"><span>├── <span style="color:#f92672">[</span>some-other-files<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>├── resources
+</span></span><span style="display:flex;"><span>│   ├── assets
+</span></span><span style="display:flex;"><span>│   │   ├── 3rdparty
+</span></span><span style="display:flex;"><span>│   │   │   ├── markdown.css
+</span></span><span style="display:flex;"><span>│   │   │   ├── marked.min.js
+</span></span><span style="display:flex;"><span>│   │   │   └── qt_attribution.json
+</span></span><span style="display:flex;"><span>│   │   ├── custom.css
+</span></span><span style="display:flex;"><span>│   │   └── custom.js
+</span></span><span style="display:flex;"><span>│   ├── burger.html
+</span></span><span style="display:flex;"><span>│   ├── cupcakes.html
+</span></span><span style="display:flex;"><span>│   ├── images
+</span></span><span style="display:flex;"><span>│   │   ├── burger.jpg
+</span></span><span style="display:flex;"><span>│   │   ├── cupcakes.jpg
+</span></span><span style="display:flex;"><span>│   │   ├── pasta.jpg
+</span></span><span style="display:flex;"><span>│   │   ├── pizza.jpg
+</span></span><span style="display:flex;"><span>│   │   ├── skewers.jpg
+</span></span><span style="display:flex;"><span>│   │   ├── soup.jpg
+</span></span><span style="display:flex;"><span>│   │   └── steak.jpg
+</span></span><span style="display:flex;"><span>│   ├── pasta.html
+</span></span><span style="display:flex;"><span>│   ├── pizza.html
+</span></span><span style="display:flex;"><span>│   ├── skewers.html
+</span></span><span style="display:flex;"><span>│   ├── soup.html
+</span></span><span style="display:flex;"><span>│   └── steak.html
+</span></span><span style="display:flex;"><span>└── webengine-recipes</span></span></code></pre></div>
 <p><strong>Windows</strong> - build directory has <code>debug</code> and <code>release</code> folders:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">build-webengine-recipes-Desktop_Qt_5_11_0_MSVC2017_64bit-Debug
-¦   <span style="color:#f92672">[</span>some-other-files<span style="color:#f92672">]</span>
-¦
-+---debug
-¦       <span style="color:#f92672">[</span>some-other-files<span style="color:#f92672">]</span>
-¦       webengine-recipes.exe
-¦
-+---release
-+---resources
-    ¦   burger.html
-    ¦   cupcakes.html
-    ¦   pasta.html
-    ¦   pizza.html
-    ¦   skewers.html
-    ¦   soup.html
-    ¦   steak.html
-    ¦
-    +---assets
-    ¦   ¦   custom.css
-    ¦   ¦   custom.js
-    ¦   ¦
-    ¦   +---3rdparty
-    ¦           markdown.css
-    ¦           marked.min.js
-    ¦           qt_attribution.json
-    ¦
-    +---images
-            burger.jpg
-            cupcakes.jpg
-            pasta.jpg
-            pizza.jpg
-            skewers.jpg
-            soup.jpg
-            steak.jpg</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>build-webengine-recipes-Desktop_Qt_5_11_0_MSVC2017_64bit-Debug
+</span></span><span style="display:flex;"><span>¦   <span style="color:#f92672">[</span>some-other-files<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>¦
+</span></span><span style="display:flex;"><span>+---debug
+</span></span><span style="display:flex;"><span>¦       <span style="color:#f92672">[</span>some-other-files<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>¦       webengine-recipes.exe
+</span></span><span style="display:flex;"><span>¦
+</span></span><span style="display:flex;"><span>+---release
+</span></span><span style="display:flex;"><span>+---resources
+</span></span><span style="display:flex;"><span>    ¦   burger.html
+</span></span><span style="display:flex;"><span>    ¦   cupcakes.html
+</span></span><span style="display:flex;"><span>    ¦   pasta.html
+</span></span><span style="display:flex;"><span>    ¦   pizza.html
+</span></span><span style="display:flex;"><span>    ¦   skewers.html
+</span></span><span style="display:flex;"><span>    ¦   soup.html
+</span></span><span style="display:flex;"><span>    ¦   steak.html
+</span></span><span style="display:flex;"><span>    ¦
+</span></span><span style="display:flex;"><span>    +---assets
+</span></span><span style="display:flex;"><span>    ¦   ¦   custom.css
+</span></span><span style="display:flex;"><span>    ¦   ¦   custom.js
+</span></span><span style="display:flex;"><span>    ¦   ¦
+</span></span><span style="display:flex;"><span>    ¦   +---3rdparty
+</span></span><span style="display:flex;"><span>    ¦           markdown.css
+</span></span><span style="display:flex;"><span>    ¦           marked.min.js
+</span></span><span style="display:flex;"><span>    ¦           qt_attribution.json
+</span></span><span style="display:flex;"><span>    ¦
+</span></span><span style="display:flex;"><span>    +---images
+</span></span><span style="display:flex;"><span>            burger.jpg
+</span></span><span style="display:flex;"><span>            cupcakes.jpg
+</span></span><span style="display:flex;"><span>            pasta.jpg
+</span></span><span style="display:flex;"><span>            pizza.jpg
+</span></span><span style="display:flex;"><span>            skewers.jpg
+</span></span><span style="display:flex;"><span>            soup.jpg
+</span></span><span style="display:flex;"><span>            steak.jpg</span></span></code></pre></div>
 <p><strong>Mac OS</strong> - there is an <code>.app</code> bundle and everything else is just lying &ldquo;outside&rdquo;:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">build-webengine-recipes-Desktop_Qt_5_11_0_clang_64bit-Debug/
-├── <span style="color:#f92672">[</span>some-other-files<span style="color:#f92672">]</span>
-├── resources
-│   ├── assets
-│   │   ├── 3rdparty
-│   │   │   ├── markdown.css
-│   │   │   ├── marked.min.js
-│   │   │   └── qt_attribution.json
-│   │   ├── custom.css
-│   │   └── custom.js
-│   ├── burger.html
-│   ├── cupcakes.html
-│   ├── images
-│   │   ├── burger.jpg
-│   │   ├── cupcakes.jpg
-│   │   ├── pasta.jpg
-│   │   ├── pizza.jpg
-│   │   ├── skewers.jpg
-│   │   ├── soup.jpg
-│   │   └── steak.jpg
-│   ├── pasta.html
-│   ├── pizza.html
-│   ├── skewers.html
-│   ├── soup.html
-│   └── steak.html
-└── webengine-recipes.app
-    └── Contents
-        ├── Info.plist
-        ├── MacOS
-        │   └── webengine-recipes
-        ├── PkgInfo
-        └── Resources
-            └── empty.lproj</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>build-webengine-recipes-Desktop_Qt_5_11_0_clang_64bit-Debug/
+</span></span><span style="display:flex;"><span>├── <span style="color:#f92672">[</span>some-other-files<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>├── resources
+</span></span><span style="display:flex;"><span>│   ├── assets
+</span></span><span style="display:flex;"><span>│   │   ├── 3rdparty
+</span></span><span style="display:flex;"><span>│   │   │   ├── markdown.css
+</span></span><span style="display:flex;"><span>│   │   │   ├── marked.min.js
+</span></span><span style="display:flex;"><span>│   │   │   └── qt_attribution.json
+</span></span><span style="display:flex;"><span>│   │   ├── custom.css
+</span></span><span style="display:flex;"><span>│   │   └── custom.js
+</span></span><span style="display:flex;"><span>│   ├── burger.html
+</span></span><span style="display:flex;"><span>│   ├── cupcakes.html
+</span></span><span style="display:flex;"><span>│   ├── images
+</span></span><span style="display:flex;"><span>│   │   ├── burger.jpg
+</span></span><span style="display:flex;"><span>│   │   ├── cupcakes.jpg
+</span></span><span style="display:flex;"><span>│   │   ├── pasta.jpg
+</span></span><span style="display:flex;"><span>│   │   ├── pizza.jpg
+</span></span><span style="display:flex;"><span>│   │   ├── skewers.jpg
+</span></span><span style="display:flex;"><span>│   │   ├── soup.jpg
+</span></span><span style="display:flex;"><span>│   │   └── steak.jpg
+</span></span><span style="display:flex;"><span>│   ├── pasta.html
+</span></span><span style="display:flex;"><span>│   ├── pizza.html
+</span></span><span style="display:flex;"><span>│   ├── skewers.html
+</span></span><span style="display:flex;"><span>│   ├── soup.html
+</span></span><span style="display:flex;"><span>│   └── steak.html
+</span></span><span style="display:flex;"><span>└── webengine-recipes.app
+</span></span><span style="display:flex;"><span>    └── Contents
+</span></span><span style="display:flex;"><span>        ├── Info.plist
+</span></span><span style="display:flex;"><span>        ├── MacOS
+</span></span><span style="display:flex;"><span>        │   └── webengine-recipes
+</span></span><span style="display:flex;"><span>        ├── PkgInfo
+</span></span><span style="display:flex;"><span>        └── Resources
+</span></span><span style="display:flex;"><span>            └── empty.lproj</span></span></code></pre></div>
 <p>As you can see, relative path to our <code>resources</code> directory is different on each platform, so we need to add some <code>#ifdef</code> stuff in order for this to work:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp">QString webPagesPathLastMile <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/resources/&#34;</span>;
-<span style="color:#75715e">#if defined(Q_OS_MAC)
-</span><span style="color:#75715e"></span>    webPagesPathLastMile <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/../../../resources/&#34;</span>;
-<span style="color:#75715e">#elif defined(Q_OS_WIN)
-</span><span style="color:#75715e"></span>    webPagesPathLastMile <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/../resources/&#34;</span>;
-<span style="color:#75715e">#endif
-</span><span style="color:#75715e"></span>    QString webPagesPath <span style="color:#f92672">=</span> QString(<span style="color:#e6db74">&#34;file:///%1%2&#34;</span>)
-            .arg(app.applicationDirPath())
-            .arg(webPagesPathLastMile);
-    qDebug() <span style="color:#f92672">&lt;&lt;</span> webPagesPath;</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>QString webPagesPathLastMile <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/resources/&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#if defined(Q_OS_MAC)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    webPagesPathLastMile <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/../../../resources/&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#elif defined(Q_OS_WIN)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    webPagesPathLastMile <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/../resources/&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#endif
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    QString webPagesPath <span style="color:#f92672">=</span> QString(<span style="color:#e6db74">&#34;file:///%1%2&#34;</span>)
+</span></span><span style="display:flex;"><span>            .arg(app.applicationDirPath())
+</span></span><span style="display:flex;"><span>            .arg(webPagesPathLastMile);
+</span></span><span style="display:flex;"><span>    qDebug() <span style="color:#f92672">&lt;&lt;</span> webPagesPath;</span></span></code></pre></div>
 <p>Speaking of Mac OS, if you only need to target this one, then everything is dramatically easier for you. Instead of using this function with <code>QMAKE_COPY_DIR</code>, just add these lines into your <code>.pro</code> file:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">...</span>
-<span style="color:#a6e22e">OTHER_FILES</span> <span style="color:#f92672">+=</span> \
-    <span style="color:#a6e22e">$$PWD</span><span style="color:#f92672">/</span>resources<span style="color:#f92672">/</span>pages
-
-<span style="color:#a6e22e">APP_QML_FILES</span><span style="color:#f92672">.</span>files <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">$$OTHER_FILES</span>
-<span style="color:#a6e22e">APP_QML_FILES</span><span style="color:#f92672">.</span>path <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">Contents</span><span style="color:#f92672">/</span><span style="color:#a6e22e">Resources</span>
-<span style="color:#a6e22e">QMAKE_BUNDLE_DATA</span> <span style="color:#f92672">+=</span> <span style="color:#a6e22e">APP_QML_FILES</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">OTHER_FILES</span> <span style="color:#f92672">+=</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">$$PWD</span><span style="color:#f92672">/</span>resources<span style="color:#f92672">/</span>pages
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">APP_QML_FILES</span><span style="color:#f92672">.</span>files <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">$$OTHER_FILES</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">APP_QML_FILES</span><span style="color:#f92672">.</span>path <span style="color:#66d9ef">=</span> <span style="color:#a6e22e">Contents</span><span style="color:#f92672">/</span><span style="color:#a6e22e">Resources</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">QMAKE_BUNDLE_DATA</span> <span style="color:#f92672">+=</span> <span style="color:#a6e22e">APP_QML_FILES</span></span></span></code></pre></div>
 <p>And then you&rsquo;ll get the following structure in your build directory:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">build-webengine-recipes-Desktop_Qt_5_11_0_clang_64bit-Debug/
-├── <span style="color:#f92672">[</span>some-other-files<span style="color:#f92672">]</span>
-└── webengine-recipes.app
-    └── Contents
-        ├── Info.plist
-        ├── MacOS
-        │   └── webengine-recipes
-        ├── PkgInfo
-        └── Resources
-            ├── empty.lproj
-            └── pages
-                ├── assets
-                │   ├── 3rdparty
-                │   │   ├── markdown.css
-                │   │   ├── marked.min.js
-                │   │   └── qt_attribution.json
-                │   ├── custom.css
-                │   └── custom.js
-                ├── burger.html
-                ├── cupcakes.html
-                ├── images
-                │   ├── burger.jpg
-                │   ├── cupcakes.jpg
-                │   ├── pasta.jpg
-                │   ├── pizza.jpg
-                │   ├── skewers.jpg
-                │   ├── soup.jpg
-                │   └── steak.jpg
-                ├── pasta.html
-                ├── pizza.html
-                ├── skewers.html
-                ├── soup.html
-                └── steak.html</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>build-webengine-recipes-Desktop_Qt_5_11_0_clang_64bit-Debug/
+</span></span><span style="display:flex;"><span>├── <span style="color:#f92672">[</span>some-other-files<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>└── webengine-recipes.app
+</span></span><span style="display:flex;"><span>    └── Contents
+</span></span><span style="display:flex;"><span>        ├── Info.plist
+</span></span><span style="display:flex;"><span>        ├── MacOS
+</span></span><span style="display:flex;"><span>        │   └── webengine-recipes
+</span></span><span style="display:flex;"><span>        ├── PkgInfo
+</span></span><span style="display:flex;"><span>        └── Resources
+</span></span><span style="display:flex;"><span>            ├── empty.lproj
+</span></span><span style="display:flex;"><span>            └── pages
+</span></span><span style="display:flex;"><span>                ├── assets
+</span></span><span style="display:flex;"><span>                │   ├── 3rdparty
+</span></span><span style="display:flex;"><span>                │   │   ├── markdown.css
+</span></span><span style="display:flex;"><span>                │   │   ├── marked.min.js
+</span></span><span style="display:flex;"><span>                │   │   └── qt_attribution.json
+</span></span><span style="display:flex;"><span>                │   ├── custom.css
+</span></span><span style="display:flex;"><span>                │   └── custom.js
+</span></span><span style="display:flex;"><span>                ├── burger.html
+</span></span><span style="display:flex;"><span>                ├── cupcakes.html
+</span></span><span style="display:flex;"><span>                ├── images
+</span></span><span style="display:flex;"><span>                │   ├── burger.jpg
+</span></span><span style="display:flex;"><span>                │   ├── cupcakes.jpg
+</span></span><span style="display:flex;"><span>                │   ├── pasta.jpg
+</span></span><span style="display:flex;"><span>                │   ├── pizza.jpg
+</span></span><span style="display:flex;"><span>                │   ├── skewers.jpg
+</span></span><span style="display:flex;"><span>                │   ├── soup.jpg
+</span></span><span style="display:flex;"><span>                │   └── steak.jpg
+</span></span><span style="display:flex;"><span>                ├── pasta.html
+</span></span><span style="display:flex;"><span>                ├── pizza.html
+</span></span><span style="display:flex;"><span>                ├── skewers.html
+</span></span><span style="display:flex;"><span>                ├── soup.html
+</span></span><span style="display:flex;"><span>                └── steak.html</span></span></code></pre></div>
       </div>
     </article>
     <div><div id="tags">

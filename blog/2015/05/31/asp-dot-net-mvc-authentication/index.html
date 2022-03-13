@@ -5,7 +5,7 @@
     <title>Forms Authentication в ASP.NET MVC | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2015/05/31/asp-dot-net-mvc-authentication/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -69,196 +69,192 @@
 <p>Первым делом смотрим в свойствах у проекта, какой тип аутентификации выставлен (эти значения задаются при создании проекта). Я-то думал, что все настройки хранятся в <code>web.config</code> и свойствах проекта, которые открываются по правой кнопке мыши на имени проекта (не всего решения), но оказалось, что есть <em>ещё одни свойства</em> (из файла <code>ВАШПРОЕКТ.csproj</code>):</p>
 
 
-
-    <img class="image-post" src="/blog/2015/05/31/asp-dot-net-mvc-authentication/images/project.png" alt="Параметры аутентификации в свойствах проекта">
-
+    <img class="image-post" loading="lazy" src="/blog/2015/05/31/asp-dot-net-mvc-authentication/images/project.png" alt="Параметры аутентификации в свойствах проекта">
 
 <p>Вот такие значения должны быть. Соответственно, когда будете хостить сайт в <strong>IIS</strong> (а не запускать из Студии), там тоже надо изменить эти параметры.</p>
 <p>В <code>/web.config</code> заносим следующее:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#f92672">&lt;authentication</span> <span style="color:#a6e22e">mode=</span><span style="color:#e6db74">&#34;Forms&#34;</span><span style="color:#f92672">&gt;</span>
-  <span style="color:#f92672">&lt;forms</span> <span style="color:#a6e22e">loginUrl=</span><span style="color:#e6db74">&#34;/Account/Login&#34;</span> <span style="color:#a6e22e">timeout=</span><span style="color:#e6db74">&#34;2880&#34;</span> <span style="color:#f92672">/&gt;</span>
-<span style="color:#f92672">&lt;/authentication&gt;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#f92672">&lt;authentication</span> <span style="color:#a6e22e">mode=</span><span style="color:#e6db74">&#34;Forms&#34;</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&lt;forms</span> <span style="color:#a6e22e">loginUrl=</span><span style="color:#e6db74">&#34;/Account/Login&#34;</span> <span style="color:#a6e22e">timeout=</span><span style="color:#e6db74">&#34;2880&#34;</span> <span style="color:#f92672">/&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/authentication&gt;</span></span></span></code></pre></div>
 <p>И в фильтр <code>/App_Start/FilterConfig.cs</code> вот это:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">using</span> System.Web;
-<span style="color:#66d9ef">using</span> System.Web.Mvc;
-
-<span style="color:#66d9ef">namespace</span> aspmvc
-{
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FilterConfig</span>
-    {
-        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> RegisterGlobalFilters(GlobalFilterCollection filters)
-        {
-        	<span style="color:#75715e">// вот тут и вешается атрибут на действия
-</span><span style="color:#75715e"></span>            filters.Add(<span style="color:#66d9ef">new</span> AuthorizeAttribute());
-        }
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Web;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Web.Mvc;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> aspmvc
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FilterConfig</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> RegisterGlobalFilters(GlobalFilterCollection filters)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>        	<span style="color:#75715e">// вот тут и вешается атрибут на действия</span>
+</span></span><span style="display:flex;"><span>            filters.Add(<span style="color:#66d9ef">new</span> AuthorizeAttribute());
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>После этого в <code>/Global.asax</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> Application_Start()
-{
-    logger.Info(<span style="color:#e6db74">&#34;Application Start&#34;</span>);
-
-    AreaRegistration.RegisterAllAreas();
-
-    WebApiConfig.Register(GlobalConfiguration.Configuration);
-    FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
-    RouteConfig.RegisterRoutes(RouteTable.Routes);
-    BundleConfig.RegisterBundles(BundleTable.Bundles);
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">void</span> Application_Start()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    logger.Info(<span style="color:#e6db74">&#34;Application Start&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    AreaRegistration.RegisterAllAreas();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    WebApiConfig.Register(GlobalConfiguration.Configuration);
+</span></span><span style="display:flex;"><span>    FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
+</span></span><span style="display:flex;"><span>    RouteConfig.RegisterRoutes(RouteTable.Routes);
+</span></span><span style="display:flex;"><span>    BundleConfig.RegisterBundles(BundleTable.Bundles);
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Допустим, у вас где-то есть база данных с таблицей логинов и паролей. Создаём модель для этой таблицы <code>/Models/Authoritah.cs</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">using</span> System;
-<span style="color:#66d9ef">using</span> System.Collections.Generic;
-<span style="color:#66d9ef">using</span> System.ComponentModel.DataAnnotations;
-<span style="color:#66d9ef">using</span> System.ComponentModel.DataAnnotations.Schema;
-<span style="color:#66d9ef">using</span> System.Data.Entity;
-<span style="color:#66d9ef">using</span> System.Linq;
-<span style="color:#66d9ef">using</span> System.Web;
-
-<span style="color:#66d9ef">namespace</span> aspmvc.Models
-{
-<span style="color:#a6e22e">    [Table(&#34;authoritah&#34;, Schema = &#34;dbo&#34;)]</span>
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Authoritah</span>
-    {
-<span style="color:#a6e22e">        [Key]</span>
-<span style="color:#a6e22e">        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]</span>
-        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">long</span> id_auth { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
-<span style="color:#a6e22e">        
-</span><span style="color:#a6e22e">        [Required]</span>
-<span style="color:#a6e22e">        [Display(Name = &#34;Логин&#34;)]</span>
-        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> login { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
-<span style="color:#a6e22e">        
-</span><span style="color:#a6e22e">        [Required]</span>
-<span style="color:#a6e22e">        [Display(Name = &#34;Пароль&#34;)]</span>
-        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> password { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
-    }
-
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AuthoritahContext</span> : DbContext
-    {
-        <span style="color:#66d9ef">public</span> AuthoritahContext(<span style="color:#66d9ef">string</span> connString) : <span style="color:#66d9ef">base</span>(connString) { }
-
-        <span style="color:#66d9ef">public</span> DbSet&lt;Authoritah&gt; Authoritahs { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Collections.Generic;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.ComponentModel.DataAnnotations;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.ComponentModel.DataAnnotations.Schema;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Data.Entity;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Linq;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Web;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> aspmvc.Models
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">    [Table(&#34;authoritah&#34;, Schema = &#34;dbo&#34;)]</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Authoritah</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">        [Key]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">long</span> id_auth { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">        
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">        [Required]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">        [Display(Name = &#34;Логин&#34;)]</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> login { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">        
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">        [Required]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">        [Display(Name = &#34;Пароль&#34;)]</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> password { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AuthoritahContext</span> : DbContext
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> AuthoritahContext(<span style="color:#66d9ef">string</span> connString) : <span style="color:#66d9ef">base</span>(connString) { }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> DbSet&lt;Authoritah&gt; Authoritahs { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Теперь создаём контроллер <code>/Controllers/AccountController.cs</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">using</span> System;
-<span style="color:#66d9ef">using</span> System.Collections.Generic;
-<span style="color:#66d9ef">using</span> System.Linq;
-<span style="color:#66d9ef">using</span> System.Web;
-<span style="color:#66d9ef">using</span> System.Web.Mvc;
-<span style="color:#66d9ef">using</span> System.Web.Security;
-
-<span style="color:#66d9ef">namespace</span> aspmvc.Controllers
-{
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AccountController</span> : Controller
-    {
-<span style="color:#a6e22e">        [AllowAnonymous]</span>
-        <span style="color:#66d9ef">public</span> ActionResult Login()
-        {
-            <span style="color:#66d9ef">return</span> View();
-        }
-<span style="color:#a6e22e">
-</span><span style="color:#a6e22e">        [AllowAnonymous]</span>
-<span style="color:#a6e22e">        [HttpPost]</span>
-        <span style="color:#66d9ef">public</span> ActionResult Login(Models.Authoritah model, <span style="color:#66d9ef">string</span> returnUrl)
-        {
-            <span style="color:#75715e">// проверка модели
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">if</span> (ModelState.IsValid)
-            {
-                <span style="color:#66d9ef">using</span> (Models.AuthoritahContext db = <span style="color:#66d9ef">new</span> Models.AuthoritahContext(<span style="color:#e6db74">&#34;ТУТВАШАСТРОКАПОДКЛЮЧЕНИЯИЗWEB.CONFIG&#34;</span>))
-                {
-                    <span style="color:#66d9ef">string</span> login = model.login;
-                    <span style="color:#66d9ef">string</span> password = model.password;
-
-                    <span style="color:#66d9ef">bool</span> userValid = db.Authoritahs.Any(user =&gt; user.login == login &amp;&amp; user.password == password);
-
-                    <span style="color:#75715e">// есть такой пользователь в таблице?
-</span><span style="color:#75715e"></span>                    <span style="color:#66d9ef">if</span> (userValid)
-                    {
-                        <span style="color:#75715e">// создаём Authentication cookie
-</span><span style="color:#75715e"></span>                        FormsAuthentication.SetAuthCookie(login, <span style="color:#66d9ef">false</span>);                       
-
-                        <span style="color:#75715e">// и пишем логин в сессию, на всякий
-</span><span style="color:#75715e"></span>                        Session.Add(<span style="color:#e6db74">&#34;login&#34;</span>, login);
-
-                        <span style="color:#75715e">// если есть куда возвращаться, то туда, иначе на главную страницу
-</span><span style="color:#75715e"></span>                        <span style="color:#66d9ef">if</span> (<span style="color:#66d9ef">string</span>.IsNullOrEmpty(returnUrl))
-                        { <span style="color:#66d9ef">return</span> RedirectToAction(<span style="color:#e6db74">&#34;Index&#34;</span>, <span style="color:#e6db74">&#34;Home&#34;</span>); }
-                        <span style="color:#66d9ef">else</span>
-                        { <span style="color:#66d9ef">return</span> Redirect(returnUrl); }
-                    }
-                    <span style="color:#66d9ef">else</span>
-                    {
-                        ModelState.AddModelError(<span style="color:#e6db74">&#34;Ошибка входа&#34;</span>, <span style="color:#e6db74">&#34;Вы указали неправильный логин или пароль.&#34;</span>);
-                    }
-                }
-            }
-
-            <span style="color:#66d9ef">return</span> View(model);
-        }
-
-        <span style="color:#66d9ef">public</span> ActionResult LogOff()
-        {
-            FormsAuthentication.SignOut();
-            Session.Abandon();
-
-            <span style="color:#66d9ef">return</span> RedirectToAction(<span style="color:#e6db74">&#34;Login&#34;</span>, <span style="color:#e6db74">&#34;Account&#34;</span>);
-        }
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Collections.Generic;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Linq;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Web;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Web.Mvc;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Web.Security;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> aspmvc.Controllers
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AccountController</span> : Controller
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">        [AllowAnonymous]</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> ActionResult Login()
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> View();
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">        [AllowAnonymous]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">        [HttpPost]</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> ActionResult Login(Models.Authoritah model, <span style="color:#66d9ef">string</span> returnUrl)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// проверка модели</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (ModelState.IsValid)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">using</span> (Models.AuthoritahContext db = <span style="color:#66d9ef">new</span> Models.AuthoritahContext(<span style="color:#e6db74">&#34;ТУТВАШАСТРОКАПОДКЛЮЧЕНИЯИЗWEB.CONFIG&#34;</span>))
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">string</span> login = model.login;
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">string</span> password = model.password;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">bool</span> userValid = db.Authoritahs.Any(user =&gt; user.login == login &amp;&amp; user.password == password);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#75715e">// есть такой пользователь в таблице?</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">if</span> (userValid)
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#75715e">// создаём Authentication cookie</span>
+</span></span><span style="display:flex;"><span>                        FormsAuthentication.SetAuthCookie(login, <span style="color:#66d9ef">false</span>);                       
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#75715e">// и пишем логин в сессию, на всякий</span>
+</span></span><span style="display:flex;"><span>                        Session.Add(<span style="color:#e6db74">&#34;login&#34;</span>, login);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#75715e">// если есть куда возвращаться, то туда, иначе на главную страницу</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#66d9ef">if</span> (<span style="color:#66d9ef">string</span>.IsNullOrEmpty(returnUrl))
+</span></span><span style="display:flex;"><span>                        { <span style="color:#66d9ef">return</span> RedirectToAction(<span style="color:#e6db74">&#34;Index&#34;</span>, <span style="color:#e6db74">&#34;Home&#34;</span>); }
+</span></span><span style="display:flex;"><span>                        <span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>                        { <span style="color:#66d9ef">return</span> Redirect(returnUrl); }
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        ModelState.AddModelError(<span style="color:#e6db74">&#34;Ошибка входа&#34;</span>, <span style="color:#e6db74">&#34;Вы указали неправильный логин или пароль.&#34;</span>);
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> View(model);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> ActionResult LogOff()
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            FormsAuthentication.SignOut();
+</span></span><span style="display:flex;"><span>            Session.Abandon();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> RedirectToAction(<span style="color:#e6db74">&#34;Login&#34;</span>, <span style="color:#e6db74">&#34;Account&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Если не поставить <code>[AllowAnonymous]</code> в подсвеченных строках, то пройти аутентификацию будет <u>невозможно</u>, так как приложение будет отказывать в доступе даже для страницы входа.</p>
 <p>Осталось представление <code>/Views/Account/Login.cshtml</code>. Я использую стили <a href="http://getbootstrap.com/">Bootstrap</a>, если что:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">@model aspmvc.Models.Authoritah
-
-@{
-    ViewBag.Title = Страница входа&#34;;
-    Layout = &#34;~/Views/Shared/_Layout.cshtml&#34;;
-}
-
-@{
-    //if (Request.Cookies[FormsAuthentication.FormsCookieName] != null)
-    if (Request.IsAuthenticated)
-    {
-        &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;alert alert-success&#34;</span>&gt;
-            Вы уже выполнили вход в систему. @Html.ActionLink(&#34;Перейти на главную страницу&#34;, &#34;Index&#34;, &#34;Home&#34;).
-        &lt;/<span style="color:#f92672">div</span>&gt;
-    }
-    else
-    {
-        &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;alert alert-warning&#34;</span>&gt;
-            Для работы с системой вам необходимо осуществить вход, указав ваш логин и пароль.
-        &lt;/<span style="color:#f92672">div</span>&gt;
-
-        using (Html.BeginForm())
-        {
-            &lt;<span style="color:#f92672">fieldset</span>&gt;
-                &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;input-group&#34;</span> <span style="color:#a6e22e">style</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;margin-bottom:5px;&#34;</span>&gt;
-                    @Html.LabelFor(model =&gt; model.login, new { Class = &#34;input-group-addon&#34;, Style = &#34;min-width: 80px;&#34; })
-                    @Html.TextBoxFor(model =&gt; model.login, new { Class = &#34;form-control&#34;, Style = &#34;width: 300px;&#34; })
-                &lt;/<span style="color:#f92672">div</span>&gt;
-
-                &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;input-group&#34;</span> <span style="color:#a6e22e">style</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;margin-bottom:15px;&#34;</span>&gt;
-                    @Html.LabelFor(model =&gt; model.password, new { Class = &#34;input-group-addon&#34;, Style = &#34;min-width: 80px;&#34; })
-                    @Html.PasswordFor(model =&gt; model.password, new { Class = &#34;form-control&#34;, Style = &#34;width: 300px;&#34; })
-                &lt;/<span style="color:#f92672">div</span>&gt;
-
-                &lt;<span style="color:#f92672">p</span>&gt;
-                    &lt;<span style="color:#f92672">input</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;submit&#34;</span> <span style="color:#a6e22e">value</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Вход&#34;</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;btn btn-default btn-lg&#34;</span> /&gt;
-                &lt;/<span style="color:#f92672">p</span>&gt;
-            &lt;/<span style="color:#f92672">fieldset</span>&gt;
-        }
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span>@model aspmvc.Models.Authoritah
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>@{
+</span></span><span style="display:flex;"><span>    ViewBag.Title = Страница входа&#34;;
+</span></span><span style="display:flex;"><span>    Layout = &#34;~/Views/Shared/_Layout.cshtml&#34;;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>@{
+</span></span><span style="display:flex;"><span>    //if (Request.Cookies[FormsAuthentication.FormsCookieName] != null)
+</span></span><span style="display:flex;"><span>    if (Request.IsAuthenticated)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;alert alert-success&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>            Вы уже выполнили вход в систему. @Html.ActionLink(&#34;Перейти на главную страницу&#34;, &#34;Index&#34;, &#34;Home&#34;).
+</span></span><span style="display:flex;"><span>        &lt;/<span style="color:#f92672">div</span>&gt;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    else
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;alert alert-warning&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>            Для работы с системой вам необходимо осуществить вход, указав ваш логин и пароль.
+</span></span><span style="display:flex;"><span>        &lt;/<span style="color:#f92672">div</span>&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        using (Html.BeginForm())
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            &lt;<span style="color:#f92672">fieldset</span>&gt;
+</span></span><span style="display:flex;"><span>                &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;input-group&#34;</span> <span style="color:#a6e22e">style</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;margin-bottom:5px;&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>                    @Html.LabelFor(model =&gt; model.login, new { Class = &#34;input-group-addon&#34;, Style = &#34;min-width: 80px;&#34; })
+</span></span><span style="display:flex;"><span>                    @Html.TextBoxFor(model =&gt; model.login, new { Class = &#34;form-control&#34;, Style = &#34;width: 300px;&#34; })
+</span></span><span style="display:flex;"><span>                &lt;/<span style="color:#f92672">div</span>&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;input-group&#34;</span> <span style="color:#a6e22e">style</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;margin-bottom:15px;&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>                    @Html.LabelFor(model =&gt; model.password, new { Class = &#34;input-group-addon&#34;, Style = &#34;min-width: 80px;&#34; })
+</span></span><span style="display:flex;"><span>                    @Html.PasswordFor(model =&gt; model.password, new { Class = &#34;form-control&#34;, Style = &#34;width: 300px;&#34; })
+</span></span><span style="display:flex;"><span>                &lt;/<span style="color:#f92672">div</span>&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                &lt;<span style="color:#f92672">p</span>&gt;
+</span></span><span style="display:flex;"><span>                    &lt;<span style="color:#f92672">input</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;submit&#34;</span> <span style="color:#a6e22e">value</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Вход&#34;</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;btn btn-default btn-lg&#34;</span> /&gt;
+</span></span><span style="display:flex;"><span>                &lt;/<span style="color:#f92672">p</span>&gt;
+</span></span><span style="display:flex;"><span>            &lt;/<span style="color:#f92672">fieldset</span>&gt;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Обратите внимание на выделенные строки. В разных местах для проверки, залогинен пользователь <em>на сайте</em> или ещё нет, предлагали различные способы. Например, <code>Request.IsAuthenticated</code> или <code>User.Identity.IsAuthenticated</code>, но они у меня <strong>всегда</strong> возвращали <code>true</code>, даже сразу после старта приложения, когда ещё не загрузилась сама страница логина, а в <code>User.Identity.Name</code> лежал мой логин от Windows.</p>
 <p>Причиной оказалось то, что как раз таки в свойствах проекта стояла аутентификация Windows (посмотрите первый скриншот и описание к нему). И пока я это не нашёл, приходилось извращаться проверкой наличия <strong>Authentication cookie</strong>.</p>
 <p>Для оживления статьи вот картинка, как выглядит страница входа:</p>
 
 
-
-    <img class="image-post" src="/blog/2015/05/31/asp-dot-net-mvc-authentication/images/login.png" alt="Страница входа">
-
+    <img class="image-post" loading="lazy" src="/blog/2015/05/31/asp-dot-net-mvc-authentication/images/login.png" alt="Страница входа">
 
 <p>Ну всё, теперь в шаблоне для представлений <code>/Views/Shared/_Layout.cshtml</code> для полноты картины где-то надо добавить кнопку выхода:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs">@Html.ActionLink(<span style="color:#e6db74">&#34;Выход&#34;</span>, <span style="color:#e6db74">&#34;LogOff&#34;</span>, <span style="color:#e6db74">&#34;Account&#34;</span>)</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span>@Html.ActionLink(<span style="color:#e6db74">&#34;Выход&#34;</span>, <span style="color:#e6db74">&#34;LogOff&#34;</span>, <span style="color:#e6db74">&#34;Account&#34;</span>)</span></span></code></pre></div>
       </div>
     </article>
     <div><div id="tags">

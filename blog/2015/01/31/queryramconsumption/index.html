@@ -5,7 +5,7 @@
     <title>Мониторинг потребления оперативной памяти SQL запросами | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2015/01/31/queryramconsumption/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -84,26 +84,22 @@
 </nav>
 <h1 id="описание">Описание</h1>
 <p>В чём суть приложения. Существует SQL-запрос, выдающий некоторую информацию по выполняющимся в данный момент на сервере запросам (и хранимым процедурам). Вот он:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> TOP <span style="color:#ae81ff">1</span> requested_memory_kb <span style="color:#f92672">/</span> <span style="color:#ae81ff">1024</span>, DB_NAME(st.dbid), text
-<span style="color:#66d9ef">FROM</span> sys.dm_exec_query_memory_grants <span style="color:#66d9ef">AS</span> mg
-	 <span style="color:#66d9ef">CROSS</span> APPLY sys.dm_exec_sql_text(mg.sql_handle) <span style="color:#66d9ef">AS</span> st
-<span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> requested_memory_kb <span style="color:#66d9ef">DESC</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> TOP <span style="color:#ae81ff">1</span> requested_memory_kb <span style="color:#f92672">/</span> <span style="color:#ae81ff">1024</span>, DB_NAME(st.dbid), text
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> sys.dm_exec_query_memory_grants <span style="color:#66d9ef">AS</span> mg
+</span></span><span style="display:flex;"><span>	 <span style="color:#66d9ef">CROSS</span> APPLY sys.dm_exec_sql_text(mg.sql_handle) <span style="color:#66d9ef">AS</span> st
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> requested_memory_kb <span style="color:#66d9ef">DESC</span></span></span></code></pre></div>
 <p>Приложение по таймеру выполняет этот запрос и записывает максимальное значение запрошенной оперативки в список. Если значение превысило некоторый лимит, который задаётся в <code>.config</code> файле, то оно пометится соответствующей надписью, а сам запрос можно будет посмотреть во второй вкладке приложения - там будет указано время, когда запрос выполнялся, база данных (если удастся определить), а также первые несколько строк текста запроса.</p>
 <p>Скриншоты приложения:</p>
 <p>
 
 
-
-    <img class="image-post" src="/blog/2015/01/31/queryramconsumption/images/qrc1.png" alt="queryRAMconsumption">
-
+    <img class="image-post" loading="lazy" src="/blog/2015/01/31/queryramconsumption/images/qrc1.png" alt="queryRAMconsumption">
 
 </p>
 <p>
 
 
-
-    <img class="image-post" src="/blog/2015/01/31/queryramconsumption/images/qrc2.png" alt="queryRAMconsumption">
-
+    <img class="image-post" loading="lazy" src="/blog/2015/01/31/queryramconsumption/images/qrc2.png" alt="queryRAMconsumption">
 
 </p>
 <p>Для запуска мониторинга нужно указать значение интервала проверки в секундах и доменное имя SQL-сервера (IP тоже должен подойти).</p>

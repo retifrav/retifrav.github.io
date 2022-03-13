@@ -5,7 +5,7 @@
     <title>How to translate a QML application | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2017/01/04/translating-qml-app/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -78,127 +78,125 @@
 <p>Although, in case of QML application it is a bit more complicated. First thing - instead of of <code>tr()</code> you need to use <code>qsTr()</code> function, and second - you need to do quite a trick for <a href="http://doc.qt.io/qt-5/qqmlengine.html">QQmlEngine</a> to reevaluate text and apply corresponding translation. I discovered all this in the article at <a href="https://wiki.qt.io/How_to_do_dynamic_translation_in_QML">Qt&rsquo;s wiki</a>, but I didn&rsquo;t like some parts of the article (for instance, the way of loading the corresponding translation), so I decided to create my own tutorial.</p>
 <p>Ok, let&rsquo;s start right away with the trick. You need to create a class and then add an object of that class into <strong>QmlEngine</strong>&rsquo;s context.</p>
 <p><u>trans.h</u>:
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">#ifndef TRANS_H
-</span><span style="color:#75715e">#define TRANS_H
-</span><span style="color:#75715e"></span>
-<span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QObject&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QTranslator&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e"></span>
-<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Trans</span> <span style="color:#f92672">:</span> <span style="color:#66d9ef">public</span> QObject
-{
-    Q_OBJECT
-    <span style="color:#75715e">// that&#39;s the &#34;magic&#34; string for the trick
-</span><span style="color:#75715e"></span>    Q_PROPERTY(QString emptyString READ getEmptyString NOTIFY languageChanged)
-
-<span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
-    Trans();
-    QString <span style="color:#a6e22e">getEmptyString</span>();
-    Q_INVOKABLE <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">selectLanguage</span>(QString language);
-
-signals:
-    <span style="color:#66d9ef">void</span> languageChanged();
-
-<span style="color:#66d9ef">private</span><span style="color:#f92672">:</span>
-    QTranslator <span style="color:#f92672">*</span>translator;
-};
-
-<span style="color:#75715e">#endif </span><span style="color:#75715e">// TRANS_H
-</span></code></pre></div></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">#ifndef TRANS_H
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#define TRANS_H
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QObject&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QTranslator&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Trans</span> <span style="color:#f92672">:</span> <span style="color:#66d9ef">public</span> QObject
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    Q_OBJECT
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// that&#39;s the &#34;magic&#34; string for the trick
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    Q_PROPERTY(QString emptyString READ getEmptyString NOTIFY languageChanged)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
+</span></span><span style="display:flex;"><span>    Trans();
+</span></span><span style="display:flex;"><span>    QString <span style="color:#a6e22e">getEmptyString</span>();
+</span></span><span style="display:flex;"><span>    Q_INVOKABLE <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">selectLanguage</span>(QString language);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>signals:
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">void</span> languageChanged();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">private</span><span style="color:#f92672">:</span>
+</span></span><span style="display:flex;"><span>    QTranslator <span style="color:#f92672">*</span>translator;
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#endif </span><span style="color:#75715e">// TRANS_H
+</span></span></span></code></pre></div></p>
 <p><u>trans.cpp</u>:
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;trans.h&#34;</span><span style="color:#75715e">
-</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QDebug&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QGuiApplication&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QDir&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e"></span>
-Trans<span style="color:#f92672">::</span>Trans()
-{
-    translator <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> QTranslator(<span style="color:#66d9ef">this</span>);
-}
-
-QString Trans<span style="color:#f92672">::</span>getEmptyString()
-{
-    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">QString</span>();
-}
-
-<span style="color:#66d9ef">void</span> Trans<span style="color:#f92672">::</span>selectLanguage(QString language)
-{
-    <span style="color:#75715e">// working folder
-</span><span style="color:#75715e"></span>    QDir dir <span style="color:#f92672">=</span> QDir(qApp<span style="color:#f92672">-&gt;</span>applicationDirPath()).absolutePath();
-<span style="color:#75715e">//    #ifdef Q_OS_MACOS // crutch for Mac OS
-</span><span style="color:#75715e">//    dir.cdUp();
-</span><span style="color:#75715e">//    dir.cdUp();
-</span><span style="color:#75715e">//    dir.cdUp();
-</span><span style="color:#75715e">//    #endif
-</span><span style="color:#75715e">//    qDebug() &lt;&lt; dir.path();
-</span><span style="color:#75715e"></span>
-    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>translator<span style="color:#f92672">-&gt;</span>load(
-                <span style="color:#75715e">// for example, in case of &#34;ru&#34; language the file would be
-</span><span style="color:#75715e"></span>                <span style="color:#75715e">// translating-qml_ru.qm
-</span><span style="color:#75715e"></span>                <span style="color:#75715e">// extension is set automatically
-</span><span style="color:#75715e"></span>                QString(<span style="color:#e6db74">&#34;translating-qml_%1&#34;</span>).arg(language),
-                <span style="color:#75715e">// look for the file in i18n folder within working directory
-</span><span style="color:#75715e"></span>                QString(<span style="color:#e6db74">&#34;%1/i18n&#34;</span>).arg(dir.path())
-                )
-            )
-    {
-        qDebug() <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;Failed to load translation file, falling back to English&#34;</span>;
-    }
-    <span style="color:#75715e">// it&#39;s a global thing, we can use it anywhere (after #including &lt;QGuiApplication&gt;)
-</span><span style="color:#75715e"></span>    qApp<span style="color:#f92672">-&gt;</span>installTranslator(translator);
-
-    emit <span style="color:#a6e22e">languageChanged</span>();
-}</code></pre></div></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;trans.h&#34;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QDebug&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QGuiApplication&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QDir&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>Trans<span style="color:#f92672">::</span>Trans()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    translator <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> QTranslator(<span style="color:#66d9ef">this</span>);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>QString Trans<span style="color:#f92672">::</span>getEmptyString()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">QString</span>();
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> Trans<span style="color:#f92672">::</span>selectLanguage(QString language)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// working folder
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    QDir dir <span style="color:#f92672">=</span> QDir(qApp<span style="color:#f92672">-&gt;</span>applicationDirPath()).absolutePath();
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//    #ifdef Q_OS_MACOS // crutch for Mac OS
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    dir.cdUp();
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    dir.cdUp();
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    dir.cdUp();
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    #endif
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">//    qDebug() &lt;&lt; dir.path();
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>translator<span style="color:#f92672">-&gt;</span>load(
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// for example, in case of &#34;ru&#34; language the file would be
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>                <span style="color:#75715e">// translating-qml_ru.qm
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>                <span style="color:#75715e">// extension is set automatically
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>                QString(<span style="color:#e6db74">&#34;translating-qml_%1&#34;</span>).arg(language),
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// look for the file in i18n folder within working directory
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>                QString(<span style="color:#e6db74">&#34;%1/i18n&#34;</span>).arg(dir.path())
+</span></span><span style="display:flex;"><span>                )
+</span></span><span style="display:flex;"><span>            )
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        qDebug() <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;Failed to load translation file, falling back to English&#34;</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// it&#39;s a global thing, we can use it anywhere (after #including &lt;QGuiApplication&gt;)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    qApp<span style="color:#f92672">-&gt;</span>installTranslator(translator);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    emit <span style="color:#a6e22e">languageChanged</span>();
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div></p>
 <p><u>main.cpp</u>:
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;trans.h&#34;</span><span style="color:#75715e">
-</span><span style="color:#75715e"></span>
-<span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>
-<span style="color:#75715e">// object of our class with &#34;magic&#34; property for translation
-</span><span style="color:#75715e"></span>Trans trans;
-
-QQmlApplicationEngine engine;
-<span style="color:#75715e">// make this object available from QML side
-</span><span style="color:#75715e"></span>engine.rootContext()<span style="color:#f92672">-&gt;</span>setContextProperty(<span style="color:#e6db74">&#34;trans&#34;</span>, <span style="color:#f92672">&amp;</span>trans);
-engine.load(QUrl(QLatin1String(<span style="color:#e6db74">&#34;qrc:/main.qml&#34;</span>)));
-
-<span style="color:#75715e">// ...
-</span></code></pre></div></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;trans.h&#34;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// object of our class with &#34;magic&#34; property for translation
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>Trans trans;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>QQmlApplicationEngine engine;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// make this object available from QML side
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>engine.rootContext()<span style="color:#f92672">-&gt;</span>setContextProperty(<span style="color:#e6db74">&#34;trans&#34;</span>, <span style="color:#f92672">&amp;</span>trans);
+</span></span><span style="display:flex;"><span>engine.load(QUrl(QLatin1String(<span style="color:#e6db74">&#34;qrc:/main.qml&#34;</span>)));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// ...
+</span></span></span></code></pre></div></p>
 <p>That&rsquo;s it. Now we can use it for strings in our UI. For example I have this in my <code>main.qml</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">Button</span> {
-    <span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">qsTr</span>(<span style="color:#e6db74">&#34;Simple button&#34;</span>) <span style="color:#f92672">+</span> <span style="color:#a6e22e">trans</span>.<span style="color:#a6e22e">emptyString</span>
-    <span style="color:#a6e22e">onClicked</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#a6e22e">qsTr</span>(<span style="color:#e6db74">&#34;Some output into console&#34;</span>) <span style="color:#f92672">+</span> <span style="color:#a6e22e">trans</span>.<span style="color:#a6e22e">emptyString</span>)
-
-    <span style="color:#a6e22e">ToolTip</span>.<span style="color:#a6e22e">visible</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">pressed</span>
-    <span style="color:#a6e22e">ToolTip</span>.<span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">qsTr</span>(<span style="color:#e6db74">&#34;Some tooltip&#34;</span>) <span style="color:#f92672">+</span> <span style="color:#a6e22e">trans</span>.<span style="color:#a6e22e">emptyString</span>
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#a6e22e">Button</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">qsTr</span>(<span style="color:#e6db74">&#34;Simple button&#34;</span>) <span style="color:#f92672">+</span> <span style="color:#a6e22e">trans</span>.<span style="color:#a6e22e">emptyString</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">onClicked</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#a6e22e">qsTr</span>(<span style="color:#e6db74">&#34;Some output into console&#34;</span>) <span style="color:#f92672">+</span> <span style="color:#a6e22e">trans</span>.<span style="color:#a6e22e">emptyString</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">ToolTip</span>.<span style="color:#a6e22e">visible</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">pressed</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">ToolTip</span>.<span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">qsTr</span>(<span style="color:#e6db74">&#34;Some tooltip&#34;</span>) <span style="color:#f92672">+</span> <span style="color:#a6e22e">trans</span>.<span style="color:#a6e22e">emptyString</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>As you can see, every string is not only processed by <code>qsTr()</code> function, but also has this <code>+ trans.emptyString</code> expression. That&rsquo;s the trick itself - it forces <strong>QmlEngine</strong> to re-evaluate the text, and without this expression it won&rsquo;t happen. It looks like a dirty trick, and I consider it dirty as well, but apparently so far that&rsquo;s the only way to do the dynamic language switching in QML application, because <a href="https://bugreports.qt.io/browse/QTBUG-15602">related bug</a> was reported in motherfucking 2010 and has not yet been fixed - that&rsquo;s more than 6 (six) years for the moment, for fuck&rsquo;s sake.</p>
 <p>Ok, save <code>main.qml</code>. Now we need to generate a translation file. For that purpose there is an utility <code>lupdate</code>. Create a <code>i18n</code> folder in your project directory and execute the following command:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span><span style="color:#a6e22e">Qt</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5.7</span><span style="color:#f92672">/</span>clang_64<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>lupdate main<span style="color:#f92672">.</span>qml <span style="color:#f92672">-</span>ts i18n<span style="color:#f92672">/</span>translating<span style="color:#f92672">-</span>qml_ru<span style="color:#f92672">.</span>ts</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span><span style="color:#a6e22e">Qt</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5.7</span><span style="color:#f92672">/</span>clang_64<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>lupdate main<span style="color:#f92672">.</span>qml <span style="color:#f92672">-</span>ts i18n<span style="color:#f92672">/</span>translating<span style="color:#f92672">-</span>qml_ru<span style="color:#f92672">.</span>ts</span></span></code></pre></div>
 <p>By the <code>_ru</code> suffix it will understand, that this translation file is meant for the Russian language. The same way we can create translation files for Norwegian and German languages:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span><span style="color:#a6e22e">Qt</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5.7</span><span style="color:#f92672">/</span>clang_64<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>lupdate main<span style="color:#f92672">.</span>qml <span style="color:#f92672">-</span>ts i18n<span style="color:#f92672">/</span>translating<span style="color:#f92672">-</span>qml_no<span style="color:#f92672">.</span>ts</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span><span style="color:#a6e22e">Qt</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5.7</span><span style="color:#f92672">/</span>clang_64<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>lupdate main<span style="color:#f92672">.</span>qml <span style="color:#f92672">-</span>ts i18n<span style="color:#f92672">/</span>translating<span style="color:#f92672">-</span>qml_no<span style="color:#f92672">.</span>ts</span></span></code></pre></div>
 <p>and</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span><span style="color:#a6e22e">Qt</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5.7</span><span style="color:#f92672">/</span>clang_64<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>lupdate main<span style="color:#f92672">.</span>qml <span style="color:#f92672">-</span>ts i18n<span style="color:#f92672">/</span>translating<span style="color:#f92672">-</span>qml_de<span style="color:#f92672">.</span>ts</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span><span style="color:#a6e22e">Qt</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5.7</span><span style="color:#f92672">/</span>clang_64<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>lupdate main<span style="color:#f92672">.</span>qml <span style="color:#f92672">-</span>ts i18n<span style="color:#f92672">/</span>translating<span style="color:#f92672">-</span>qml_de<span style="color:#f92672">.</span>ts</span></span></code></pre></div>
 <p>Of course, we don&rsquo;t want to do this manually for each language and especially if we have more than just <code>main.qml</code> that requires translation. So let&rsquo;s add some stuff into the <code>.pro</code> file:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-pro" data-lang="pro"><span style="color:#e6db74">#</span> <span style="color:#e6db74">list</span> <span style="color:#e6db74">of</span> <span style="color:#e6db74">source</span> <span style="color:#e6db74">files</span> <span style="color:#e6db74">containing</span> <span style="color:#e6db74">strings</span> <span style="color:#e6db74">for</span> <span style="color:#e6db74">translation</span>
-<span style="color:#e6db74">lupdate_only</span> { <span style="color:#e6db74">#</span> <span style="color:#e6db74">that</span> <span style="color:#e6db74">way</span> <span style="color:#e6db74">those</span> <span style="color:#e6db74">files</span> <span style="color:#e6db74">will</span> <span style="color:#e6db74">be</span> <span style="color:#e6db74">skipped</span> <span style="color:#e6db74">by</span> C<span style="color:#e6db74">++</span> <span style="color:#e6db74">compiler</span>
-    SOURCES <span style="color:#f92672">=</span> <span style="color:#e6db74">*.qml</span> <span style="color:#e6db74">#</span> <span style="color:#e6db74">\</span>
-              <span style="color:#e6db74">#</span> <span style="color:#e6db74">pages</span><span style="color:#75715e">/*.qml
-</span><span style="color:#75715e">}
-</span><span style="color:#75715e">
-</span><span style="color:#75715e"># list of language files that will store translated strings for every language we want
-</span><span style="color:#75715e"># create i18n directory first, if you don&#39;t have it
-</span><span style="color:#75715e">TRANSLATIONS = i18n/translating-qml_de.ts \
-</span><span style="color:#75715e">               i18n/translating-qml_no.ts \
-</span><span style="color:#75715e">               i18n/translating-qml_ru.ts</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-pro" data-lang="pro"><span style="display:flex;"><span><span style="color:#e6db74">#</span> <span style="color:#e6db74">list</span> <span style="color:#e6db74">of</span> <span style="color:#e6db74">source</span> <span style="color:#e6db74">files</span> <span style="color:#e6db74">containing</span> <span style="color:#e6db74">strings</span> <span style="color:#e6db74">for</span> <span style="color:#e6db74">translation</span>
+</span></span><span style="display:flex;"><span><span style="color:#e6db74">lupdate_only</span> { <span style="color:#e6db74">#</span> <span style="color:#e6db74">that</span> <span style="color:#e6db74">way</span> <span style="color:#e6db74">those</span> <span style="color:#e6db74">files</span> <span style="color:#e6db74">will</span> <span style="color:#e6db74">be</span> <span style="color:#e6db74">skipped</span> <span style="color:#e6db74">by</span> C<span style="color:#e6db74">++</span> <span style="color:#e6db74">compiler</span>
+</span></span><span style="display:flex;"><span>    SOURCES <span style="color:#f92672">=</span> <span style="color:#e6db74">*.qml</span> <span style="color:#e6db74">#</span> <span style="color:#e6db74">\</span>
+</span></span><span style="display:flex;"><span>              <span style="color:#e6db74">#</span> <span style="color:#e6db74">pages</span><span style="color:#75715e">/*.qml
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">}
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># list of language files that will store translated strings for every language we want
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># create i18n directory first, if you don&#39;t have it
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">TRANSLATIONS = i18n/translating-qml_de.ts \
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">               i18n/translating-qml_no.ts \
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">               i18n/translating-qml_ru.ts</span></span></span></code></pre></div>
 <p>As you could&rsquo;ve noticed, we didn&rsquo;t create a translation file for English language. But that&rsquo;s okay, because it is the default language of the UI, so when <strong>Translator</strong> will fail to load <code>translating-qml_en.qm</code>, it will just fall back to the &ldquo;hardcoded&rdquo; English.</p>
 <p>Now we can run <code>lupdate</code> just once for all listed files and generate translation files for all required languages:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span><span style="color:#a6e22e">Qt</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5.7</span><span style="color:#f92672">/</span>clang_64<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>lupdate translating<span style="color:#f92672">-</span>qml<span style="color:#f92672">.</span>pro</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span><span style="color:#a6e22e">Qt</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5.7</span><span style="color:#f92672">/</span>clang_64<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>lupdate translating<span style="color:#f92672">-</span>qml<span style="color:#f92672">.</span>pro</span></span></code></pre></div>
 <p>Okay, we got <code>.ts</code> files which simply are just XML files, so you can easily open them in any text editor. But they are supposed to be processed by the <strong>Qt Linguist</strong> tool, so open them there:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/01/04/translating-qml-app/images/qt-linguist.png" alt="Qt Linguist">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/01/04/translating-qml-app/images/qt-linguist.png" alt="Qt Linguist">
 
 <p>The translation process goes like this:</p>
 <ol>
@@ -207,26 +205,22 @@ engine.load(QUrl(QLatin1String(<span style="color:#e6db74">&#34;qrc:/main.qml&#3
 <li>Mark this string as translated.</li>
 </ol>
 <p>After you&rsquo;re done with all strings, you can save and &ldquo;release&rdquo; the translation by pressing corresponding item in the File menu. The translation will be &ldquo;compiled&rdquo; into <code>.qm</code> format. Or you can just translate and save all your <code>.ts</code> files and then use <code>lrelease</code> tool for batch &ldquo;compiling&rdquo;:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span><span style="color:#a6e22e">Qt</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5.7</span><span style="color:#f92672">/</span>clang_64<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>lrelease translating<span style="color:#f92672">-</span>qml<span style="color:#f92672">.</span>pro</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span><span style="color:#a6e22e">Qt</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5.7</span><span style="color:#f92672">/</span>clang_64<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>lrelease translating<span style="color:#f92672">-</span>qml<span style="color:#f92672">.</span>pro</span></span></code></pre></div>
 <p>Now back to code. You need some button or menu item that will trigger <code>selectLanguage()</code> function with corresponding language. For example:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">onClicked</span><span style="color:#f92672">:</span> {
-    <span style="color:#a6e22e">onClicked</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">trans</span>.<span style="color:#a6e22e">selectLanguage</span>(<span style="color:#e6db74">&#34;ru&#34;</span>);
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#a6e22e">onClicked</span><span style="color:#f92672">:</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">onClicked</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">trans</span>.<span style="color:#a6e22e">selectLanguage</span>(<span style="color:#e6db74">&#34;ru&#34;</span>);
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>After you&rsquo;ll have some UI with translations ready to test, you need to deploy the <code>.qm</code> files. Move them into the folder with your application binaries (the build folder)). In our case, it is again the <code>i18n</code> folder as we specified in <code>trans.cpp</code>, for example: <code>build-translating-qml-Desktop_Qt_5_7_1_clang_64bit-Debug/i18n/</code>.</p>
 <p>For Mac OS it&rsquo;s a bit different, because there applications are bundled into the <code>.app</code> package, so you need to open <em>Package Contents</em> and place <code>i18n</code> folder with <code>.qm</code> files into the <code>translating-qml.app/Contents/MacOS/i18n</code>:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/01/04/translating-qml-app/images/package-contents.png" alt="Package Contents">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/01/04/translating-qml-app/images/package-contents.png" alt="Package Contents">
 
 <p>That&rsquo;s it. You can now run the application and try to click the button / menu to switch the current language of UI without restarting the application.</p>
 <p>In case you&rsquo;ve (most probably) got lost in my tutorial, here is a <a href="https://github.com/retifrav/translating-qml">demo application with sources</a>:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/01/04/translating-qml-app/images/demo.gif" alt="Translating QML demo">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/01/04/translating-qml-app/images/demo.gif" alt="Translating QML demo">
 
 <p>If you need to go deeper, check out the following links:</p>
 <ul>
@@ -246,12 +240,12 @@ engine.load(QUrl(QLatin1String(<span style="color:#e6db74">&#34;qrc:/main.qml&#3
 <p>&hellip;because <a href="https://bugreports.qt.io/browse/QTBUG-15602">related bug</a> was reported in motherfucking 2010 and has not yet been fixed</p>
 </blockquote>
 <p>In Qt 5.10 they actually <a href="https://stackoverflow.com/a/46138489/1688203">did fix it</a>. Now there is a special <a href="http://doc.qt.io/qt-5/qqmlengine.html#retranslate">QQmlEngine::retranslate()</a> function that does the job, so there is no need in this magic empty string anymore:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp">...
-qApp<span style="color:#f92672">-&gt;</span>installTranslator(_translator);
-_engine<span style="color:#f92672">-&gt;</span>retranslate();
-
-emit <span style="color:#a6e22e">languageChanged</span>();
-...</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>qApp<span style="color:#f92672">-&gt;</span>installTranslator(_translator);
+</span></span><span style="display:flex;"><span>_engine<span style="color:#f92672">-&gt;</span>retranslate();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>emit <span style="color:#a6e22e">languageChanged</span>();
+</span></span><span style="display:flex;"><span>...</span></span></code></pre></div>
 <p>I&rsquo;ve <a href="https://github.com/retifrav/translating-qml/commit/1b53a6ee221cdacbd1528f2501d4991d2f6ea514">updated</a> my demo application.</p>
       </div>
     </article>

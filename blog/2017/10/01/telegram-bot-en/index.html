@@ -5,7 +5,7 @@
     <title>Telegram bot | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2017/10/01/telegram-bot-en/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -85,27 +85,21 @@ Initially I wrote this article in russian 🇷🇺, but having noticed that it&r
 <p>Send a message to the bot of all bots - <a href="https://telegram.me/botfather">BotFather</a>:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/10/01/telegram-bot-en/images/botfather-help.png" alt="BotFather help">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/10/01/telegram-bot-en/images/botfather-help.png" alt="BotFather help">
 
 <p>&hellip;and ask him (with respect) to create a new bot:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/10/01/telegram-bot-en/images/botfather-newbot.png" alt="BotFather newbot">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/10/01/telegram-bot-en/images/botfather-newbot.png" alt="BotFather newbot">
 
 <p>After that your bot will be created. Pay attention to the token - it is used for accessing the bot, so don&rsquo;t make this token publicly available, or someone could get your bot&rsquo;s messages (and also send his own requests).</p>
 <p>Now, when you have your bot created and got your token, I can demonstrate, what exactly I meant by saying that bot is an API. Open your web-browser and go to this address: <a href="https://api.telegram.org/botYOUR-TOKEN-HERE/getMe">https://api.telegram.org/botYOUR-TOKEN-HERE/getMe</a></p>
 <p>Browser will get you the following:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#f92672">&#34;ok&#34;</span>:<span style="color:#66d9ef">true</span>,<span style="color:#f92672">&#34;result&#34;</span>:{<span style="color:#f92672">&#34;id&#34;</span>:<span style="color:#960050;background-color:#1e0010">ID</span>,<span style="color:#f92672">&#34;first_name&#34;</span>:<span style="color:#e6db74">&#34;someTestBot&#34;</span>,<span style="color:#f92672">&#34;username&#34;</span>:<span style="color:#e6db74">&#34;someTestBot&#34;</span>}}<span style="color:#960050;background-color:#1e0010">`</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{<span style="color:#f92672">&#34;ok&#34;</span>:<span style="color:#66d9ef">true</span>,<span style="color:#f92672">&#34;result&#34;</span>:{<span style="color:#f92672">&#34;id&#34;</span>:<span style="color:#960050;background-color:#1e0010">ID</span>,<span style="color:#f92672">&#34;first_name&#34;</span>:<span style="color:#e6db74">&#34;someTestBot&#34;</span>,<span style="color:#f92672">&#34;username&#34;</span>:<span style="color:#e6db74">&#34;someTestBot&#34;</span>}}<span style="color:#960050;background-color:#1e0010">`</span></span></span></code></pre></div>
 <p>Here&rsquo;s even a screenshot for you:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/10/01/telegram-bot-en/images/telegram-bot-browser-screen.png" alt="Telegram bot from web-browser">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/10/01/telegram-bot-en/images/telegram-bot-browser-screen.png" alt="Telegram bot from web-browser">
 
 <p>So, that&rsquo;s the Telegram bot. You send a web-request and get a <a href="https://en.wikipedia.org/wiki/JSON">JSON</a>-response.</p>
 <p>But of course, you need to automate sending requests as well as processing JSON-responses, so you need an <em>implementation</em> for your bot, that will work somewhere at some server (or at your home PC, but then obviously your bot will be available only when your PC is on). For this you can take any programming language that has web-requests (as it&rsquo;s basically the only functionality you need).</p>
@@ -118,164 +112,156 @@ Initially I wrote this article in russian 🇷🇺, but having noticed that it&r
 <li><a href="https://code.visualstudio.com">Visual Studio Code</a>.</li>
 </ul>
 <p>Okay, you have <strong>Python</strong> and <strong>pip</strong>, now install <strong>pyTelegramBotAPI</strong>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">pip install pyTelegramBotAPI</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>pip install pyTelegramBotAPI</span></span></code></pre></div>
 <p>Create <code>someTestBot.py</code> file, that will be your implementation. I declared two required commands <code>/start</code> and <code>/help</code>, and also command for sending server status <code>/server</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> telebot <span style="color:#75715e"># pyTelegramBotAPI</span>
-<span style="color:#f92672">import</span> logging <span style="color:#75715e"># logging</span>
-
-<span style="color:#75715e"># for executing scripts</span>
-<span style="color:#f92672">from</span> subprocess <span style="color:#f92672">import</span> call
-
-<span style="color:#75715e"># log settings</span>
-logger <span style="color:#f92672">=</span> logging<span style="color:#f92672">.</span>getLogger(<span style="color:#e6db74">&#39;log&#39;</span>)
-logger<span style="color:#f92672">.</span>setLevel(logging<span style="color:#f92672">.</span>INFO)
-fh <span style="color:#f92672">=</span> logging<span style="color:#f92672">.</span>FileHandler(<span style="color:#e6db74">&#39;someTestBot.log&#39;</span>)
-fh<span style="color:#f92672">.</span>setLevel(logging<span style="color:#f92672">.</span>DEBUG)
-formatter <span style="color:#f92672">=</span> logging<span style="color:#f92672">.</span>Formatter(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%(asctime)s</span><span style="color:#e6db74"> | </span><span style="color:#e6db74">%(levelname)-7s</span><span style="color:#e6db74"> | </span><span style="color:#e6db74">%(message)s</span><span style="color:#e6db74">&#34;</span>)
-fh<span style="color:#f92672">.</span>setFormatter(formatter)
-logger<span style="color:#f92672">.</span>addHandler(fh)
-
-<span style="color:#75715e"># create a bot</span>
-bot <span style="color:#f92672">=</span> telebot<span style="color:#f92672">.</span>TeleBot(<span style="color:#e6db74">&#34;YOUR-TOKEN-HERE&#34;</span>)
-
-<span style="color:#75715e"># help text</span>
-help_string <span style="color:#f92672">=</span> []
-help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;Just a *test* bot.</span><span style="color:#ae81ff">\n\n</span><span style="color:#e6db74">&#34;</span>)
-help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/start - says hello;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
-help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/help - shows help;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
-help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/server - sends server status.&#34;</span>)
-
-<span style="color:#75715e"># --- commands</span>
-
-<span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;start&#39;</span>])
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_start</span>(message):
-    <span style="color:#75715e"># send a simple message</span>
-    bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;Hi, I&#39;m a test bot! Send me /help to get help.&#34;</span>)
-
-<span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;help&#39;</span>])
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_help</span>(message):
-    <span style="color:#75715e"># send a message with Markdown</span>
-    bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join(help_string), parse_mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Markdown&#34;</span>)
-
-<span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;server&#39;</span>])
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_server</span>(message):
-    <span style="color:#66d9ef">try</span>:
-        <span style="color:#75715e"># path to script that gathers server info</span>
-        call([<span style="color:#e6db74">&#34;/root/scrps/status.sh&#34;</span>])
-        <span style="color:#75715e"># read the file with results</span>
-        status <span style="color:#f92672">=</span> open(<span style="color:#e6db74">&#34;/root/scrps/status.txt&#34;</span>, <span style="color:#e6db74">&#34;rb&#34;</span>)<span style="color:#f92672">.</span>read()
-        bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, status, parse_mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Markdown&#34;</span>)
-    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> e:
-        logger<span style="color:#f92672">.</span>exception(str(e))
-        bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;Error while getting a server status. Check the log for details.&#34;</span>)
-
-<span style="color:#75715e"># start message receiving</span>
-bot<span style="color:#f92672">.</span>polling()</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> telebot <span style="color:#75715e"># pyTelegramBotAPI</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> logging <span style="color:#75715e"># logging</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># for executing scripts</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">from</span> subprocess <span style="color:#f92672">import</span> call
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># log settings</span>
+</span></span><span style="display:flex;"><span>logger <span style="color:#f92672">=</span> logging<span style="color:#f92672">.</span>getLogger(<span style="color:#e6db74">&#39;log&#39;</span>)
+</span></span><span style="display:flex;"><span>logger<span style="color:#f92672">.</span>setLevel(logging<span style="color:#f92672">.</span>INFO)
+</span></span><span style="display:flex;"><span>fh <span style="color:#f92672">=</span> logging<span style="color:#f92672">.</span>FileHandler(<span style="color:#e6db74">&#39;someTestBot.log&#39;</span>)
+</span></span><span style="display:flex;"><span>fh<span style="color:#f92672">.</span>setLevel(logging<span style="color:#f92672">.</span>DEBUG)
+</span></span><span style="display:flex;"><span>formatter <span style="color:#f92672">=</span> logging<span style="color:#f92672">.</span>Formatter(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%(asctime)s</span><span style="color:#e6db74"> | </span><span style="color:#e6db74">%(levelname)-7s</span><span style="color:#e6db74"> | </span><span style="color:#e6db74">%(message)s</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>fh<span style="color:#f92672">.</span>setFormatter(formatter)
+</span></span><span style="display:flex;"><span>logger<span style="color:#f92672">.</span>addHandler(fh)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># create a bot</span>
+</span></span><span style="display:flex;"><span>bot <span style="color:#f92672">=</span> telebot<span style="color:#f92672">.</span>TeleBot(<span style="color:#e6db74">&#34;YOUR-TOKEN-HERE&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># help text</span>
+</span></span><span style="display:flex;"><span>help_string <span style="color:#f92672">=</span> []
+</span></span><span style="display:flex;"><span>help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;Just a *test* bot.</span><span style="color:#ae81ff">\n\n</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/start - says hello;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/help - shows help;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>help_string<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;/server - sends server status.&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># --- commands</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;start&#39;</span>])
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_start</span>(message):
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># send a simple message</span>
+</span></span><span style="display:flex;"><span>    bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;Hi, I&#39;m a test bot! Send me /help to get help.&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;help&#39;</span>])
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_help</span>(message):
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># send a message with Markdown</span>
+</span></span><span style="display:flex;"><span>    bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join(help_string), parse_mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Markdown&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">@bot</span><span style="color:#f92672">.</span>message_handler(commands<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;server&#39;</span>])
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_server</span>(message):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e"># path to script that gathers server info</span>
+</span></span><span style="display:flex;"><span>        call([<span style="color:#e6db74">&#34;/root/scrps/status.sh&#34;</span>])
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e"># read the file with results</span>
+</span></span><span style="display:flex;"><span>        status <span style="color:#f92672">=</span> open(<span style="color:#e6db74">&#34;/root/scrps/status.txt&#34;</span>, <span style="color:#e6db74">&#34;rb&#34;</span>)<span style="color:#f92672">.</span>read()
+</span></span><span style="display:flex;"><span>        bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, status, parse_mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Markdown&#34;</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> e:
+</span></span><span style="display:flex;"><span>        logger<span style="color:#f92672">.</span>exception(str(e))
+</span></span><span style="display:flex;"><span>        bot<span style="color:#f92672">.</span>send_message(message<span style="color:#f92672">.</span>chat<span style="color:#f92672">.</span>id, <span style="color:#e6db74">&#34;Error while getting a server status. Check the log for details.&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># start message receiving</span>
+</span></span><span style="display:flex;"><span>bot<span style="color:#f92672">.</span>polling()</span></span></code></pre></div>
 <p>Script for gathering server status info <code>status.sh</code> I took from <a href="/blog/2015/05/12/telegram-server-status">last article</a> and changed it a bit:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/bash
-</span><span style="color:#75715e"></span>
-scrps_path<span style="color:#f92672">=</span>/root/scrps
-
-info_web<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*Web-servers*
-</span><span style="color:#e6db74">----------------------
-</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>service apache2 status | sed -r <span style="color:#e6db74">&#34;s/[*]+/-/g&#34;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74">
-</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>service nginx status | sed -r <span style="color:#e6db74">&#34;s/[*]+/-/g&#34;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74">
-</span><span style="color:#e6db74">
-</span><span style="color:#e6db74">&#34;</span>
-
-info_mysql<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*MySQL*
-</span><span style="color:#e6db74">----------------------
-</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>mysqladmin ping<span style="color:#66d9ef">)</span><span style="color:#e6db74">
-</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>mysqladmin status<span style="color:#66d9ef">)</span><span style="color:#e6db74">
-</span><span style="color:#e6db74">
-</span><span style="color:#e6db74">&#34;</span>
-
-info_cpu<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*CPU*
-</span><span style="color:#e6db74">----------------------
-</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>top -bn1 | grep <span style="color:#e6db74">&#34;Cpu(s)&#34;</span> | sed <span style="color:#e6db74">&#34;s/.*, *\([0-9.]*\)%* id.*/\1/&#34;</span> | awk <span style="color:#e6db74">&#39;{print 100 - $1&#34; of 100 percents&#34;}&#39;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74">
-</span><span style="color:#e6db74">
-</span><span style="color:#e6db74">&#34;</span>
-
-info_ram<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*RAM*
-</span><span style="color:#e6db74">----------------------
-</span><span style="color:#e6db74">free: </span><span style="color:#66d9ef">$(</span>free -m | grep Mem | awk <span style="color:#e6db74">&#39;{print $4}&#39;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74"> MB of </span><span style="color:#66d9ef">$(</span>free -m | grep Mem | awk <span style="color:#e6db74">&#39;{print $2}&#39;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74"> MB total
-</span><span style="color:#e6db74">
-</span><span style="color:#e6db74">&#34;</span>
-
-info_space<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*HDD*
-</span><span style="color:#e6db74">----------------------
-</span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>df -h --output<span style="color:#f92672">=</span>source,size,used,avail | head -n2<span style="color:#66d9ef">)</span><span style="color:#e6db74">
-</span><span style="color:#e6db74">&#34;</span>
-
-text<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>printf <span style="color:#e6db74">&#34;</span>$info_web$info_mysql$info_cpu$info_ram$info_space<span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">)</span>
-printf <span style="color:#e6db74">&#39;%s\n&#39;</span> <span style="color:#e6db74">&#34;</span>$text<span style="color:#e6db74">&#34;</span> &gt; <span style="color:#e6db74">${</span>scrps_path<span style="color:#e6db74">}</span>/status.txt</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>scrps_path<span style="color:#f92672">=</span>/root/scrps
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>info_web<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*Web-servers*
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">----------------------
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>service apache2 status | sed -r <span style="color:#e6db74">&#34;s/[*]+/-/g&#34;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>service nginx status | sed -r <span style="color:#e6db74">&#34;s/[*]+/-/g&#34;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>info_mysql<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*MySQL*
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">----------------------
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>mysqladmin ping<span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>mysqladmin status<span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>info_cpu<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*CPU*
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">----------------------
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>top -bn1 | grep <span style="color:#e6db74">&#34;Cpu(s)&#34;</span> | sed <span style="color:#e6db74">&#34;s/.*, *\([0-9.]*\)%* id.*/\1/&#34;</span> | awk <span style="color:#e6db74">&#39;{print 100 - $1&#34; of 100 percents&#34;}&#39;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>info_ram<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*RAM*
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">----------------------
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">free: </span><span style="color:#66d9ef">$(</span>free -m | grep Mem | awk <span style="color:#e6db74">&#39;{print $4}&#39;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74"> MB of </span><span style="color:#66d9ef">$(</span>free -m | grep Mem | awk <span style="color:#e6db74">&#39;{print $2}&#39;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74"> MB total
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>info_space<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;*HDD*
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">----------------------
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74"></span><span style="color:#66d9ef">$(</span>df -h --output<span style="color:#f92672">=</span>source,size,used,avail | head -n2<span style="color:#66d9ef">)</span><span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>text<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>printf <span style="color:#e6db74">&#34;</span>$info_web$info_mysql$info_cpu$info_ram$info_space<span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span>printf <span style="color:#e6db74">&#39;%s\n&#39;</span> <span style="color:#e6db74">&#34;</span>$text<span style="color:#e6db74">&#34;</span> &gt; <span style="color:#e6db74">${</span>scrps_path<span style="color:#e6db74">}</span>/status.txt</span></span></code></pre></div>
 <p>Put this file on server to <code>/root/scrps/status.sh</code> (or anywhere you want, but reflect this in bot settings).</p>
 <p>Your bot is now implemented.</p>
 <p>Go back to <strong>BotFather</strong> and set the commands for your bot:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/10/01/telegram-bot-en/images/botfather-commands.png" alt="BotFather commands">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/10/01/telegram-bot-en/images/botfather-commands.png" alt="BotFather commands">
 
 <h1 id="deployment">Deployment</h1>
 <p>Actually, you can already run the bot on your PC - open terminal, go to the folder with <code>someTestBot.py</code> and run <code>python someTestBot.py</code>.Find in Telegram user with name <strong>@someTestBot</strong> (yours will have another name, obviously) and send something to him:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/10/01/telegram-bot-en/images/telegram-bot-test.png" alt="Telegram бот commands">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/10/01/telegram-bot-en/images/telegram-bot-test.png" alt="Telegram бот commands">
 
 <p>Notice how Telegram application shows tips about bot commands (which we added with BotFather):</p>
 
 
-
-    <img class="image-post" src="/blog/2017/10/01/telegram-bot-en/images/telegram-bot-commands.png" alt="Telegram бот commands">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/10/01/telegram-bot-en/images/telegram-bot-commands.png" alt="Telegram бот commands">
 
 <p>Now you need to make it so bot runs 24/7. Go to your Linux server and create directory <code>/usr/local/bin/someTestBot/</code>. Put there your <code>someTestBot.py</code>. By the way, you need to install <strong>pyTelegramBotAPI</strong> on server too (and <strong>Python</strong> with <strong>pip</strong>, obviously).</p>
 <p>I&rsquo;ll show you 2 ways how to launch script as a service: <code>Supervisor</code> and <code>systemd</code>.</p>
 <h2 id="supervisor">Supervisor</h2>
 <p>Install <a href="http://supervisord.org/">Supervisor</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo apt-get install supervisor</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo apt-get install supervisor</span></span></code></pre></div>
 <p>Create config (<code>/etc/supervisor/conf.d/someTestBot.conf</code>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">program:someTestBot</span><span style="color:#f92672">]</span>
-directory<span style="color:#f92672">=/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>someTestBot
-command<span style="color:#66d9ef">=</span>python someTestBot<span style="color:#f92672">.</span>py
-autostart<span style="color:#66d9ef">=</span><span style="color:#66d9ef">true</span>
-autorestart<span style="color:#66d9ef">=</span><span style="color:#66d9ef">true</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">[</span><span style="color:#66d9ef">program:someTestBot</span><span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>directory<span style="color:#f92672">=/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>someTestBot
+</span></span><span style="display:flex;"><span>command<span style="color:#66d9ef">=</span>python someTestBot<span style="color:#f92672">.</span>py
+</span></span><span style="display:flex;"><span>autostart<span style="color:#66d9ef">=</span><span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>autorestart<span style="color:#66d9ef">=</span><span style="color:#66d9ef">true</span></span></span></code></pre></div>
 <p>One would assume, that with sush config bot will run with <code>root</code> privileges, which is not cool. You should definitely change that.</p>
 <p>Meanwhile, we are launching:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">supervisorctl update
-supervisorctl restart someTestBot</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>supervisorctl update
+</span></span><span style="display:flex;"><span>supervisorctl restart someTestBot</span></span></code></pre></div>
 <h2 id="systemd">systemd</h2>
 <p>Or, of your system has <code>systemd</code>, then there is no need in Supervisor.</p>
 <p>Create a config:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">vi /etc/systemd/system/telegram-bot-sometestbot.service</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>vi /etc/systemd/system/telegram-bot-sometestbot.service</span></span></code></pre></div>
 <p>With this content:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">Unit</span><span style="color:#f92672">]</span>
-<span style="color:#a6e22e">Description</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Telegram</span> bot someTestBot
-
-<span style="color:#f92672">[</span><span style="color:#66d9ef">Service</span><span style="color:#f92672">]</span>
-<span style="color:#a6e22e">WorkingDirectory</span><span style="color:#f92672">=/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>someTestBot
-<span style="color:#a6e22e">ExecStart</span><span style="color:#f92672">=/</span>usr<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>python3 <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>someTestBot<span style="color:#f92672">/</span>someTestBot<span style="color:#f92672">.</span>py
-<span style="color:#a6e22e">Restart</span><span style="color:#66d9ef">=</span>always
-<span style="color:#a6e22e">RestartSec</span><span style="color:#66d9ef">=</span><span style="color:#ae81ff">10</span>
-<span style="color:#a6e22e">SyslogIdentifier</span><span style="color:#66d9ef">=</span>python<span style="color:#f92672">-</span>someTestBot
-<span style="color:#a6e22e">User</span><span style="color:#66d9ef">=</span>someTestBot
-
-<span style="color:#f92672">[</span><span style="color:#66d9ef">Install</span><span style="color:#f92672">]</span>
-<span style="color:#a6e22e">WantedBy</span><span style="color:#66d9ef">=</span>multi<span style="color:#f92672">-</span>user<span style="color:#f92672">.</span>target</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">[</span><span style="color:#66d9ef">Unit</span><span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Description</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Telegram</span> bot someTestBot
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span><span style="color:#66d9ef">Service</span><span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">WorkingDirectory</span><span style="color:#f92672">=/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>someTestBot
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">ExecStart</span><span style="color:#f92672">=/</span>usr<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>python3 <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>someTestBot<span style="color:#f92672">/</span>someTestBot<span style="color:#f92672">.</span>py
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Restart</span><span style="color:#66d9ef">=</span>always
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">RestartSec</span><span style="color:#66d9ef">=</span><span style="color:#ae81ff">10</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">SyslogIdentifier</span><span style="color:#66d9ef">=</span>python<span style="color:#f92672">-</span>someTestBot
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">User</span><span style="color:#66d9ef">=</span>someTestBot
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span><span style="color:#66d9ef">Install</span><span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">WantedBy</span><span style="color:#66d9ef">=</span>multi<span style="color:#f92672">-</span>user<span style="color:#f92672">.</span>target</span></span></code></pre></div>
 <p>In <code>User=someTestBot</code> you can set <code>root</code>, but I recommend to create a new user for that. But then you need to give him access to <code>mysqladmin</code>, otherwise your scripts will fail.</p>
 <p>Enable our new service:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">systemctl enable telegram-bot-sometestbot.service
-systemctl start telegram-bot-sometestbot.service</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>systemctl enable telegram-bot-sometestbot.service
+</span></span><span style="display:flex;"><span>systemctl start telegram-bot-sometestbot.service</span></span></code></pre></div>
 <p>That&rsquo;s it, bot is running, check it:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/10/01/telegram-bot-en/images/telegram-bot-server-status.png" alt="Telegram bot, server status">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/10/01/telegram-bot-en/images/telegram-bot-server-status.png" alt="Telegram bot, server status">
 
 <p>What else can be dine here? Well, this line - <code>bot.polling()</code> - means endless loop with request to Telegram servers, which is totally not cool in terms of performance and resource consumption on both sides. Better to do it so you bot will <em>expect</em> messages from Telegram. You can do it implementing <a href="https://core.telegram.org/bots/api#setwebhook">webhook</a>. I will get there eventually and add this to the article.</p>
 <p>P.S. I have deleted <strong>@someTestBot</strong>. If someone will take this username in future - that&rsquo;s not me.</p>

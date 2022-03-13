@@ -5,7 +5,7 @@
     <title>Чтение большого CSV и вставка записей в таблицу БД | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2014/08/13/insert-from-huge-csv-into-db/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -87,110 +87,110 @@
 <li>Поле <code>second</code>.</li>
 </ol>
 <p>И допустим, файл CSV имеет такой вид:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">whore,howmuch
-<span style="color:#66d9ef">Arlington</span>,<span style="color:#ae81ff">300</span>
-<span style="color:#66d9ef">Fox</span>,<span style="color:#ae81ff">900</span>
-<span style="color:#66d9ef">Goodwin</span>,<span style="color:#ae81ff">400</span>
-<span style="color:#66d9ef">Lawrence</span>,<span style="color:#ae81ff">800</span>
-<span style="color:#f92672">...</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ruby" data-lang="ruby"><span style="display:flex;"><span>whore,howmuch
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">Arlington</span>,<span style="color:#ae81ff">300</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">Fox</span>,<span style="color:#ae81ff">900</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">Goodwin</span>,<span style="color:#ae81ff">400</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">Lawrence</span>,<span style="color:#ae81ff">800</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">...</span></span></span></code></pre></div>
 <p>Первая строка - &ldquo;шапка таблицы&rdquo;. Как видим, названия колонок отличаются от наших, потому автобиндинг использовать не будем - далее в коде он закомментирован, а имена колонок прописываются руками.</p>
 <p>Вот моё решение.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e">/// Чтение CSV-файла и сохранение записей в таблицу БД
-</span><span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e">/// &lt;returns&gt;
-</span><span style="color:#75715e">/// 0 - всё прошло без ошибок
-</span><span style="color:#75715e">/// 1 - не удалось сохранить записи в БД
-</span><span style="color:#75715e">/// 2 - ещё что-то не удалось
-</span><span style="color:#75715e">/// &lt;/returns&gt;
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> readCSVandSave2DB() <span style="color:#75715e">// в параметры можно вынести размер буфера и путь до файла
-</span><span style="color:#75715e"></span>{
-    <span style="color:#75715e">// задаём размер буфера, пусть будет 9000 (строк CSV-файла)
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">int</span> csvBufferSize = <span style="color:#ae81ff">9000</span>;
-    <span style="color:#75715e">// указываем путь до CSV-файла
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">string</span> path2file = <span style="color:#e6db74">@&#34;C:\temp\hugefile.csv&#34;</span>;
-    <span style="color:#75715e">// сюда он будет читаться
-</span><span style="color:#75715e"></span>    DataTable csvData = <span style="color:#66d9ef">new</span> DataTable();
-    <span style="color:#66d9ef">try</span> <span style="color:#75715e">// пробуем читать
-</span><span style="color:#75715e"></span>    {
-        <span style="color:#75715e">// для TextFieldParser надо подключить библиотеку Microsoft.VisualBasic
-</span><span style="color:#75715e"></span>        <span style="color:#75715e">// но он вовсе не обязателен, CSV в DataTable можете разбирать как хотите
-</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">using</span> (TextFieldParser csvReader = <span style="color:#66d9ef">new</span> TextFieldParser(path2file))
-        {
-            csvReader.SetDelimiters(<span style="color:#66d9ef">new</span> <span style="color:#66d9ef">string</span>[] { <span style="color:#e6db74">&#34;,&#34;</span> });
-            csvReader.HasFieldsEnclosedInQuotes = <span style="color:#66d9ef">true</span>;
-            <span style="color:#66d9ef">string</span>[] colFields = csvReader.ReadFields();
-            <span style="color:#75715e">//foreach (string column in colFields) // автобиндинг
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">//{
-</span><span style="color:#75715e"></span>                <span style="color:#75715e">// названия колонок в таблице
-</span><span style="color:#75715e"></span>                DataColumn datecolumnSer = <span style="color:#66d9ef">new</span> DataColumn(<span style="color:#e6db74">&#34;first&#34;</span>);
-                datecolumnSer.AllowDBNull = <span style="color:#66d9ef">true</span>;
-                csvData.Columns.Add(datecolumnSer);
-                DataColumn datecolumnNum = <span style="color:#66d9ef">new</span> DataColumn(<span style="color:#e6db74">&#34;second&#34;</span>);
-                datecolumnNum.AllowDBNull = <span style="color:#66d9ef">true</span>;
-                csvData.Columns.Add(datecolumnNum);
-            <span style="color:#75715e">//}
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">int</span> buffer_wannabe = <span style="color:#ae81ff">0</span>;
-            <span style="color:#66d9ef">while</span> (!csvReader.EndOfData)
-            {
-                <span style="color:#66d9ef">string</span>[] fieldData = csvReader.ReadFields();
-                csvData.Rows.Add(fieldData);
-
-                buffer_wannabe++;
-                <span style="color:#75715e">// начитали 9000 строк, заносим их в базу и сбрасываем буфер на 0
-</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">if</span> (buffer_wannabe == csvBufferSize)
-                {
-                    buffer_wannabe = <span style="color:#ae81ff">0</span>;
-
-                    <span style="color:#75715e">// функция вставки записей описана ниже
-</span><span style="color:#75715e"></span>                    <span style="color:#66d9ef">if</span> (!insertCurrentBunchOfRecs(csvData)) <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">1</span>;
-
-                    csvData.Rows.Clear();
-                }
-            }
-            <span style="color:#75715e">// в последнем чтении в буфере меньше 9000 записей, их тоже надо занести
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">if</span> (buffer_wannabe != <span style="color:#ae81ff">0</span>)
-            {
-                <span style="color:#66d9ef">if</span> (!insertCurrentBunchOfRecs(csvData)) <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">1</span>;
-                csvData.Rows.Clear();
-            }
-        }
-    }
-    <span style="color:#66d9ef">catch</span> { <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">2</span>; }
-    
-    <span style="color:#75715e">// всё огонь
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
-}
-
-<span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e">/// Сохранение новых записей во временную таблицу в БД
-</span><span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e">/// &lt;param name=&#34;csvData&#34;&gt;строки из CSV&lt;/param&gt;
-</span><span style="color:#75715e">/// &lt;returns&gt;&lt;/returns&gt;
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">bool</span> insertCurrentBunchOfRecs(DataTable csvData)
-{
-    <span style="color:#66d9ef">try</span>
-    {
-        <span style="color:#66d9ef">using</span> (SqlConnection dbConnection = <span style="color:#66d9ef">new</span> SqlConnection(<span style="color:#e6db74">&#34;ПОДКЛЮЧЕНИЕКВАШЕЙБД&#34;</span>))
-        {
-            dbConnection.Open();
-            <span style="color:#75715e">// вся соль вот в этом классе - SqlBulkCopy - он делает всю магию
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">using</span> (SqlBulkCopy s = <span style="color:#66d9ef">new</span> SqlBulkCopy(dbConnection))
-            {
-                <span style="color:#75715e">// если таблица в какой-то схеме, то указать это
-</span><span style="color:#75715e"></span>                s.DestinationTableName = <span style="color:#e6db74">&#34;ИМЯСХЕМЫ.ИМЯТАБЛИЦЫ&#34;</span>;
-                <span style="color:#66d9ef">foreach</span> (<span style="color:#66d9ef">var</span> column <span style="color:#66d9ef">in</span> csvData.Columns)
-                {
-                    s.ColumnMappings.Add(column.ToString(), column.ToString());
-                }
-                s.WriteToServer(csvData);
-            }
-        }
-    }
-    <span style="color:#66d9ef">catch</span> { <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>; }
-    
-    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/// Чтение CSV-файла и сохранение записей в таблицу БД</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/// &lt;returns&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/// 0 - всё прошло без ошибок</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/// 1 - не удалось сохранить записи в БД</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/// 2 - ещё что-то не удалось</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/// &lt;/returns&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> readCSVandSave2DB() <span style="color:#75715e">// в параметры можно вынести размер буфера и путь до файла</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// задаём размер буфера, пусть будет 9000 (строк CSV-файла)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> csvBufferSize = <span style="color:#ae81ff">9000</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// указываем путь до CSV-файла</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> path2file = <span style="color:#e6db74">@&#34;C:\temp\hugefile.csv&#34;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// сюда он будет читаться</span>
+</span></span><span style="display:flex;"><span>    DataTable csvData = <span style="color:#66d9ef">new</span> DataTable();
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span> <span style="color:#75715e">// пробуем читать</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// для TextFieldParser надо подключить библиотеку Microsoft.VisualBasic</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// но он вовсе не обязателен, CSV в DataTable можете разбирать как хотите</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">using</span> (TextFieldParser csvReader = <span style="color:#66d9ef">new</span> TextFieldParser(path2file))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            csvReader.SetDelimiters(<span style="color:#66d9ef">new</span> <span style="color:#66d9ef">string</span>[] { <span style="color:#e6db74">&#34;,&#34;</span> });
+</span></span><span style="display:flex;"><span>            csvReader.HasFieldsEnclosedInQuotes = <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">string</span>[] colFields = csvReader.ReadFields();
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">//foreach (string column in colFields) // автобиндинг</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">//{</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// названия колонок в таблице</span>
+</span></span><span style="display:flex;"><span>                DataColumn datecolumnSer = <span style="color:#66d9ef">new</span> DataColumn(<span style="color:#e6db74">&#34;first&#34;</span>);
+</span></span><span style="display:flex;"><span>                datecolumnSer.AllowDBNull = <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>                csvData.Columns.Add(datecolumnSer);
+</span></span><span style="display:flex;"><span>                DataColumn datecolumnNum = <span style="color:#66d9ef">new</span> DataColumn(<span style="color:#e6db74">&#34;second&#34;</span>);
+</span></span><span style="display:flex;"><span>                datecolumnNum.AllowDBNull = <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>                csvData.Columns.Add(datecolumnNum);
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">//}</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">int</span> buffer_wannabe = <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">while</span> (!csvReader.EndOfData)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">string</span>[] fieldData = csvReader.ReadFields();
+</span></span><span style="display:flex;"><span>                csvData.Rows.Add(fieldData);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                buffer_wannabe++;
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// начитали 9000 строк, заносим их в базу и сбрасываем буфер на 0</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">if</span> (buffer_wannabe == csvBufferSize)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    buffer_wannabe = <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#75715e">// функция вставки записей описана ниже</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">if</span> (!insertCurrentBunchOfRecs(csvData)) <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">1</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                    csvData.Rows.Clear();
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// в последнем чтении в буфере меньше 9000 записей, их тоже надо занести</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (buffer_wannabe != <span style="color:#ae81ff">0</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">if</span> (!insertCurrentBunchOfRecs(csvData)) <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">1</span>;
+</span></span><span style="display:flex;"><span>                csvData.Rows.Clear();
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">catch</span> { <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">2</span>; }
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// всё огонь</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/// Сохранение новых записей во временную таблицу в БД</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/// &lt;param name=&#34;csvData&#34;&gt;строки из CSV&lt;/param&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">/// &lt;returns&gt;&lt;/returns&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">bool</span> insertCurrentBunchOfRecs(DataTable csvData)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">using</span> (SqlConnection dbConnection = <span style="color:#66d9ef">new</span> SqlConnection(<span style="color:#e6db74">&#34;ПОДКЛЮЧЕНИЕКВАШЕЙБД&#34;</span>))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            dbConnection.Open();
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// вся соль вот в этом классе - SqlBulkCopy - он делает всю магию</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">using</span> (SqlBulkCopy s = <span style="color:#66d9ef">new</span> SqlBulkCopy(dbConnection))
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// если таблица в какой-то схеме, то указать это</span>
+</span></span><span style="display:flex;"><span>                s.DestinationTableName = <span style="color:#e6db74">&#34;ИМЯСХЕМЫ.ИМЯТАБЛИЦЫ&#34;</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">foreach</span> (<span style="color:#66d9ef">var</span> column <span style="color:#66d9ef">in</span> csvData.Columns)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    s.ColumnMappings.Add(column.ToString(), column.ToString());
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                s.WriteToServer(csvData);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">catch</span> { <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>; }
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Некоторые фрагменты кода позаимствовал где-то в интернетах, как обычно.</p>
 <p>Через три месяца статья получила некоторое продолжение в виде <a href="/blog/2014/12/16/hugecsvsplitter/">полноценного приложения</a> для разрезания исходного огромного CSV файла на более мелкие, с которыми можно работать не имея гигабайтов оперативки.</p>
       </div>

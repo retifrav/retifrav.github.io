@@ -5,7 +5,7 @@
     <title>Interacting with HTML from QML over WebChannel/WebSockets | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2018/07/14/html-from-qml-over-webchannel-websockets/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -19,9 +19,7 @@
 <meta property="og:description" content="Qt allows to create applications with so-called hybrid GUI - where you can mix native parts with HTML-based content. Such a mix even supports interaction between those native parts and HTML-side - by exposing QObjects via WebChannel and WebSockets.
 
 
-
     
-
 
 And there are several ways of implementing that." />
 <meta property="og:type" content="article" />
@@ -74,9 +72,7 @@ And there are several ways of implementing that." />
         <p>Qt allows to create applications with so-called <a href="http://doc.qt.io/qt-5/topics-web-content.html">hybrid GUI</a> - where you can mix native parts with HTML-based content. Such a mix even supports interaction between those native parts and HTML-side - by exposing <a href="http://doc.qt.io/qt-5/qobject.html">QObjects</a> via <a href="https://doc.qt.io/qt-5.11/qtwebchannel-index.html">WebChannel</a> and <a href="https://doc.qt.io/qt-5.11/websockets-overview.html">WebSockets</a>.</p>
 
 
-
-    <img class="image-post" src="/blog/2018/07/14/html-from-qml-over-webchannel-websockets/images/html-qml-webchannel-websockets.png" alt="Interaction between QML and HTML">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/07/14/html-from-qml-over-webchannel-websockets/images/html-qml-webchannel-websockets.png" alt="Interaction between QML and HTML">
 
 <p>And there are several ways of implementing that.</p>
 <nav id="TableOfContents">
@@ -116,99 +112,99 @@ And there are several ways of implementing that." />
 <h2 id="webengineview---direct-webchannel">WebEngineView - direct WebChannel</h2>
 <p>As I said, WebEngineView can use WebChannel directly, so this example is pretty easy. But even being an easy one (comparing with the WebSockets examples), it made me spent quite a some time to make it work. Luckily, I found this <a href="https://github.com/mattixpet/webchannel-qml-example">repository</a>, which I used as a base.</p>
 <p><a href="https://github.com/retifrav/qml-webchannel-websockets/blob/master/webchannel/webchannel/main.qml">main.qml</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">// an object with properties, signals and methods - just like any normal Qt object
-</span><span style="color:#75715e"></span><span style="color:#a6e22e">QtObject</span> {
-    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">someObject</span>
-
-    <span style="color:#75715e">// ID, under which this object will be known at WebEngineView side
-</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">WebChannel</span>.<span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;backend&#34;</span>
-
-    <span style="color:#a6e22e">property</span> <span style="color:#a6e22e">string</span> <span style="color:#a6e22e">someProperty</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Break on through to the other side&#34;</span>
-
-    <span style="color:#a6e22e">signal</span> <span style="color:#a6e22e">someSignal</span>(<span style="color:#a6e22e">string</span> <span style="color:#a6e22e">message</span>);
-
-    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">changeText</span>(<span style="color:#a6e22e">newText</span>) {
-        <span style="color:#a6e22e">txt</span>.<span style="color:#a6e22e">text</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">newText</span>;
-        <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;New text length: &#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">newText</span>.<span style="color:#a6e22e">length</span>;
-    }
-}
-
-<span style="color:#a6e22e">Text</span> {
-    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">txt</span>
-    <span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Some text&#34;</span>
-    <span style="color:#a6e22e">onTextChanged</span><span style="color:#f92672">:</span> {
-        <span style="color:#75715e">// this signal will trigger a function at WebEngineView side (if connected)
-</span><span style="color:#75715e"></span>        <span style="color:#a6e22e">someObject</span>.<span style="color:#a6e22e">someSignal</span>(<span style="color:#a6e22e">text</span>)
-    }
-}
-
-<span style="color:#a6e22e">WebEngineView</span> {
-    <span style="color:#a6e22e">url</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;qrc:/index.html&#34;</span>
-    <span style="color:#a6e22e">webChannel</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">channel</span>
-}
-
-<span style="color:#a6e22e">WebChannel</span> {
-    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">channel</span>
-    <span style="color:#a6e22e">registeredObjects</span><span style="color:#f92672">:</span> [<span style="color:#a6e22e">someObject</span>]
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#75715e">// an object with properties, signals and methods - just like any normal Qt object
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#a6e22e">QtObject</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">someObject</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ID, under which this object will be known at WebEngineView side
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">WebChannel</span>.<span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;backend&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">property</span> <span style="color:#a6e22e">string</span> <span style="color:#a6e22e">someProperty</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Break on through to the other side&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">signal</span> <span style="color:#a6e22e">someSignal</span>(<span style="color:#a6e22e">string</span> <span style="color:#a6e22e">message</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">changeText</span>(<span style="color:#a6e22e">newText</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">txt</span>.<span style="color:#a6e22e">text</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">newText</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;New text length: &#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">newText</span>.<span style="color:#a6e22e">length</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Text</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">txt</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Some text&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">onTextChanged</span><span style="color:#f92672">:</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// this signal will trigger a function at WebEngineView side (if connected)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#a6e22e">someObject</span>.<span style="color:#a6e22e">someSignal</span>(<span style="color:#a6e22e">text</span>)
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">WebEngineView</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">url</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;qrc:/index.html&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">webChannel</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">channel</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">WebChannel</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">channel</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">registeredObjects</span><span style="color:#f92672">:</span> [<span style="color:#a6e22e">someObject</span>]
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>So, here we create <code>WebChannel</code> and assign its ID to <code>WebEngineView</code> and register <a href="http://doc.qt.io/qt-5/qml-qtqml-qtobject.html">QtObject</a>&rsquo;s ID at the channel. Instead of <code>QtObject</code> defined at QML side you can of course have a C++/Qt object &ldquo;injected&rdquo; from C++ side.</p>
 <p><a href="https://github.com/retifrav/qml-webchannel-websockets/blob/master/webchannel/webchannel/index.html">index.html</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text/javascript&#34;</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;qrc:///qtwebchannel/qwebchannel.js&#34;</span>&gt;&lt;/<span style="color:#f92672">script</span>&gt;
-
-&lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text/javascript&#34;</span>&gt;
-    <span style="color:#75715e">// here will be our QtObject from QML side
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">backend</span>;
-
-    window.<span style="color:#a6e22e">onload</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
-    {
-        <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">QWebChannel</span>(<span style="color:#a6e22e">qt</span>.<span style="color:#a6e22e">webChannelTransport</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">channel</span>) {
-            <span style="color:#75715e">// all published objects are available in channel.objects under
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">// the identifier set in their attached WebChannel.id property
-</span><span style="color:#75715e"></span>            <span style="color:#a6e22e">backend</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">channel</span>.<span style="color:#a6e22e">objects</span>.<span style="color:#a6e22e">backend</span>;
-
-            <span style="color:#75715e">// connect to a signal
-</span><span style="color:#75715e"></span>            <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">someSignal</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">someText</span>) {
-                <span style="color:#a6e22e">alert</span>(<span style="color:#e6db74">&#34;Got signal: &#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">someText</span>);
-                document.<span style="color:#a6e22e">getElementById</span>(<span style="color:#e6db74">&#34;lbl&#34;</span>).<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">someText</span>;
-            });
-        });
-    }
-
-    <span style="color:#75715e">// just to demonstrate you async interaction
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">result</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ololo&#34;</span>;
-    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">changeLabel</span>()
-    {
-        <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">textInputValue</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">getElementById</span>(<span style="color:#e6db74">&#34;input&#34;</span>).<span style="color:#a6e22e">value</span>.<span style="color:#a6e22e">trim</span>();
-        <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">textInputValue</span>.<span style="color:#a6e22e">length</span> <span style="color:#f92672">===</span> <span style="color:#ae81ff">0</span>)
-        {
-            <span style="color:#a6e22e">alert</span>(<span style="color:#e6db74">&#34;You haven&#39;t entered anything!&#34;</span>);
-            <span style="color:#66d9ef">return</span>;
-        }
-
-        <span style="color:#75715e">// invoke a method, and receive the return value asynchronously
-</span><span style="color:#75715e"></span>        <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">changeText</span>(<span style="color:#a6e22e">textInputValue</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">callback</span>) {
-            <span style="color:#a6e22e">result</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">callback</span>;
-            <span style="color:#75715e">// since it&#39;s async, this alert will appear later and show the actual result
-</span><span style="color:#75715e"></span>            <span style="color:#a6e22e">alert</span>(<span style="color:#a6e22e">result</span>);
-            <span style="color:#75715e">// reset variable back to default value
-</span><span style="color:#75715e"></span>            <span style="color:#a6e22e">result</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ololo&#34;</span>;
-        });
-        <span style="color:#75715e">// this alert will appear first and show default &#34;ololo&#34;
-</span><span style="color:#75715e"></span>        <span style="color:#a6e22e">alert</span>(<span style="color:#a6e22e">result</span>);
-    }
-
-    <span style="color:#75715e">// you can also read/write properties of QtObject from QML side
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">getPropertyValue</span>()
-    {
-        <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">originalValue</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">someProperty</span>;
-
-        <span style="color:#a6e22e">alert</span>(<span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">someProperty</span>);
-        <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">someProperty</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;some another value&#34;</span>;
-        <span style="color:#a6e22e">alert</span>(<span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">someProperty</span>);
-
-        <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">someProperty</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">originalValue</span>;
-    }
-&lt;/<span style="color:#f92672">script</span>&gt;</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span>&lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text/javascript&#34;</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;qrc:///qtwebchannel/qwebchannel.js&#34;</span>&gt;&lt;/<span style="color:#f92672">script</span>&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>&lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text/javascript&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// here will be our QtObject from QML side
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">backend</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    window.<span style="color:#a6e22e">onload</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">QWebChannel</span>(<span style="color:#a6e22e">qt</span>.<span style="color:#a6e22e">webChannelTransport</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">channel</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// all published objects are available in channel.objects under
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#75715e">// the identifier set in their attached WebChannel.id property
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#a6e22e">backend</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">channel</span>.<span style="color:#a6e22e">objects</span>.<span style="color:#a6e22e">backend</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// connect to a signal
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">someSignal</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">someText</span>) {
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">alert</span>(<span style="color:#e6db74">&#34;Got signal: &#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">someText</span>);
+</span></span><span style="display:flex;"><span>                document.<span style="color:#a6e22e">getElementById</span>(<span style="color:#e6db74">&#34;lbl&#34;</span>).<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">someText</span>;
+</span></span><span style="display:flex;"><span>            });
+</span></span><span style="display:flex;"><span>        });
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// just to demonstrate you async interaction
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">result</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ololo&#34;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">changeLabel</span>()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">textInputValue</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">getElementById</span>(<span style="color:#e6db74">&#34;input&#34;</span>).<span style="color:#a6e22e">value</span>.<span style="color:#a6e22e">trim</span>();
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">textInputValue</span>.<span style="color:#a6e22e">length</span> <span style="color:#f92672">===</span> <span style="color:#ae81ff">0</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">alert</span>(<span style="color:#e6db74">&#34;You haven&#39;t entered anything!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// invoke a method, and receive the return value asynchronously
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">changeText</span>(<span style="color:#a6e22e">textInputValue</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">callback</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">result</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">callback</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// since it&#39;s async, this alert will appear later and show the actual result
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#a6e22e">alert</span>(<span style="color:#a6e22e">result</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// reset variable back to default value
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#a6e22e">result</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ololo&#34;</span>;
+</span></span><span style="display:flex;"><span>        });
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// this alert will appear first and show default &#34;ololo&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#a6e22e">alert</span>(<span style="color:#a6e22e">result</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// you can also read/write properties of QtObject from QML side
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">getPropertyValue</span>()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">originalValue</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">someProperty</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">alert</span>(<span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">someProperty</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">someProperty</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;some another value&#34;</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">alert</span>(<span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">someProperty</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">someProperty</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">originalValue</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>&lt;/<span style="color:#f92672">script</span>&gt;</span></span></code></pre></div>
 <p>Here you need to create a <code>QWebChannel</code> at <a href="https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers/onload">windows.onload</a> event and get the <code>backend</code> object. After that you can call its methods, connect to its signal and access its properties.</p>
 <p>Here&rsquo;s a simple demo of such communication between QML (<em>everything that&rsquo;s outside the blue rectangle</em>) and HTML (<em>the part inside the blue rectangle</em>):</p>
 
@@ -228,9 +224,7 @@ And there are several ways of implementing that." />
 <p>And here&rsquo;s a schema for it:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/07/14/html-from-qml-over-webchannel-websockets/images/qml-html-interaction.png" alt="Interaction between QML and HTML">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/07/14/html-from-qml-over-webchannel-websockets/images/qml-html-interaction.png" alt="Interaction between QML and HTML">
 
 <p>By the way, interaction is done asynchronously - take a look at <code>changeLabel()</code> function and note the order of alerts.</p>
 <h2 id="webview---webchannel-over-websockets">WebView - WebChannel over WebSockets</h2>
@@ -241,197 +235,195 @@ And there are several ways of implementing that." />
 <h3 id="mostly-c">Mostly C++</h3>
 <p>This one has most of the work done in C++ and there is not much left for QML. It is based on the <a href="http://doc.qt.io/qt-5/qtwebchannel-standalone-example.html">Standalone Example</a>.</p>
 <p><a href="https://github.com/retifrav/qml-webchannel-websockets/blob/master/websockets-mostly-cpp/websockets/main.cpp">main.cpp</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>(<span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>argv[])
-{
-    QGuiApplication app(argc, argv);
-
-    <span style="color:#75715e">// don&#39;t forget about this
-</span><span style="color:#75715e"></span>    QtWebView<span style="color:#f92672">::</span>initialize();
-
-    QWebSocketServer server(
-                QStringLiteral(<span style="color:#e6db74">&#34;WebSockets example&#34;</span>),
-                QWebSocketServer<span style="color:#f92672">::</span>NonSecureMode
-                );
-    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>server.listen(QHostAddress<span style="color:#f92672">::</span>LocalHost, <span style="color:#ae81ff">55222</span>)) { <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">1</span>; }
-
-    <span style="color:#75715e">// wrap WebSocket clients in QWebChannelAbstractTransport objects
-</span><span style="color:#75715e"></span>    WebSocketClientWrapper clientWrapper(<span style="color:#f92672">&amp;</span>server);
-
-    <span style="color:#75715e">// setup the channel
-</span><span style="color:#75715e"></span>    QWebChannel channel;
-    QObject<span style="color:#f92672">::</span>connect(<span style="color:#f92672">&amp;</span>clientWrapper, <span style="color:#f92672">&amp;</span>WebSocketClientWrapper<span style="color:#f92672">::</span>clientConnected,
-                     <span style="color:#f92672">&amp;</span>channel, <span style="color:#f92672">&amp;</span>QWebChannel<span style="color:#f92672">::</span>connectTo);
-
-    <span style="color:#75715e">// setup the core and publish it to the QWebChannel
-</span><span style="color:#75715e"></span>    Backend <span style="color:#f92672">*</span>backend <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Backend();
-    channel.registerObject(QStringLiteral(<span style="color:#e6db74">&#34;backend&#34;</span>), backend);
-
-    QQmlApplicationEngine engine;
-    engine.rootContext()<span style="color:#f92672">-&gt;</span>setContextProperty(<span style="color:#e6db74">&#34;someObject&#34;</span>, backend);
-    engine.load(QUrl(QStringLiteral(<span style="color:#e6db74">&#34;qrc:/main.qml&#34;</span>)));
-    <span style="color:#66d9ef">if</span> (engine.rootObjects().isEmpty()) { <span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>; }
-
-    <span style="color:#66d9ef">return</span> app.exec();
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>(<span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>argv[])
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    QGuiApplication app(argc, argv);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// don&#39;t forget about this
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    QtWebView<span style="color:#f92672">::</span>initialize();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    QWebSocketServer server(
+</span></span><span style="display:flex;"><span>                QStringLiteral(<span style="color:#e6db74">&#34;WebSockets example&#34;</span>),
+</span></span><span style="display:flex;"><span>                QWebSocketServer<span style="color:#f92672">::</span>NonSecureMode
+</span></span><span style="display:flex;"><span>                );
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>server.listen(QHostAddress<span style="color:#f92672">::</span>LocalHost, <span style="color:#ae81ff">55222</span>)) { <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">1</span>; }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// wrap WebSocket clients in QWebChannelAbstractTransport objects
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    WebSocketClientWrapper clientWrapper(<span style="color:#f92672">&amp;</span>server);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// setup the channel
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    QWebChannel channel;
+</span></span><span style="display:flex;"><span>    QObject<span style="color:#f92672">::</span>connect(<span style="color:#f92672">&amp;</span>clientWrapper, <span style="color:#f92672">&amp;</span>WebSocketClientWrapper<span style="color:#f92672">::</span>clientConnected,
+</span></span><span style="display:flex;"><span>                     <span style="color:#f92672">&amp;</span>channel, <span style="color:#f92672">&amp;</span>QWebChannel<span style="color:#f92672">::</span>connectTo);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// setup the core and publish it to the QWebChannel
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    Backend <span style="color:#f92672">*</span>backend <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> Backend();
+</span></span><span style="display:flex;"><span>    channel.registerObject(QStringLiteral(<span style="color:#e6db74">&#34;backend&#34;</span>), backend);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    QQmlApplicationEngine engine;
+</span></span><span style="display:flex;"><span>    engine.rootContext()<span style="color:#f92672">-&gt;</span>setContextProperty(<span style="color:#e6db74">&#34;someObject&#34;</span>, backend);
+</span></span><span style="display:flex;"><span>    engine.load(QUrl(QStringLiteral(<span style="color:#e6db74">&#34;qrc:/main.qml&#34;</span>)));
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (engine.rootObjects().isEmpty()) { <span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>; }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> app.exec();
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Most important thing here is <code>WebSocketClientWrapper</code> (which uses <code>WebSocketTransport</code> underneath). That is something you have to implement yourself, and documentation won&rsquo;t help you much with that (thank god there is this example at least). Using <code>WebSocketClientWrapper</code> you can finally connect <code>QWebChannel</code> and register your object (<code>Backend</code> in my case, although I kept the same ID - <code>someObject</code>) so it would be available at HTML side. Note, that this time I need to register an already created C++ object (not a type), so I&rsquo;m using <a href="http://doc.qt.io/qt-5/qtqml-cppintegration-contextproperties.html">setContextProperty</a>.</p>
 <p><a href="https://github.com/retifrav/qml-webchannel-websockets/blob/master/websockets-mostly-cpp/websockets/index.html">index.html</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#f92672">&lt;</span><span style="color:#a6e22e">script</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text/javascript&#34;</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;qrc:///qtwebchannel/qwebchannel.js&#34;</span><span style="color:#f92672">&gt;&lt;</span><span style="color:#960050;background-color:#1e0010">/script&gt;</span>
-
-<span style="color:#f92672">&lt;</span><span style="color:#a6e22e">script</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text/javascript&#34;</span><span style="color:#f92672">&gt;</span>
-    <span style="color:#75715e">// here will be our QtObject from QML side
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">backend</span>;
-
-    window.<span style="color:#a6e22e">onload</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
-    {
-        <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">socket</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">WebSocket</span>(<span style="color:#e6db74">&#34;ws://127.0.0.1:55222&#34;</span>);
-
-        <span style="color:#a6e22e">socket</span>.<span style="color:#a6e22e">onopen</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
-        {
-            <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">QWebChannel</span>(<span style="color:#a6e22e">socket</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">channel</span>) {
-                <span style="color:#a6e22e">backend</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">channel</span>.<span style="color:#a6e22e">objects</span>.<span style="color:#a6e22e">backend</span>;
-
-                <span style="color:#75715e">// connect to a signal
-</span><span style="color:#75715e"></span>                <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">someSignal</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">someText</span>) {
-                    <span style="color:#a6e22e">alert</span>(<span style="color:#e6db74">&#34;Got signal: &#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">someText</span>);
-                    document.<span style="color:#a6e22e">getElementById</span>(<span style="color:#e6db74">&#34;lbl&#34;</span>).<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">someText</span>;
-                });
-            });
-        };
-    }
-<span style="color:#f92672">&lt;</span><span style="color:#960050;background-color:#1e0010">/script&gt;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#f92672">&lt;</span><span style="color:#a6e22e">script</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text/javascript&#34;</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;qrc:///qtwebchannel/qwebchannel.js&#34;</span><span style="color:#f92672">&gt;&lt;</span><span style="color:#960050;background-color:#1e0010">/script&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;</span><span style="color:#a6e22e">script</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text/javascript&#34;</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// here will be our QtObject from QML side
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">backend</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    window.<span style="color:#a6e22e">onload</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">socket</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">WebSocket</span>(<span style="color:#e6db74">&#34;ws://127.0.0.1:55222&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">socket</span>.<span style="color:#a6e22e">onopen</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">QWebChannel</span>(<span style="color:#a6e22e">socket</span>, <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">channel</span>) {
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">backend</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">channel</span>.<span style="color:#a6e22e">objects</span>.<span style="color:#a6e22e">backend</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// connect to a signal
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>                <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">someSignal</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">someText</span>) {
+</span></span><span style="display:flex;"><span>                    <span style="color:#a6e22e">alert</span>(<span style="color:#e6db74">&#34;Got signal: &#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">someText</span>);
+</span></span><span style="display:flex;"><span>                    document.<span style="color:#a6e22e">getElementById</span>(<span style="color:#e6db74">&#34;lbl&#34;</span>).<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">someText</span>;
+</span></span><span style="display:flex;"><span>                });
+</span></span><span style="display:flex;"><span>            });
+</span></span><span style="display:flex;"><span>        };
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;</span><span style="color:#960050;background-color:#1e0010">/script&gt;</span></span></span></code></pre></div>
 <p>Unlike <code>index.html</code> from WebEngineView example, here first you need to establish <code>WebSocket</code> connection and then use it as a transport for <code>QWebChannel</code>. The rest is all the same.</p>
 <p><a href="https://github.com/retifrav/qml-webchannel-websockets/blob/master/websockets-mostly-cpp/websockets/main.qml">main.qml</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">Text</span> {
-    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">txt</span>
-    <span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Some text&#34;</span>
-    <span style="color:#a6e22e">onTextChanged</span><span style="color:#f92672">:</span> {
-        <span style="color:#a6e22e">someObject</span>.<span style="color:#a6e22e">someSignal</span>(<span style="color:#a6e22e">text</span>)
-    }
-    <span style="color:#a6e22e">Component</span>.<span style="color:#a6e22e">onCompleted</span><span style="color:#f92672">:</span> {
-         <span style="color:#a6e22e">someObject</span>.<span style="color:#a6e22e">textNeedsToBeChanged</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#a6e22e">changeText</span>)
-    }
-    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">changeText</span>(<span style="color:#a6e22e">newText</span>) {
-        <span style="color:#a6e22e">txt</span>.<span style="color:#a6e22e">text</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">newText</span>;
-    }
-}
-
-<span style="color:#a6e22e">WebView</span> {
-    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">webView</span>
-    <span style="color:#a6e22e">url</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;qrc:/index.html&#34;</span>
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#a6e22e">Text</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">txt</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Some text&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">onTextChanged</span><span style="color:#f92672">:</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">someObject</span>.<span style="color:#a6e22e">someSignal</span>(<span style="color:#a6e22e">text</span>)
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">Component</span>.<span style="color:#a6e22e">onCompleted</span><span style="color:#f92672">:</span> {
+</span></span><span style="display:flex;"><span>         <span style="color:#a6e22e">someObject</span>.<span style="color:#a6e22e">textNeedsToBeChanged</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#a6e22e">changeText</span>)
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">changeText</span>(<span style="color:#a6e22e">newText</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">txt</span>.<span style="color:#a6e22e">text</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">newText</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">WebView</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">webView</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">url</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;qrc:/index.html&#34;</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>QML code is a bit different too. First of all, <code>someObject</code> this time is a context property, so there is no need for importing and declaring it. Second of all, interaction between C++ object and QML components required adding one more signal (<code>textNeedsToBeChanged</code>).</p>
 <p>Thus, interaction schema became a bit weird as well:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/07/14/html-from-qml-over-webchannel-websockets/images/qml-html-interaction-via-cpp.png" alt="Interaction between QML and HTML via C&#43;&#43;">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/07/14/html-from-qml-over-webchannel-websockets/images/qml-html-interaction-via-cpp.png" alt="Interaction between QML and HTML via C&#43;&#43;">
 
 <p>Fortunately, there is a better solution.</p>
 <h3 id="mostly-qml">Mostly QML</h3>
 <p>I like this example more, because it&rsquo;s done mostly in QML, except for a tiny bit on C++. I got this solution as an answer to my <a href="https://stackoverflow.com/questions/51313111/qt-webview-and-webchannel-over-websockets-in-qml">question</a> at Stack Overflow.</p>
 <p>First we need to implement a <a href="http://doc.qt.io/qt-5/qwebchannelabstracttransport.html">transport</a> for WebChannel.</p>
 <p><a href="https://github.com/retifrav/qml-webchannel-websockets/blob/master/websockets-mostly-qml/websockets/websockettransport.h">websockettransport.h</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">WebSocketTransport</span> <span style="color:#f92672">:</span> <span style="color:#66d9ef">public</span> QWebChannelAbstractTransport
-{
-    Q_OBJECT
-
-<span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
-    Q_INVOKABLE <span style="color:#66d9ef">void</span> sendMessage(<span style="color:#66d9ef">const</span> QJsonObject <span style="color:#f92672">&amp;</span>message) <span style="color:#66d9ef">override</span>
-    {
-        QJsonDocument <span style="color:#a6e22e">doc</span>(message);
-        emit <span style="color:#a6e22e">messageChanged</span>(QString<span style="color:#f92672">::</span>fromUtf8(doc.toJson(QJsonDocument<span style="color:#f92672">::</span>Compact)));
-    }
-
-    Q_INVOKABLE <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">textMessageReceive</span>(<span style="color:#66d9ef">const</span> QString <span style="color:#f92672">&amp;</span>messageData)
-    {
-        QJsonParseError error;
-        QJsonDocument message <span style="color:#f92672">=</span> QJsonDocument<span style="color:#f92672">::</span>fromJson(messageData.toUtf8(), <span style="color:#f92672">&amp;</span>error);
-        <span style="color:#66d9ef">if</span> (error.error)
-        {
-            qWarning() <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;Failed to parse text message as JSON object:&#34;</span> <span style="color:#f92672">&lt;&lt;</span> messageData
-                       <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;Error is:&#34;</span> <span style="color:#f92672">&lt;&lt;</span> error.errorString();
-            <span style="color:#66d9ef">return</span>;
-        } <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>message.isObject())
-        {
-            qWarning() <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;Received JSON message that is not an object: &#34;</span> <span style="color:#f92672">&lt;&lt;</span> messageData;
-            <span style="color:#66d9ef">return</span>;
-        }
-        emit messageReceived(message.object(), <span style="color:#66d9ef">this</span>);
-    }
-
-signals:
-    <span style="color:#66d9ef">void</span> messageChanged(<span style="color:#66d9ef">const</span> QString <span style="color:#f92672">&amp;</span> message);
-};</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">WebSocketTransport</span> <span style="color:#f92672">:</span> <span style="color:#66d9ef">public</span> QWebChannelAbstractTransport
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    Q_OBJECT
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
+</span></span><span style="display:flex;"><span>    Q_INVOKABLE <span style="color:#66d9ef">void</span> sendMessage(<span style="color:#66d9ef">const</span> QJsonObject <span style="color:#f92672">&amp;</span>message) <span style="color:#66d9ef">override</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        QJsonDocument <span style="color:#a6e22e">doc</span>(message);
+</span></span><span style="display:flex;"><span>        emit <span style="color:#a6e22e">messageChanged</span>(QString<span style="color:#f92672">::</span>fromUtf8(doc.toJson(QJsonDocument<span style="color:#f92672">::</span>Compact)));
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    Q_INVOKABLE <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">textMessageReceive</span>(<span style="color:#66d9ef">const</span> QString <span style="color:#f92672">&amp;</span>messageData)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        QJsonParseError error;
+</span></span><span style="display:flex;"><span>        QJsonDocument message <span style="color:#f92672">=</span> QJsonDocument<span style="color:#f92672">::</span>fromJson(messageData.toUtf8(), <span style="color:#f92672">&amp;</span>error);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (error.error)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            qWarning() <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;Failed to parse text message as JSON object:&#34;</span> <span style="color:#f92672">&lt;&lt;</span> messageData
+</span></span><span style="display:flex;"><span>                       <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;Error is:&#34;</span> <span style="color:#f92672">&lt;&lt;</span> error.errorString();
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span>;
+</span></span><span style="display:flex;"><span>        } <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>message.isObject())
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            qWarning() <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;Received JSON message that is not an object: &#34;</span> <span style="color:#f92672">&lt;&lt;</span> messageData;
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        emit messageReceived(message.object(), <span style="color:#66d9ef">this</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>signals:
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">void</span> messageChanged(<span style="color:#66d9ef">const</span> QString <span style="color:#f92672">&amp;</span> message);
+</span></span><span style="display:flex;"><span>};</span></span></code></pre></div>
 <p>Then register it to QML.</p>
 <p><a href="https://github.com/retifrav/qml-webchannel-websockets/blob/master/websockets-mostly-qml/websockets/main.cpp">main.cpp</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cpp" data-lang="cpp"><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;websockettransport.h&#34;</span><span style="color:#75715e">
-</span><span style="color:#75715e"></span>
-<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>(<span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>argv[])
-{
-    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>    
-    qmlRegisterType<span style="color:#f92672">&lt;</span>WebSocketTransport<span style="color:#f92672">&gt;</span>(<span style="color:#e6db74">&#34;io.decovar.WebSocketTransport&#34;</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>, <span style="color:#e6db74">&#34;WebSocketTransport&#34;</span>);
-
-    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;websockettransport.h&#34;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>(<span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>argv[])
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    
+</span></span><span style="display:flex;"><span>    qmlRegisterType<span style="color:#f92672">&lt;</span>WebSocketTransport<span style="color:#f92672">&gt;</span>(<span style="color:#e6db74">&#34;io.decovar.WebSocketTransport&#34;</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>, <span style="color:#e6db74">&#34;WebSocketTransport&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}</span></span></code></pre></div>
 <p>And the rest is QML.</p>
 <p><a href="https://github.com/retifrav/qml-webchannel-websockets/blob/master/websockets-mostly-qml/websockets/main.qml">main.qml</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#66d9ef">import</span> <span style="color:#a6e22e">io</span>.<span style="color:#a6e22e">decovar</span>.<span style="color:#a6e22e">WebSocketTransport</span> <span style="color:#ae81ff">1.0</span>
-
-<span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>
-<span style="color:#75715e">// an object with properties, signals and methods - just like any normal Qt object
-</span><span style="color:#75715e"></span><span style="color:#a6e22e">QtObject</span> {
-    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">someObject</span>
-
-    <span style="color:#75715e">// ID, under which this object will be known at WebEngineView side
-</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">WebChannel</span>.<span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;backend&#34;</span>
-
-    <span style="color:#a6e22e">property</span> <span style="color:#a6e22e">string</span> <span style="color:#a6e22e">someProperty</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Break on through to the other side&#34;</span>
-
-    <span style="color:#a6e22e">signal</span> <span style="color:#a6e22e">someSignal</span>(<span style="color:#a6e22e">string</span> <span style="color:#a6e22e">message</span>);
-
-    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">changeText</span>(<span style="color:#a6e22e">newText</span>) {
-        <span style="color:#a6e22e">txt</span>.<span style="color:#a6e22e">text</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">newText</span>;
-        <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;New text length: &#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">newText</span>.<span style="color:#a6e22e">length</span>;
-    }
-}
-
-<span style="color:#a6e22e">WebSocketTransport</span> {
-    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">transport</span>
-}
-
-<span style="color:#a6e22e">WebSocketServer</span> {
-    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">server</span>
-    <span style="color:#a6e22e">listen</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>
-    <span style="color:#a6e22e">port</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">55222</span>
-    <span style="color:#a6e22e">onClientConnected</span><span style="color:#f92672">:</span> {
-        <span style="color:#66d9ef">if</span>(<span style="color:#a6e22e">webSocket</span>.<span style="color:#a6e22e">status</span> <span style="color:#f92672">===</span> <span style="color:#a6e22e">WebSocket</span>.<span style="color:#a6e22e">Open</span>) {
-            <span style="color:#a6e22e">channel</span>.<span style="color:#a6e22e">connectTo</span>(<span style="color:#a6e22e">transport</span>)
-            <span style="color:#a6e22e">webSocket</span>.<span style="color:#a6e22e">onTextMessageReceived</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#a6e22e">transport</span>.<span style="color:#a6e22e">textMessageReceive</span>)
-            <span style="color:#a6e22e">transport</span>.<span style="color:#a6e22e">onMessageChanged</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#a6e22e">webSocket</span>.<span style="color:#a6e22e">sendTextMessage</span>)
-        }
-    }
-}
-
-<span style="color:#a6e22e">Text</span> {
-    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">txt</span>
-    <span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Some text&#34;</span>
-    <span style="color:#a6e22e">onTextChanged</span><span style="color:#f92672">:</span> {
-        <span style="color:#75715e">// this signal will trigger a function at WebView side (if connected)
-</span><span style="color:#75715e"></span>        <span style="color:#a6e22e">someObject</span>.<span style="color:#a6e22e">someSignal</span>(<span style="color:#a6e22e">text</span>)
-    }
-}
-
-<span style="color:#a6e22e">WebView</span> {
-    <span style="color:#a6e22e">url</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;qrc:/index.html&#34;</span>
-}
-
-<span style="color:#a6e22e">WebChannel</span> {
-    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">channel</span>
-    <span style="color:#a6e22e">registeredObjects</span><span style="color:#f92672">:</span> [<span style="color:#a6e22e">someObject</span>]
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> <span style="color:#a6e22e">io</span>.<span style="color:#a6e22e">decovar</span>.<span style="color:#a6e22e">WebSocketTransport</span> <span style="color:#ae81ff">1.0</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// an object with properties, signals and methods - just like any normal Qt object
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#a6e22e">QtObject</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">someObject</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ID, under which this object will be known at WebEngineView side
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">WebChannel</span>.<span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;backend&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">property</span> <span style="color:#a6e22e">string</span> <span style="color:#a6e22e">someProperty</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Break on through to the other side&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">signal</span> <span style="color:#a6e22e">someSignal</span>(<span style="color:#a6e22e">string</span> <span style="color:#a6e22e">message</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">changeText</span>(<span style="color:#a6e22e">newText</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">txt</span>.<span style="color:#a6e22e">text</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">newText</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;New text length: &#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">newText</span>.<span style="color:#a6e22e">length</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">WebSocketTransport</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">transport</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">WebSocketServer</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">server</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">listen</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">port</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">55222</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">onClientConnected</span><span style="color:#f92672">:</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span>(<span style="color:#a6e22e">webSocket</span>.<span style="color:#a6e22e">status</span> <span style="color:#f92672">===</span> <span style="color:#a6e22e">WebSocket</span>.<span style="color:#a6e22e">Open</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">channel</span>.<span style="color:#a6e22e">connectTo</span>(<span style="color:#a6e22e">transport</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">webSocket</span>.<span style="color:#a6e22e">onTextMessageReceived</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#a6e22e">transport</span>.<span style="color:#a6e22e">textMessageReceive</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">transport</span>.<span style="color:#a6e22e">onMessageChanged</span>.<span style="color:#a6e22e">connect</span>(<span style="color:#a6e22e">webSocket</span>.<span style="color:#a6e22e">sendTextMessage</span>)
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Text</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">txt</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Some text&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">onTextChanged</span><span style="color:#f92672">:</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// this signal will trigger a function at WebView side (if connected)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#a6e22e">someObject</span>.<span style="color:#a6e22e">someSignal</span>(<span style="color:#a6e22e">text</span>)
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">WebView</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">url</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;qrc:/index.html&#34;</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">WebChannel</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">channel</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">registeredObjects</span><span style="color:#f92672">:</span> [<span style="color:#a6e22e">someObject</span>]
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p><a href="https://github.com/retifrav/qml-webchannel-websockets/blob/master/websockets-mostly-qml/websockets/index.html">index.html</a> here is the same as in previous example. Create a <code>WebSocket</code> and use it as a transport for <code>QWebChannel</code>.</p>
 <p>By the way, as I told you in the earlier, WebView and standalone/external browser are the same thing, so you can just open this <code>index.html</code> in your web-browser and it will work the same way  - just don&rsquo;t forget to remove <code>qrc:/</code> from code and copy <code>qwebchannel.js</code> to the same folder.</p>
 <p>The full source code for all three examples can be found in this <a href="https://github.com/retifrav/qml-webchannel-websockets">repository</a>.</p>
@@ -447,9 +439,7 @@ signals:
 <p>Here&rsquo;s a good resume for both their video and article:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/07/14/html-from-qml-over-webchannel-websockets/images/comment.png" alt="The state of Qt documentation">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/07/14/html-from-qml-over-webchannel-websockets/images/comment.png" alt="The state of Qt documentation">
 
 <p>Sadly this comment is removed now.</p>
 <p>No, but seriously, why so many things are not explained in the documentation? Why, despite the fact that there are more than 5 examples for both WebChannel and WebSockets, it is so hard to understand how it works? And why there is no a single example of making it work with QML?</p>

@@ -5,7 +5,7 @@
     <title>How to upgrade U-Boot | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2018/10/11/upgrading-uboot/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -19,9 +19,7 @@
 <meta property="og:description" content="Yet another manual about upgrading U-Boot on your development board.
 
 
-
     
-
 
 With a Boundary Devices i.MX6 SABRE Lite device as an example." />
 <meta property="og:type" content="article" />
@@ -74,9 +72,7 @@ With a Boundary Devices i.MX6 SABRE Lite device as an example." />
         <p>Yet another manual about upgrading <a href="https://en.wikipedia.org/wiki/Das_U-Boot">U-Boot</a> on your development board.</p>
 
 
-
-    <img class="image-post" src="/blog/2018/10/11/upgrading-uboot/images/uboot.png" alt="U-Boot">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/10/11/upgrading-uboot/images/uboot.png" alt="U-Boot">
 
 <p>With a <a href="https://boundarydevices.com/product/sabre-lite-imx6-sbc/">Boundary Devices i.MX6 SABRE Lite</a> device as an example.</p>
 <ol>
@@ -90,92 +86,90 @@ With a Boundary Devices i.MX6 SABRE Lite device as an example." />
 </ul>
 <p>In some cases files have to be renamed (sometimes it&rsquo;s <a href="https://boundarydevices.com/6q_bootscript/">upgrade script</a>, sometimes it&rsquo;s U-Boot binary), and it varies depending on the U-Boot version you have on the device at the moment.</p>
 <p>Insert card into device and connect it to your computer (without powering it up) via console cable and find out which <code>/dev/ttyUSB</code> it is connected to:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ dmesg | tail
-<span style="color:#f92672">[</span>  +5,149685<span style="color:#f92672">]</span> usb 3-3: new full-speed USB device number <span style="color:#ae81ff">14</span> using xhci_hcd
-<span style="color:#f92672">[</span>  +0,148965<span style="color:#f92672">]</span> usb 3-3: New USB device found, idVendor<span style="color:#f92672">=</span>0557, idProduct<span style="color:#f92672">=</span><span style="color:#ae81ff">2008</span>
-<span style="color:#f92672">[</span>  +0,000005<span style="color:#f92672">]</span> usb 3-3: New USB device strings: Mfr<span style="color:#f92672">=</span>1, Product<span style="color:#f92672">=</span>2, SerialNumber<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>
-<span style="color:#f92672">[</span>  +0,000003<span style="color:#f92672">]</span> usb 3-3: Product: USB-Serial Controller D
-<span style="color:#f92672">[</span>  +0,000003<span style="color:#f92672">]</span> usb 3-3: Manufacturer: Prolific Technology Inc. 
-<span style="color:#f92672">[</span>  +0,000679<span style="color:#f92672">]</span> pl2303 3-3:1.0: pl2303 converter detected
-<span style="color:#f92672">[</span>  +0,000700<span style="color:#f92672">]</span> usb 3-3: pl2303 converter now attached to ttyUSB0
-
-$ ls -l /dev/ttyUSB*
-crw-rw---- <span style="color:#ae81ff">1</span> root dialout 188, <span style="color:#ae81ff">0</span> Oct <span style="color:#ae81ff">11</span> 13:54 /dev/ttyUSB0</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ dmesg | tail
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>  +5,149685<span style="color:#f92672">]</span> usb 3-3: new full-speed USB device number <span style="color:#ae81ff">14</span> using xhci_hcd
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>  +0,148965<span style="color:#f92672">]</span> usb 3-3: New USB device found, idVendor<span style="color:#f92672">=</span>0557, idProduct<span style="color:#f92672">=</span><span style="color:#ae81ff">2008</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>  +0,000005<span style="color:#f92672">]</span> usb 3-3: New USB device strings: Mfr<span style="color:#f92672">=</span>1, Product<span style="color:#f92672">=</span>2, SerialNumber<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>  +0,000003<span style="color:#f92672">]</span> usb 3-3: Product: USB-Serial Controller D
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>  +0,000003<span style="color:#f92672">]</span> usb 3-3: Manufacturer: Prolific Technology Inc. 
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>  +0,000679<span style="color:#f92672">]</span> pl2303 3-3:1.0: pl2303 converter detected
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>  +0,000700<span style="color:#f92672">]</span> usb 3-3: pl2303 converter now attached to ttyUSB0
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ ls -l /dev/ttyUSB*
+</span></span><span style="display:flex;"><span>crw-rw---- <span style="color:#ae81ff">1</span> root dialout 188, <span style="color:#ae81ff">0</span> Oct <span style="color:#ae81ff">11</span> 13:54 /dev/ttyUSB0</span></span></code></pre></div>
 <p>Regarding console cable: some devices have it right on the board as an additional microUSB port, but some only offer a COM interface, so you&rsquo;ll need to have a <a href="https://www.amazon.com/UGREEN-Converter-Adapter-Chipset-Windows/dp/B00QUZY4WO/">RS232-to-USB/PL2303 converter</a> in case your computer doesn&rsquo;t have a COM port:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/10/11/upgrading-uboot/images/rs232-to-usb.jpg" alt="RS232 to USB converter">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/10/11/upgrading-uboot/images/rs232-to-usb.jpg" alt="RS232 to USB converter">
 
 <p>Start a <code>screen</code> session:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo screen /dev/ttyUSB0 <span style="color:#ae81ff">115200</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo screen /dev/ttyUSB0 <span style="color:#ae81ff">115200</span></span></span></code></pre></div>
 <p>Power up the device and interrupt the autoboot:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">CPU:   Freescale i.MX6Q rev1.2 at <span style="color:#ae81ff">792</span> MHz
-Reset cause: POR
-Board: sabrelite
-I2C:   ready
-DRAM:  <span style="color:#ae81ff">1</span> GiB
-MMC:   FSL_SDHC: 0, FSL_SDHC: <span style="color:#ae81ff">1</span>
-Loading Environment from SPI Flash...
-SF: Detected sst25vf016b with page size <span style="color:#ae81ff">256</span> Bytes, erase size <span style="color:#ae81ff">4</span> KiB, total <span style="color:#ae81ff">2</span> MiB
-OK
-auto-detected panel 1280x720M@60
-Display: hdmi:1280x720M@60 <span style="color:#f92672">(</span>1280x720<span style="color:#f92672">)</span>
-In:    serial
-Out:   serial
-Err:   serial
-Net:   Micrel ksz9021 at <span style="color:#ae81ff">6</span>
-FEC <span style="color:#f92672">[</span>PRIME<span style="color:#f92672">]</span>, usb_ether
-Hit any key to stop autoboot:  <span style="color:#ae81ff">3</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>CPU:   Freescale i.MX6Q rev1.2 at <span style="color:#ae81ff">792</span> MHz
+</span></span><span style="display:flex;"><span>Reset cause: POR
+</span></span><span style="display:flex;"><span>Board: sabrelite
+</span></span><span style="display:flex;"><span>I2C:   ready
+</span></span><span style="display:flex;"><span>DRAM:  <span style="color:#ae81ff">1</span> GiB
+</span></span><span style="display:flex;"><span>MMC:   FSL_SDHC: 0, FSL_SDHC: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>Loading Environment from SPI Flash...
+</span></span><span style="display:flex;"><span>SF: Detected sst25vf016b with page size <span style="color:#ae81ff">256</span> Bytes, erase size <span style="color:#ae81ff">4</span> KiB, total <span style="color:#ae81ff">2</span> MiB
+</span></span><span style="display:flex;"><span>OK
+</span></span><span style="display:flex;"><span>auto-detected panel 1280x720M@60
+</span></span><span style="display:flex;"><span>Display: hdmi:1280x720M@60 <span style="color:#f92672">(</span>1280x720<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>In:    serial
+</span></span><span style="display:flex;"><span>Out:   serial
+</span></span><span style="display:flex;"><span>Err:   serial
+</span></span><span style="display:flex;"><span>Net:   Micrel ksz9021 at <span style="color:#ae81ff">6</span>
+</span></span><span style="display:flex;"><span>FEC <span style="color:#f92672">[</span>PRIME<span style="color:#f92672">]</span>, usb_ether
+</span></span><span style="display:flex;"><span>Hit any key to stop autoboot:  <span style="color:#ae81ff">3</span></span></span></code></pre></div>
 <p>Start the upgrading process:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#f92672">=</span>&gt; run upgradeu
-AHCI 0001.0300 <span style="color:#ae81ff">32</span> slots <span style="color:#ae81ff">1</span> ports <span style="color:#ae81ff">3</span> Gbps 0x1 impl SATA mode
-flags: ncq stag pm led clo only pmp pio slum part 
-No port device detected!
-** Bad device size - sata <span style="color:#ae81ff">0</span> **
-** Bad device size - sata <span style="color:#ae81ff">0</span> **
-SATA device 1: unknown device
-** Bad device sata <span style="color:#ae81ff">1</span> **
-MMC: no card present
-MMC: no card present
-** Bad device mmc <span style="color:#ae81ff">0</span> **
-switch to partitions <span style="color:#75715e">#0, OK</span>
-mmc1 is current device
-reading /6x_upgrade
-<span style="color:#ae81ff">3626</span> bytes read in <span style="color:#ae81ff">16</span> ms <span style="color:#f92672">(</span>220.7 KiB/s<span style="color:#f92672">)</span>
-<span style="color:#75715e">## Executing script at 10008000</span>
-SF: Detected SST25VF016B with page size <span style="color:#ae81ff">256</span> Bytes, erase size <span style="color:#ae81ff">4</span> KiB, total <span style="color:#ae81ff">2</span> MiB
-probed SPI ROM
-check U-Boot
-reading u-boot.nitrogen6q
-<span style="color:#ae81ff">560128</span> bytes read in <span style="color:#ae81ff">52</span> ms <span style="color:#f92672">(</span>10.3 MiB/s<span style="color:#f92672">)</span>
-read 88c00 bytes from SD card
-device <span style="color:#ae81ff">0</span> offset 0x400, size 0x88c00
-SF: <span style="color:#ae81ff">560128</span> bytes @ 0x400 Read: OK
-byte at 0x12000425 <span style="color:#f92672">(</span>0x90<span style="color:#f92672">)</span> !<span style="color:#f92672">=</span> byte at 0x12400425 <span style="color:#f92672">(</span>0x0<span style="color:#f92672">)</span>
-Total of <span style="color:#ae81ff">37</span> byte<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span> were the same
-Need U-Boot upgrade
-Program in <span style="color:#ae81ff">5</span> seconds
-<span style="color:#ae81ff">5</span>
-<span style="color:#ae81ff">4</span>
-<span style="color:#ae81ff">3</span>
-<span style="color:#ae81ff">2</span>
-<span style="color:#ae81ff">1</span>
-erasing
-SF: <span style="color:#ae81ff">786432</span> bytes @ 0x0 Erased: OK
-programming
-device <span style="color:#ae81ff">0</span> offset 0x800, size 0x88800
-SF: <span style="color:#ae81ff">559104</span> bytes @ 0x800 Written: OK
-device <span style="color:#ae81ff">0</span> offset 0x400, size 0x400
-SF: <span style="color:#ae81ff">1024</span> bytes @ 0x400 Written: OK
-verifying
-device <span style="color:#ae81ff">0</span> offset 0x400, size 0x88c00
-SF: <span style="color:#ae81ff">560128</span> bytes @ 0x400 Read: OK
-Total of <span style="color:#ae81ff">560128</span> byte<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span> were the same
----- U-Boot upgraded. reset</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#f92672">=</span>&gt; run upgradeu
+</span></span><span style="display:flex;"><span>AHCI 0001.0300 <span style="color:#ae81ff">32</span> slots <span style="color:#ae81ff">1</span> ports <span style="color:#ae81ff">3</span> Gbps 0x1 impl SATA mode
+</span></span><span style="display:flex;"><span>flags: ncq stag pm led clo only pmp pio slum part 
+</span></span><span style="display:flex;"><span>No port device detected!
+</span></span><span style="display:flex;"><span>** Bad device size - sata <span style="color:#ae81ff">0</span> **
+</span></span><span style="display:flex;"><span>** Bad device size - sata <span style="color:#ae81ff">0</span> **
+</span></span><span style="display:flex;"><span>SATA device 1: unknown device
+</span></span><span style="display:flex;"><span>** Bad device sata <span style="color:#ae81ff">1</span> **
+</span></span><span style="display:flex;"><span>MMC: no card present
+</span></span><span style="display:flex;"><span>MMC: no card present
+</span></span><span style="display:flex;"><span>** Bad device mmc <span style="color:#ae81ff">0</span> **
+</span></span><span style="display:flex;"><span>switch to partitions <span style="color:#75715e">#0, OK</span>
+</span></span><span style="display:flex;"><span>mmc1 is current device
+</span></span><span style="display:flex;"><span>reading /6x_upgrade
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">3626</span> bytes read in <span style="color:#ae81ff">16</span> ms <span style="color:#f92672">(</span>220.7 KiB/s<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">## Executing script at 10008000</span>
+</span></span><span style="display:flex;"><span>SF: Detected SST25VF016B with page size <span style="color:#ae81ff">256</span> Bytes, erase size <span style="color:#ae81ff">4</span> KiB, total <span style="color:#ae81ff">2</span> MiB
+</span></span><span style="display:flex;"><span>probed SPI ROM
+</span></span><span style="display:flex;"><span>check U-Boot
+</span></span><span style="display:flex;"><span>reading u-boot.nitrogen6q
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">560128</span> bytes read in <span style="color:#ae81ff">52</span> ms <span style="color:#f92672">(</span>10.3 MiB/s<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>read 88c00 bytes from SD card
+</span></span><span style="display:flex;"><span>device <span style="color:#ae81ff">0</span> offset 0x400, size 0x88c00
+</span></span><span style="display:flex;"><span>SF: <span style="color:#ae81ff">560128</span> bytes @ 0x400 Read: OK
+</span></span><span style="display:flex;"><span>byte at 0x12000425 <span style="color:#f92672">(</span>0x90<span style="color:#f92672">)</span> !<span style="color:#f92672">=</span> byte at 0x12400425 <span style="color:#f92672">(</span>0x0<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>Total of <span style="color:#ae81ff">37</span> byte<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span> were the same
+</span></span><span style="display:flex;"><span>Need U-Boot upgrade
+</span></span><span style="display:flex;"><span>Program in <span style="color:#ae81ff">5</span> seconds
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">5</span>
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">4</span>
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">3</span>
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>erasing
+</span></span><span style="display:flex;"><span>SF: <span style="color:#ae81ff">786432</span> bytes @ 0x0 Erased: OK
+</span></span><span style="display:flex;"><span>programming
+</span></span><span style="display:flex;"><span>device <span style="color:#ae81ff">0</span> offset 0x800, size 0x88800
+</span></span><span style="display:flex;"><span>SF: <span style="color:#ae81ff">559104</span> bytes @ 0x800 Written: OK
+</span></span><span style="display:flex;"><span>device <span style="color:#ae81ff">0</span> offset 0x400, size 0x400
+</span></span><span style="display:flex;"><span>SF: <span style="color:#ae81ff">1024</span> bytes @ 0x400 Written: OK
+</span></span><span style="display:flex;"><span>verifying
+</span></span><span style="display:flex;"><span>device <span style="color:#ae81ff">0</span> offset 0x400, size 0x88c00
+</span></span><span style="display:flex;"><span>SF: <span style="color:#ae81ff">560128</span> bytes @ 0x400 Read: OK
+</span></span><span style="display:flex;"><span>Total of <span style="color:#ae81ff">560128</span> byte<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span> were the same
+</span></span><span style="display:flex;"><span>---- U-Boot upgraded. reset</span></span></code></pre></div>
 <p>Reboot the device and note the upgraded U-Boot version:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">U-Boot 2018.07-35363-gf35ba6c <span style="color:#f92672">(</span>Oct <span style="color:#ae81ff">02</span> <span style="color:#ae81ff">2018</span> - 14:44:30 -0700<span style="color:#f92672">)</span>, Build: jenkins-uboot_v2018.07-24</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>U-Boot 2018.07-35363-gf35ba6c <span style="color:#f92672">(</span>Oct <span style="color:#ae81ff">02</span> <span style="color:#ae81ff">2018</span> - 14:44:30 -0700<span style="color:#f92672">)</span>, Build: jenkins-uboot_v2018.07-24</span></span></code></pre></div>
       </div>
     </article>
     <div><div id="tags">

@@ -5,7 +5,7 @@
     <title>Players queue for Heroes of Might and Magic | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2019/09/21/homm-queue/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -19,9 +19,7 @@
 <meta property="og:description" content="It&rsquo;s not like we at work don&rsquo;t have things to do, but suddenly we decided to play Heroes of Might and Magic. So we created a virtual machine, installed the game and started a hot-seat game via RDP.
 
 
-
     
-
 
 For notifying about next players turn we created a Slack channel. But soon enough it became annoying to announce next turns manually, so I created a simple web-application for that." />
 <meta property="og:type" content="article" />
@@ -74,9 +72,7 @@ For notifying about next players turn we created a Slack channel. But soon enoug
         <p>It&rsquo;s not like we at work don&rsquo;t have things to do, but suddenly we decided to play <a href="https://www.gog.com/game/heroes_of_might_and_magic_3_complete_edition">Heroes of Might and Magic</a>. So we created a virtual machine, installed the game and started a hot-seat game via RDP.</p>
 
 
-
-    <img class="image-post" src="/blog/2019/09/21/homm-queue/images/homm-queue.png" alt="HoMM queue">
-
+    <img class="image-post" loading="lazy" src="/blog/2019/09/21/homm-queue/images/homm-queue.png" alt="HoMM queue">
 
 <p>For notifying about next players turn we created a Slack channel. But soon enough it became annoying to announce next turns manually, so I created a simple web-application for that.</p>
 <nav id="TableOfContents">
@@ -94,209 +90,207 @@ For notifying about next players turn we created a Slack channel. But soon enoug
 <h1 id="implementing-the-queue">Implementing the queue</h1>
 <p>I decided to implement the queue with .NET Core MVC, although it can be any other web-framework really.</p>
 <p>So, where to store players and current turn? Database would be an overkill, so I went with a JSON file in the web-root (<code>/queue.json</code>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-    <span style="color:#f92672">&#34;players&#34;</span>: [
-        {
-            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Chad&#34;</span>,
-            <span style="color:#f92672">&#34;slackID&#34;</span>: <span style="color:#e6db74">&#34;U4JDL9QBC&#34;</span>,
-            <span style="color:#f92672">&#34;playing&#34;</span>: <span style="color:#66d9ef">true</span>,
-            <span style="color:#f92672">&#34;currentTurn&#34;</span>: <span style="color:#66d9ef">false</span>
-        },
-        {
-            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Martin&#34;</span>,
-            <span style="color:#f92672">&#34;slackID&#34;</span>: <span style="color:#e6db74">&#34;U4JLODQ3F&#34;</span>,
-            <span style="color:#f92672">&#34;playing&#34;</span>: <span style="color:#66d9ef">true</span>,
-            <span style="color:#f92672">&#34;currentTurn&#34;</span>: <span style="color:#66d9ef">true</span>
-        },
-        <span style="color:#e6db74">&#34;...&#34;</span>
-    ]
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;players&#34;</span>: [
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Chad&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;slackID&#34;</span>: <span style="color:#e6db74">&#34;U4JDL9QBC&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;playing&#34;</span>: <span style="color:#66d9ef">true</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;currentTurn&#34;</span>: <span style="color:#66d9ef">false</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Martin&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;slackID&#34;</span>: <span style="color:#e6db74">&#34;U4JLODQ3F&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;playing&#34;</span>: <span style="color:#66d9ef">true</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;currentTurn&#34;</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;...&#34;</span>
+</span></span><span style="display:flex;"><span>    ]
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Here&rsquo;s how to read a JSON file using <a href="https://www.newtonsoft.com/json/help/html/ParsingLINQtoJSON.htm#LoadingJSON">Newtonsoft.Json</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">HomeController</span> : Controller
-{
-    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IHostingEnvironment <span style="color:#ae81ff">_</span>hostingEnvironment;
-    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> queueFile = <span style="color:#e6db74">&#34;queue.json&#34;</span>;
-
-    <span style="color:#66d9ef">public</span> HomeController(IHostingEnvironment hostingEnvironment)
-    {
-        <span style="color:#ae81ff">_</span>hostingEnvironment = hostingEnvironment;
-        queueFile = Path.Combine(<span style="color:#ae81ff">_</span>hostingEnvironment.WebRootPath, queueFile);
-    }
-    
-    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>
-    <span style="color:#66d9ef">private</span> JObject ReadQueueFile()
-    {
-        <span style="color:#66d9ef">using</span> (StreamReader reader = <span style="color:#66d9ef">new</span> StreamReader(queueFile))
-        {
-            <span style="color:#66d9ef">return</span> (JObject)JToken.ReadFrom(<span style="color:#66d9ef">new</span> JsonTextReader(reader));
-        }
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">HomeController</span> : Controller
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IHostingEnvironment <span style="color:#ae81ff">_</span>hostingEnvironment;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> queueFile = <span style="color:#e6db74">&#34;queue.json&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> HomeController(IHostingEnvironment hostingEnvironment)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ae81ff">_</span>hostingEnvironment = hostingEnvironment;
+</span></span><span style="display:flex;"><span>        queueFile = Path.Combine(<span style="color:#ae81ff">_</span>hostingEnvironment.WebRootPath, queueFile);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> JObject ReadQueueFile()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">using</span> (StreamReader reader = <span style="color:#66d9ef">new</span> StreamReader(queueFile))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> (JObject)JToken.ReadFrom(<span style="color:#66d9ef">new</span> JsonTextReader(reader));
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <h2 id="view-the-queue">View the queue</h2>
 <p>Player class:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">namespace</span> homm_queue.Models
-{
-    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Player</span>
-    {
-        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> Name { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
-        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">bool</span> CurrentTurn { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> homm_queue.Models
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Player</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> Name { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">bool</span> CurrentTurn { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Controller code:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> IActionResult Index()
-{
-    List&lt;Player&gt; queue = <span style="color:#66d9ef">new</span> List&lt;Player&gt;();
-    JObject queueJson = ReadQueueFile();
-    
-    <span style="color:#66d9ef">foreach</span>(<span style="color:#66d9ef">var</span> player <span style="color:#66d9ef">in</span> queueJson[<span style="color:#e6db74">&#34;players&#34;</span>])
-    {
-        <span style="color:#66d9ef">if</span> (Convert.ToBoolean(player[<span style="color:#e6db74">&#34;playing&#34;</span>]))
-        {
-            queue.Add(<span style="color:#66d9ef">new</span> Player()
-            {
-                Name = Convert.ToString(player[<span style="color:#e6db74">&#34;name&#34;</span>]),
-                CurrentTurn = Convert.ToBoolean(player[<span style="color:#e6db74">&#34;currentTurn&#34;</span>])
-            });
-        }
-    }
-
-    <span style="color:#66d9ef">return</span> View(queue);
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> IActionResult Index()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    List&lt;Player&gt; queue = <span style="color:#66d9ef">new</span> List&lt;Player&gt;();
+</span></span><span style="display:flex;"><span>    JObject queueJson = ReadQueueFile();
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">foreach</span>(<span style="color:#66d9ef">var</span> player <span style="color:#66d9ef">in</span> queueJson[<span style="color:#e6db74">&#34;players&#34;</span>])
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (Convert.ToBoolean(player[<span style="color:#e6db74">&#34;playing&#34;</span>]))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            queue.Add(<span style="color:#66d9ef">new</span> Player()
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                Name = Convert.ToString(player[<span style="color:#e6db74">&#34;name&#34;</span>]),
+</span></span><span style="display:flex;"><span>                CurrentTurn = Convert.ToBoolean(player[<span style="color:#e6db74">&#34;currentTurn&#34;</span>])
+</span></span><span style="display:flex;"><span>            });
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> View(queue);
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>View code:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">@model IEnumerable&lt;<span style="color:#f92672">homm_queue.Models.Player</span>&gt;
-
-&lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;heading&#34;</span>&gt;&lt;<span style="color:#f92672">h3</span>&gt;Total players: @(Model.Count())&lt;/<span style="color:#f92672">h3</span>&gt;&lt;/<span style="color:#f92672">div</span>&gt;
-@foreach (var item in Model)
-{
-    @if (item.CurrentTurn)
-    {
-        &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;player turn&#34;</span>&gt;@item.Name&lt;/<span style="color:#f92672">div</span>&gt;
-    }
-    else
-    {
-        &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;player&#34;</span>&gt;@item.Name&lt;/<span style="color:#f92672">div</span>&gt;
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span>@model IEnumerable&lt;<span style="color:#f92672">homm_queue.Models.Player</span>&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>&lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;heading&#34;</span>&gt;&lt;<span style="color:#f92672">h3</span>&gt;Total players: @(Model.Count())&lt;/<span style="color:#f92672">h3</span>&gt;&lt;/<span style="color:#f92672">div</span>&gt;
+</span></span><span style="display:flex;"><span>@foreach (var item in Model)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    @if (item.CurrentTurn)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;player turn&#34;</span>&gt;@item.Name&lt;/<span style="color:#f92672">div</span>&gt;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    else
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;player&#34;</span>&gt;@item.Name&lt;/<span style="color:#f92672">div</span>&gt;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <h2 id="make-a-turn">Make a turn</h2>
 <p>Every time <code>next</code> button is clicked, current player&rsquo;s <code>currentTurn</code> is set to <code>false</code>, and for the next player it is set to <code>true</code>. If there is no next player (end of the list), then it just starts from the first player in the list.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#a6e22e">[HttpPost(&#34;/MakeTurn&#34;)]</span>
-<span style="color:#66d9ef">public</span> JsonResult MakeTurn()
-{
-    <span style="color:#66d9ef">string</span> nextPlayerID = <span style="color:#e6db74">&#34;unknown&#34;</span>;
-    <span style="color:#66d9ef">bool</span> setCurrentPlayerTurn = <span style="color:#66d9ef">false</span>;
-    
-    JObject queueJson = ReadQueueFile();
-    
-    <span style="color:#66d9ef">foreach</span>(<span style="color:#66d9ef">var</span> player <span style="color:#66d9ef">in</span> queueJson[<span style="color:#e6db74">&#34;players&#34;</span>])
-    {
-        <span style="color:#66d9ef">if</span> (Convert.ToBoolean(player[<span style="color:#e6db74">&#34;playing&#34;</span>]))
-        {
-            <span style="color:#66d9ef">if</span> (setCurrentPlayerTurn)
-            {
-                player[<span style="color:#e6db74">&#34;currentTurn&#34;</span>] = <span style="color:#66d9ef">true</span>;
-                nextPlayerID = Convert.ToString(player[<span style="color:#e6db74">&#34;slackID&#34;</span>]);
-                setCurrentPlayerTurn = <span style="color:#66d9ef">false</span>;
-                <span style="color:#66d9ef">break</span>;
-            }
-            <span style="color:#66d9ef">if</span> (Convert.ToBoolean(player[<span style="color:#e6db74">&#34;currentTurn&#34;</span>]))
-            {
-                player[<span style="color:#e6db74">&#34;currentTurn&#34;</span>] = <span style="color:#66d9ef">false</span>;
-                setCurrentPlayerTurn = <span style="color:#66d9ef">true</span>;
-            }
-        }
-    }
-    <span style="color:#66d9ef">if</span> (setCurrentPlayerTurn)
-    {
-        queueJson[<span style="color:#e6db74">&#34;players&#34;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#34;currentTurn&#34;</span>] = <span style="color:#66d9ef">true</span>;
-        nextPlayerID = Convert.ToString(queueJson[<span style="color:#e6db74">&#34;players&#34;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#34;slackID&#34;</span>]);
-    }
-
-    <span style="color:#66d9ef">using</span> (StreamWriter file = <span style="color:#66d9ef">new</span> StreamWriter(queueFile, <span style="color:#66d9ef">false</span>))
-    <span style="color:#66d9ef">using</span> (JsonTextWriter writer = <span style="color:#66d9ef">new</span> JsonTextWriter(file))
-    {
-        queueJson.WriteTo(writer);
-    }
-
-    PostToSlackChannel(nextPlayerID);
-
-    <span style="color:#66d9ef">return</span> Json(<span style="color:#e6db74">&#34;OK&#34;</span>);
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#a6e22e">[HttpPost(&#34;/MakeTurn&#34;)]</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> JsonResult MakeTurn()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> nextPlayerID = <span style="color:#e6db74">&#34;unknown&#34;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">bool</span> setCurrentPlayerTurn = <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    JObject queueJson = ReadQueueFile();
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">foreach</span>(<span style="color:#66d9ef">var</span> player <span style="color:#66d9ef">in</span> queueJson[<span style="color:#e6db74">&#34;players&#34;</span>])
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (Convert.ToBoolean(player[<span style="color:#e6db74">&#34;playing&#34;</span>]))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (setCurrentPlayerTurn)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                player[<span style="color:#e6db74">&#34;currentTurn&#34;</span>] = <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>                nextPlayerID = Convert.ToString(player[<span style="color:#e6db74">&#34;slackID&#34;</span>]);
+</span></span><span style="display:flex;"><span>                setCurrentPlayerTurn = <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">break</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (Convert.ToBoolean(player[<span style="color:#e6db74">&#34;currentTurn&#34;</span>]))
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                player[<span style="color:#e6db74">&#34;currentTurn&#34;</span>] = <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span>                setCurrentPlayerTurn = <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (setCurrentPlayerTurn)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        queueJson[<span style="color:#e6db74">&#34;players&#34;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#34;currentTurn&#34;</span>] = <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>        nextPlayerID = Convert.ToString(queueJson[<span style="color:#e6db74">&#34;players&#34;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#34;slackID&#34;</span>]);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">using</span> (StreamWriter file = <span style="color:#66d9ef">new</span> StreamWriter(queueFile, <span style="color:#66d9ef">false</span>))
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">using</span> (JsonTextWriter writer = <span style="color:#66d9ef">new</span> JsonTextWriter(file))
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        queueJson.WriteTo(writer);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    PostToSlackChannel(nextPlayerID);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> Json(<span style="color:#e6db74">&#34;OK&#34;</span>);
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Players order in JSON file obviously has to match the players order you have in game.</p>
 <p>How to call this method from view:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">script</span>&gt;
-    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">makeTurn</span>()
-    {
-        <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">xhr</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">XMLHttpRequest</span>();
-        <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">responseType</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;json&#34;</span>;
-        <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">open</span>(<span style="color:#e6db74">&#34;POST&#34;</span>, <span style="color:#e6db74">&#34;/MakeTurn&#34;</span>);
-        <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">send</span>();
-
-        <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">onload</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
-        {
-            <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">status</span> <span style="color:#f92672">!=</span> <span style="color:#ae81ff">200</span>) { <span style="color:#a6e22e">alert</span>(<span style="color:#e6db74">&#34;some error&#34;</span>); }
-            <span style="color:#66d9ef">else</span> { <span style="color:#a6e22e">location</span>.<span style="color:#a6e22e">reload</span>(<span style="color:#66d9ef">true</span>); }
-        };
-    }
-&lt;/<span style="color:#f92672">script</span>&gt;</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span>&lt;<span style="color:#f92672">script</span>&gt;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">makeTurn</span>()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">xhr</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">XMLHttpRequest</span>();
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">responseType</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;json&#34;</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">open</span>(<span style="color:#e6db74">&#34;POST&#34;</span>, <span style="color:#e6db74">&#34;/MakeTurn&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">send</span>();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">onload</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>()
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">xhr</span>.<span style="color:#a6e22e">status</span> <span style="color:#f92672">!=</span> <span style="color:#ae81ff">200</span>) { <span style="color:#a6e22e">alert</span>(<span style="color:#e6db74">&#34;some error&#34;</span>); }
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">else</span> { <span style="color:#a6e22e">location</span>.<span style="color:#a6e22e">reload</span>(<span style="color:#66d9ef">true</span>); }
+</span></span><span style="display:flex;"><span>        };
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>&lt;/<span style="color:#f92672">script</span>&gt;</span></span></code></pre></div>
 <h2 id="get-current-player">Get current player</h2>
 <p>And a simple REST API for getting the current player:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp">HttpGet(<span style="color:#e6db74">&#34;/GetCurrentTurn&#34;</span>)]
-<span style="color:#66d9ef">public</span> JsonResult GetCurrentTurn()
-{
-    JObject queueJson = ReadQueueFile();
-    <span style="color:#66d9ef">try</span>
-    {
-        <span style="color:#66d9ef">return</span> Json(
-            queueJson.SelectToken(<span style="color:#e6db74">&#34;$.players[?(@.currentTurn == true)]&#34;</span>)[<span style="color:#e6db74">&#34;name&#34;</span>]
-            );
-    }
-    <span style="color:#66d9ef">catch</span>
-    {
-        <span style="color:#66d9ef">return</span> Json(<span style="color:#e6db74">&#34;unknown&#34;</span>);
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span>HttpGet(<span style="color:#e6db74">&#34;/GetCurrentTurn&#34;</span>)]
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> JsonResult GetCurrentTurn()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    JObject queueJson = ReadQueueFile();
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> Json(
+</span></span><span style="display:flex;"><span>            queueJson.SelectToken(<span style="color:#e6db74">&#34;$.players[?(@.currentTurn == true)]&#34;</span>)[<span style="color:#e6db74">&#34;name&#34;</span>]
+</span></span><span style="display:flex;"><span>            );
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">catch</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> Json(<span style="color:#e6db74">&#34;unknown&#34;</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <h1 id="slack-notifications">Slack notifications</h1>
 <p>Slack notifications are done via <a href="https://api.slack.com/bot-users">Slack Bot</a>. You only need to set an incoming webhook for the channel:</p>
 
 
-
-    <img class="image-post" src="/blog/2019/09/21/homm-queue/images/slack-bot-webhooks.png" alt="Slack bot incoming webhook">
-
+    <img class="image-post" loading="lazy" src="/blog/2019/09/21/homm-queue/images/slack-bot-webhooks.png" alt="Slack bot incoming webhook">
 
 <p>And then you can post notifications using <a href="https://docs.microsoft.com/en-us/dotnet/api/system.net.http.httpclient">HttpClient</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">async</span> <span style="color:#66d9ef">void</span> PostToSlackChannel(<span style="color:#66d9ef">string</span> userSlackID)
-{
-    <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
-    {
-        httpClient.BaseAddress = <span style="color:#66d9ef">new</span> Uri(<span style="color:#e6db74">&#34;https://hooks.slack.com/&#34;</span>);
-
-        HttpRequestMessage request = <span style="color:#66d9ef">new</span> HttpRequestMessage(
-            HttpMethod.Post,
-            <span style="color:#e6db74">&#34;services/YOUR/SLACK/WEBHOOK&#34;</span>
-            );
-        StringBuilder msg = <span style="color:#66d9ef">new</span> StringBuilder()
-            .Append(<span style="color:#e6db74">&#34;{\&#34;text\&#34;:\&#34;&#34;</span>)
-            .Append(<span style="color:#e6db74">$&#34;&lt;@{userSlackID}&gt;&#39;s turn!&#34;</span>)
-            .Append(<span style="color:#e6db74">&#34;\&#34;}&#34;</span>);
-        request.Content = <span style="color:#66d9ef">new</span> StringContent(
-            msg.ToString(),
-            Encoding.UTF8,
-            <span style="color:#e6db74">&#34;application/json&#34;</span>
-            );
-
-        <span style="color:#66d9ef">try</span>
-        {
-            <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.SendAsync(request);
-            <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
-            Console.WriteLine(<span style="color:#e6db74">$&#34;[DEBUG] {(int)httpResponse.StatusCode} - {httpContent}&#34;</span>);
-        }
-        <span style="color:#66d9ef">catch</span> (Exception ex)
-        {
-            Console.WriteLine(ex);
-        }
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">async</span> <span style="color:#66d9ef">void</span> PostToSlackChannel(<span style="color:#66d9ef">string</span> userSlackID)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        httpClient.BaseAddress = <span style="color:#66d9ef">new</span> Uri(<span style="color:#e6db74">&#34;https://hooks.slack.com/&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        HttpRequestMessage request = <span style="color:#66d9ef">new</span> HttpRequestMessage(
+</span></span><span style="display:flex;"><span>            HttpMethod.Post,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;services/YOUR/SLACK/WEBHOOK&#34;</span>
+</span></span><span style="display:flex;"><span>            );
+</span></span><span style="display:flex;"><span>        StringBuilder msg = <span style="color:#66d9ef">new</span> StringBuilder()
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">&#34;{\&#34;text\&#34;:\&#34;&#34;</span>)
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">$&#34;&lt;@{userSlackID}&gt;&#39;s turn!&#34;</span>)
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">&#34;\&#34;}&#34;</span>);
+</span></span><span style="display:flex;"><span>        request.Content = <span style="color:#66d9ef">new</span> StringContent(
+</span></span><span style="display:flex;"><span>            msg.ToString(),
+</span></span><span style="display:flex;"><span>            Encoding.UTF8,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;application/json&#34;</span>
+</span></span><span style="display:flex;"><span>            );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">try</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.SendAsync(request);
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+</span></span><span style="display:flex;"><span>            Console.WriteLine(<span style="color:#e6db74">$&#34;[DEBUG] {(int)httpResponse.StatusCode} - {httpContent}&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">catch</span> (Exception ex)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            Console.WriteLine(ex);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Full source code of the project is <a href="https://github.com/retifrav/homm-queue">here</a>.</p>
       </div>
     </article>

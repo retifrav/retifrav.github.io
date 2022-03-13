@@ -5,7 +5,7 @@
     <title>Пропадающий Wi-Fi в Mac OS | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2016/05/20/ping-and-reconnect/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -69,39 +69,39 @@
 <p>Не найдя источника проблемы, решил написать <strong>AppleScript</strong>, который будет автоматически переподключать мне Wi-Fi.</p>
 <p>Идея такова: постоянно пинговать <code>ya.ru</code> и в случае провала переподключать Wi-Fi.</p>
 <p>Вот скрипт:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">repeat
-    
-    <span style="color:#66d9ef">try</span>
-        <span style="color:#f92672">--</span> пингуем до первого успешного отклика с таймаутом в <span style="color:#ae81ff">1</span> секунду<span style="color:#f92672">,</span> чтобы не ждать бесконечно
-        <span style="color:#66d9ef">do</span> shell script <span style="color:#e6db74">&#34;ping -o -t1 ya.ru&#34;</span>
-        <span style="color:#f92672">--</span>log <span style="color:#e6db74">&#34;OK&#34;</span>
-    on error
-        <span style="color:#f92672">--</span> в консоль пишем время разрыва и переподключаемся к сети
-        log <span style="color:#e6db74">&#34;[&#34;</span> <span style="color:#f92672">&amp;</span> time string of <span style="color:#f92672">(</span>current date<span style="color:#f92672">)</span> <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34;] disconnected... AGAIN&#34;</span>
-        <span style="color:#66d9ef">do</span> shell script <span style="color:#e6db74">&#34;networksetup -setairportpower en0 off&#34;</span>
-        <span style="color:#66d9ef">do</span> shell script <span style="color:#e6db74">&#34;networksetup -setairportpower en0 on&#34;</span>
-        <span style="color:#f92672">--</span> у вас интерфейс может быть не en0
-    end <span style="color:#66d9ef">try</span>
-
-    <span style="color:#f92672">--</span> прост небольшая пауза в <span style="color:#ae81ff">2</span> секунды
-    delay <span style="color:#ae81ff">2</span>
-    
-end repeat</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>repeat
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">--</span> пингуем до первого успешного отклика с таймаутом в <span style="color:#ae81ff">1</span> секунду<span style="color:#f92672">,</span> чтобы не ждать бесконечно
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">do</span> shell script <span style="color:#e6db74">&#34;ping -o -t1 ya.ru&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">--</span>log <span style="color:#e6db74">&#34;OK&#34;</span>
+</span></span><span style="display:flex;"><span>    on error
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">--</span> в консоль пишем время разрыва и переподключаемся к сети
+</span></span><span style="display:flex;"><span>        log <span style="color:#e6db74">&#34;[&#34;</span> <span style="color:#f92672">&amp;</span> time string of <span style="color:#f92672">(</span>current date<span style="color:#f92672">)</span> <span style="color:#f92672">&amp;</span> <span style="color:#e6db74">&#34;] disconnected... AGAIN&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">do</span> shell script <span style="color:#e6db74">&#34;networksetup -setairportpower en0 off&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">do</span> shell script <span style="color:#e6db74">&#34;networksetup -setairportpower en0 on&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">--</span> у вас интерфейс может быть не en0
+</span></span><span style="display:flex;"><span>    end <span style="color:#66d9ef">try</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span> прост небольшая пауза в <span style="color:#ae81ff">2</span> секунды
+</span></span><span style="display:flex;"><span>    delay <span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>end repeat</span></span></code></pre></div>
 <p>У меня Wi-Fi интерфейс имеет нумерацию <code>en0</code>. У вас может быть другая, потому выполните команду <code>networksetup -listnetworkserviceorder</code>, чтобы это выяснить. Например, у меня вывод такой:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">networksetup <span style="color:#f92672">-</span>listnetworkserviceorder
-
-<span style="color:#a6e22e">An</span> asterisk <span style="color:#f92672">(*)</span> denotes that a network service is disabled<span style="color:#f92672">.</span>
-<span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">)</span> <span style="color:#a6e22e">Wi</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Fi</span>
-<span style="color:#f92672">(</span><span style="color:#a6e22e">Hardware</span> <span style="color:#a6e22e">Port</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Wi-Fi</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">Device</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">en0</span><span style="color:#f92672">)</span>
-
-<span style="color:#f92672">(</span><span style="color:#ae81ff">2</span><span style="color:#f92672">)</span> <span style="color:#a6e22e">Bluetooth</span> <span style="color:#a6e22e">PAN</span>
-<span style="color:#f92672">(</span><span style="color:#a6e22e">Hardware</span> <span style="color:#a6e22e">Port</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Bluetooth</span> <span style="color:#66d9ef">PAN</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">Device</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">en3</span><span style="color:#f92672">)</span>
-
-<span style="color:#f92672">(</span><span style="color:#ae81ff">3</span><span style="color:#f92672">)</span> <span style="color:#a6e22e">Thunderbolt</span> <span style="color:#a6e22e">Bridge</span>
-<span style="color:#f92672">(</span><span style="color:#a6e22e">Hardware</span> <span style="color:#a6e22e">Port</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Thunderbolt</span> <span style="color:#66d9ef">Bridge</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">Device</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">bridge0</span><span style="color:#f92672">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>networksetup <span style="color:#f92672">-</span>listnetworkserviceorder
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">An</span> asterisk <span style="color:#f92672">(*)</span> denotes that a network service is disabled<span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">)</span> <span style="color:#a6e22e">Wi</span><span style="color:#f92672">-</span><span style="color:#a6e22e">Fi</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">(</span><span style="color:#a6e22e">Hardware</span> <span style="color:#a6e22e">Port</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Wi-Fi</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">Device</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">en0</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">(</span><span style="color:#ae81ff">2</span><span style="color:#f92672">)</span> <span style="color:#a6e22e">Bluetooth</span> <span style="color:#a6e22e">PAN</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">(</span><span style="color:#a6e22e">Hardware</span> <span style="color:#a6e22e">Port</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Bluetooth</span> <span style="color:#66d9ef">PAN</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">Device</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">en3</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">(</span><span style="color:#ae81ff">3</span><span style="color:#f92672">)</span> <span style="color:#a6e22e">Thunderbolt</span> <span style="color:#a6e22e">Bridge</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">(</span><span style="color:#a6e22e">Hardware</span> <span style="color:#a6e22e">Port</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Thunderbolt</span> <span style="color:#66d9ef">Bridge</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">Device</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">bridge0</span><span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>Видно, что Wi-Fi интерфейс имеет обозначение <code>en0</code>.</p>
 <p>Ну и всё, теперь, когда я нахожусь в &ldquo;нестабильной&rdquo; сети, я запускаю в терминале свой скрипт:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">osascript ping<span style="color:#f92672">-</span>and<span style="color:#f92672">-</span>reconnect<span style="color:#f92672">.</span>scpt</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>osascript ping<span style="color:#f92672">-</span>and<span style="color:#f92672">-</span>reconnect<span style="color:#f92672">.</span>scpt</span></span></code></pre></div>
 <p>И провалы коннекта остаются для меня незамеченными. Потом можно посмотреть вывод скрипта, где будет указано время для каждого &ldquo;разрыва&rdquo;.</p>
       </div>
     </article>

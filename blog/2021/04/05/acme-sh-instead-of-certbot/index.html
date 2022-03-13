@@ -5,7 +5,7 @@
     <title>Let&#39;s Encrypt certificate with acme.sh instead of Certbot | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2021/04/05/acme-sh-instead-of-certbot/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -19,9 +19,7 @@
 <meta property="og:description" content="I needed to set-up a new website with HTTPS and so I took Let&rsquo;s Encrypt procedure from my past instructions. But to my surprise, Certbot is installed via Snap now, which is just retarded. That discovery triggered me to remember that I read about other ways of getting Let&rsquo;s Encrypt certificate, such as acme.sh.
 
 
-
     
-
 
 On top of that, last month Electronic Frontier Foundation (creators of Certbot) announced that they have joined the hounding of Richard Stallman, so now they can go fuck themselves for sure." />
 <meta property="og:type" content="article" />
@@ -74,9 +72,7 @@ On top of that, last month Electronic Frontier Foundation (creators of Certbot) 
         <p>I needed to set-up a new website with HTTPS and so I took Let&rsquo;s Encrypt procedure from my past <a href="/blog/2017/11/28/several-domains-same-server-letsencrypt-tls/#lets-encrypt-certificate">instructions</a>. But to my surprise, <a href="https://certbot.eff.org/lets-encrypt/ubuntufocal-nginx">Certbot</a> is installed via <a href="https://en.wikipedia.org/wiki/Snap_(package_manager)">Snap</a> now, which is just retarded. That discovery triggered me to remember that I read about other ways of getting Let&rsquo;s Encrypt certificate, such as <a href="http://acme.sh/">acme.sh</a>.</p>
 
 
-
-    <img class="image-post" src="/blog/2021/04/05/acme-sh-instead-of-certbot/images/lets-encrypt-acme.jpg" alt="acme.sh instead of Certbot" style="border:1px solid black;">
-
+    <img class="image-post" loading="lazy" src="/blog/2021/04/05/acme-sh-instead-of-certbot/images/lets-encrypt-acme.jpg" alt="acme.sh instead of Certbot" style="border:1px solid black;">
 
 <p>On top of that, last month <a href="https://en.wikipedia.org/wiki/Electronic_Frontier_Foundation">Electronic Frontier Foundation</a> (<em>creators of Certbot</em>) announced that they <a href="https://www.eff.org/deeplinks/2021/03/statement-re-election-richard-stallman-fsf-board">have joined</a> the hounding of Richard Stallman, so now they can go fuck themselves for sure.</p>
 <nav id="TableOfContents">
@@ -114,9 +110,7 @@ On top of that, last month Electronic Frontier Foundation (creators of Certbot) 
 <p>It also seemed like a good time to get an overview of the current situation on the domains market. First I&rsquo;ve checked registrars that I&rsquo;ve been using so far, but neither of them had prices for <code>.dev</code> lower than 15 USD. Then, thanks to <a href="https://get.dev/">Google</a>, I got this list:</p>
 
 
-
-    <img class="image-post" src="/blog/2021/04/05/acme-sh-instead-of-certbot/images/google-recommends-domain-registrars.png" alt="Google recommends domain registrars">
-
+    <img class="image-post" loading="lazy" src="/blog/2021/04/05/acme-sh-instead-of-certbot/images/google-recommends-domain-registrars.png" alt="Google recommends domain registrars">
 
 <p>Having compared prices from most of those, I didn&rsquo;t find anything significantly better, but then I got to <a href="https://porkbun.com/">Porkbun</a>, and they offer <code>.dev</code> domains for as low as 12 USD per year.</p>
 <p>Out of curiosity, I also checked their prices for my other domains that I already have registered at other registrars, and those turned out to be cheaper as well, some even almost twice as cheap! So I am now considering moving all my domains to Porkbun.</p>
@@ -127,52 +121,52 @@ On top of that, last month Electronic Frontier Foundation (creators of Certbot) 
 <p>Basically, <code>acme.sh</code> is an ACME protocol client written in shell script. As the bare minimum, it supports issuing a new certificate and automatically renewing it with a <code>cron</code> job.</p>
 <h2 id="installation">Installation</h2>
 <p>The following command downloads and executes an &ldquo;installer&rdquo; script, which in turn will download and &ldquo;install&rdquo; the <code>acme.sh</code> itself and its assets:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cd ~
-$ curl https://get.acme.sh | sh -s email<span style="color:#f92672">=</span>YOUR@EMAIL.com
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-<span style="color:#ae81ff">100</span>   <span style="color:#ae81ff">937</span>    <span style="color:#ae81ff">0</span>   <span style="color:#ae81ff">937</span>    <span style="color:#ae81ff">0</span>     <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">12662</span>      <span style="color:#ae81ff">0</span> --:--:-- --:--:-- --:--:-- <span style="color:#ae81ff">12662</span>
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-<span style="color:#ae81ff">100</span>  204k  <span style="color:#ae81ff">100</span>  204k    <span style="color:#ae81ff">0</span>     <span style="color:#ae81ff">0</span>  1169k      <span style="color:#ae81ff">0</span> --:--:-- --:--:-- --:--:-- 1169k
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> Installing from online archive.
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> Downloading https://github.com/acmesh-official/acme.sh/archive/master.tar.gz
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> Extracting master.tar.gz
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> It is recommended to install socat first.
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> We use socat <span style="color:#66d9ef">for</span> standalone server <span style="color:#66d9ef">if</span> you use standalone mode.
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> If you don<span style="color:#e6db74">&#39;t use standalone mode, just ignore this warning.
-</span><span style="color:#e6db74">[Sat Apr  3 20:44:45 UTC 2021] Installing to /home/USERNAME/.acme.sh
-</span><span style="color:#e6db74">[Sat Apr  3 20:44:45 UTC 2021] Installed to /home/USERNAME/.acme.sh/acme.sh
-</span><span style="color:#e6db74">[Sat Apr  3 20:44:45 UTC 2021] Installing alias to &#39;</span>/home/USERNAME/.bashrc<span style="color:#960050;background-color:#1e0010">&#39;</span>
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> OK, Close and reopen your terminal to start using acme.sh
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> Installing cron job
-no crontab <span style="color:#66d9ef">for</span> USERNAME
-no crontab <span style="color:#66d9ef">for</span> USERNAME
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> Good, bash is found, so change the shebang to use bash as preferred.
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:46 UTC 2021<span style="color:#f92672">]</span> OK
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:46 UTC 2021<span style="color:#f92672">]</span> Install success!</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd ~
+</span></span><span style="display:flex;"><span>$ curl https://get.acme.sh | sh -s email<span style="color:#f92672">=</span>YOUR@EMAIL.com
+</span></span><span style="display:flex;"><span>  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+</span></span><span style="display:flex;"><span>                                 Dload  Upload   Total   Spent    Left  Speed
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">100</span>   <span style="color:#ae81ff">937</span>    <span style="color:#ae81ff">0</span>   <span style="color:#ae81ff">937</span>    <span style="color:#ae81ff">0</span>     <span style="color:#ae81ff">0</span>  <span style="color:#ae81ff">12662</span>      <span style="color:#ae81ff">0</span> --:--:-- --:--:-- --:--:-- <span style="color:#ae81ff">12662</span>
+</span></span><span style="display:flex;"><span>  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+</span></span><span style="display:flex;"><span>                                 Dload  Upload   Total   Spent    Left  Speed
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">100</span>  204k  <span style="color:#ae81ff">100</span>  204k    <span style="color:#ae81ff">0</span>     <span style="color:#ae81ff">0</span>  1169k      <span style="color:#ae81ff">0</span> --:--:-- --:--:-- --:--:-- 1169k
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> Installing from online archive.
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> Downloading https://github.com/acmesh-official/acme.sh/archive/master.tar.gz
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> Extracting master.tar.gz
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> It is recommended to install socat first.
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> We use socat <span style="color:#66d9ef">for</span> standalone server <span style="color:#66d9ef">if</span> you use standalone mode.
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> If you don<span style="color:#e6db74">&#39;t use standalone mode, just ignore this warning.
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">[Sat Apr  3 20:44:45 UTC 2021] Installing to /home/USERNAME/.acme.sh
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">[Sat Apr  3 20:44:45 UTC 2021] Installed to /home/USERNAME/.acme.sh/acme.sh
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">[Sat Apr  3 20:44:45 UTC 2021] Installing alias to &#39;</span>/home/USERNAME/.bashrc<span style="color:#960050;background-color:#1e0010">&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> OK, Close and reopen your terminal to start using acme.sh
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> Installing cron job
+</span></span><span style="display:flex;"><span>no crontab <span style="color:#66d9ef">for</span> USERNAME
+</span></span><span style="display:flex;"><span>no crontab <span style="color:#66d9ef">for</span> USERNAME
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:45 UTC 2021<span style="color:#f92672">]</span> Good, bash is found, so change the shebang to use bash as preferred.
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:46 UTC 2021<span style="color:#f92672">]</span> OK
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:44:46 UTC 2021<span style="color:#f92672">]</span> Install success!</span></span></code></pre></div>
 <p>E-mail is needed to register at Let&rsquo;s Encrypt, so they could send you renewal notice.</p>
 <p>Let&rsquo;s see what we got:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ls -lah ~/.acme.sh/
-total 236K
-drwx------ <span style="color:#ae81ff">5</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 .
-drwxr-xr-x <span style="color:#ae81ff">6</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 ..
--rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME  <span style="color:#ae81ff">193</span> Apr  <span style="color:#ae81ff">3</span> 20:44 account.conf
--rwxrwxr-x <span style="color:#ae81ff">1</span> USERNAME USERNAME 205K Apr  <span style="color:#ae81ff">3</span> 20:44 acme.sh
--rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME   <span style="color:#ae81ff">90</span> Apr  <span style="color:#ae81ff">3</span> 20:44 acme.sh.env
-drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 deploy
-drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 dnsapi
-drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 notify</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ls -lah ~/.acme.sh/
+</span></span><span style="display:flex;"><span>total 236K
+</span></span><span style="display:flex;"><span>drwx------ <span style="color:#ae81ff">5</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 .
+</span></span><span style="display:flex;"><span>drwxr-xr-x <span style="color:#ae81ff">6</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 ..
+</span></span><span style="display:flex;"><span>-rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME  <span style="color:#ae81ff">193</span> Apr  <span style="color:#ae81ff">3</span> 20:44 account.conf
+</span></span><span style="display:flex;"><span>-rwxrwxr-x <span style="color:#ae81ff">1</span> USERNAME USERNAME 205K Apr  <span style="color:#ae81ff">3</span> 20:44 acme.sh
+</span></span><span style="display:flex;"><span>-rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME   <span style="color:#ae81ff">90</span> Apr  <span style="color:#ae81ff">3</span> 20:44 acme.sh.env
+</span></span><span style="display:flex;"><span>drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 deploy
+</span></span><span style="display:flex;"><span>drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 dnsapi
+</span></span><span style="display:flex;"><span>drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 notify</span></span></code></pre></div>
 <p>It also says that it did something with <code>crontab</code>. Let&rsquo;s check what&rsquo;s new there:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ crontab <span style="color:#f92672">-</span>e
-<span style="color:#ae81ff">45</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">*</span> <span style="color:#f92672">*</span> <span style="color:#f92672">*</span> <span style="color:#e6db74">&#34;/home/USERNAME/.acme.sh&#34;</span><span style="color:#f92672">/</span>acme<span style="color:#f92672">.</span>sh <span style="color:#f92672">--</span>cron <span style="color:#f92672">--</span>home <span style="color:#e6db74">&#34;/home/USERNAME/.acme.sh&#34;</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">/</span>dev<span style="color:#f92672">/</span><span style="color:#66d9ef">null</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ crontab <span style="color:#f92672">-</span>e
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">45</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">*</span> <span style="color:#f92672">*</span> <span style="color:#f92672">*</span> <span style="color:#e6db74">&#34;/home/USERNAME/.acme.sh&#34;</span><span style="color:#f92672">/</span>acme<span style="color:#f92672">.</span>sh <span style="color:#f92672">--</span>cron <span style="color:#f92672">--</span>home <span style="color:#e6db74">&#34;/home/USERNAME/.acme.sh&#34;</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">/</span>dev<span style="color:#f92672">/</span><span style="color:#66d9ef">null</span></span></span></code></pre></div>
 <p>So it wants to run the script every day at 00:45. Documentation says that this job will be checking if certificate needs renewal, so it will trigger renewal only when certificate is about to expire. For instance, here&rsquo;s the log I got from running this <code>cron</code> job on schedule:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#f92672">[</span>Mon Apr  <span style="color:#ae81ff">5</span> 00:45:01 UTC 2021<span style="color:#f92672">]</span> <span style="color:#f92672">===</span>Starting cron<span style="color:#f92672">===</span>
-<span style="color:#f92672">[</span>Mon Apr  <span style="color:#ae81ff">5</span> 00:45:01 UTC 2021<span style="color:#f92672">]</span> Renew: <span style="color:#e6db74">&#39;domain.dev&#39;</span>
-<span style="color:#f92672">[</span>Mon Apr  <span style="color:#ae81ff">5</span> 00:45:01 UTC 2021<span style="color:#f92672">]</span> Skip, Next renewal time is: Wed Jun  <span style="color:#ae81ff">2</span> 20:35:54 UTC <span style="color:#ae81ff">2021</span>
-<span style="color:#f92672">[</span>Mon Apr  <span style="color:#ae81ff">5</span> 00:45:01 UTC 2021<span style="color:#f92672">]</span> Add <span style="color:#e6db74">&#39;--force&#39;</span> to force to renew.
-<span style="color:#f92672">[</span>Mon Apr  <span style="color:#ae81ff">5</span> 00:45:01 UTC 2021<span style="color:#f92672">]</span> Skipped domain.dev
-<span style="color:#f92672">[</span>Mon Apr  <span style="color:#ae81ff">5</span> 00:45:01 UTC 2021<span style="color:#f92672">]</span> <span style="color:#f92672">===</span>End cron<span style="color:#f92672">===</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#f92672">[</span>Mon Apr  <span style="color:#ae81ff">5</span> 00:45:01 UTC 2021<span style="color:#f92672">]</span> <span style="color:#f92672">===</span>Starting cron<span style="color:#f92672">===</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Mon Apr  <span style="color:#ae81ff">5</span> 00:45:01 UTC 2021<span style="color:#f92672">]</span> Renew: <span style="color:#e6db74">&#39;domain.dev&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Mon Apr  <span style="color:#ae81ff">5</span> 00:45:01 UTC 2021<span style="color:#f92672">]</span> Skip, Next renewal time is: Wed Jun  <span style="color:#ae81ff">2</span> 20:35:54 UTC <span style="color:#ae81ff">2021</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Mon Apr  <span style="color:#ae81ff">5</span> 00:45:01 UTC 2021<span style="color:#f92672">]</span> Add <span style="color:#e6db74">&#39;--force&#39;</span> to force to renew.
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Mon Apr  <span style="color:#ae81ff">5</span> 00:45:01 UTC 2021<span style="color:#f92672">]</span> Skipped domain.dev
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Mon Apr  <span style="color:#ae81ff">5</span> 00:45:01 UTC 2021<span style="color:#f92672">]</span> <span style="color:#f92672">===</span>End cron<span style="color:#f92672">===</span></span></span></code></pre></div>
 <h2 id="getting-lets-encrypt-certificate">Getting Let&rsquo;s Encrypt certificate</h2>
 <p>The <code>acme.sh</code> script supports different <a href="https://github.com/acmesh-official/acme.sh#supported-ca">certificate authorities</a>, but I&rsquo;m interested in exactly Let&rsquo;s Encrypt.</p>
 <p>In order for Let&rsquo;s Encrypt to verify that you do indeed own the <code>domain.dev</code>, your host will need to pass the ACME verification challenge. There are several types of that challenge, but the easiest (<em>I think</em>) is the <a href="https://letsencrypt.org/docs/challenge-types/#http-01-challenge">HTTP-01</a>:</p>
@@ -181,135 +175,135 @@ drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <spa
 <li>Let&rsquo;s Encrypt will then try to reach <code>http://domain.dev/.well-known/acme-challenge/TOKEN</code>. If it succeeds, then you&rsquo;ve proven that the domain is yours and you&rsquo;ll get a certificate. It&rsquo;s not an issue that <code>.dev</code> enforces HTTPS - this concerns only browsers, so Let&rsquo;s Encrypt will be able to reach the HTTP <code>80</code> port on your host just fine</li>
 </ol>
 <p>Since the script can be run from a non-root user without <code>sudo</code>, I would recommend to do exactly that. Perhaps you should even create a new user for this purpose. Make sure that user has write access to the website root folder. As I am using NGINX, it is enough to add user to <code>www-data</code> group:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo usermod -a -G www-data USERNAME</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo usermod -a -G www-data USERNAME</span></span></code></pre></div>
 <p>If user doesn&rsquo;t get <code>www-data</code> in his groups right away:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ id USERNAME
-uid<span style="color:#f92672">=</span>107<span style="color:#f92672">(</span>USERNAME<span style="color:#f92672">)</span> gid<span style="color:#f92672">=</span>121<span style="color:#f92672">(</span>USERNAME<span style="color:#f92672">)</span> groups<span style="color:#f92672">=</span>121<span style="color:#f92672">(</span>USERNAME<span style="color:#f92672">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ id USERNAME
+</span></span><span style="display:flex;"><span>uid<span style="color:#f92672">=</span>107<span style="color:#f92672">(</span>USERNAME<span style="color:#f92672">)</span> gid<span style="color:#f92672">=</span>121<span style="color:#f92672">(</span>USERNAME<span style="color:#f92672">)</span> groups<span style="color:#f92672">=</span>121<span style="color:#f92672">(</span>USERNAME<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>log-off, log-in back and check again:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ id USERNAME
-uid<span style="color:#f92672">=</span>107<span style="color:#f92672">(</span>USERNAME<span style="color:#f92672">)</span> gid<span style="color:#f92672">=</span>121<span style="color:#f92672">(</span>USERNAME<span style="color:#f92672">)</span> groups<span style="color:#f92672">=</span>121<span style="color:#f92672">(</span>USERNAME<span style="color:#f92672">)</span>,33<span style="color:#f92672">(</span>www-data<span style="color:#f92672">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ id USERNAME
+</span></span><span style="display:flex;"><span>uid<span style="color:#f92672">=</span>107<span style="color:#f92672">(</span>USERNAME<span style="color:#f92672">)</span> gid<span style="color:#f92672">=</span>121<span style="color:#f92672">(</span>USERNAME<span style="color:#f92672">)</span> groups<span style="color:#f92672">=</span>121<span style="color:#f92672">(</span>USERNAME<span style="color:#f92672">)</span>,33<span style="color:#f92672">(</span>www-data<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>Then grant writing access to the website folder:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ sudo chown <span style="color:#f92672">-</span>R www<span style="color:#f92672">-</span>data<span style="color:#66d9ef">:</span><span style="color:#66d9ef">www-data</span> <span style="color:#66d9ef">/var/www/domain.dev</span>
-$ sudo chmod <span style="color:#f92672">-</span>R g<span style="color:#f92672">+</span>rw <span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>www<span style="color:#f92672">/</span>domain<span style="color:#f92672">.</span>dev</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ sudo chown <span style="color:#f92672">-</span>R www<span style="color:#f92672">-</span>data<span style="color:#66d9ef">:</span><span style="color:#66d9ef">www-data</span> <span style="color:#66d9ef">/var/www/domain.dev</span>
+</span></span><span style="display:flex;"><span>$ sudo chmod <span style="color:#f92672">-</span>R g<span style="color:#f92672">+</span>rw <span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>www<span style="color:#f92672">/</span>domain<span style="color:#f92672">.</span>dev</span></span></code></pre></div>
 <p>Finally, NGINX settings:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">server</span> {
-    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span> <span style="color:#e6db74">default_server</span>;
-    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span> <span style="color:#e6db74">default_server</span>;
-
-    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">domain.dev</span>;
-
-    <span style="color:#f92672">root</span> <span style="color:#e6db74">/var/www/</span>$server_name;
-
-    <span style="color:#f92672">index</span> <span style="color:#e6db74">index.html</span>;
-
-    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
-        <span style="color:#f92672">try_files</span> $uri $uri/ =<span style="color:#ae81ff">404</span>;
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span> <span style="color:#e6db74">default_server</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span> <span style="color:#e6db74">default_server</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">domain.dev</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">root</span> <span style="color:#e6db74">/var/www/</span>$server_name;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">index</span> <span style="color:#e6db74">index.html</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">try_files</span> $uri $uri/ =<span style="color:#ae81ff">404</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>And you are ready to request a certificate and to try pass the challenge:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ acme.sh --issue -d domain.dev -w /var/www/domain.dev
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:13 UTC 2021<span style="color:#f92672">]</span> Using CA: https://acme-v02.api.letsencrypt.org/directory
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:14 UTC 2021<span style="color:#f92672">]</span> Create account key ok.
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:14 UTC 2021<span style="color:#f92672">]</span> Registering account: https://acme-v02.api.letsencrypt.org/directory
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:15 UTC 2021<span style="color:#f92672">]</span> Registered
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:15 UTC 2021<span style="color:#f92672">]</span> ACCOUNT_THUMBPRINT<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;07D34pqZi498dFtJwZs8tO-PoF8mM5MKFXaWgx2TkjY&#39;</span>
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:15 UTC 2021<span style="color:#f92672">]</span> Creating domain key
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:15 UTC 2021<span style="color:#f92672">]</span> The domain key is here: /home/USERNAME/.acme.sh/domain.dev/domain.dev.key
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:15 UTC 2021<span style="color:#f92672">]</span> Single domain<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;domain.dev&#39;</span>
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:15 UTC 2021<span style="color:#f92672">]</span> Getting domain auth token <span style="color:#66d9ef">for</span> each domain
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:16 UTC 2021<span style="color:#f92672">]</span> Getting webroot <span style="color:#66d9ef">for</span> domain<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;domain.dev&#39;</span>
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:16 UTC 2021<span style="color:#f92672">]</span> Verifying: domain.dev
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:20 UTC 2021<span style="color:#f92672">]</span> Pending
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:22 UTC 2021<span style="color:#f92672">]</span> Pending
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:25 UTC 2021<span style="color:#f92672">]</span> Pending
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:28 UTC 2021<span style="color:#f92672">]</span> domain.dev:Verify error:Fetching http://domain.dev/.well-known/acme-challenge/mfRdXgmXwos0wYgxiplwIB45qJJWxMl_B3ZRqWrgswA: Timeout during connect <span style="color:#f92672">(</span>likely firewall problem<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:28 UTC 2021<span style="color:#f92672">]</span> Please add <span style="color:#e6db74">&#39;--debug&#39;</span> or <span style="color:#e6db74">&#39;--log&#39;</span> to check more details.
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:28 UTC 2021<span style="color:#f92672">]</span> See: https://github.com/acmesh-official/acme.sh/wiki/How-to-debug-acme.sh</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ acme.sh --issue -d domain.dev -w /var/www/domain.dev
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:13 UTC 2021<span style="color:#f92672">]</span> Using CA: https://acme-v02.api.letsencrypt.org/directory
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:14 UTC 2021<span style="color:#f92672">]</span> Create account key ok.
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:14 UTC 2021<span style="color:#f92672">]</span> Registering account: https://acme-v02.api.letsencrypt.org/directory
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:15 UTC 2021<span style="color:#f92672">]</span> Registered
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:15 UTC 2021<span style="color:#f92672">]</span> ACCOUNT_THUMBPRINT<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;07D34pqZi498dFtJwZs8tO-PoF8mM5MKFXaWgx2TkjY&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:15 UTC 2021<span style="color:#f92672">]</span> Creating domain key
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:15 UTC 2021<span style="color:#f92672">]</span> The domain key is here: /home/USERNAME/.acme.sh/domain.dev/domain.dev.key
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:15 UTC 2021<span style="color:#f92672">]</span> Single domain<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;domain.dev&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:15 UTC 2021<span style="color:#f92672">]</span> Getting domain auth token <span style="color:#66d9ef">for</span> each domain
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:16 UTC 2021<span style="color:#f92672">]</span> Getting webroot <span style="color:#66d9ef">for</span> domain<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;domain.dev&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:16 UTC 2021<span style="color:#f92672">]</span> Verifying: domain.dev
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:20 UTC 2021<span style="color:#f92672">]</span> Pending
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:22 UTC 2021<span style="color:#f92672">]</span> Pending
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:25 UTC 2021<span style="color:#f92672">]</span> Pending
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:28 UTC 2021<span style="color:#f92672">]</span> domain.dev:Verify error:Fetching http://domain.dev/.well-known/acme-challenge/mfRdXgmXwos0wYgxiplwIB45qJJWxMl_B3ZRqWrgswA: Timeout during connect <span style="color:#f92672">(</span>likely firewall problem<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:28 UTC 2021<span style="color:#f92672">]</span> Please add <span style="color:#e6db74">&#39;--debug&#39;</span> or <span style="color:#e6db74">&#39;--log&#39;</span> to check more details.
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 20:52:28 UTC 2021<span style="color:#f92672">]</span> See: https://github.com/acmesh-official/acme.sh/wiki/How-to-debug-acme.sh</span></span></code></pre></div>
 <p>As you can see, for me it failed at first. As I realized, that was because I messed up my DNS records a bit, so they were not pointing my new domain to the right host. After I fixed that, the challenge went well:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ acme.sh --issue -d domain.dev -w /var/www/domain.dev
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:27 UTC 2021<span style="color:#f92672">]</span> Using CA: https://acme-v02.api.letsencrypt.org/directory
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:27 UTC 2021<span style="color:#f92672">]</span> Single domain<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;domain.dev&#39;</span>
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:27 UTC 2021<span style="color:#f92672">]</span> Getting domain auth token <span style="color:#66d9ef">for</span> each domain
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:29 UTC 2021<span style="color:#f92672">]</span> Getting webroot <span style="color:#66d9ef">for</span> domain<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;domain.dev&#39;</span>
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:29 UTC 2021<span style="color:#f92672">]</span> Verifying: domain.dev
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:32 UTC 2021<span style="color:#f92672">]</span> Pending
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:35 UTC 2021<span style="color:#f92672">]</span> Pending
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:38 UTC 2021<span style="color:#f92672">]</span> Pending
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:40 UTC 2021<span style="color:#f92672">]</span> Success
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:40 UTC 2021<span style="color:#f92672">]</span> Verify finished, start to sign.
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:40 UTC 2021<span style="color:#f92672">]</span> Lets finalize the order.
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:40 UTC 2021<span style="color:#f92672">]</span> Le_OrderFinalize<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://acme-v02.api.letsencrypt.org/acme/finalize/117340399/8841120922&#39;</span>
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:41 UTC 2021<span style="color:#f92672">]</span> Downloading cert.
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:41 UTC 2021<span style="color:#f92672">]</span> Le_LinkCert<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://acme-v02.api.letsencrypt.org/acme/cert/04o8df0db3041a3vf897b6632a163ddlla74&#39;</span>
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:42 UTC 2021<span style="color:#f92672">]</span> Cert success.
------BEGIN CERTIFICATE-----
-HERE-GOES-CERTIFICATE
------END CERTIFICATE-----
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:42 UTC 2021<span style="color:#f92672">]</span> Your cert is in  /home/USERNAME/.acme.sh/domain.dev/domain.dev.cer
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:42 UTC 2021<span style="color:#f92672">]</span> Your cert key is in  /home/USERNAME/.acme.sh/domain.dev/domain.dev.key
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:42 UTC 2021<span style="color:#f92672">]</span> The intermediate CA cert is in  /home/USERNAME/.acme.sh/domain.dev/ca.cer
-<span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:42 UTC 2021<span style="color:#f92672">]</span> And the full chain certs is there:  /home/USERNAME/.acme.sh/domain.dev/fullchain.cer</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ acme.sh --issue -d domain.dev -w /var/www/domain.dev
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:27 UTC 2021<span style="color:#f92672">]</span> Using CA: https://acme-v02.api.letsencrypt.org/directory
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:27 UTC 2021<span style="color:#f92672">]</span> Single domain<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;domain.dev&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:27 UTC 2021<span style="color:#f92672">]</span> Getting domain auth token <span style="color:#66d9ef">for</span> each domain
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:29 UTC 2021<span style="color:#f92672">]</span> Getting webroot <span style="color:#66d9ef">for</span> domain<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;domain.dev&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:29 UTC 2021<span style="color:#f92672">]</span> Verifying: domain.dev
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:32 UTC 2021<span style="color:#f92672">]</span> Pending
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:35 UTC 2021<span style="color:#f92672">]</span> Pending
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:38 UTC 2021<span style="color:#f92672">]</span> Pending
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:40 UTC 2021<span style="color:#f92672">]</span> Success
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:40 UTC 2021<span style="color:#f92672">]</span> Verify finished, start to sign.
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:40 UTC 2021<span style="color:#f92672">]</span> Lets finalize the order.
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:40 UTC 2021<span style="color:#f92672">]</span> Le_OrderFinalize<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://acme-v02.api.letsencrypt.org/acme/finalize/117340399/8841120922&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:41 UTC 2021<span style="color:#f92672">]</span> Downloading cert.
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:41 UTC 2021<span style="color:#f92672">]</span> Le_LinkCert<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://acme-v02.api.letsencrypt.org/acme/cert/04o8df0db3041a3vf897b6632a163ddlla74&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:42 UTC 2021<span style="color:#f92672">]</span> Cert success.
+</span></span><span style="display:flex;"><span>-----BEGIN CERTIFICATE-----
+</span></span><span style="display:flex;"><span>HERE-GOES-CERTIFICATE
+</span></span><span style="display:flex;"><span>-----END CERTIFICATE-----
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:42 UTC 2021<span style="color:#f92672">]</span> Your cert is in  /home/USERNAME/.acme.sh/domain.dev/domain.dev.cer
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:42 UTC 2021<span style="color:#f92672">]</span> Your cert key is in  /home/USERNAME/.acme.sh/domain.dev/domain.dev.key
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:42 UTC 2021<span style="color:#f92672">]</span> The intermediate CA cert is in  /home/USERNAME/.acme.sh/domain.dev/ca.cer
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>Sat Apr  <span style="color:#ae81ff">3</span> 21:05:42 UTC 2021<span style="color:#f92672">]</span> And the full chain certs is there:  /home/USERNAME/.acme.sh/domain.dev/fullchain.cer</span></span></code></pre></div>
 <p>Let&rsquo;s see what&rsquo;s new in the folder:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ls -lah ~/.acme.sh/
-total 248K
-drwx------ <span style="color:#ae81ff">7</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:52 .
-drwxr-xr-x <span style="color:#ae81ff">7</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:46 ..
--rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME  <span style="color:#ae81ff">304</span> Apr  <span style="color:#ae81ff">3</span> 21:05 account.conf
--rwxrwxr-x <span style="color:#ae81ff">1</span> USERNAME USERNAME 205K Apr  <span style="color:#ae81ff">3</span> 20:44 acme.sh
--rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME   <span style="color:#ae81ff">90</span> Apr  <span style="color:#ae81ff">3</span> 20:44 acme.sh.env
-drwxrwxr-x <span style="color:#ae81ff">3</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:52 ca
-drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 21:05 domain.dev
-drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 deploy
-drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 dnsapi
--rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME  <span style="color:#ae81ff">490</span> Apr  <span style="color:#ae81ff">3</span> 21:05 http.header
-drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 notify</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ls -lah ~/.acme.sh/
+</span></span><span style="display:flex;"><span>total 248K
+</span></span><span style="display:flex;"><span>drwx------ <span style="color:#ae81ff">7</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:52 .
+</span></span><span style="display:flex;"><span>drwxr-xr-x <span style="color:#ae81ff">7</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:46 ..
+</span></span><span style="display:flex;"><span>-rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME  <span style="color:#ae81ff">304</span> Apr  <span style="color:#ae81ff">3</span> 21:05 account.conf
+</span></span><span style="display:flex;"><span>-rwxrwxr-x <span style="color:#ae81ff">1</span> USERNAME USERNAME 205K Apr  <span style="color:#ae81ff">3</span> 20:44 acme.sh
+</span></span><span style="display:flex;"><span>-rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME   <span style="color:#ae81ff">90</span> Apr  <span style="color:#ae81ff">3</span> 20:44 acme.sh.env
+</span></span><span style="display:flex;"><span>drwxrwxr-x <span style="color:#ae81ff">3</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:52 ca
+</span></span><span style="display:flex;"><span>drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 21:05 domain.dev
+</span></span><span style="display:flex;"><span>drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 deploy
+</span></span><span style="display:flex;"><span>drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 dnsapi
+</span></span><span style="display:flex;"><span>-rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME  <span style="color:#ae81ff">490</span> Apr  <span style="color:#ae81ff">3</span> 21:05 http.header
+</span></span><span style="display:flex;"><span>drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:44 notify</span></span></code></pre></div>
 <p>And here&rsquo;s what&rsquo;s inside <code>domain.dev</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ ls -lah ~/.acme.sh/domain.dev/
-total 36K
-drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 21:05 .
-drwx------ <span style="color:#ae81ff">7</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:52 ..
--rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME 1.6K Apr  <span style="color:#ae81ff">3</span> 21:05 ca.cer
--rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME 1.8K Apr  <span style="color:#ae81ff">3</span> 21:05 domain.dev.cer
--rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME  <span style="color:#ae81ff">624</span> Apr  <span style="color:#ae81ff">3</span> 21:05 domain.dev.conf
--rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME  <span style="color:#ae81ff">968</span> Apr  <span style="color:#ae81ff">3</span> 21:05 domain.dev.csr
--rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME  <span style="color:#ae81ff">206</span> Apr  <span style="color:#ae81ff">3</span> 21:05 domain.dev.csr.conf
--rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME 1.7K Apr  <span style="color:#ae81ff">3</span> 20:52 domain.dev.key
--rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME 3.4K Apr  <span style="color:#ae81ff">3</span> 21:05 fullchain.cer</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ls -lah ~/.acme.sh/domain.dev/
+</span></span><span style="display:flex;"><span>total 36K
+</span></span><span style="display:flex;"><span>drwxrwxr-x <span style="color:#ae81ff">2</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 21:05 .
+</span></span><span style="display:flex;"><span>drwx------ <span style="color:#ae81ff">7</span> USERNAME USERNAME 4.0K Apr  <span style="color:#ae81ff">3</span> 20:52 ..
+</span></span><span style="display:flex;"><span>-rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME 1.6K Apr  <span style="color:#ae81ff">3</span> 21:05 ca.cer
+</span></span><span style="display:flex;"><span>-rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME 1.8K Apr  <span style="color:#ae81ff">3</span> 21:05 domain.dev.cer
+</span></span><span style="display:flex;"><span>-rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME  <span style="color:#ae81ff">624</span> Apr  <span style="color:#ae81ff">3</span> 21:05 domain.dev.conf
+</span></span><span style="display:flex;"><span>-rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME  <span style="color:#ae81ff">968</span> Apr  <span style="color:#ae81ff">3</span> 21:05 domain.dev.csr
+</span></span><span style="display:flex;"><span>-rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME  <span style="color:#ae81ff">206</span> Apr  <span style="color:#ae81ff">3</span> 21:05 domain.dev.csr.conf
+</span></span><span style="display:flex;"><span>-rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME 1.7K Apr  <span style="color:#ae81ff">3</span> 20:52 domain.dev.key
+</span></span><span style="display:flex;"><span>-rw-rw-r-- <span style="color:#ae81ff">1</span> USERNAME USERNAME 3.4K Apr  <span style="color:#ae81ff">3</span> 21:05 fullchain.cer</span></span></code></pre></div>
 <h1 id="how-to-use-certificate-with-nginx">How to use certificate with NGINX</h1>
 <p>You could simply use files from <code>~/.acme.sh/domain.dev/</code>, but documentation explicitly says not to do so. Instead you should &ldquo;install&rdquo; the certificate into some other folder (<em>accessible by NGINX&rsquo;s user</em>), for example:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ mkdir -p ~/certs/domain.dev
-$ acme.sh --install-cert -d domain.dev <span style="color:#ae81ff">\
-</span><span style="color:#ae81ff"></span>--key-file ~/certs/domain.dev/key.pem  <span style="color:#ae81ff">\
-</span><span style="color:#ae81ff"></span>--fullchain-file ~/certs/domain.dev/fullchain.pem <span style="color:#ae81ff">\
-</span><span style="color:#ae81ff"></span>--reloadcmd <span style="color:#e6db74">&#34;sudo systemctl restart nginx.service&#34;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkdir -p ~/certs/domain.dev
+</span></span><span style="display:flex;"><span>$ acme.sh --install-cert -d domain.dev <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>--key-file ~/certs/domain.dev/key.pem  <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>--fullchain-file ~/certs/domain.dev/fullchain.pem <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>--reloadcmd <span style="color:#e6db74">&#34;sudo systemctl restart nginx.service&#34;</span></span></span></code></pre></div>
 <p>You might need to allow your user to restart NGINX service by adding a permission for it in <code>/etc/sudoers.d/</code>.</p>
 <p>Now you can modify the NGINX config like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">server</span> {
-    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">443</span> <span style="color:#e6db74">ssl</span>;
-    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:443</span> <span style="color:#e6db74">ssl</span>;
-
-    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">domain.dev</span>;
-
-    <span style="color:#75715e"># if you get SSL_ERROR_INTERNAL_ERROR_ALERT or other errors,
-</span><span style="color:#75715e"></span>    <span style="color:#75715e"># replace $server_name with actual folder name (domain.dev)
-</span><span style="color:#75715e"></span>    <span style="color:#f92672">ssl_certificate</span> <span style="color:#e6db74">/home/USERNAME/certs/</span>$server_name/fullchain.pem;
-    <span style="color:#f92672">ssl_certificate_key</span> <span style="color:#e6db74">/home/USERNAME/certs/</span>$server_name/key.pem;
-
-    <span style="color:#f92672">root</span> <span style="color:#e6db74">/var/www/</span>$server_name;
-
-    <span style="color:#f92672">index</span> <span style="color:#e6db74">index.html</span>;
-
-    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
-        <span style="color:#f92672">try_files</span> $uri $uri/ =<span style="color:#ae81ff">404</span>;
-    }
-}
-
-<span style="color:#66d9ef">server</span> {
-    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span> <span style="color:#e6db74">default_server</span>;
-    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span> <span style="color:#e6db74">default_server</span>;
-    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">domain.dev</span>;
-    <span style="color:#f92672">return</span> <span style="color:#ae81ff">301</span> <span style="color:#e6db74">https://</span>$server_name$request_uri;
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">443</span> <span style="color:#e6db74">ssl</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:443</span> <span style="color:#e6db74">ssl</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">domain.dev</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># if you get SSL_ERROR_INTERNAL_ERROR_ALERT or other errors,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e"># replace $server_name with actual folder name (domain.dev)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#f92672">ssl_certificate</span> <span style="color:#e6db74">/home/USERNAME/certs/</span>$server_name/fullchain.pem;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">ssl_certificate_key</span> <span style="color:#e6db74">/home/USERNAME/certs/</span>$server_name/key.pem;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">root</span> <span style="color:#e6db74">/var/www/</span>$server_name;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">index</span> <span style="color:#e6db74">index.html</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">try_files</span> $uri $uri/ =<span style="color:#ae81ff">404</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span> <span style="color:#e6db74">default_server</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span> <span style="color:#e6db74">default_server</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">domain.dev</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">return</span> <span style="color:#ae81ff">301</span> <span style="color:#e6db74">https://</span>$server_name$request_uri;
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Yes, you need to do that manually, as, unlike Certbot, <code>acme.sh</code> does not edit NGINX config files, which is actually nice of it. And as you can see for yourself, the only things required for your website to be served with NGINX via HTTPS are:</p>
 <ol>
 <li>Listen on <code>443</code> (<em>HTTPS</em>) port
@@ -324,63 +318,61 @@ $ acme.sh --install-cert -d domain.dev <span style="color:#ae81ff">\
 <li>Have <code>ssl_certificate</code> and <code>ssl_certificate_key</code> variables set to paths of your certificate and key</li>
 </ol>
 <p>Coming back to the <code>install-cert</code> command, at first I was confused, because the <code>cron</code> job is only set to renew the certificate when it expires, but there is no job to run <code>install-cert</code>, so who will do that? Then I reckoned that after I ran the initial <code>install-cert</code>, it did something else aside from just copying certificate files to <code>~/certs/domain.dev</code>, and indeed, the <code>~/.acme.sh/domain.dev/domain.dev.conf</code> file seems to have relevant changes:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#a6e22e">Le_Domain</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;domain.dev&#39;</span>
-<span style="color:#a6e22e">...</span>
-<span style="color:#a6e22e">Le_RealKeyPath</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/home/USERNAME/certs/domain.dev/key.pem&#39;</span>
-<span style="color:#a6e22e">Le_ReloadCmd</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;__ACME_BASE64__START_c3VkbyBzeXN0ZW1jdGwgcmVzdGFydCBuZ2lueC5zZXJ2aWNl__ACME_BASE64__END_&#39;</span>
-<span style="color:#a6e22e">Le_RealFullChainPath</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/home/USERNAME/certs/domain.dev/fullchain.pem&#39;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#a6e22e">Le_Domain</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;domain.dev&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">...</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Le_RealKeyPath</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/home/USERNAME/certs/domain.dev/key.pem&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Le_ReloadCmd</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;__ACME_BASE64__START_c3VkbyBzeXN0ZW1jdGwgcmVzdGFydCBuZ2lueC5zZXJ2aWNl__ACME_BASE64__END_&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Le_RealFullChainPath</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/home/USERNAME/certs/domain.dev/fullchain.pem&#39;</span></span></span></code></pre></div>
 <p>So it should be all good then, though I am still confused about the fact that reload command is present both in this config and in the <code>cron</code> job. But okay, I guess, I&rsquo;ll see how it is in a couple of months or so.</p>
 <h1 id="open-443-port">Open 443 port</h1>
 <p>If your website is still not available via HTTPS, it could be that your host doesn&rsquo;t accept connections on <code>443</code> port. There could be two reasons why.</p>
 <p>First, if you are using Oracle Cloud, Microsoft Azure or similar cloud provider, then those have a very limited amount of ports open in their virtual networks by default. In fact, you might need to explicitly open even <code>80</code> port. For example, here&rsquo;s how it looks in my Oracle Cloud panel now:</p>
 
 
-
-    <img class="image-post" src="/blog/2021/04/05/acme-sh-instead-of-certbot/images/oracle-cloud-ports.png" alt="Oracle Cloud ports">
-
+    <img class="image-post" loading="lazy" src="/blog/2021/04/05/acme-sh-instead-of-certbot/images/oracle-cloud-ports.png" alt="Oracle Cloud ports">
 
 <p>As you see, I needed to add both <code>80</code> and <code>443</code>.</p>
 <p>Another reason of blocked <code>443</code> port could be that it is not allowed in firewall rules on the host. Here&rsquo;s what I had:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo iptables -L
-...
-Chain IN_public_allow <span style="color:#f92672">(</span><span style="color:#ae81ff">1</span> references<span style="color:#f92672">)</span>
-target     prot opt source               destination
-ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:ssh ctstate NEW,UNTRACKED
-ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:http ctstate NEW,UNTRACKED
-...</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo iptables -L
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>Chain IN_public_allow <span style="color:#f92672">(</span><span style="color:#ae81ff">1</span> references<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>target     prot opt source               destination
+</span></span><span style="display:flex;"><span>ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:ssh ctstate NEW,UNTRACKED
+</span></span><span style="display:flex;"><span>ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:http ctstate NEW,UNTRACKED
+</span></span><span style="display:flex;"><span>...</span></span></code></pre></div>
 <p>So I needed to add a rule for HTTPS too:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ sudo iptables -A IN_public_allow -p tcp --dport <span style="color:#ae81ff">443</span> -j ACCEPT -m conntrack --ctstate NEW,UNTRACKED
-
-$ sudo netfilter-persistent save
-
-$ sudo iptables -L
-...
-Chain IN_public_allow <span style="color:#f92672">(</span><span style="color:#ae81ff">1</span> references<span style="color:#f92672">)</span>
-target     prot opt source               destination
-ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:ssh ctstate NEW,UNTRACKED
-ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:http ctstate NEW,UNTRACKED
-ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:https ctstate NEW,UNTRACKED
-...</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo iptables -A IN_public_allow -p tcp --dport <span style="color:#ae81ff">443</span> -j ACCEPT -m conntrack --ctstate NEW,UNTRACKED
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ sudo netfilter-persistent save
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ sudo iptables -L
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>Chain IN_public_allow <span style="color:#f92672">(</span><span style="color:#ae81ff">1</span> references<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>target     prot opt source               destination
+</span></span><span style="display:flex;"><span>ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:ssh ctstate NEW,UNTRACKED
+</span></span><span style="display:flex;"><span>ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:http ctstate NEW,UNTRACKED
+</span></span><span style="display:flex;"><span>ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:https ctstate NEW,UNTRACKED
+</span></span><span style="display:flex;"><span>...</span></span></code></pre></div>
 <p>To diagnose, which one of these two reasons is causing problems, you can use <code>cURL</code>.</p>
 <p>If you get this output after some time of cURL trying to send the request:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl -I https://domain.dev
-curl: <span style="color:#f92672">(</span>7<span style="color:#f92672">)</span> Failed to connect to domain.dev port 443: Operation timed out</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -I https://domain.dev
+</span></span><span style="display:flex;"><span>curl: <span style="color:#f92672">(</span>7<span style="color:#f92672">)</span> Failed to connect to domain.dev port 443: Operation timed out</span></span></code></pre></div>
 <p>&hellip;then the port is likely not allowed in your cloud provider network settings.</p>
 <p>If you get this output right away:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl -I https://domain.dev
-curl: <span style="color:#f92672">(</span>7<span style="color:#f92672">)</span> Failed to connect to domain.dev port 443: Connection refused</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -I https://domain.dev
+</span></span><span style="display:flex;"><span>curl: <span style="color:#f92672">(</span>7<span style="color:#f92672">)</span> Failed to connect to domain.dev port 443: Connection refused</span></span></code></pre></div>
 <p>&hellip;then it means that you need to allow connections to this port in firewall rules on the host.</p>
 <p>And successful request would look like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ curl -I https://domain.dev
-HTTP/1.1 <span style="color:#ae81ff">200</span> OK
-Server: nginx/1.18.0 <span style="color:#f92672">(</span>Ubuntu<span style="color:#f92672">)</span>
-Date: Mon, <span style="color:#ae81ff">05</span> Apr <span style="color:#ae81ff">2021</span> 11:48:07 GMT
-Content-Type: text/html
-Content-Length: <span style="color:#ae81ff">391</span>
-Last-Modified: Mon, <span style="color:#ae81ff">05</span> Apr <span style="color:#ae81ff">2021</span> 09:43:18 GMT
-Connection: keep-alive
-ETag: <span style="color:#e6db74">&#34;606aowe6-324&#34;</span>
-Accept-Ranges: bytes</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -I https://domain.dev
+</span></span><span style="display:flex;"><span>HTTP/1.1 <span style="color:#ae81ff">200</span> OK
+</span></span><span style="display:flex;"><span>Server: nginx/1.18.0 <span style="color:#f92672">(</span>Ubuntu<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>Date: Mon, <span style="color:#ae81ff">05</span> Apr <span style="color:#ae81ff">2021</span> 11:48:07 GMT
+</span></span><span style="display:flex;"><span>Content-Type: text/html
+</span></span><span style="display:flex;"><span>Content-Length: <span style="color:#ae81ff">391</span>
+</span></span><span style="display:flex;"><span>Last-Modified: Mon, <span style="color:#ae81ff">05</span> Apr <span style="color:#ae81ff">2021</span> 09:43:18 GMT
+</span></span><span style="display:flex;"><span>Connection: keep-alive
+</span></span><span style="display:flex;"><span>ETag: <span style="color:#e6db74">&#34;606aowe6-324&#34;</span>
+</span></span><span style="display:flex;"><span>Accept-Ranges: bytes</span></span></code></pre></div>
 
 
 

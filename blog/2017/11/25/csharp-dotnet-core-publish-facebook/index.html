@@ -5,7 +5,7 @@
     <title>C# / .NET Core, publish to Facebook | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2017/11/25/csharp-dotnet-core-publish-facebook/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -17,7 +17,6 @@
 
     <meta property="og:title" content="C# / .NET Core, publish to Facebook" />
 <meta property="og:description" content="I started with Twitter, and today I&rsquo;ll tell you how I was struggling with publishing to Facebook from C# / .NET Core project. &ldquo;Struggling&rdquo; part is totally on the Facebook side. Потому что это, блядь, нечто.
-
 
 
     " />
@@ -71,9 +70,7 @@
         <p>I <a href="/blog/2017/11/24/csharp-dotnet-core-publish-twitter/">started</a> with Twitter, and today I&rsquo;ll tell you how I was struggling with publishing to Facebook from C# / .NET Core project. &ldquo;Struggling&rdquo; part is totally on the Facebook side. <em>Потому что это, блядь, нечто.</em></p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/dotnet-core-facebook-logo.png" alt=".NET Core, Facebook, logo">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/dotnet-core-facebook-logo.png" alt=".NET Core, Facebook, logo">
 
 <p>Now to the details.</p>
 <nav id="TableOfContents">
@@ -97,63 +94,57 @@
 </ul>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-app-settings.png" alt="Facebook app settings">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-app-settings.png" alt="Facebook app settings">
 
 <p>So far so good.</p>
 <h1 id="torments-agony-and-misery">Torments, agony and misery</h1>
 <p>But then I got heavily misled by the Facebook <a href="https://developers.facebook.com/docs/pages/publishing">documentation</a>. It says, that to publish as a page you need to obtain <a href="https://developers.facebook.com/docs/pages/access-tokens">access tokens</a> first. Okay, let&rsquo;s try to do that:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">var</span> rez = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
-{
-    <span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/YOUR-PAGE-ID?fields=access_token&#34;</span>;
-    <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
-    {
-        <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> http.GetAsync(url);
-        <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
-        
-        <span style="color:#66d9ef">return</span> httpContent;
-    }
-});
-<span style="color:#66d9ef">var</span> rezJson = JObject.Parse(rez.Result);
-Console.WriteLine(rezJson);</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">var</span> rez = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/YOUR-PAGE-ID?fields=access_token&#34;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> http.GetAsync(url);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> httpContent;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>});
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">var</span> rezJson = JObject.Parse(rez.Result);
+</span></span><span style="display:flex;"><span>Console.WriteLine(rezJson);</span></span></code></pre></div>
 <p>Here&rsquo;s the response:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-  <span style="color:#f92672">&#34;error&#34;</span>: {
-    <span style="color:#f92672">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;An access token is required to request this resource.&#34;</span>,
-    <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;OAuthException&#34;</span>,
-    <span style="color:#f92672">&#34;code&#34;</span>: <span style="color:#ae81ff">104</span>,
-    <span style="color:#f92672">&#34;fbtrace_id&#34;</span>: <span style="color:#e6db74">&#34;some/id&#34;</span>
-  }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;error&#34;</span>: {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;An access token is required to request this resource.&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;OAuthException&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;code&#34;</span>: <span style="color:#ae81ff">104</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;fbtrace_id&#34;</span>: <span style="color:#e6db74">&#34;some/id&#34;</span>
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Right, so we need <strong>some other</strong> access token first? No shit, that&rsquo;s why this request looked so suspiciously simple. But okay, indeed, there is some <a href="https://developers.facebook.com/docs/facebook-login">Facebook Login</a> mentioned there, so let&rsquo;s go there.</p>
 <p>Okay, we&rsquo;re here, where to next?</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-login.png" alt="Facebook Login documentation">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-login.png" alt="Facebook Login documentation">
 
 <p>You think, <a href="https://developers.facebook.com/docs/facebook-login/web">Websites or mobile websites</a>? Sounds logical, right? No! Because fuck you, that&rsquo;s why!</p>
 <p><a href="https://developers.facebook.com/docs/facebook-login/access-tokens">Access Tokens</a> is the one you need. Yes, <strong>another</strong>, <strong>different</strong> access tokens page. There you need <a href="https://developers.facebook.com/docs/facebook-login/access-tokens#apptokens">App Access Tokens</a> section. Let&rsquo;s try to get this one:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/oauth/access_token?client_id=YOUR-APP-ID&amp;client_secret=YOUR-APP-SECRET&amp;grant_type=client_credentials&#34;</span>;
-<span style="color:#75715e">// ...
-</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/oauth/access_token?client_id=YOUR-APP-ID&amp;client_secret=YOUR-APP-SECRET&amp;grant_type=client_credentials&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// ...</span></span></span></code></pre></div>
 <p>Okay, this time it actually returned some token:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-  <span style="color:#f92672">&#34;access_token&#34;</span>: <span style="color:#e6db74">&#34;GENERATED-APP-ACCESS-TOKEN&#34;</span>,
-  <span style="color:#f92672">&#34;token_type&#34;</span>: <span style="color:#e6db74">&#34;bearer&#34;</span>
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;access_token&#34;</span>: <span style="color:#e6db74">&#34;GENERATED-APP-ACCESS-TOKEN&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;token_type&#34;</span>: <span style="color:#e6db74">&#34;bearer&#34;</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Now let&rsquo;s try to repeat the previous request with this token in parameters:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/YOUR-PAGE-ID?fields=access_token&amp;access_token=GENERATED-APP-ACCESS-TOKEN&#34;</span>;
-<span style="color:#75715e">// ...
-</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/YOUR-PAGE-ID?fields=access_token&amp;access_token=GENERATED-APP-ACCESS-TOKEN&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// ...</span></span></span></code></pre></div>
 <p>Response:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-  <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;YOUR-PAGE-ID&#34;</span>
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;YOUR-PAGE-ID&#34;</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Thanks a lot! That&rsquo;s exactly what I&hellip; see no point in getting! Documentation promised me <code>Page Access Token</code>, but where is it? Here in the response there is only my <code>Page ID</code>, which I already knew.</p>
 <h1 id="how-it-actually-works">How it actually works</h1>
 <p>Okay, I&rsquo;ll spare you from hours of me being raped by the Facebook documentation (<em>блядский кусок говна этот Фейсбук вместе с его пиздовыебанной документацией</em>) and tell you <strong>how it actually works</strong>.</p>
@@ -170,86 +161,72 @@ Console.WriteLine(rezJson);</code></pre></div>
 <p>Open <a href="https://developers.facebook.com/tools/explorer/">Graph API Explorer</a> and choose your application here:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/gae-choose-application.png" alt="Graph API Explorer, choosing application">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/gae-choose-application.png" alt="Graph API Explorer, choosing application">
 
 <p>Now click on <code>Get User Access Token</code>:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/gae-user-access-token.png" alt="Graph API Explorer, User Access Token">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/gae-user-access-token.png" alt="Graph API Explorer, User Access Token">
 
 <p>A dialog window with lots of checkboxes will appear. Check these two: <code>manage_pages</code> and <code>publish_pages</code>.</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/gae-permissions.png" alt="Graph API Explorer, permissions">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/gae-permissions.png" alt="Graph API Explorer, permissions">
 
 <p>Generated token will appear in the <code>Access Token</code> field. It&rsquo;s a short-term one. <a href="https://developers.facebook.com/tools/debug/accesstoken">Here</a> you can check when it expires:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/short-term-access-token.png" alt="Facebook short-term access token">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/short-term-access-token.png" alt="Facebook short-term access token">
 
 <p>You can (probably) continue using Graph API Explorer, but I closed it and did the rest from code.</p>
 <p><a name="short" style="text-decoration:none; color:inherit;">Here&rsquo;s</a> how you get an extended token:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/oauth/access_token?client_id=YOUR-APP-ID&amp;client_secret=YOUR-APP-SECRET&amp;grant_type=fb_exchange_token&amp;fb_exchange_token=YOUR-SHORT-TERM-TOKEN&#34;</span>;
-<span style="color:#75715e">// ...
-</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/oauth/access_token?client_id=YOUR-APP-ID&amp;client_secret=YOUR-APP-SECRET&amp;grant_type=fb_exchange_token&amp;fb_exchange_token=YOUR-SHORT-TERM-TOKEN&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// ...</span></span></span></code></pre></div>
 <p>Take it from the response:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-  <span style="color:#f92672">&#34;access_token&#34;</span>: <span style="color:#e6db74">&#34;EXTENDED-TOKEN&#34;</span>,
-  <span style="color:#f92672">&#34;token_type&#34;</span>: <span style="color:#e6db74">&#34;bearer&#34;</span>,
-  <span style="color:#f92672">&#34;expires_in&#34;</span>: <span style="color:#ae81ff">5183975</span>
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;access_token&#34;</span>: <span style="color:#e6db74">&#34;EXTENDED-TOKEN&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;token_type&#34;</span>: <span style="color:#e6db74">&#34;bearer&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;expires_in&#34;</span>: <span style="color:#ae81ff">5183975</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Check its expiration time:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/extended-access-token.png" alt="Facebook extended access token">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/extended-access-token.png" alt="Facebook extended access token">
 
 <p><a name="extended" style="text-decoration:none; color:inherit;">And finally</a> send this request:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/me/accounts?access_token=YOUR-EXTENDED-TOKEN&#34;</span>;
-<span style="color:#75715e">// ...
-</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">string</span> url = <span style="color:#e6db74">&#34;https://graph.facebook.com/me/accounts?access_token=YOUR-EXTENDED-TOKEN&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// ...</span></span></span></code></pre></div>
 <p>Grab your <code>Page Access Token</code> (and also <code>Page ID</code>) from the response:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-  <span style="color:#f92672">&#34;data&#34;</span>: [
-    {
-      <span style="color:#f92672">&#34;access_token&#34;</span>: <span style="color:#e6db74">&#34;PAGE-ACCESS-TOKEN&#34;</span>,
-      <span style="color:#f92672">&#34;category&#34;</span>: <span style="color:#e6db74">&#34;Website&#34;</span>,
-      <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;YOUR-PAGE-NAME&#34;</span>,
-      <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;YOUR-PAGE-ID&#34;</span>,
-      <span style="color:#f92672">&#34;perms&#34;</span>: [
-        <span style="color:#e6db74">&#34;ADMINISTER&#34;</span>,
-        <span style="color:#e6db74">&#34;EDIT_PROFILE&#34;</span>,
-        <span style="color:#e6db74">&#34;CREATE_CONTENT&#34;</span>,
-        <span style="color:#e6db74">&#34;MODERATE_CONTENT&#34;</span>,
-        <span style="color:#e6db74">&#34;CREATE_ADS&#34;</span>,
-        <span style="color:#e6db74">&#34;BASIC_ADMIN&#34;</span>
-      ]
-    }
-  ],
-  <span style="color:#f92672">&#34;paging&#34;</span>: {
-    <span style="color:#f92672">&#34;cursors&#34;</span>: {
-      <span style="color:#f92672">&#34;before&#34;</span>: <span style="color:#e6db74">&#34;some&#34;</span>,
-      <span style="color:#f92672">&#34;after&#34;</span>: <span style="color:#e6db74">&#34;some&#34;</span>
-    }
-  }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;data&#34;</span>: [
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;access_token&#34;</span>: <span style="color:#e6db74">&#34;PAGE-ACCESS-TOKEN&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;category&#34;</span>: <span style="color:#e6db74">&#34;Website&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;YOUR-PAGE-NAME&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;YOUR-PAGE-ID&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;perms&#34;</span>: [
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;ADMINISTER&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;EDIT_PROFILE&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;CREATE_CONTENT&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;MODERATE_CONTENT&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;CREATE_ADS&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;BASIC_ADMIN&#34;</span>
+</span></span><span style="display:flex;"><span>      ]
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  ],
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;paging&#34;</span>: {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;cursors&#34;</span>: {
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;before&#34;</span>: <span style="color:#e6db74">&#34;some&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;after&#34;</span>: <span style="color:#e6db74">&#34;some&#34;</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Check its expiration time:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/page-access-token.png" alt="Facebook Page Access Token">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/page-access-token.png" alt="Facebook Page Access Token">
 
 <p>Expires: never. Hallelujah.</p>
 <h2 id="publishing-to-facebook-page">Publishing to Facebook Page</h2>
@@ -263,219 +240,214 @@ Console.WriteLine(rezJson);</code></pre></div>
 <p>That&rsquo;s an example of what I wanted to get (<em>and finally did</em>):</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-post-with-picture.png" alt="Facebook post with picture">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-post-with-picture.png" alt="Facebook post with picture">
 
 <p>So, here&rsquo;s my class for publishing to a Facebook page:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Facebook</span>
-{
-    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>accessToken;
-    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>pageID;
-    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_f</span>acebookAPI = <span style="color:#e6db74">&#34;https://graph.facebook.com/&#34;</span>;
-    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>pageEdgeFeed = <span style="color:#e6db74">&#34;feed&#34;</span>;
-    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>pageEdgePhotos = <span style="color:#e6db74">&#34;photos&#34;</span>;
-    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>postToPageURL;
-    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>postToPagePhotosURL;
-
-    <span style="color:#66d9ef">public</span> Facebook(<span style="color:#66d9ef">string</span> accessToken, <span style="color:#66d9ef">string</span> pageID)
-    {
-        <span style="color:#ae81ff">_</span>accessToken = accessToken;
-        <span style="color:#ae81ff">_</span>pageID = pageID;
-        <span style="color:#ae81ff">_</span>postToPageURL = <span style="color:#e6db74">$&#34;{_facebookAPI}{pageID}/{_pageEdgeFeed}&#34;</span>;
-        <span style="color:#ae81ff">_</span>postToPagePhotosURL = <span style="color:#e6db74">$&#34;{_facebookAPI}{pageID}/{_pageEdgePhotos}&#34;</span>;
-    }
-
-    <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Publish a simple text post
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;returns&gt;StatusCode and JSON response&lt;/returns&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;postText&#34;&gt;Text for posting&lt;/param&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; PublishSimplePost(<span style="color:#66d9ef">string</span> postText)
-    {
-        <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
-        {
-            <span style="color:#66d9ef">var</span> postData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; {
-                { <span style="color:#e6db74">&#34;access_token&#34;</span>, <span style="color:#ae81ff">_</span>accessToken },
-                { <span style="color:#e6db74">&#34;message&#34;</span>, postText }<span style="color:#75715e">//,
-</span><span style="color:#75715e"></span>                <span style="color:#75715e">// { &#34;formatting&#34;, &#34;MARKDOWN&#34; } // doesn&#39;t work
-</span><span style="color:#75715e"></span>            };
-
-            <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> http.PostAsync(
-                <span style="color:#ae81ff">_</span>postToPageURL,
-                <span style="color:#66d9ef">new</span> FormUrlEncodedContent(postData)
-                );
-            <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
-            
-            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
-                (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
-                httpContent
-                );
-        }
-    }
-
-    <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Publish a post to Facebook page
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;returns&gt;Result&lt;/returns&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;postText&#34;&gt;Post to publish&lt;/param&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;pictureURL&#34;&gt;Post to publish&lt;/param&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> PublishToFacebook(<span style="color:#66d9ef">string</span> postText, <span style="color:#66d9ef">string</span> pictureURL)
-    {
-        <span style="color:#66d9ef">try</span>
-        {
-            <span style="color:#75715e">// upload picture first
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">var</span> rezImage = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
-            {
-                <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
-                {
-                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">await</span> UploadPhoto(pictureURL);
-                }
-            });
-            <span style="color:#66d9ef">var</span> rezImageJson = JObject.Parse(rezImage.Result.Item2);
-            
-            <span style="color:#66d9ef">if</span> (rezImage.Result.Item1 != <span style="color:#ae81ff">200</span>)
-            {
-                <span style="color:#66d9ef">try</span> <span style="color:#75715e">// return error from JSON
-</span><span style="color:#75715e"></span>                {
-                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Error uploading photo to Facebook. {rezImageJson[&#34;</span>error<span style="color:#e6db74">&#34;][&#34;</span>message<span style="color:#e6db74">&#34;].Value&lt;string&gt;()}&#34;</span>;
-                }
-                <span style="color:#66d9ef">catch</span> (Exception ex) <span style="color:#75715e">// return unknown error
-</span><span style="color:#75715e"></span>                {
-                    <span style="color:#75715e">// log exception somewhere
-</span><span style="color:#75715e"></span>                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Unknown error uploading photo to Facebook. {ex.Message}&#34;</span>;
-                }
-            }
-            <span style="color:#75715e">// get post ID from the response
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">string</span> postID = rezImageJson[<span style="color:#e6db74">&#34;post_id&#34;</span>].Value&lt;<span style="color:#66d9ef">string</span>&gt;();
-            
-            <span style="color:#75715e">// and update this post (which is actually a photo) with your text
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">var</span> rezText = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
-            {
-                <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
-                {
-                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">await</span> UpdatePhotoWithPost(postID, postText);
-                }
-            });
-            <span style="color:#66d9ef">var</span> rezTextJson = JObject.Parse(rezText.Result.Item2);
-            
-            <span style="color:#66d9ef">if</span> (rezText.Result.Item1 != <span style="color:#ae81ff">200</span>)
-            {
-                <span style="color:#66d9ef">try</span> <span style="color:#75715e">// return error from JSON
-</span><span style="color:#75715e"></span>                {
-                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Error posting to Facebook. {rezTextJson[&#34;</span>error<span style="color:#e6db74">&#34;][&#34;</span>message<span style="color:#e6db74">&#34;].Value&lt;string&gt;()}&#34;</span>;
-                }
-                <span style="color:#66d9ef">catch</span> (Exception ex) <span style="color:#75715e">// return unknown error
-</span><span style="color:#75715e"></span>                {
-                    <span style="color:#75715e">// log exception somewhere
-</span><span style="color:#75715e"></span>                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Unknown error posting to Facebook. {ex.Message}&#34;</span>;
-                }
-            }
-
-            <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;OK&#34;</span>;
-        }
-        <span style="color:#66d9ef">catch</span> (Exception ex)
-        {
-            <span style="color:#75715e">// log exception somewhere
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Unknown error publishing post to Facebook. {ex.Message}&#34;</span>;
-        }
-    }
-
-    <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Upload a picture (photo)
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;returns&gt;StatusCode and JSON response&lt;/returns&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;photoURL&#34;&gt;URL of the picture to upload&lt;/param&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; UploadPhoto(<span style="color:#66d9ef">string</span> photoURL)
-    {
-        <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
-        {
-            <span style="color:#66d9ef">var</span> postData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; {
-                { <span style="color:#e6db74">&#34;access_token&#34;</span>, <span style="color:#ae81ff">_</span>accessToken },
-                { <span style="color:#e6db74">&#34;url&#34;</span>, photoURL }
-            };
-
-            <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> http.PostAsync(
-                <span style="color:#ae81ff">_</span>postToPagePhotosURL,
-                <span style="color:#66d9ef">new</span> FormUrlEncodedContent(postData)
-                );
-            <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
-            
-            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
-                (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
-                httpContent
-                );
-        }
-    }
-
-    <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// Update the uploaded picture (photo) with the given text
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;returns&gt;StatusCode and JSON response&lt;/returns&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;postID&#34;&gt;Post ID&lt;/param&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">/// &lt;param name=&#34;postText&#34;&gt;Text to add tp the post&lt;/param&gt;
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; UpdatePhotoWithPost(<span style="color:#66d9ef">string</span> postID, <span style="color:#66d9ef">string</span> postText)
-    {
-        <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
-        {
-            <span style="color:#66d9ef">var</span> postData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; {
-                { <span style="color:#e6db74">&#34;access_token&#34;</span>, <span style="color:#ae81ff">_</span>accessToken },
-                { <span style="color:#e6db74">&#34;message&#34;</span>, postText }<span style="color:#75715e">//,
-</span><span style="color:#75715e"></span>                <span style="color:#75715e">// { &#34;formatting&#34;, &#34;MARKDOWN&#34; } // doesn&#39;t work
-</span><span style="color:#75715e"></span>            };
-
-            <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> http.PostAsync(
-                <span style="color:#e6db74">$&#34;{_facebookAPI}{postID}&#34;</span>,
-                <span style="color:#66d9ef">new</span> FormUrlEncodedContent(postData)
-                );
-            <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
-            
-            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
-                (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
-                httpContent
-                );
-        }
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Facebook</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>accessToken;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>pageID;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_f</span>acebookAPI = <span style="color:#e6db74">&#34;https://graph.facebook.com/&#34;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>pageEdgeFeed = <span style="color:#e6db74">&#34;feed&#34;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>pageEdgePhotos = <span style="color:#e6db74">&#34;photos&#34;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>postToPageURL;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>postToPagePhotosURL;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> Facebook(<span style="color:#66d9ef">string</span> accessToken, <span style="color:#66d9ef">string</span> pageID)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ae81ff">_</span>accessToken = accessToken;
+</span></span><span style="display:flex;"><span>        <span style="color:#ae81ff">_</span>pageID = pageID;
+</span></span><span style="display:flex;"><span>        <span style="color:#ae81ff">_</span>postToPageURL = <span style="color:#e6db74">$&#34;{_facebookAPI}{pageID}/{_pageEdgeFeed}&#34;</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ae81ff">_</span>postToPagePhotosURL = <span style="color:#e6db74">$&#34;{_facebookAPI}{pageID}/{_pageEdgePhotos}&#34;</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// Publish a simple text post</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;returns&gt;StatusCode and JSON response&lt;/returns&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;param name=&#34;postText&#34;&gt;Text for posting&lt;/param&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; PublishSimplePost(<span style="color:#66d9ef">string</span> postText)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> postData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; {
+</span></span><span style="display:flex;"><span>                { <span style="color:#e6db74">&#34;access_token&#34;</span>, <span style="color:#ae81ff">_</span>accessToken },
+</span></span><span style="display:flex;"><span>                { <span style="color:#e6db74">&#34;message&#34;</span>, postText }<span style="color:#75715e">//,</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// { &#34;formatting&#34;, &#34;MARKDOWN&#34; } // doesn&#39;t work</span>
+</span></span><span style="display:flex;"><span>            };
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> http.PostAsync(
+</span></span><span style="display:flex;"><span>                <span style="color:#ae81ff">_</span>postToPageURL,
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">new</span> FormUrlEncodedContent(postData)
+</span></span><span style="display:flex;"><span>                );
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+</span></span><span style="display:flex;"><span>                (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+</span></span><span style="display:flex;"><span>                httpContent
+</span></span><span style="display:flex;"><span>                );
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// Publish a post to Facebook page</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;returns&gt;Result&lt;/returns&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;param name=&#34;postText&#34;&gt;Post to publish&lt;/param&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;param name=&#34;pictureURL&#34;&gt;Post to publish&lt;/param&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> PublishToFacebook(<span style="color:#66d9ef">string</span> postText, <span style="color:#66d9ef">string</span> pictureURL)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">try</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// upload picture first</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> rezImage = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">await</span> UploadPhoto(pictureURL);
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            });
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> rezImageJson = JObject.Parse(rezImage.Result.Item2);
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (rezImage.Result.Item1 != <span style="color:#ae81ff">200</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">try</span> <span style="color:#75715e">// return error from JSON</span>
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Error uploading photo to Facebook. {rezImageJson[&#34;</span>error<span style="color:#e6db74">&#34;][&#34;</span>message<span style="color:#e6db74">&#34;].Value&lt;string&gt;()}&#34;</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">catch</span> (Exception ex) <span style="color:#75715e">// return unknown error</span>
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#75715e">// log exception somewhere</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Unknown error uploading photo to Facebook. {ex.Message}&#34;</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// get post ID from the response</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">string</span> postID = rezImageJson[<span style="color:#e6db74">&#34;post_id&#34;</span>].Value&lt;<span style="color:#66d9ef">string</span>&gt;();
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// and update this post (which is actually a photo) with your text</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> rezText = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">await</span> UpdatePhotoWithPost(postID, postText);
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            });
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> rezTextJson = JObject.Parse(rezText.Result.Item2);
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (rezText.Result.Item1 != <span style="color:#ae81ff">200</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">try</span> <span style="color:#75715e">// return error from JSON</span>
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Error posting to Facebook. {rezTextJson[&#34;</span>error<span style="color:#e6db74">&#34;][&#34;</span>message<span style="color:#e6db74">&#34;].Value&lt;string&gt;()}&#34;</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">catch</span> (Exception ex) <span style="color:#75715e">// return unknown error</span>
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#75715e">// log exception somewhere</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Unknown error posting to Facebook. {ex.Message}&#34;</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;OK&#34;</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">catch</span> (Exception ex)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// log exception somewhere</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#e6db74">$&#34;Unknown error publishing post to Facebook. {ex.Message}&#34;</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// Upload a picture (photo)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;returns&gt;StatusCode and JSON response&lt;/returns&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;param name=&#34;photoURL&#34;&gt;URL of the picture to upload&lt;/param&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; UploadPhoto(<span style="color:#66d9ef">string</span> photoURL)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> postData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; {
+</span></span><span style="display:flex;"><span>                { <span style="color:#e6db74">&#34;access_token&#34;</span>, <span style="color:#ae81ff">_</span>accessToken },
+</span></span><span style="display:flex;"><span>                { <span style="color:#e6db74">&#34;url&#34;</span>, photoURL }
+</span></span><span style="display:flex;"><span>            };
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> http.PostAsync(
+</span></span><span style="display:flex;"><span>                <span style="color:#ae81ff">_</span>postToPagePhotosURL,
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">new</span> FormUrlEncodedContent(postData)
+</span></span><span style="display:flex;"><span>                );
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+</span></span><span style="display:flex;"><span>                (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+</span></span><span style="display:flex;"><span>                httpContent
+</span></span><span style="display:flex;"><span>                );
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// Update the uploaded picture (photo) with the given text</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;returns&gt;StatusCode and JSON response&lt;/returns&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;param name=&#34;postID&#34;&gt;Post ID&lt;/param&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;param name=&#34;postText&#34;&gt;Text to add tp the post&lt;/param&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; UpdatePhotoWithPost(<span style="color:#66d9ef">string</span> postID, <span style="color:#66d9ef">string</span> postText)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> http = <span style="color:#66d9ef">new</span> HttpClient())
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> postData = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt; {
+</span></span><span style="display:flex;"><span>                { <span style="color:#e6db74">&#34;access_token&#34;</span>, <span style="color:#ae81ff">_</span>accessToken },
+</span></span><span style="display:flex;"><span>                { <span style="color:#e6db74">&#34;message&#34;</span>, postText }<span style="color:#75715e">//,</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// { &#34;formatting&#34;, &#34;MARKDOWN&#34; } // doesn&#39;t work</span>
+</span></span><span style="display:flex;"><span>            };
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> http.PostAsync(
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">$&#34;{_facebookAPI}{postID}&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">new</span> FormUrlEncodedContent(postData)
+</span></span><span style="display:flex;"><span>                );
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+</span></span><span style="display:flex;"><span>                (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+</span></span><span style="display:flex;"><span>                httpContent
+</span></span><span style="display:flex;"><span>                );
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>And how to use it:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs">Facebook facebook = <span style="color:#66d9ef">new</span> Facebook(<span style="color:#e6db74">&#34;YOUR-PAGE-ACCESS-TOKEN&#34;</span>, <span style="color:#e6db74">&#34;YOUR-PAGE-ID&#34;</span>);
-
-<span style="color:#75715e">// 1) if you want to publish a post with attached photo (actually, the other way around)
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">string</span> result = facebook.PublishToFacebook(<span style="color:#e6db74">&#34;some text&#34;</span>, <span style="color:#e6db74">&#34;http://your.website/images/some.png&#34;</span>);
-Console.WriteLine(result);
-
-<span style="color:#75715e">// 2) if you want just to publish a simple text post
-</span><span style="color:#75715e">// var rezText = Task.Run(async () =&gt;
-</span><span style="color:#75715e">// {
-</span><span style="color:#75715e">//     using (var http = new HttpClient())
-</span><span style="color:#75715e">//     {
-</span><span style="color:#75715e">//         return await facebook.PublishSimplePost(&#34;some another text&#34;);
-</span><span style="color:#75715e">//     }
-</span><span style="color:#75715e">// });
-</span><span style="color:#75715e">// var rezTextJson = JObject.Parse(rezText.Result.Item2);
-</span><span style="color:#75715e">// if (rezText.Result.Item1 != 200)
-</span><span style="color:#75715e">// {
-</span><span style="color:#75715e">//     try // return error from JSON
-</span><span style="color:#75715e">//     {
-</span><span style="color:#75715e">//         Console.WriteLine($&#34;Error posting to Facebook. {rezTextJson[&#34;error&#34;][&#34;message&#34;].Value&lt;string&gt;()}&#34;);
-</span><span style="color:#75715e">//         return;
-</span><span style="color:#75715e">//     }
-</span><span style="color:#75715e">//     catch (Exception ex) // return unknown error
-</span><span style="color:#75715e">//     {
-</span><span style="color:#75715e">//         // log exception somewhere
-</span><span style="color:#75715e">//         Console.WriteLine($&#34;Unknown error posting to Facebook. {ex.Message}&#34;);
-</span><span style="color:#75715e">//         return;
-</span><span style="color:#75715e">//     }
-</span><span style="color:#75715e">// }
-</span><span style="color:#75715e">// Console.WriteLine(rezTextJson);
-</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span>Facebook facebook = <span style="color:#66d9ef">new</span> Facebook(<span style="color:#e6db74">&#34;YOUR-PAGE-ACCESS-TOKEN&#34;</span>, <span style="color:#e6db74">&#34;YOUR-PAGE-ID&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 1) if you want to publish a post with attached photo (actually, the other way around)</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">string</span> result = facebook.PublishToFacebook(<span style="color:#e6db74">&#34;some text&#34;</span>, <span style="color:#e6db74">&#34;http://your.website/images/some.png&#34;</span>);
+</span></span><span style="display:flex;"><span>Console.WriteLine(result);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 2) if you want just to publish a simple text post</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// var rezText = Task.Run(async () =&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// {</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//     using (var http = new HttpClient())</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//     {</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//         return await facebook.PublishSimplePost(&#34;some another text&#34;);</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//     }</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// });</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// var rezTextJson = JObject.Parse(rezText.Result.Item2);</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// if (rezText.Result.Item1 != 200)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// {</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//     try // return error from JSON</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//     {</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//         Console.WriteLine($&#34;Error posting to Facebook. {rezTextJson[&#34;error&#34;][&#34;message&#34;].Value&lt;string&gt;()}&#34;);</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//         return;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//     }</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//     catch (Exception ex) // return unknown error</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//     {</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//         // log exception somewhere</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//         Console.WriteLine($&#34;Unknown error posting to Facebook. {ex.Message}&#34;);</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//         return;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//     }</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// }</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// Console.WriteLine(rezTextJson);</span></span></span></code></pre></div>
 <p>One more thing: right now your Facebook app is in <em>development</em> mode and is not publicly available. That means, all the posts you publish with it won&rsquo;t be visible to anyone, except those whom you added into your app <strong>Roles</strong> (<a href="https://developers.facebook.com/apps/YOUR-APP/roles/)">https://developers.facebook.com/apps/YOUR-APP/roles/)</a>. At first I didn&rsquo;t know that, so I was totally freaking out, because I clearly saw my posts on the page under my account, while other users didn&rsquo;t, for them it was an empty wall/timeline.</p>
 <p>So, go to <strong>App Review</strong> (<a href="https://developers.facebook.com/apps/YOUR-APP/review-status/">https://developers.facebook.com/apps/YOUR-APP/review-status/</a>) section and switch &ldquo;make it public&rdquo; button. You don&rsquo;t need to submit your app for approval, just make it public:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-app-public.png" alt="Facebook app public">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-app-public.png" alt="Facebook app public">
 
 <p>After that all your posts you made while your app was in <em>development</em> mode will become visible to everyone (and all the future posts too, of course).</p>
 
@@ -491,55 +463,48 @@ Console.WriteLine(result);
 <p>And for that you first need to register a <code>redirect URI</code> in your app settings. Don&rsquo;t let this <code>redirect URI</code> scare you, it&rsquo;s nothing biggie - you can specify any address there, even <a href="http://example.org">http://example.org</a>, like I did:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-app-login.png" alt="Facebook app login">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-app-login.png" alt="Facebook app login">
 
 <p>After that, according to the information from <a href="https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow">this page</a>, you need to open the following URL <strong>in browser</strong>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//www.facebook.com/dialog/oauth?client_id</span><span style="color:#f92672">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ADD</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span><span style="color:#f92672">&amp;</span>redirect_uri<span style="color:#66d9ef">=</span>http<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//example.org/</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//www.facebook.com/dialog/oauth?client_id</span><span style="color:#f92672">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ADD</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span><span style="color:#f92672">&amp;</span>redirect_uri<span style="color:#66d9ef">=</span>http<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//example.org/</span></span></span></code></pre></div>
 <p>Pay attention to the trailing slash (<code>/</code>), because redirect URI should be exactly the same as you registered it in your app settings.</p>
 <p>Okay, you opened the URL, it showed you Facebook login dialog, and after that redirected you to the specified <a href="http://example.org/">http://example.org/</a> and put a <code>code</code> parameter in the URL - check the address bar in your browser:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-redirect-code.png" alt="Facebook login redirect">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-redirect-code.png" alt="Facebook login redirect">
 
 <p>Now documentation says to send this request (this one you can send from code):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>https:<span style="color:#75715e">//graph.facebook.com/oauth/access_token?client_id=YOUR-APP-ID&amp;redirect_uri=http://example.org/&amp;client_secret=YOUR-APP-SECRET&amp;code=THE-CODE-YOU-JUST-GOT-FROM-BROWSER
-</span><span style="color:#75715e">// ...
-</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>https:<span style="color:#75715e">//graph.facebook.com/oauth/access_token?client_id=YOUR-APP-ID&amp;redirect_uri=http://example.org/&amp;client_secret=YOUR-APP-SECRET&amp;code=THE-CODE-YOU-JUST-GOT-FROM-BROWSER</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// ...</span></span></span></code></pre></div>
 <p>Again, <a href="https://stackoverflow.com/a/6838759/">pay attention</a> to the trailing slash (<code>/</code>)! If you&rsquo;ll miss it, response will be the following:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-  <span style="color:#f92672">&#34;error&#34;</span>: {
-    <span style="color:#f92672">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;Error validating verification code. Please make sure your redirect_uri is identical to the one you used in the OAuth dialog request&#34;</span>,
-    <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;OAuthException&#34;</span>,
-    <span style="color:#f92672">&#34;code&#34;</span>: <span style="color:#ae81ff">100</span>,
-    <span style="color:#f92672">&#34;fbtrace_id&#34;</span>: <span style="color:#e6db74">&#34;some&#34;</span>
-  }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;error&#34;</span>: {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;Error validating verification code. Please make sure your redirect_uri is identical to the one you used in the OAuth dialog request&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;OAuthException&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;code&#34;</span>: <span style="color:#ae81ff">100</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;fbtrace_id&#34;</span>: <span style="color:#e6db74">&#34;some&#34;</span>
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>And if you formed request right, you&rsquo;ll get this response:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-  <span style="color:#f92672">&#34;access_token&#34;</span>: <span style="color:#e6db74">&#34;USER-ACCESS-TOKEN&#34;</span>,
-  <span style="color:#f92672">&#34;token_type&#34;</span>: <span style="color:#e6db74">&#34;bearer&#34;</span>
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;access_token&#34;</span>: <span style="color:#e6db74">&#34;USER-ACCESS-TOKEN&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;token_type&#34;</span>: <span style="color:#e6db74">&#34;bearer&#34;</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>And that&rsquo;s the <code>User Access Token</code> (already extended, I believe) you need for <a href="#extended">this step</a> (if it&rsquo;s not an extended token, then for <a href="#short">this step</a>).</p>
 <p><strong>BUT.</strong></p>
 <p><strike>Documentation has fucked you up again</strike> Default login URL only gives you default <a href="https://developers.facebook.com/docs/facebook-login/permissions">permissions</a> (such as viewing public profile). So, trying to proceed and get <code>Page Access Token</code> will give you this response:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-  <span style="color:#f92672">&#34;data&#34;</span>: []
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;data&#34;</span>: []
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Meaning, that your app has no permissions to do anything on any page.</p>
 <p>So, if you need more permissions (publishing as page, for instance), you need to add <code>scope</code> parameter to the login URL, like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//www.facebook.com/v2.</span><span style="color:#960050;background-color:#1e0010">11</span><span style="color:#66d9ef">/dialog/oauth?client_id</span><span style="color:#f92672">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ADD</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span><span style="color:#f92672">&amp;</span>redirect_uri<span style="color:#66d9ef">=</span>http<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//example.org/&amp;scope</span><span style="color:#f92672">=</span>manage_pages<span style="color:#f92672">,</span>publish_pages</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//www.facebook.com/v2.</span><span style="color:#960050;background-color:#1e0010">11</span><span style="color:#66d9ef">/dialog/oauth?client_id</span><span style="color:#f92672">=</span><span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ADD</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span><span style="color:#f92672">&amp;</span>redirect_uri<span style="color:#66d9ef">=</span>http<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//example.org/&amp;scope</span><span style="color:#f92672">=</span>manage_pages<span style="color:#f92672">,</span>publish_pages</span></span></code></pre></div>
 <p>Remember, this is an URL you need to open in browser (to get a Facebook login dialog).</p>
 <p>And here&rsquo;s the final surprise - you cannot ask for permissions such as <code>manage_pages</code> and <code>publish_pages</code> for an <a href="https://developers.facebook.com/docs/facebook-login/review/">un-reviewed app</a> using login dialog. Of course, if you were anyway going to submit your app for reviewing, then it should not be a problem for you. Meanwhile, that&rsquo;s what you get:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-unreviewed-app-permissions.png" alt="Facebook unreviewed app permissions">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/facebook-unreviewed-app-permissions.png" alt="Facebook unreviewed app permissions">
 
 <p>&hellip;So, I&rsquo;ll stick to the <a href="#howto">Graph API Explorer</a> method.</p>
 
@@ -563,29 +528,23 @@ Console.WriteLine(result);
 </blockquote>
 <p>I am not using any of those (neither did I request any of those), so I thought I&rsquo;m fine.</p>
 <p>But today I got the following error in my requests:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">The permissions manage_pages,publish_pages are not available. It could because either they are deprecated or need to be approved by App Review</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>The permissions manage_pages,publish_pages are not available. It could because either they are deprecated or need to be approved by App Review</span></span></code></pre></div>
 <p>Nice surprise, thank you, Facebook.</p>
 <p>I went to the application page, and suddenly discovered that my app does have <code>user_friends</code> permission, because it was granted automatically:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-default-permissions.png" alt="Facebook default permissions">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-default-permissions.png" alt="Facebook default permissions">
 
 <p>Okay, let&rsquo;s try to submit our app for review then:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-manage-publish-permissions.png" alt="Facebook manage and publish permissions">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-manage-publish-permissions.png" alt="Facebook manage and publish permissions">
 
 <p>Oh, so <code>manage_pages</code> and <code>publish_pages</code> are also the kind of permissions that require passing App Review.</p>
 <p>Okay, let&rsquo;s check what sort of &ldquo;additional information&rdquo; in needed there:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-no-approve.png" alt="Facebook no approve for publishing">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-no-approve.png" alt="Facebook no approve for publishing">
 
 <p>Ha-ha, 2nd and 3rd options (let&rsquo;s not count <code>other</code>) say that &ldquo;<em>Apps won&rsquo;t be approved for this use of publish_page</em>&rdquo;, so you can only go through the 1st one, which has some ridiculous requirements, considering the actual use-case - automatic content posting from a website to a public Facebook page. I mean, my app isn&rsquo;t even supposed to be used by anyone but me, and I used it only once myself, when I was getting the API key.</p>
 <p>Perhaps, such usage of the Facebook API was not allowed from the beginning, I don&rsquo;t know (and I didn&rsquo;t read the rules). But if Facebook doesn&rsquo;t want me to deliver new content to their wretched network, so be it.</p>
@@ -602,23 +561,17 @@ Console.WriteLine(result);
 <p>These guys, for instance, almost got their business destroyed (and they still might):</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-business-fucked.png" alt="Facebook has fucked some business">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-business-fucked.png" alt="Facebook has fucked some business">
 
 <p>And this one is fairly loosing his shit over the fact that he has to demonstrate his server-to-server use-case somehow:</p>
 
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-server-to-server.png" alt="Facebook App Review for a server-to-server interaction">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-server-to-server.png" alt="Facebook App Review for a server-to-server interaction">
 
 <p>Another example:</p>
 <p><a href="https://www.facebook.com/groups/fbdevelopers/permalink/1881371928572979/">
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-server-to-server2.png" alt="Facebook App Review for a server-to-server interaction">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-server-to-server2.png" alt="Facebook App Review for a server-to-server interaction">
 </a></p>
 <p>Seriously, how does one suppose to show a reviewer the &ldquo;improvement of user experience&rdquo;? I am that user, it&rsquo;s for me only! But as I said, looks like such usage of API was not really allowed in the first place.</p>
 <p>But anyway, my guess is that Facebook realized how big it did fuck up (way too many <em>unhappy</em> developers) and rollbacked the access revocation. I saw others saying the same thing - that they just got the access back without doing anything.</p>
@@ -626,9 +579,7 @@ Console.WriteLine(result);
 <p>А вот ещё:</p>
 <p><a href="https://www.facebook.com/groups/fbdevelopers/permalink/1878975245479314/">
 
-
-    <img class="image-post" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-yrup.png" alt="Урюпинская епархия работает с API">
-
+    <img class="image-post" loading="lazy" src="/blog/2017/11/25/csharp-dotnet-core-publish-facebook/images/app-review-yrup.png" alt="Урюпинская епархия работает с API">
 </a></p>
 <p>Какая продвинутая обитель, общается с паствой прямо в бездуховных соцсетях.</p>
 
@@ -640,7 +591,7 @@ Console.WriteLine(result);
 </div>
 
 <p>Today I started getting this error again:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">The permission<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span> manage_pages,publish_pages are not available. It could because either they are deprecated or need to be approved by App Review.</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>The permission<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span> manage_pages,publish_pages are not available. It could because either they are deprecated or need to be approved by App Review.</span></span></code></pre></div>
 <p>And just like the <a href="#update3">last time</a> is miraculously disappeared by itself in a day or so. Classic Failsbook.</p>
 
 
@@ -730,7 +681,7 @@ The Facebook Team</p>
 </div>
 
 <p>Oh wow, Falsebook has actually done something! Now my requests fail with an error:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">Error</span> validating access token<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">The</span> <span style="color:#66d9ef">user</span> <span style="color:#66d9ef">has</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">authorized</span> <span style="color:#66d9ef">application</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">Error</span> validating access token<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">The</span> <span style="color:#66d9ef">user</span> <span style="color:#66d9ef">has</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">authorized</span> <span style="color:#66d9ef">application</span></span></span></code></pre></div>
 <p>It only took them 1.5 years.</p>
 <p>It actually might be something not related, but Foicebook can go fuck itself an anyway, because I have no desire to waste any more time on this piece of shit. Good thing we didn&rsquo;t really need it in the first place.</p>
       </div>

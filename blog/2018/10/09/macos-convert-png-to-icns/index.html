@@ -5,7 +5,7 @@
     <title>Convert PNG to ICNS on Mac OS | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2018/10/09/macos-convert-png-to-icns/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -19,9 +19,7 @@
 <meta property="og:description" content="Developing an application for Mac OS, sooner or later you&rsquo;ll want to add an icon to it. And Mac OS uses Apple&rsquo;s own format for application icons - Apple Icon Image format - files with .icns extension. But how does one create such a file?
 
 
-
     
-
 
 It is actually not so hard, but there are some tricky moments. I&rsquo;ll cover those and as a bonus I&rsquo;ll show you how to use .icns icon in Qt-based application (deadly simple)." />
 <meta property="og:type" content="article" />
@@ -74,9 +72,7 @@ It is actually not so hard, but there are some tricky moments. I&rsquo;ll cover 
         <p>Developing an application for Mac OS, sooner or later you&rsquo;ll want to add an icon to it. And Mac OS uses Apple&rsquo;s own format for application icons - <a href="https://en.wikipedia.org/wiki/Apple_Icon_Image_format">Apple Icon Image format</a> - files with <code>.icns</code> extension. But how does one create such a file?</p>
 
 
-
-    <img class="image-post" src="/blog/2018/10/09/macos-convert-png-to-icns/images/macos-application-icon.png" alt="Application icon inside the app bundle on Mac OS">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/10/09/macos-convert-png-to-icns/images/macos-application-icon.png" alt="Application icon inside the app bundle on Mac OS">
 
 <p>It is actually not so hard, but there are some tricky moments. I&rsquo;ll cover those and as a bonus I&rsquo;ll show you how to use <code>.icns</code> icon in Qt-based application (<em>deadly simple</em>).</p>
 <nav id="TableOfContents">
@@ -92,11 +88,11 @@ It is actually not so hard, but there are some tricky moments. I&rsquo;ll cover 
 <h1 id="how-to-convert-png-to-icns">How to convert PNG to ICNS</h1>
 <p>There is an out-of-the-box Mac OS tool for such conversion - <a href="http://www.manpagez.com/man/1/iconutil/">iconutil</a> (<em>documentation for which is nowhere to find at <a href="https://developer.apple.com/library/archive/documentation/Darwin/Reference/ManPages/man1/iconutil.1.html">Apple&rsquo;s website</a>, so this brief <code>man</code> page is all we have</em>).</p>
 <p>However, you cannot just take a random PNG and feed it to <code>iconutil</code>. I mean, you can, but it will give you the following error:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ iconutil -c icns some.png
-some.png:Iconset not found.</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ iconutil -c icns some.png
+</span></span><span style="display:flex;"><span>some.png:Iconset not found.</span></span></code></pre></div>
 <p>Because <code>iconutil</code> takes only specially named folders. Just how am I supposed to know about that? And it shows similar short and useless error messages for other things it doesn&rsquo;t like. For example, here&rsquo;s an output for the situation when files inside iconset folder are not named &ldquo;properly&rdquo; or have &ldquo;wrong&rdquo; dimensions:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ iconutil -c icns some.iconset
-some.iconset:Failed to generate ICNS.</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ iconutil -c icns some.iconset
+</span></span><span style="display:flex;"><span>some.iconset:Failed to generate ICNS.</span></span></code></pre></div>
 <p>Go figure.</p>
 <p>After a set of trials and browsing the internet I found out (<em>hopefully</em>) all the requirements:</p>
 <ol>
@@ -104,79 +100,77 @@ some.iconset:Failed to generate ICNS.</code></pre></div>
 <li>Pictures from this set should be named in a <strong>certain way</strong> and have <strong>specific dimensions</strong>.</li>
 </ol>
 <p>Correct dimensions can be found in <a href="https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon#app-icon-sizes">Apple Guidelines</a>. So it&rsquo;s 5 different dimensions, but actually 10 &ldquo;physical&rdquo; files as each dimension is represented twice (<em>you&rsquo;ll see why</em>). And these files have to be named according to the following format:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">icon_<span style="color:#f92672">{</span>width<span style="color:#f92672">}</span>x<span style="color:#f92672">{</span>height<span style="color:#f92672">}[</span>@<span style="color:#f92672">{</span>scale<span style="color:#f92672">}</span>x<span style="color:#f92672">]</span>.png</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>icon_<span style="color:#f92672">{</span>width<span style="color:#f92672">}</span>x<span style="color:#f92672">{</span>height<span style="color:#f92672">}[</span>@<span style="color:#f92672">{</span>scale<span style="color:#f92672">}</span>x<span style="color:#f92672">]</span>.png</span></span></code></pre></div>
 <p>So here&rsquo;s the full list of proper filenames:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ tree some.iconset/
-some.iconset/
-├── icon_128x128.png
-├── icon_128x128@2x.png
-├── icon_16x16.png
-├── icon_16x16@2x.png
-├── icon_256x256.png
-├── icon_256x256@2x.png
-├── icon_32x32.png
-├── icon_32x32@2x.png
-├── icon_512x512.png
-└── icon_512x512@2x.png
-
-<span style="color:#ae81ff">0</span> directories, <span style="color:#ae81ff">10</span> files</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ tree some.iconset/
+</span></span><span style="display:flex;"><span>some.iconset/
+</span></span><span style="display:flex;"><span>├── icon_128x128.png
+</span></span><span style="display:flex;"><span>├── icon_128x128@2x.png
+</span></span><span style="display:flex;"><span>├── icon_16x16.png
+</span></span><span style="display:flex;"><span>├── icon_16x16@2x.png
+</span></span><span style="display:flex;"><span>├── icon_256x256.png
+</span></span><span style="display:flex;"><span>├── icon_256x256@2x.png
+</span></span><span style="display:flex;"><span>├── icon_32x32.png
+</span></span><span style="display:flex;"><span>├── icon_32x32@2x.png
+</span></span><span style="display:flex;"><span>├── icon_512x512.png
+</span></span><span style="display:flex;"><span>└── icon_512x512@2x.png
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">0</span> directories, <span style="color:#ae81ff">10</span> files</span></span></code></pre></div>
 <h2 id="script-to-automate-the-process">Script to automate the process</h2>
 <p>But that&rsquo;s rather boring to create all those files manually in some graphics editor, right? So let&rsquo;s use <a href="https://ss64.com/osx/sips.html">sips</a> utility (<em>although, I recommend using ImageMagick, as it gives <a href="/blog/2019/12/12/imagemagick-vs-sips-resize/">better quality</a> results</em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sips -z <span style="color:#ae81ff">16</span> <span style="color:#ae81ff">16</span> some.png --out icon_16x16.png</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sips -z <span style="color:#ae81ff">16</span> <span style="color:#ae81ff">16</span> some.png --out icon_16x16.png</span></span></code></pre></div>
 <p>Better, but still - we have to run it 10 times. So let&rsquo;s write a Python script for that:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># a class to store icon parameters: its size and scale factor</span>
-<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IconParameters</span>():
-    width <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
-    scale <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
-
-    <span style="color:#66d9ef">def</span> __init__(self, width, scale):
-        self<span style="color:#f92672">.</span>width <span style="color:#f92672">=</span> width
-        self<span style="color:#f92672">.</span>scale <span style="color:#f92672">=</span> scale
-
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getIconName</span>(self):
-        scaleString <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>scale <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">else</span> <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;@</span><span style="color:#e6db74">{</span>self<span style="color:#f92672">.</span>scale<span style="color:#e6db74">}</span><span style="color:#e6db74">x&#34;</span>
-        <span style="color:#66d9ef">return</span> <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;icon_</span><span style="color:#e6db74">{</span>self<span style="color:#f92672">.</span>width<span style="color:#e6db74">}</span><span style="color:#e6db74">x</span><span style="color:#e6db74">{</span>self<span style="color:#f92672">.</span>width<span style="color:#e6db74">}{</span>scaleString<span style="color:#e6db74">}</span><span style="color:#e6db74">.png&#34;</span>
-
-
-<span style="color:#75715e"># create a list of all the sizes (5 actual sizes, but 10 files)</span>
-ListOfIconParameters <span style="color:#f92672">=</span> [
-    IconParameters(<span style="color:#ae81ff">16</span>, <span style="color:#ae81ff">1</span>),
-    IconParameters(<span style="color:#ae81ff">16</span>, <span style="color:#ae81ff">2</span>),
-    IconParameters(<span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">1</span>),
-    IconParameters(<span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">2</span>),
-    IconParameters(<span style="color:#ae81ff">128</span>, <span style="color:#ae81ff">1</span>),
-    IconParameters(<span style="color:#ae81ff">128</span>, <span style="color:#ae81ff">2</span>),
-    IconParameters(<span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">1</span>),
-    IconParameters(<span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">2</span>),
-    IconParameters(<span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">1</span>),
-    IconParameters(<span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">2</span>)
-]
-
-<span style="color:#75715e"># generate iconset folder by calling sips utility for each item in the list (so it&#39;s 10 times)</span>
-<span style="color:#66d9ef">for</span> ip <span style="color:#f92672">in</span> ListOfIconParameters:
-    subprocess<span style="color:#f92672">.</span>run(
-        [
-            <span style="color:#e6db74">&#34;sips&#34;</span>,
-            <span style="color:#e6db74">&#34;-z&#34;</span>,
-            str(ip<span style="color:#f92672">.</span>width <span style="color:#f92672">*</span> ip<span style="color:#f92672">.</span>scale),
-            str(ip<span style="color:#f92672">.</span>width <span style="color:#f92672">*</span> ip<span style="color:#f92672">.</span>scale),
-            originalPicture,
-            <span style="color:#e6db74">&#34;--out&#34;</span>,
-            iconsetDir <span style="color:#f92672">/</span> ip<span style="color:#f92672">.</span>getIconName()
-        ],
-        capture_output<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>,
-        text<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>
-    )</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#75715e"># a class to store icon parameters: its size and scale factor</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IconParameters</span>():
+</span></span><span style="display:flex;"><span>    width <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>    scale <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">def</span> __init__(self, width, scale):
+</span></span><span style="display:flex;"><span>        self<span style="color:#f92672">.</span>width <span style="color:#f92672">=</span> width
+</span></span><span style="display:flex;"><span>        self<span style="color:#f92672">.</span>scale <span style="color:#f92672">=</span> scale
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getIconName</span>(self):
+</span></span><span style="display:flex;"><span>        scaleString <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>scale <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">else</span> <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;@</span><span style="color:#e6db74">{</span>self<span style="color:#f92672">.</span>scale<span style="color:#e6db74">}</span><span style="color:#e6db74">x&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;icon_</span><span style="color:#e6db74">{</span>self<span style="color:#f92672">.</span>width<span style="color:#e6db74">}</span><span style="color:#e6db74">x</span><span style="color:#e6db74">{</span>self<span style="color:#f92672">.</span>width<span style="color:#e6db74">}{</span>scaleString<span style="color:#e6db74">}</span><span style="color:#e6db74">.png&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># create a list of all the sizes (5 actual sizes, but 10 files)</span>
+</span></span><span style="display:flex;"><span>ListOfIconParameters <span style="color:#f92672">=</span> [
+</span></span><span style="display:flex;"><span>    IconParameters(<span style="color:#ae81ff">16</span>, <span style="color:#ae81ff">1</span>),
+</span></span><span style="display:flex;"><span>    IconParameters(<span style="color:#ae81ff">16</span>, <span style="color:#ae81ff">2</span>),
+</span></span><span style="display:flex;"><span>    IconParameters(<span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">1</span>),
+</span></span><span style="display:flex;"><span>    IconParameters(<span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">2</span>),
+</span></span><span style="display:flex;"><span>    IconParameters(<span style="color:#ae81ff">128</span>, <span style="color:#ae81ff">1</span>),
+</span></span><span style="display:flex;"><span>    IconParameters(<span style="color:#ae81ff">128</span>, <span style="color:#ae81ff">2</span>),
+</span></span><span style="display:flex;"><span>    IconParameters(<span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">1</span>),
+</span></span><span style="display:flex;"><span>    IconParameters(<span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">2</span>),
+</span></span><span style="display:flex;"><span>    IconParameters(<span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">1</span>),
+</span></span><span style="display:flex;"><span>    IconParameters(<span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">2</span>)
+</span></span><span style="display:flex;"><span>]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># generate iconset folder by calling sips utility for each item in the list (so it&#39;s 10 times)</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">for</span> ip <span style="color:#f92672">in</span> ListOfIconParameters:
+</span></span><span style="display:flex;"><span>    subprocess<span style="color:#f92672">.</span>run(
+</span></span><span style="display:flex;"><span>        [
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;sips&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;-z&#34;</span>,
+</span></span><span style="display:flex;"><span>            str(ip<span style="color:#f92672">.</span>width <span style="color:#f92672">*</span> ip<span style="color:#f92672">.</span>scale),
+</span></span><span style="display:flex;"><span>            str(ip<span style="color:#f92672">.</span>width <span style="color:#f92672">*</span> ip<span style="color:#f92672">.</span>scale),
+</span></span><span style="display:flex;"><span>            originalPicture,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;--out&#34;</span>,
+</span></span><span style="display:flex;"><span>            iconsetDir <span style="color:#f92672">/</span> ip<span style="color:#f92672">.</span>getIconName()
+</span></span><span style="display:flex;"><span>        ],
+</span></span><span style="display:flex;"><span>        capture_output<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>,
+</span></span><span style="display:flex;"><span>        text<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>
+</span></span><span style="display:flex;"><span>    )</span></span></code></pre></div>
 <p>The full script is published <a href="https://github.com/retifrav/generate-iconset/tree/master/src/generate_iconset">here</a>. There is also a <a href="https://pypi.org/project/generate-iconset/">PyPI package</a>.</p>
 <p>As an example, I prepared a square picture with a resolution of 2048x2048 and 150 pixel per inch, so there is plenty room to prevent upscaling:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/10/09/macos-convert-png-to-icns/images/apple.png" alt="Apple logo">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/10/09/macos-convert-png-to-icns/images/apple.png" alt="Apple logo">
 
 <p>Pass picture path to the script like that:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">python generate-iconset.py ~/Desktop/apple.png</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>python generate-iconset.py ~/Desktop/apple.png</span></span></code></pre></div>
 <p>The script will:</p>
 <ol>
 <li>Create a folder <code>~/Desktop/apple.iconset</code>;</li>
@@ -186,20 +180,17 @@ ListOfIconParameters <span style="color:#f92672">=</span> [
 <p>Here&rsquo;s how the final <code>apple.icns</code> looks like in <strong>Preview</strong>:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/10/09/macos-convert-png-to-icns/images/icns-preview.png" alt="ICNS file in Preview">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/10/09/macos-convert-png-to-icns/images/icns-preview.png" alt="ICNS file in Preview">
 
 <p>So everything from that folder is bundled into one file.</p>
 <h1 id="setting-icon-for-a-qt-based-application-on-mac-os">Setting icon for a Qt-based application on Mac OS</h1>
 <p>And now the bonus part - how to use <code>.icns</code> as an icon for a Qt-based application.</p>
 <p>As I said, it&rsquo;s deadly simple: put <code>apple.icns</code> into your Qt project folder and add the following line into <code>your-project.pro</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ICON <span style="color:#f92672">=</span> apple.icns</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ICON <span style="color:#f92672">=</span> apple.icns</span></span></code></pre></div>
 <p>And that&rsquo;s it:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/10/09/macos-convert-png-to-icns/images/macos-app-icon-dock.png" alt="Application icon at the Mac OS dock">
+    <img class="image-post" loading="lazy" src="/blog/2018/10/09/macos-convert-png-to-icns/images/macos-app-icon-dock.png" alt="Application icon at the Mac OS dock">
       </div>
     </article>
     <div><div id="tags">

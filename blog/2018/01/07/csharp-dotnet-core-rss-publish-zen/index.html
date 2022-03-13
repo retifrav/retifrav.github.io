@@ -5,7 +5,7 @@
     <title>C# / .NET Core, RSS feed and Yandex Zen | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -19,9 +19,7 @@
 <meta property="og:description" content="Actually, that is the first thing you need to do on your webwite. Not Twitter integration and not Facebook integration, but RSS feed. This is the fastest and easiest thing to do, anyway.
 
 
-
     
-
 
 In addition to simply generating RSS, I&rsquo;ll tell you about Yandex Zen (because it&rsquo;s also RSS-based) and my attempts to inegrate with it." />
 <meta property="og:type" content="article" />
@@ -74,9 +72,7 @@ In addition to simply generating RSS, I&rsquo;ll tell you about Yandex Zen (beca
         <p>Actually, that is the first thing you need to do on your webwite. Not Twitter integration and not Facebook integration, but <a href="https://en.wikipedia.org/wiki/RSS">RSS</a> feed. This is the fastest and easiest thing to do, anyway.</p>
 
 
-
-    <img class="image-post" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/dotnet-core-rss-zen-logo.png" alt=".NET Core, RSS, Yandex Zen, logo">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/dotnet-core-rss-zen-logo.png" alt=".NET Core, RSS, Yandex Zen, logo">
 
 <p>In addition to simply generating RSS, I&rsquo;ll tell you about <a href="https://en.wikipedia.org/wiki/Yandex_Zen">Yandex Zen</a> (because it&rsquo;s also RSS-based) and my attempts to inegrate with it.</p>
 <nav id="TableOfContents">
@@ -98,145 +94,139 @@ In addition to simply generating RSS, I&rsquo;ll tell you about Yandex Zen (beca
 <p>Basically, generating an RSS feed merely means creating a <a href="https://validator.w3.org/feed/docs/">specially formed</a> XML file in the root of your website. Each time you have some updates on your website (new content), you need to reflect it in the RSS feed, and then everyone who is subscribed to it will get a notification.</p>
 <p>At our website new content means a new rating for some TV show, and that&rsquo;s what goes to RSS feed. Each time authors publish a new rating, a function call is triggered, and this function gets last 8 ratings and creates a new feed file (overwriting the previous one).</p>
 <p>Here&rsquo;s a simplified last 8 ratings table which I&rsquo;ll use as an example:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#f92672">+</span><span style="color:#75715e">-------------------------------------+----------------------------+----------------------------+---------------------+
-</span><span style="color:#75715e"></span><span style="color:#f92672">|</span> picture_path_main                   <span style="color:#f92672">|</span> title                      <span style="color:#f92672">|</span> short_name                 <span style="color:#f92672">|</span> published_date      <span style="color:#f92672">|</span>
-<span style="color:#f92672">+</span><span style="color:#75715e">-------------------------------------+----------------------------+----------------------------+---------------------+
-</span><span style="color:#75715e"></span><span style="color:#f92672">|</span> death<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>paradise<span style="color:#f92672">-</span>main.png          <span style="color:#f92672">|</span> Death <span style="color:#66d9ef">in</span> Paradise          <span style="color:#f92672">|</span> death<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>paradise          <span style="color:#f92672">|</span> <span style="color:#ae81ff">2018</span><span style="color:#f92672">-</span><span style="color:#ae81ff">01</span><span style="color:#f92672">-</span><span style="color:#ae81ff">05</span> <span style="color:#ae81ff">08</span>:<span style="color:#ae81ff">16</span>:<span style="color:#ae81ff">54</span> <span style="color:#f92672">|</span>
-<span style="color:#f92672">|</span> black<span style="color:#f92672">-</span>mirror<span style="color:#f92672">-</span>main.png               <span style="color:#f92672">|</span> Black Mirror               <span style="color:#f92672">|</span> black<span style="color:#f92672">-</span>mirror               <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">29</span> <span style="color:#ae81ff">11</span>:<span style="color:#ae81ff">42</span>:<span style="color:#ae81ff">25</span> <span style="color:#f92672">|</span>
-<span style="color:#f92672">|</span> murder<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>the<span style="color:#f92672">-</span><span style="color:#66d9ef">first</span><span style="color:#f92672">-</span>main.png        <span style="color:#f92672">|</span> Murder <span style="color:#66d9ef">in</span> the <span style="color:#66d9ef">First</span>        <span style="color:#f92672">|</span> murder<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>the<span style="color:#f92672">-</span><span style="color:#66d9ef">first</span>        <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">27</span> <span style="color:#ae81ff">16</span>:<span style="color:#ae81ff">49</span>:<span style="color:#ae81ff">40</span> <span style="color:#f92672">|</span>
-<span style="color:#f92672">|</span> three<span style="color:#f92672">-</span>girls<span style="color:#f92672">-</span>main.png                <span style="color:#f92672">|</span> Three Girls                <span style="color:#f92672">|</span> three<span style="color:#f92672">-</span>girls                <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">24</span> <span style="color:#ae81ff">16</span>:<span style="color:#ae81ff">45</span>:<span style="color:#ae81ff">37</span> <span style="color:#f92672">|</span>
-<span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>killing<span style="color:#f92672">-</span>main.png                <span style="color:#f92672">|</span> The Killing                <span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>killing                <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">20</span> <span style="color:#ae81ff">17</span>:<span style="color:#ae81ff">11</span>:<span style="color:#ae81ff">04</span> <span style="color:#f92672">|</span>
-<span style="color:#f92672">|</span> midnight<span style="color:#f92672">-</span>texas<span style="color:#f92672">-</span>main.png             <span style="color:#f92672">|</span> Midnight Texas             <span style="color:#f92672">|</span> midnight<span style="color:#f92672">-</span>texas             <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">18</span> <span style="color:#ae81ff">16</span>:<span style="color:#ae81ff">48</span>:<span style="color:#ae81ff">59</span> <span style="color:#f92672">|</span>
-<span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>leftovers<span style="color:#f92672">-</span>main.png              <span style="color:#f92672">|</span> The Leftovers              <span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>leftovers              <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">15</span> <span style="color:#ae81ff">19</span>:<span style="color:#ae81ff">48</span>:<span style="color:#ae81ff">10</span> <span style="color:#f92672">|</span>
-<span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>man<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>the<span style="color:#f92672">-</span>high<span style="color:#f92672">-</span>castle<span style="color:#f92672">-</span>main.png <span style="color:#f92672">|</span> The Man <span style="color:#66d9ef">in</span> The High Castle <span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>man<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>the<span style="color:#f92672">-</span>high<span style="color:#f92672">-</span>castle <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">11</span> <span style="color:#ae81ff">20</span>:<span style="color:#ae81ff">43</span>:<span style="color:#ae81ff">52</span> <span style="color:#f92672">|</span>
-<span style="color:#f92672">+</span><span style="color:#75715e">-------------------------------------+----------------------------+----------------------------+---------------------+</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#f92672">+</span><span style="color:#75715e">-------------------------------------+----------------------------+----------------------------+---------------------+
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#f92672">|</span> picture_path_main                   <span style="color:#f92672">|</span> title                      <span style="color:#f92672">|</span> short_name                 <span style="color:#f92672">|</span> published_date      <span style="color:#f92672">|</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">+</span><span style="color:#75715e">-------------------------------------+----------------------------+----------------------------+---------------------+
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#f92672">|</span> death<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>paradise<span style="color:#f92672">-</span>main.png          <span style="color:#f92672">|</span> Death <span style="color:#66d9ef">in</span> Paradise          <span style="color:#f92672">|</span> death<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>paradise          <span style="color:#f92672">|</span> <span style="color:#ae81ff">2018</span><span style="color:#f92672">-</span><span style="color:#ae81ff">01</span><span style="color:#f92672">-</span><span style="color:#ae81ff">05</span> <span style="color:#ae81ff">08</span>:<span style="color:#ae81ff">16</span>:<span style="color:#ae81ff">54</span> <span style="color:#f92672">|</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">|</span> black<span style="color:#f92672">-</span>mirror<span style="color:#f92672">-</span>main.png               <span style="color:#f92672">|</span> Black Mirror               <span style="color:#f92672">|</span> black<span style="color:#f92672">-</span>mirror               <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">29</span> <span style="color:#ae81ff">11</span>:<span style="color:#ae81ff">42</span>:<span style="color:#ae81ff">25</span> <span style="color:#f92672">|</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">|</span> murder<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>the<span style="color:#f92672">-</span><span style="color:#66d9ef">first</span><span style="color:#f92672">-</span>main.png        <span style="color:#f92672">|</span> Murder <span style="color:#66d9ef">in</span> the <span style="color:#66d9ef">First</span>        <span style="color:#f92672">|</span> murder<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>the<span style="color:#f92672">-</span><span style="color:#66d9ef">first</span>        <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">27</span> <span style="color:#ae81ff">16</span>:<span style="color:#ae81ff">49</span>:<span style="color:#ae81ff">40</span> <span style="color:#f92672">|</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">|</span> three<span style="color:#f92672">-</span>girls<span style="color:#f92672">-</span>main.png                <span style="color:#f92672">|</span> Three Girls                <span style="color:#f92672">|</span> three<span style="color:#f92672">-</span>girls                <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">24</span> <span style="color:#ae81ff">16</span>:<span style="color:#ae81ff">45</span>:<span style="color:#ae81ff">37</span> <span style="color:#f92672">|</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>killing<span style="color:#f92672">-</span>main.png                <span style="color:#f92672">|</span> The Killing                <span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>killing                <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">20</span> <span style="color:#ae81ff">17</span>:<span style="color:#ae81ff">11</span>:<span style="color:#ae81ff">04</span> <span style="color:#f92672">|</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">|</span> midnight<span style="color:#f92672">-</span>texas<span style="color:#f92672">-</span>main.png             <span style="color:#f92672">|</span> Midnight Texas             <span style="color:#f92672">|</span> midnight<span style="color:#f92672">-</span>texas             <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">18</span> <span style="color:#ae81ff">16</span>:<span style="color:#ae81ff">48</span>:<span style="color:#ae81ff">59</span> <span style="color:#f92672">|</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>leftovers<span style="color:#f92672">-</span>main.png              <span style="color:#f92672">|</span> The Leftovers              <span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>leftovers              <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">15</span> <span style="color:#ae81ff">19</span>:<span style="color:#ae81ff">48</span>:<span style="color:#ae81ff">10</span> <span style="color:#f92672">|</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>man<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>the<span style="color:#f92672">-</span>high<span style="color:#f92672">-</span>castle<span style="color:#f92672">-</span>main.png <span style="color:#f92672">|</span> The Man <span style="color:#66d9ef">in</span> The High Castle <span style="color:#f92672">|</span> the<span style="color:#f92672">-</span>man<span style="color:#f92672">-</span><span style="color:#66d9ef">in</span><span style="color:#f92672">-</span>the<span style="color:#f92672">-</span>high<span style="color:#f92672">-</span>castle <span style="color:#f92672">|</span> <span style="color:#ae81ff">2017</span><span style="color:#f92672">-</span><span style="color:#ae81ff">12</span><span style="color:#f92672">-</span><span style="color:#ae81ff">11</span> <span style="color:#ae81ff">20</span>:<span style="color:#ae81ff">43</span>:<span style="color:#ae81ff">52</span> <span style="color:#f92672">|</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">+</span><span style="color:#75715e">-------------------------------------+----------------------------+----------------------------+---------------------+</span></span></span></code></pre></div>
 <p>Creating an XML document in C# is a pretty easy thing. But XML namespaces were not so easy for me, and also there were some other annoying details, so I felt the need to share the code of my function with you:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#75715e">// configuration - object that works with my appsettings.json
-</span><span style="color:#75715e">// webRootPath - local path to the website root
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> GenerateRSS(IConfiguration configuration, <span style="color:#66d9ef">string</span> webRootPath)
-{
-    <span style="color:#75715e">// http://protvshows.com/
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">string</span> websiteLink = configuration.GetSection(<span style="color:#e6db74">&#34;General:Domain&#34;</span>).Value;
-
-    <span style="color:#75715e">// required namespaces
-</span><span style="color:#75715e"></span>    XNamespace content = <span style="color:#e6db74">&#34;http://purl.org/rss/1.0/modules/content/&#34;</span>;
-    XNamespace dc = <span style="color:#e6db74">&#34;http://purl.org/dc/elements/1.1/&#34;</span>;
-    XNamespace media = <span style="color:#e6db74">&#34;http://search.yahoo.com/mrss/&#34;</span>;
-    XNamespace atom = <span style="color:#e6db74">&#34;http://www.w3.org/2005/Atom&#34;</span>;
-    XNamespace georss = <span style="color:#e6db74">&#34;http://www.georss.org/georss&#34;</span>;
-
-    <span style="color:#75715e">// prepare the XML document
-</span><span style="color:#75715e"></span>    XDocument rss = <span style="color:#66d9ef">new</span> XDocument();
-    rss.Add(
-        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;rss&#34;</span>,
-            <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;version&#34;</span>, <span style="color:#e6db74">&#34;2.0&#34;</span>),
-            <span style="color:#75715e">// that&#39;s how you add namespaces to an XML document
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;content&#34;</span>, content.NamespaceName),
-            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;dc&#34;</span>, dc.NamespaceName),
-            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;media&#34;</span>, media.NamespaceName),
-            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;atom&#34;</span>, atom.NamespaceName),
-            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;georss&#34;</span>, georss.NamespaceName),
-            <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;channel&#34;</span>,
-                <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;title&#34;</span>, <span style="color:#e6db74">&#34;proTVshows&#34;</span>),
-                <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;link&#34;</span>, websiteLink),
-                <span style="color:#66d9ef">new</span> XElement(atom + <span style="color:#e6db74">&#34;link&#34;</span>,
-                    <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;href&#34;</span>, <span style="color:#e6db74">$&#34;{websiteLink}rss.xml&#34;</span>),
-                    <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;rel&#34;</span>, <span style="color:#e6db74">&#34;self&#34;</span>),
-                    <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;type&#34;</span>, <span style="color:#e6db74">&#34;application/rss+xml&#34;</span>)
-                    ),
-                            <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;description&#34;</span>, <span style="color:#e6db74">&#34;Some description&#34;</span>),
-                <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;language&#34;</span>, <span style="color:#e6db74">&#34;ru&#34;</span>)
-                )
-            )
-        );
-
-    <span style="color:#75715e">// get data from database and insert it to the document
-</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">using</span> (MySqlConnection sqlConn = <span style="color:#66d9ef">new</span> MySqlConnection(configuration.GetConnectionString(<span style="color:#e6db74">&#34;DefaultConnection&#34;</span>)))
-    {
-        sqlConn.Open();
-        MySqlCommand cmd = <span style="color:#66d9ef">new</span> MySqlCommand(<span style="color:#e6db74">&#34;SELECT picture_path_main, title, short_name, published_date FROM ratings;&#34;</span>, sqlConn);
-        <span style="color:#66d9ef">using</span> (MySqlDataReader reader = cmd.ExecuteReader())
-        {
-            <span style="color:#66d9ef">while</span> (reader.Read())
-            {
-                <span style="color:#66d9ef">string</span> title = reader.GetString(<span style="color:#e6db74">&#34;title&#34;</span>);
-                <span style="color:#66d9ef">string</span> postLink = <span style="color:#e6db74">$&#34;{websiteLink}ratings/{reader.GetString(&#34;</span>short_name<span style="color:#e6db74">&#34;)}&#34;</span>;
-                <span style="color:#75715e">// you can add various media to the feed
-</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">string</span> picture = Path.Combine(
-                    <span style="color:#75715e">// /images/ratings/
-</span><span style="color:#75715e"></span>                    configuration.GetSection(<span style="color:#e6db74">&#34;General:ImagesFolder&#34;</span>).Value,
-                    reader.GetString(<span style="color:#e6db74">&#34;picture_path_main&#34;</span>)
-                    );
-                <span style="color:#66d9ef">string</span> pictureLink = <span style="color:#e6db74">$&#34;{websiteLink}{picture}&#34;</span>;
-
-                StringBuilder feedContent = <span style="color:#66d9ef">new</span> StringBuilder()
-                    .Append(<span style="color:#e6db74">$&#34;&lt;h2&gt;{title}&lt;/h2&gt;&#34;</span>)
-                    .Append(<span style="color:#e6db74">$&#34;&lt;p&gt;New stuff!&lt;/p&gt;&#34;</span>);
-
-                rss.Element(<span style="color:#e6db74">&#34;rss&#34;</span>).Element(<span style="color:#e6db74">&#34;channel&#34;</span>).Add(
-                    <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;item&#34;</span>,
-                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;title&#34;</span>, title),
-                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;link&#34;</span>, postLink),
-                        <span style="color:#75715e">// if you use Guid.NewGuid() here, your reader will get duplicates each time you publish
-</span><span style="color:#75715e"></span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;guid&#34;</span>, reader.GetString(<span style="color:#e6db74">&#34;short_name&#34;</span>), <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;isPermaLink&#34;</span>, <span style="color:#e6db74">&#34;false&#34;</span>)),
-                        <span style="color:#75715e">// see about GetRFC822DateTime() in the #problems section
-</span><span style="color:#75715e"></span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;pubDate&#34;</span>, GetRFC822DateTime(reader.GetDateTime(<span style="color:#e6db74">&#34;published_date&#34;</span>))),
-                        <span style="color:#66d9ef">new</span> XElement(media + <span style="color:#e6db74">&#34;rating&#34;</span>, <span style="color:#e6db74">&#34;nonadult&#34;</span>, <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;scheme&#34;</span>, <span style="color:#e6db74">&#34;urn:simple&#34;</span>)),
-                        <span style="color:#75715e">//new XElement(&#34;author&#34;, &#34;proTVshows&#34;),
-</span><span style="color:#75715e"></span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;category&#34;</span>, <span style="color:#e6db74">&#34;TV&#34;</span>),
-                        <span style="color:#75715e">// here goes the picture for the post
-</span><span style="color:#75715e"></span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;enclosure&#34;</span>,
-                            <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;url&#34;</span>, pictureLink),
-                            <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;type&#34;</span>, <span style="color:#e6db74">&#34;image/png&#34;</span>),
-                            <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;length&#34;</span>, pictureLink.Length)
-                            ),
-                        <span style="color:#75715e">// and that&#39;s how you add CDATA
-</span><span style="color:#75715e"></span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;description&#34;</span>, <span style="color:#66d9ef">new</span> XCData(<span style="color:#e6db74">$&#34;A rating for {title}&#34;</span>)),
-                            <span style="color:#66d9ef">new</span> XElement(
-                                content + <span style="color:#e6db74">&#34;encoded&#34;</span>,
-                                <span style="color:#66d9ef">new</span> XCData(feedContent.ToString())
-                                )
-                        )
-                    );
-            }
-        }
-    }
-
-    rss.Save(Path.Combine(webRootPath, <span style="color:#e6db74">&#34;rss.xml&#34;</span>));
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#75715e">// configuration - object that works with my appsettings.json</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// webRootPath - local path to the website root</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> GenerateRSS(IConfiguration configuration, <span style="color:#66d9ef">string</span> webRootPath)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// http://protvshows.com/</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> websiteLink = configuration.GetSection(<span style="color:#e6db74">&#34;General:Domain&#34;</span>).Value;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// required namespaces</span>
+</span></span><span style="display:flex;"><span>    XNamespace content = <span style="color:#e6db74">&#34;http://purl.org/rss/1.0/modules/content/&#34;</span>;
+</span></span><span style="display:flex;"><span>    XNamespace dc = <span style="color:#e6db74">&#34;http://purl.org/dc/elements/1.1/&#34;</span>;
+</span></span><span style="display:flex;"><span>    XNamespace media = <span style="color:#e6db74">&#34;http://search.yahoo.com/mrss/&#34;</span>;
+</span></span><span style="display:flex;"><span>    XNamespace atom = <span style="color:#e6db74">&#34;http://www.w3.org/2005/Atom&#34;</span>;
+</span></span><span style="display:flex;"><span>    XNamespace georss = <span style="color:#e6db74">&#34;http://www.georss.org/georss&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// prepare the XML document</span>
+</span></span><span style="display:flex;"><span>    XDocument rss = <span style="color:#66d9ef">new</span> XDocument();
+</span></span><span style="display:flex;"><span>    rss.Add(
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;rss&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;version&#34;</span>, <span style="color:#e6db74">&#34;2.0&#34;</span>),
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// that&#39;s how you add namespaces to an XML document</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;content&#34;</span>, content.NamespaceName),
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;dc&#34;</span>, dc.NamespaceName),
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;media&#34;</span>, media.NamespaceName),
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;atom&#34;</span>, atom.NamespaceName),
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> XAttribute(XNamespace.Xmlns + <span style="color:#e6db74">&#34;georss&#34;</span>, georss.NamespaceName),
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;channel&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;title&#34;</span>, <span style="color:#e6db74">&#34;proTVshows&#34;</span>),
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;link&#34;</span>, websiteLink),
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">new</span> XElement(atom + <span style="color:#e6db74">&#34;link&#34;</span>,
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;href&#34;</span>, <span style="color:#e6db74">$&#34;{websiteLink}rss.xml&#34;</span>),
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;rel&#34;</span>, <span style="color:#e6db74">&#34;self&#34;</span>),
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;type&#34;</span>, <span style="color:#e6db74">&#34;application/rss+xml&#34;</span>)
+</span></span><span style="display:flex;"><span>                    ),
+</span></span><span style="display:flex;"><span>                            <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;description&#34;</span>, <span style="color:#e6db74">&#34;Some description&#34;</span>),
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;language&#34;</span>, <span style="color:#e6db74">&#34;ru&#34;</span>)
+</span></span><span style="display:flex;"><span>                )
+</span></span><span style="display:flex;"><span>            )
+</span></span><span style="display:flex;"><span>        );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// get data from database and insert it to the document</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">using</span> (MySqlConnection sqlConn = <span style="color:#66d9ef">new</span> MySqlConnection(configuration.GetConnectionString(<span style="color:#e6db74">&#34;DefaultConnection&#34;</span>)))
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        sqlConn.Open();
+</span></span><span style="display:flex;"><span>        MySqlCommand cmd = <span style="color:#66d9ef">new</span> MySqlCommand(<span style="color:#e6db74">&#34;SELECT picture_path_main, title, short_name, published_date FROM ratings;&#34;</span>, sqlConn);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">using</span> (MySqlDataReader reader = cmd.ExecuteReader())
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">while</span> (reader.Read())
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">string</span> title = reader.GetString(<span style="color:#e6db74">&#34;title&#34;</span>);
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">string</span> postLink = <span style="color:#e6db74">$&#34;{websiteLink}ratings/{reader.GetString(&#34;</span>short_name<span style="color:#e6db74">&#34;)}&#34;</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// you can add various media to the feed</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">string</span> picture = Path.Combine(
+</span></span><span style="display:flex;"><span>                    <span style="color:#75715e">// /images/ratings/</span>
+</span></span><span style="display:flex;"><span>                    configuration.GetSection(<span style="color:#e6db74">&#34;General:ImagesFolder&#34;</span>).Value,
+</span></span><span style="display:flex;"><span>                    reader.GetString(<span style="color:#e6db74">&#34;picture_path_main&#34;</span>)
+</span></span><span style="display:flex;"><span>                    );
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">string</span> pictureLink = <span style="color:#e6db74">$&#34;{websiteLink}{picture}&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                StringBuilder feedContent = <span style="color:#66d9ef">new</span> StringBuilder()
+</span></span><span style="display:flex;"><span>                    .Append(<span style="color:#e6db74">$&#34;&lt;h2&gt;{title}&lt;/h2&gt;&#34;</span>)
+</span></span><span style="display:flex;"><span>                    .Append(<span style="color:#e6db74">$&#34;&lt;p&gt;New stuff!&lt;/p&gt;&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                rss.Element(<span style="color:#e6db74">&#34;rss&#34;</span>).Element(<span style="color:#e6db74">&#34;channel&#34;</span>).Add(
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;item&#34;</span>,
+</span></span><span style="display:flex;"><span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;title&#34;</span>, title),
+</span></span><span style="display:flex;"><span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;link&#34;</span>, postLink),
+</span></span><span style="display:flex;"><span>                        <span style="color:#75715e">// if you use Guid.NewGuid() here, your reader will get duplicates each time you publish</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;guid&#34;</span>, reader.GetString(<span style="color:#e6db74">&#34;short_name&#34;</span>), <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;isPermaLink&#34;</span>, <span style="color:#e6db74">&#34;false&#34;</span>)),
+</span></span><span style="display:flex;"><span>                        <span style="color:#75715e">// see about GetRFC822DateTime() in the #problems section</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;pubDate&#34;</span>, GetRFC822DateTime(reader.GetDateTime(<span style="color:#e6db74">&#34;published_date&#34;</span>))),
+</span></span><span style="display:flex;"><span>                        <span style="color:#66d9ef">new</span> XElement(media + <span style="color:#e6db74">&#34;rating&#34;</span>, <span style="color:#e6db74">&#34;nonadult&#34;</span>, <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;scheme&#34;</span>, <span style="color:#e6db74">&#34;urn:simple&#34;</span>)),
+</span></span><span style="display:flex;"><span>                        <span style="color:#75715e">//new XElement(&#34;author&#34;, &#34;proTVshows&#34;),</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;category&#34;</span>, <span style="color:#e6db74">&#34;TV&#34;</span>),
+</span></span><span style="display:flex;"><span>                        <span style="color:#75715e">// here goes the picture for the post</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;enclosure&#34;</span>,
+</span></span><span style="display:flex;"><span>                            <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;url&#34;</span>, pictureLink),
+</span></span><span style="display:flex;"><span>                            <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;type&#34;</span>, <span style="color:#e6db74">&#34;image/png&#34;</span>),
+</span></span><span style="display:flex;"><span>                            <span style="color:#66d9ef">new</span> XAttribute(<span style="color:#e6db74">&#34;length&#34;</span>, pictureLink.Length)
+</span></span><span style="display:flex;"><span>                            ),
+</span></span><span style="display:flex;"><span>                        <span style="color:#75715e">// and that&#39;s how you add CDATA</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#66d9ef">new</span> XElement(<span style="color:#e6db74">&#34;description&#34;</span>, <span style="color:#66d9ef">new</span> XCData(<span style="color:#e6db74">$&#34;A rating for {title}&#34;</span>)),
+</span></span><span style="display:flex;"><span>                            <span style="color:#66d9ef">new</span> XElement(
+</span></span><span style="display:flex;"><span>                                content + <span style="color:#e6db74">&#34;encoded&#34;</span>,
+</span></span><span style="display:flex;"><span>                                <span style="color:#66d9ef">new</span> XCData(feedContent.ToString())
+</span></span><span style="display:flex;"><span>                                )
+</span></span><span style="display:flex;"><span>                        )
+</span></span><span style="display:flex;"><span>                    );
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    rss.Save(Path.Combine(webRootPath, <span style="color:#e6db74">&#34;rss.xml&#34;</span>));
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>RSS feed is ready and saved in your website root. Now your readers can subscribe to it and get your updates in their favorite RSS-reader.</p>
 <p>My favorite RSS-reader is <a href="https://feedly.com/i/latest">feedly</a>, and here&rsquo;s how our full <a href="https://protvshows.com/rss.xml">RSS feed</a> looks like there:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/feedly-rss-reader.png" alt="feedly RSS reader">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/feedly-rss-reader.png" alt="feedly RSS reader">
 
 <h2 id="possible-problems">Possible problems</h2>
 <p>You can use <a href="https://validator.w3.org/feed/">W3C Feed Validation Service</a> to check the validity of your feed. If everything is correct, you&rsquo;ll get this message:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/rss-valid.png" alt="RSS valid">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/rss-valid.png" alt="RSS valid">
 
 <p>If your feed contains errors, you&rsquo;ll get something like this:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/rss-invalid.png" alt="RSS invalid">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/rss-invalid.png" alt="RSS invalid">
 
 <h3 id="must-be-an-rfc-822-date-time">Must be an RFC-822 date-time</h3>
 <p>Yeah, you cannot just use <code>DateTime.Now.ToString()</code>, because it doesn&rsquo;t return value in the <a href="https://validator.w3.org/feed/docs/error/InvalidRFC2822Date.html">correct format</a>. So I created this helper function:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">string</span> GetRFC822DateTime(DateTime dateTime)
-{
-    <span style="color:#66d9ef">return</span> dateTime
-        .ToString(<span style="color:#e6db74">&#34;ddd, dd MMM yyyy HH.mm.ss zzz&#34;</span>)
-        .Replace(<span style="color:#e6db74">&#34;:&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>)
-        .Replace(<span style="color:#e6db74">&#34;.&#34;</span>, <span style="color:#e6db74">&#34;:&#34;</span>)
-        ;
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">string</span> GetRFC822DateTime(DateTime dateTime)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> dateTime
+</span></span><span style="display:flex;"><span>        .ToString(<span style="color:#e6db74">&#34;ddd, dd MMM yyyy HH.mm.ss zzz&#34;</span>)
+</span></span><span style="display:flex;"><span>        .Replace(<span style="color:#e6db74">&#34;:&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>)
+</span></span><span style="display:flex;"><span>        .Replace(<span style="color:#e6db74">&#34;.&#34;</span>, <span style="color:#e6db74">&#34;:&#34;</span>)
+</span></span><span style="display:flex;"><span>        ;
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <h3 id="must-be-a-full-url">Must be a full URL</h3>
 <p>If you have <code>https</code> links, then it&rsquo;s your case, because <code>https</code> <a href="https://validator.w3.org/feed/docs/error/InvalidURLAttribute.html">is not</a> considered to be a valid URL. Just replace it with <code>http</code>. Oh well, actually I can see the logic behind this.</p>
 <h1 id="yandex-zen">Yandex Zen</h1>
@@ -252,17 +242,13 @@ In addition to simply generating RSS, I&rsquo;ll tell you about Yandex Zen (beca
 <p>Quality of examples is also not really reassuring:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/yandex-zen-typo.png" alt="Yandex Zen typo">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/yandex-zen-typo.png" alt="Yandex Zen typo">
 
 <p>The concept of Zen channel separated from Zen RSS feed looked so crazy that I contacted their support to make sure that I got it right. After 3 or 4 e-mails of them dodging the issue I aked a direct question: &ldquo;<em>How can I publish to my Zen channel automatically? Is it even possible? What is the point of adding my RSS feed to Zen then (then Zen)?</em>&rdquo;. Aaaaand&hellip; they simply never replied to it (actually, they did - 4 months later).</p>
 <p>And now, ladies and gentlemen, let me show you the true purpose of Zen. Every two rows in this wretched thing there is a bloody Yandex.Direct advertisement block:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/yandex-zen-true-purpose.png" alt="Yandex Zen true purpose">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/01/07/csharp-dotnet-core-rss-publish-zen/images/yandex-zen-true-purpose.png" alt="Yandex Zen true purpose">
 
 <p><strong>Now</strong> everything is clear.</p>
 

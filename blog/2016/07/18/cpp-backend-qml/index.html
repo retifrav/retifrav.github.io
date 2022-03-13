@@ -5,7 +5,7 @@
     <title>C&#43;&#43; backend for QML | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2016/07/18/cpp-backend-qml/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -83,45 +83,45 @@ You can also read a pretty good article, but I&rsquo;ve made it even simpler." /
 <li>Wire up some event to this slot.</li>
 </ol>
 <p>Say, we have a C++ class <strong>Backend</strong> which has a slot <strong>doSome()</strong>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Backend</span> <span style="color:#66d9ef">:</span> <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">QObject</span>
-<span style="color:#f92672">{</span>
-    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">QString</span> doSome<span style="color:#f92672">();</span>
-    <span style="color:#75715e">// ...
-</span><span style="color:#75715e"></span><span style="color:#f92672">};</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Backend</span> <span style="color:#66d9ef">:</span> <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">QObject</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">QString</span> doSome<span style="color:#f92672">();</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#f92672">};</span></span></span></code></pre></div>
 <p>Now let&rsquo;s consider two ways of adding it to QML.</p>
 <h1 id="1st-option-add-an-object-as-a-context-property">1st option: add an object as a context property</h1>
 <p>Add the instance of our class to the QML context in <code>main.cpp</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">QQmlApplicationEngine</span> engine<span style="color:#f92672">;</span>
-engine<span style="color:#f92672">.</span>load<span style="color:#f92672">(</span><span style="color:#a6e22e">QUrl</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;qrc:/main.qml&#34;</span><span style="color:#f92672">));</span>
-<span style="color:#a6e22e">Backend</span> <span style="color:#f92672">*</span>backend <span style="color:#66d9ef">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Backend</span><span style="color:#f92672">();</span>
-engine<span style="color:#f92672">.</span>rootContext<span style="color:#f92672">()-&gt;</span>setContextProperty<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;backend&#34;</span><span style="color:#f92672">,</span> backend<span style="color:#f92672">);</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">QQmlApplicationEngine</span> engine<span style="color:#f92672">;</span>
+</span></span><span style="display:flex;"><span>engine<span style="color:#f92672">.</span>load<span style="color:#f92672">(</span><span style="color:#a6e22e">QUrl</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;qrc:/main.qml&#34;</span><span style="color:#f92672">));</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Backend</span> <span style="color:#f92672">*</span>backend <span style="color:#66d9ef">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">Backend</span><span style="color:#f92672">();</span>
+</span></span><span style="display:flex;"><span>engine<span style="color:#f92672">.</span>rootContext<span style="color:#f92672">()-&gt;</span>setContextProperty<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;backend&#34;</span><span style="color:#f92672">,</span> backend<span style="color:#f92672">);</span></span></span></code></pre></div>
 <p>And then wire it up to <strong>onClicked</strong> event of some button in <code>main.qml</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">Button</span> {
-    <span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Do some&#34;</span>
-    <span style="color:#a6e22e">onClicked</span><span style="color:#f92672">:</span> {
-        <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">doSome</span>()
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#a6e22e">Button</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Do some&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">onClicked</span><span style="color:#f92672">:</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">doSome</span>()
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <h1 id="2nd-option-register-a-new-type">2nd option: register a new type</h1>
 <p>Register a type of our class in <code>main.cpp</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#a6e22e">QQmlApplicationEngine</span> engine<span style="color:#f92672">;</span>
-<span style="color:#75715e">// it&#39;s important to do this before engine.load
-</span><span style="color:#75715e"></span>qmlRegisterType<span style="color:#f92672">&lt;</span><span style="color:#a6e22e">Backend</span><span style="color:#f92672">&gt;(</span><span style="color:#e6db74">&#34;io.qt.Backend&#34;</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">0</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;Backend&#34;</span><span style="color:#f92672">);</span>
-engine<span style="color:#f92672">.</span>load<span style="color:#f92672">(</span><span style="color:#a6e22e">QUrl</span><span style="color:#f92672">(</span><span style="color:#a6e22e">QLatin1String</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;qrc:/main.qml&#34;</span><span style="color:#f92672">)));</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">QQmlApplicationEngine</span> engine<span style="color:#f92672">;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// it&#39;s important to do this before engine.load
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>qmlRegisterType<span style="color:#f92672">&lt;</span><span style="color:#a6e22e">Backend</span><span style="color:#f92672">&gt;(</span><span style="color:#e6db74">&#34;io.qt.Backend&#34;</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">,</span> <span style="color:#ae81ff">0</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#34;Backend&#34;</span><span style="color:#f92672">);</span>
+</span></span><span style="display:flex;"><span>engine<span style="color:#f92672">.</span>load<span style="color:#f92672">(</span><span style="color:#a6e22e">QUrl</span><span style="color:#f92672">(</span><span style="color:#a6e22e">QLatin1String</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;qrc:/main.qml&#34;</span><span style="color:#f92672">)));</span></span></span></code></pre></div>
 <p>Then import it in <code>main.qml</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#66d9ef">import</span> <span style="color:#a6e22e">io</span>.<span style="color:#a6e22e">qt</span>.<span style="color:#a6e22e">Backend</span> <span style="color:#ae81ff">1.0</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> <span style="color:#a6e22e">io</span>.<span style="color:#a6e22e">qt</span>.<span style="color:#a6e22e">Backend</span> <span style="color:#ae81ff">1.0</span></span></span></code></pre></div>
 <p>Define it:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">Backend</span> {
-    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">backend</span>
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#a6e22e">Backend</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">backend</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>And wire it up to <strong>onClicked</strong> event of some button:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">Button</span> {
-    <span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Do some&#34;</span>
-    <span style="color:#a6e22e">onClicked</span><span style="color:#f92672">:</span> {
-        <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">doSome</span>()
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#a6e22e">Button</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">text</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Do some&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">onClicked</span><span style="color:#f92672">:</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">backend</span>.<span style="color:#a6e22e">doSome</span>()
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>So, now when you push the button, C++ method will do some work.</p>
 <p>The main difference between these two methods is that the first method register an already existing <strong>object</strong>, and the second registers a <strong>type</strong> an object of which is yet to be created. Aside from that difference, I like the second way better.</p>
 <p>I&rsquo;ve put the full source code of the example with both options on <a href="https://github.com/retifrav/cpp-backend-qml">GitHub</a>.</p>

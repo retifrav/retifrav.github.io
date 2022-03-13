@@ -5,7 +5,7 @@
     <title>C# / .NET Core, download a forum thread | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2018/01/22/csharp-dotnet-core-download-forum-thread/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -19,9 +19,7 @@
 <meta property="og:description" content="Once I needed to download a multi-page forum thread (more than 1000 pages) into a single-page document. So I wrote a .NET Core utility, which is presented in this article.
 
 
-
     
-
 
 Of course, it is not a universal forum thread downloader, but actually it can be one, because the only thing you need to do in order to adapt it to a different forum - change regular expressions for parsing." />
 <meta property="og:type" content="article" />
@@ -74,17 +72,13 @@ Of course, it is not a universal forum thread downloader, but actually it can be
         <p>Once I needed to download a multi-page forum thread (more than 1000 pages) into a single-page document. So I wrote a .NET Core utility, which is presented in this article.</p>
 
 
-
-    <img class="image-post" src="/blog/2018/01/22/csharp-dotnet-core-download-forum-thread/images/thread-downloader-logo.jpeg" alt="Thread downloader logo">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/01/22/csharp-dotnet-core-download-forum-thread/images/thread-downloader-logo.jpeg" alt="Thread downloader logo">
 
 <p>Of course, it is not a universal forum thread downloader, but actually it can be one, because the only thing you need to do in order to adapt it to a different forum - change regular expressions for parsing.</p>
 <p>Okay, here&rsquo;s <a href="https://www.flyertalk.com/forum/mileage-run-discussion/930922-trick-negotiate-special-savings-lounge-thread-printerfriendly.html">the thread</a> (printable version, for simplicity):</p>
 
 
-
-    <img class="image-post" src="/blog/2018/01/22/csharp-dotnet-core-download-forum-thread/images/forum-thread-schema.png" alt="Forum thread schema">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/01/22/csharp-dotnet-core-download-forum-thread/images/forum-thread-schema.png" alt="Forum thread schema">
 
 <p>The plan is:</p>
 <ol>
@@ -96,281 +90,277 @@ Of course, it is not a universal forum thread downloader, but actually it can be
 <p>Algorithm flowchart looks like the following:</p>
 
 
-
-    <img class="image-post" src="/blog/2018/01/22/csharp-dotnet-core-download-forum-thread/images/forum-thread-downloader-algorithm.svg" alt="Forum thread downloader algoritm">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/01/22/csharp-dotnet-core-download-forum-thread/images/forum-thread-downloader-algorithm.svg" alt="Forum thread downloader algoritm">
 
 <p>Sure, it&rsquo;s not the most beautiful and efficient algorithm possible. For example, you can already see that actually it&rsquo;s a bad idea to have the footer processing that might fail in the very end of program - it should be right after header processing.</p>
 <p>But anyway, it&rsquo;s a pretty easy one to implement. The only difficult part here is to compose correct regular expressions. If you don&rsquo;t know yet, there is an outstanding online tool for that: <a href="https://regex101.com">https://regex101.com</a></p>
 <p>And here&rsquo;s the implementation:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-cs" data-lang="cs"><span style="color:#66d9ef">using</span> System;
-<span style="color:#66d9ef">using</span> System.IO;
-<span style="color:#66d9ef">using</span> System.Net.Http;
-<span style="color:#66d9ef">using</span> System.Text;
-<span style="color:#66d9ef">using</span> System.Text.RegularExpressions;
-<span style="color:#66d9ef">using</span> System.Threading.Tasks;
-<span style="color:#66d9ef">using</span> System.Xml.Linq;
-
-<span style="color:#75715e">// TODO: Don&#39;t accumulate the whole file in memory, implement some buffer and append file on disk chunk by chunk
-</span><span style="color:#75715e">// TODO: Remote server can ban your IP for so many requests, implement some IP-address switching mechanism
-</span><span style="color:#75715e">// TODO: Looking for footer should be happening right after processing header (store it in some variable and append after getting content is finished)
-</span><span style="color:#75715e">// TODO: Find better and more reliable regular expressions
-</span><span style="color:#75715e">// TODO: Add exceptions, especially for downloading part
-</span><span style="color:#75715e"></span>
-<span style="color:#66d9ef">namespace</span> forum_thread_downloader
-{
-    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Program</span>
-    {
-        <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Main(<span style="color:#66d9ef">string</span>[] args)
-        {
-            Console.WriteLine(<span style="color:#e6db74">$&#34;[{DateTime.Now.ToString()}] Downloading has started\n- - -&#34;</span>);
-
-            <span style="color:#75715e">// create an instance of the class and initialize settings (first page link and regexes)
-</span><span style="color:#75715e"></span>            TopicDownloader td = <span style="color:#66d9ef">new</span> TopicDownloader(
-                <span style="color:#e6db74">&#34;https://www.flyertalk.com/forum/mileage-run-discussion/930922-trick-negotiate-special-savings-lounge-thread-printerfriendly.html&#34;</span>,
-                <span style="color:#e6db74">@&#34;&lt;a rel=&#34;&#34;next&#34;&#34; .*(https:\/\/.*.html).*&lt;\/a&gt;&#34;</span>,
-                <span style="color:#e6db74">@&#34;&lt;!DOCTYPE html&gt;.*&lt;\/div&gt;.{0,4}&lt;br \/&gt;&#34;</span>,
-                <span style="color:#e6db74">@&#34;&lt;table.*&lt;\/table&gt;.{0,4}&lt;br \/&gt;.{0,4}&lt;div&gt;&#34;</span>,
-                <span style="color:#e6db74">@&#34;(&lt;table class=&#34;&#34;tborder&#34;&#34;.*).{0,2}&lt;br \/&gt;.{0,4}&lt;br \/&gt;.{0,4}&lt;table cellpadding=&#34;&#34;0&#34;&#34;.*&#34;</span>,
-                <span style="color:#e6db74">@&#34;&lt;br \/&gt;.{0,4}&lt;table cellpadding=&#34;&#34;0&#34;&#34;.*&lt;\/html&gt;&#34;</span>,
-                <span style="color:#e6db74">@&#34;&lt;br \/&gt;.{0,4}&lt;table.*&lt;\/table&gt;&#34;</span>
-            );
-
-            StringBuilder topicPageBuilder = <span style="color:#66d9ef">new</span> StringBuilder();
-            <span style="color:#66d9ef">if</span> (td.DownloadTopic(topicPageBuilder))
-            {
-                <span style="color:#75715e">// save everything to file
-</span><span style="color:#75715e"></span>                File.WriteAllText(<span style="color:#e6db74">$&#34;topic.html&#34;</span>, topicPageBuilder.ToString());
-            }
-
-            Console.WriteLine(<span style="color:#e6db74">$&#34;- - -\n[{DateTime.Now.ToString()}] Downloading has finished&#34;</span>);
-        }
-
-        <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TopicDownloader</span>
-        {
-            <span style="color:#66d9ef">public</span> TopicDownloader(
-                <span style="color:#66d9ef">string</span> link,
-                <span style="color:#66d9ef">string</span> reNP,
-                <span style="color:#66d9ef">string</span> reH, <span style="color:#66d9ef">string</span> reHL,
-                <span style="color:#66d9ef">string</span> reC,
-                <span style="color:#66d9ef">string</span> reF, <span style="color:#66d9ef">string</span> reFL
-                )
-            {
-                <span style="color:#ae81ff">_</span>threadLink = link;
-                <span style="color:#ae81ff">_</span>reNextPage = reNP;
-                <span style="color:#ae81ff">_</span>reHeader = reH;
-                <span style="color:#ae81ff">_</span>rePlaceHeader = <span style="color:#66d9ef">new</span> Regex(reHL, RegexOptions.Singleline);
-                <span style="color:#ae81ff">_</span>reContent = reC;
-                <span style="color:#ae81ff">_</span>reFooter = reF;
-                <span style="color:#ae81ff">_</span>rePlaceFooter = <span style="color:#66d9ef">new</span> Regex(reFL, RegexOptions.Singleline);
-                <span style="color:#ae81ff">_</span>pageNumber = <span style="color:#ae81ff">0</span>;
-            }
-
-            <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// Link to the first page of the topic
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>threadLink;
-
-            <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// Regex for next page link
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>reNextPage;
-
-            <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// Regex for header
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>reHeader;
-            
-            <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// Regex for deleting navigation links from header
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> Regex <span style="color:#ae81ff">_</span>rePlaceHeader;
-            
-            <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// Regex for page content
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>reContent;
-            
-            <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// Regex for footer
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>reFooter;
-            
-            <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// Regex for deleting navigation links from footer
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> Regex <span style="color:#ae81ff">_</span>rePlaceFooter;
-            
-            <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// Current page number
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> <span style="color:#ae81ff">_</span>pageNumber;
-
-            <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">bool</span> DownloadTopic(StringBuilder topicPageBuilder)
-            {
-                <span style="color:#75715e">// try to download the page
-</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">var</span> rez = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
-                {
-                    <span style="color:#66d9ef">var</span> response = <span style="color:#66d9ef">await</span> DownloadPage(<span style="color:#ae81ff">_</span>threadLink);
-                    <span style="color:#66d9ef">return</span> response;
-                });
-                
-                <span style="color:#75715e">// error
-</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">if</span> (rez.Result.Item1 != <span style="color:#ae81ff">200</span>)
-                {
-                    Console.WriteLine(<span style="color:#e6db74">$&#34;Some error. Status code: {rez.Result.Item1}&#34;</span>);
-                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
-                }
-
-                <span style="color:#66d9ef">string</span> webpage = rez.Result.Item2;
-                <span style="color:#75715e">// find header
-</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">if</span> (<span style="color:#ae81ff">_</span>pageNumber == <span style="color:#ae81ff">0</span>)
-                {
-                    <span style="color:#66d9ef">var</span> matchHeader = Regex.Match(
-                        webpage,
-                        <span style="color:#ae81ff">_</span>reHeader,
-                        RegexOptions.Singleline
-                        );
-                    <span style="color:#66d9ef">if</span> (matchHeader.Success)
-                    {
-                        <span style="color:#75715e">// delete base and add style
-</span><span style="color:#75715e"></span>                        Regex rePlace = <span style="color:#66d9ef">new</span> Regex(<span style="color:#e6db74">&#34;&lt;base.*--&gt;&#34;</span>);
-                        <span style="color:#66d9ef">string</span> headerWObase = rePlace.Replace(
-                            matchHeader.Groups[<span style="color:#ae81ff">0</span>].Value,
-                            <span style="color:#e6db74">&#34;&lt;link rel=\&#34;stylesheet\&#34; href=\&#34;threadStyle.css\&#34; /&gt;&#34;</span>
-                            );
-
-                        <span style="color:#75715e">// delete navigation links and save
-</span><span style="color:#75715e"></span>                        topicPageBuilder.Append(
-                            <span style="color:#ae81ff">_</span>rePlaceHeader.Replace(headerWObase, <span style="color:#e6db74">&#34;&lt;div&gt;&#34;</span>)
-                            );
-                    }
-                    <span style="color:#66d9ef">else</span>
-                    {
-                        Console.WriteLine(<span style="color:#e6db74">&#34;[error] Couldn&#39;t find header&#34;</span>);
-                        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
-                    }
-                }
-
-                topicPageBuilder.Append(<span style="color:#e6db74">$@&#34;&lt;div align=&#34;&#34;center&#34;&#34;&gt;&lt;h1&gt;Page {_pageNumber + 1}&lt;/h1&gt;&lt;/div&gt;&#34;</span>);
-
-                <span style="color:#75715e">// find content
-</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">var</span> matchContent = Regex.Match(
-                    webpage,
-                    <span style="color:#ae81ff">_</span>reContent,
-                    RegexOptions.Singleline
-                    );
-                <span style="color:#66d9ef">if</span> (matchContent.Success)
-                {
-                    topicPageBuilder.Append(matchContent.Groups[<span style="color:#ae81ff">1</span>].Value);
-                }
-                <span style="color:#66d9ef">else</span>
-                {
-                    Console.WriteLine(<span style="color:#e6db74">&#34;[error] Couldn&#39;t find content&#34;</span>);
-                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
-                }
-                Console.WriteLine(<span style="color:#e6db74">$&#34;Page {_pageNumber + 1} has been processed&#34;</span>);
-
-                <span style="color:#ae81ff">_</span>threadLink = GetNextPage(webpage);
-                <span style="color:#75715e">// debug
-</span><span style="color:#75715e"></span>                <span style="color:#75715e">//if (_pageNumber &gt; 3) { _threadLink = string.Empty; }
-</span><span style="color:#75715e"></span>                <span style="color:#66d9ef">if</span> (!<span style="color:#66d9ef">string</span>.IsNullOrEmpty(<span style="color:#ae81ff">_</span>threadLink))
-                {
-                    <span style="color:#75715e">//Console.WriteLine(_threadLink);
-</span><span style="color:#75715e"></span>                    <span style="color:#ae81ff">_</span>pageNumber++; 
-                    <span style="color:#66d9ef">return</span> DownloadTopic(topicPageBuilder);
-                }
-                <span style="color:#66d9ef">else</span>
-                {
-                    <span style="color:#75715e">// find footer
-</span><span style="color:#75715e"></span>                    <span style="color:#66d9ef">var</span> matchFooter = Regex.Match(
-                        webpage,
-                        <span style="color:#ae81ff">_</span>reFooter,
-                        RegexOptions.Singleline
-                        );
-                    <span style="color:#66d9ef">if</span> (matchFooter.Success)
-                    {
-                        <span style="color:#75715e">// delete navigation links and save
-</span><span style="color:#75715e"></span>                       topicPageBuilder.Append(
-                           <span style="color:#ae81ff">_</span>rePlaceFooter.Replace(matchFooter.Groups[<span style="color:#ae81ff">0</span>].Value, <span style="color:#e6db74">&#34;&#34;</span>)
-                       );
-                    }
-                    <span style="color:#66d9ef">else</span>
-                    {
-                        Console.WriteLine(<span style="color:#e6db74">&#34;[error] Couldn&#39;t find footer&#34;</span>);
-                        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
-                    }
-
-                    Console.WriteLine(<span style="color:#e6db74">&#34;End of topic&#34;</span>);
-                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
-                }
-            }
-
-            <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// Parses the string looking for a link to the next page
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// &lt;param name=&#34;a&#34;&gt;string to parse&lt;/param&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// &lt;returns&gt;link to the next page&lt;/returns&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">string</span> GetNextPage(<span style="color:#66d9ef">string</span> a)
-            {
-                <span style="color:#66d9ef">var</span> match = Regex.Match(a, <span style="color:#ae81ff">_</span>reNextPage);
-                <span style="color:#66d9ef">if</span> (match.Success)
-                {
-                    <span style="color:#66d9ef">return</span> match.Groups[<span style="color:#ae81ff">1</span>].Value;
-                }
-                <span style="color:#66d9ef">else</span>
-                {
-                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">string</span>.Empty;
-                }
-            }
-
-            <span style="color:#75715e">/// &lt;summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// Download page with given URL
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// &lt;/summary&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// &lt;param name=&#34;URL&#34;&gt;link to the page&lt;/param&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#75715e">/// &lt;returns&gt;HTTP status code and page as string&lt;/returns&gt;
-</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; DownloadPage(<span style="color:#66d9ef">string</span> URL)
-            {
-                <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
-                {
-                    <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.GetAsync(URL);
-                    <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
-
-                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
-                        (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
-                        httpContent
-                        );
-                }
-            }
-        }
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.IO;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Net.Http;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Text;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Text.RegularExpressions;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Threading.Tasks;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">using</span> System.Xml.Linq;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// TODO: Don&#39;t accumulate the whole file in memory, implement some buffer and append file on disk chunk by chunk</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// TODO: Remote server can ban your IP for so many requests, implement some IP-address switching mechanism</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// TODO: Looking for footer should be happening right after processing header (store it in some variable and append after getting content is finished)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// TODO: Find better and more reliable regular expressions</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// TODO: Add exceptions, especially for downloading part</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> forum_thread_downloader
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Program</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span> Main(<span style="color:#66d9ef">string</span>[] args)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            Console.WriteLine(<span style="color:#e6db74">$&#34;[{DateTime.Now.ToString()}] Downloading has started\n- - -&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// create an instance of the class and initialize settings (first page link and regexes)</span>
+</span></span><span style="display:flex;"><span>            TopicDownloader td = <span style="color:#66d9ef">new</span> TopicDownloader(
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;https://www.flyertalk.com/forum/mileage-run-discussion/930922-trick-negotiate-special-savings-lounge-thread-printerfriendly.html&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">@&#34;&lt;a rel=&#34;&#34;next&#34;&#34; .*(https:\/\/.*.html).*&lt;\/a&gt;&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">@&#34;&lt;!DOCTYPE html&gt;.*&lt;\/div&gt;.{0,4}&lt;br \/&gt;&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">@&#34;&lt;table.*&lt;\/table&gt;.{0,4}&lt;br \/&gt;.{0,4}&lt;div&gt;&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">@&#34;(&lt;table class=&#34;&#34;tborder&#34;&#34;.*).{0,2}&lt;br \/&gt;.{0,4}&lt;br \/&gt;.{0,4}&lt;table cellpadding=&#34;&#34;0&#34;&#34;.*&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">@&#34;&lt;br \/&gt;.{0,4}&lt;table cellpadding=&#34;&#34;0&#34;&#34;.*&lt;\/html&gt;&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">@&#34;&lt;br \/&gt;.{0,4}&lt;table.*&lt;\/table&gt;&#34;</span>
+</span></span><span style="display:flex;"><span>            );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            StringBuilder topicPageBuilder = <span style="color:#66d9ef">new</span> StringBuilder();
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (td.DownloadTopic(topicPageBuilder))
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// save everything to file</span>
+</span></span><span style="display:flex;"><span>                File.WriteAllText(<span style="color:#e6db74">$&#34;topic.html&#34;</span>, topicPageBuilder.ToString());
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            Console.WriteLine(<span style="color:#e6db74">$&#34;- - -\n[{DateTime.Now.ToString()}] Downloading has finished&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TopicDownloader</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">public</span> TopicDownloader(
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">string</span> link,
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">string</span> reNP,
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">string</span> reH, <span style="color:#66d9ef">string</span> reHL,
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">string</span> reC,
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">string</span> reF, <span style="color:#66d9ef">string</span> reFL
+</span></span><span style="display:flex;"><span>                )
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ae81ff">_</span>threadLink = link;
+</span></span><span style="display:flex;"><span>                <span style="color:#ae81ff">_</span>reNextPage = reNP;
+</span></span><span style="display:flex;"><span>                <span style="color:#ae81ff">_</span>reHeader = reH;
+</span></span><span style="display:flex;"><span>                <span style="color:#ae81ff">_</span>rePlaceHeader = <span style="color:#66d9ef">new</span> Regex(reHL, RegexOptions.Singleline);
+</span></span><span style="display:flex;"><span>                <span style="color:#ae81ff">_</span>reContent = reC;
+</span></span><span style="display:flex;"><span>                <span style="color:#ae81ff">_</span>reFooter = reF;
+</span></span><span style="display:flex;"><span>                <span style="color:#ae81ff">_</span>rePlaceFooter = <span style="color:#66d9ef">new</span> Regex(reFL, RegexOptions.Singleline);
+</span></span><span style="display:flex;"><span>                <span style="color:#ae81ff">_</span>pageNumber = <span style="color:#ae81ff">0</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// Link to the first page of the topic</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>threadLink;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// Regex for next page link</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>reNextPage;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// Regex for header</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>reHeader;
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// Regex for deleting navigation links from header</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> Regex <span style="color:#ae81ff">_</span>rePlaceHeader;
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// Regex for page content</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>reContent;
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// Regex for footer</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> <span style="color:#66d9ef">string</span> <span style="color:#ae81ff">_</span>reFooter;
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// Regex for deleting navigation links from footer</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> Regex <span style="color:#ae81ff">_</span>rePlaceFooter;
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// Current page number</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">int</span> <span style="color:#ae81ff">_</span>pageNumber;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">bool</span> DownloadTopic(StringBuilder topicPageBuilder)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// try to download the page</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">var</span> rez = Task.Run(<span style="color:#66d9ef">async</span> () =&gt;
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">var</span> response = <span style="color:#66d9ef">await</span> DownloadPage(<span style="color:#ae81ff">_</span>threadLink);
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">return</span> response;
+</span></span><span style="display:flex;"><span>                });
+</span></span><span style="display:flex;"><span>                
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// error</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">if</span> (rez.Result.Item1 != <span style="color:#ae81ff">200</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    Console.WriteLine(<span style="color:#e6db74">$&#34;Some error. Status code: {rez.Result.Item1}&#34;</span>);
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">string</span> webpage = rez.Result.Item2;
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// find header</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">if</span> (<span style="color:#ae81ff">_</span>pageNumber == <span style="color:#ae81ff">0</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">var</span> matchHeader = Regex.Match(
+</span></span><span style="display:flex;"><span>                        webpage,
+</span></span><span style="display:flex;"><span>                        <span style="color:#ae81ff">_</span>reHeader,
+</span></span><span style="display:flex;"><span>                        RegexOptions.Singleline
+</span></span><span style="display:flex;"><span>                        );
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">if</span> (matchHeader.Success)
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#75715e">// delete base and add style</span>
+</span></span><span style="display:flex;"><span>                        Regex rePlace = <span style="color:#66d9ef">new</span> Regex(<span style="color:#e6db74">&#34;&lt;base.*--&gt;&#34;</span>);
+</span></span><span style="display:flex;"><span>                        <span style="color:#66d9ef">string</span> headerWObase = rePlace.Replace(
+</span></span><span style="display:flex;"><span>                            matchHeader.Groups[<span style="color:#ae81ff">0</span>].Value,
+</span></span><span style="display:flex;"><span>                            <span style="color:#e6db74">&#34;&lt;link rel=\&#34;stylesheet\&#34; href=\&#34;threadStyle.css\&#34; /&gt;&#34;</span>
+</span></span><span style="display:flex;"><span>                            );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#75715e">// delete navigation links and save</span>
+</span></span><span style="display:flex;"><span>                        topicPageBuilder.Append(
+</span></span><span style="display:flex;"><span>                            <span style="color:#ae81ff">_</span>rePlaceHeader.Replace(headerWObase, <span style="color:#e6db74">&#34;&lt;div&gt;&#34;</span>)
+</span></span><span style="display:flex;"><span>                            );
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        Console.WriteLine(<span style="color:#e6db74">&#34;[error] Couldn&#39;t find header&#34;</span>);
+</span></span><span style="display:flex;"><span>                        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                topicPageBuilder.Append(<span style="color:#e6db74">$@&#34;&lt;div align=&#34;&#34;center&#34;&#34;&gt;&lt;h1&gt;Page {_pageNumber + 1}&lt;/h1&gt;&lt;/div&gt;&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// find content</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">var</span> matchContent = Regex.Match(
+</span></span><span style="display:flex;"><span>                    webpage,
+</span></span><span style="display:flex;"><span>                    <span style="color:#ae81ff">_</span>reContent,
+</span></span><span style="display:flex;"><span>                    RegexOptions.Singleline
+</span></span><span style="display:flex;"><span>                    );
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">if</span> (matchContent.Success)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    topicPageBuilder.Append(matchContent.Groups[<span style="color:#ae81ff">1</span>].Value);
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    Console.WriteLine(<span style="color:#e6db74">&#34;[error] Couldn&#39;t find content&#34;</span>);
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                Console.WriteLine(<span style="color:#e6db74">$&#34;Page {_pageNumber + 1} has been processed&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ae81ff">_</span>threadLink = GetNextPage(webpage);
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// debug</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">//if (_pageNumber &gt; 3) { _threadLink = string.Empty; }</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">if</span> (!<span style="color:#66d9ef">string</span>.IsNullOrEmpty(<span style="color:#ae81ff">_</span>threadLink))
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#75715e">//Console.WriteLine(_threadLink);</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#ae81ff">_</span>pageNumber++; 
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">return</span> DownloadTopic(topicPageBuilder);
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#75715e">// find footer</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">var</span> matchFooter = Regex.Match(
+</span></span><span style="display:flex;"><span>                        webpage,
+</span></span><span style="display:flex;"><span>                        <span style="color:#ae81ff">_</span>reFooter,
+</span></span><span style="display:flex;"><span>                        RegexOptions.Singleline
+</span></span><span style="display:flex;"><span>                        );
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">if</span> (matchFooter.Success)
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#75715e">// delete navigation links and save</span>
+</span></span><span style="display:flex;"><span>                       topicPageBuilder.Append(
+</span></span><span style="display:flex;"><span>                           <span style="color:#ae81ff">_</span>rePlaceFooter.Replace(matchFooter.Groups[<span style="color:#ae81ff">0</span>].Value, <span style="color:#e6db74">&#34;&#34;</span>)
+</span></span><span style="display:flex;"><span>                       );
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        Console.WriteLine(<span style="color:#e6db74">&#34;[error] Couldn&#39;t find footer&#34;</span>);
+</span></span><span style="display:flex;"><span>                        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                    Console.WriteLine(<span style="color:#e6db74">&#34;End of topic&#34;</span>);
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// Parses the string looking for a link to the next page</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;param name=&#34;a&#34;&gt;string to parse&lt;/param&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;returns&gt;link to the next page&lt;/returns&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">string</span> GetNextPage(<span style="color:#66d9ef">string</span> a)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">var</span> match = Regex.Match(a, <span style="color:#ae81ff">_</span>reNextPage);
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">if</span> (match.Success)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">return</span> match.Groups[<span style="color:#ae81ff">1</span>].Value;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">string</span>.Empty;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// Download page with given URL</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;param name=&#34;URL&#34;&gt;link to the page&lt;/param&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/// &lt;returns&gt;HTTP status code and page as string&lt;/returns&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">async</span> Task&lt;Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;&gt; DownloadPage(<span style="color:#66d9ef">string</span> URL)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> httpClient = <span style="color:#66d9ef">new</span> HttpClient())
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">var</span> httpResponse = <span style="color:#66d9ef">await</span> httpClient.GetAsync(URL);
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">var</span> httpContent = <span style="color:#66d9ef">await</span> httpResponse.Content.ReadAsStringAsync();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> Tuple&lt;<span style="color:#66d9ef">int</span>, <span style="color:#66d9ef">string</span>&gt;(
+</span></span><span style="display:flex;"><span>                        (<span style="color:#66d9ef">int</span>)httpResponse.StatusCode,
+</span></span><span style="display:flex;"><span>                        httpContent
+</span></span><span style="display:flex;"><span>                        );
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Here&rsquo;s the <code>threadStyle.css</code> I injected:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-css" data-lang="css"><span style="color:#f92672">body</span> {
-    <span style="color:#66d9ef">width</span>: <span style="color:#ae81ff">70</span><span style="color:#66d9ef">%</span>;
-    <span style="color:#66d9ef">margin</span>: <span style="color:#66d9ef">auto</span>;
-}
-
-<span style="color:#f92672">table</span>.<span style="color:#a6e22e">tborder</span> {
-    <span style="color:#66d9ef">margin-top</span>: <span style="color:#ae81ff">15</span><span style="color:#66d9ef">px</span>;
-    <span style="color:#66d9ef">border</span>: <span style="color:#ae81ff">2</span><span style="color:#66d9ef">px</span> <span style="color:#66d9ef">solid</span>;
-}
-
-<span style="color:#f92672">tbody</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">tr</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">td</span> {
-    <span style="color:#66d9ef">color</span>: <span style="color:#66d9ef">darkgreen</span>;
-    <span style="color:#66d9ef">font-weight</span>: <span style="color:#66d9ef">bold</span>;
-}
-
-<span style="color:#f92672">h1</span> {
-    <span style="color:#66d9ef">margin-top</span>: <span style="color:#ae81ff">50</span><span style="color:#66d9ef">px</span>;
-    <span style="color:#66d9ef">margin-bottom</span>: <span style="color:#ae81ff">50</span><span style="color:#66d9ef">px</span>;
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-css" data-lang="css"><span style="display:flex;"><span><span style="color:#f92672">body</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">width</span>: <span style="color:#ae81ff">70</span><span style="color:#66d9ef">%</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">margin</span>: <span style="color:#66d9ef">auto</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">table</span>.<span style="color:#a6e22e">tborder</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">margin-top</span>: <span style="color:#ae81ff">15</span><span style="color:#66d9ef">px</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">border</span>: <span style="color:#ae81ff">2</span><span style="color:#66d9ef">px</span> <span style="color:#66d9ef">solid</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">tbody</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">tr</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">td</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">color</span>: <span style="color:#66d9ef">darkgreen</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">font-weight</span>: <span style="color:#66d9ef">bold</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">h1</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">margin-top</span>: <span style="color:#ae81ff">50</span><span style="color:#66d9ef">px</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">margin-bottom</span>: <span style="color:#ae81ff">50</span><span style="color:#66d9ef">px</span>;
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>And that&rsquo;s the result (full page is around 14 MB and several kilometres long, so here&rsquo;s just a fragment):</p>
 
 
-
-    <img class="image-post" src="/blog/2018/01/22/csharp-dotnet-core-download-forum-thread/images/thread-downloaded.png" alt="Forum thread">
-
+    <img class="image-post" loading="lazy" src="/blog/2018/01/22/csharp-dotnet-core-download-forum-thread/images/thread-downloaded.png" alt="Forum thread">
 
 <p>Complete project source code can be found <a href="https://github.com/retifrav/utils/tree/master/forum-thread-downloader">here</a>.</p>
       </div>

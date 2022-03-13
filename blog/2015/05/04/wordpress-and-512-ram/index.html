@@ -5,7 +5,7 @@
     <title>WordPress и 512 RAM | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2015/05/04/wordpress-and-512-ram/" />
 
-    <meta name="generator" content="Hugo 0.92.2" />
+    <meta name="generator" content="Hugo 0.94.2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -90,32 +90,32 @@
 <h1 id="проблема">Проблема</h1>
 <p>Началось с того, что вдруг вырубился <strong>MySQL</strong> и отказался стартовать обратно обратно. Хотя конфиг я не изменял и вообще ничего не трогал, просто запустил сайт для общего доступа (до этого заходил на него только я один). Дальше буду приводить все свои действия по решению.</p>
 <p>Запускал я его такой командой:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo /etc/init.d/mysql restart</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo /etc/init.d/mysql restart</span></span></code></pre></div>
 <p>На что он мне выдавал:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">Can<span style="color:#e6db74">&#39;t connect to local MySQL server through socket &#39;</span>/var/run/mysqld/mysqld.sock<span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#f92672">(</span>111<span style="color:#f92672">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Can<span style="color:#e6db74">&#39;t connect to local MySQL server through socket &#39;</span>/var/run/mysqld/mysqld.sock<span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#f92672">(</span>111<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>Так как конфиги я не трогал, то все рецепты по их редактированию я пропускал. Если у вас ситуация другая, то посмотрите <a href="http://softodom.com/516/mysql-cant-connect-through-socket-reshenie-problemy.html">тут ещё</a>. Через некоторое время после чтения этой статьи и форумов выяснилось, что проблема&hellip; в нехватке оперативной памяти либо места на диске. Так как места на диске завались, то остаётся оперативка.</p>
 <h1 id="мониторинг-потребления-памяти">Мониторинг потребления памяти</h1>
 <p>Информацию лучше браит непосредственно на самом сервере. Потому для мониторинга потребления оперативки на сервере, а также для получения статуса MySQL (ещё жив или уже слёг) я запилил себе <a href="/blog/2015/05/12/telegram-server-status/">отправку состояния сервера через Telegram</a>.</p>
 <p>Команда проверки использования памяти:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">free -m</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>free -m</span></span></code></pre></div>
 <p>Результат (в мегабайтах) выдаётся примерно такой:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">             total       used       free     shared    buffers     cached
-Mem:           <span style="color:#ae81ff">994</span>        <span style="color:#ae81ff">596</span>        <span style="color:#ae81ff">397</span>         <span style="color:#ae81ff">64</span>         <span style="color:#ae81ff">29</span>        <span style="color:#ae81ff">261</span>
--/+ buffers/cache:        <span style="color:#ae81ff">305</span>        <span style="color:#ae81ff">688</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>             total       used       free     shared    buffers     cached
+</span></span><span style="display:flex;"><span>Mem:           <span style="color:#ae81ff">994</span>        <span style="color:#ae81ff">596</span>        <span style="color:#ae81ff">397</span>         <span style="color:#ae81ff">64</span>         <span style="color:#ae81ff">29</span>        <span style="color:#ae81ff">261</span>
+</span></span><span style="display:flex;"><span>-/+ buffers/cache:        <span style="color:#ae81ff">305</span>        <span style="color:#ae81ff">688</span></span></span></code></pre></div>
 <p>Вот у меня картина была такая, что из 512 метров свободно два, а то и вообще один.</p>
 <p>Для оптимизации использования памяти попробовал следовать советам статьи <a href="http://www.narga.net/optimizing-apachephpmysql-low-memory-server/">Configuring Apache/PHP/MySQL for Low Memory (RAM) VPS</a> - взял из неё значения для конфигов <strong>MySQL</strong> и <strong>Apache</strong>. Также хотел потключать модули <strong>Apache</strong> в соответствии с предложенным там списком, но он у меня после таких манипуляций просто не стартовал, потому я вернул их взад.</p>
 <p>Вроде стало получше, но от перегрузок всё равно не спасало. Также при помощи команды <code>top</code> выяснилось, что память жрёт не только <strong>MySQL</strong>, но и <strong>Apache</strong>, только он-то не падает, а вот база - да.</p>
 <h1 id="использование-swap">Использование swap</h1>
 <p>Далее я создал <strong>swap</strong> по исправленной инструкции <a href="http://www.webtrafficexchange.com/solved-mysql-crash-fatal-error-cannot-allocate-memory-buffer-pool">отсюда</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">dd <span style="color:#66d9ef">if</span><span style="color:#f92672">=</span>/dev/zero of<span style="color:#f92672">=</span>/swap.dat bs<span style="color:#f92672">=</span><span style="color:#ae81ff">1024</span> count<span style="color:#f92672">=</span>512k
-mkswap /swap.dat
-swapon /swap.dat</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>dd <span style="color:#66d9ef">if</span><span style="color:#f92672">=</span>/dev/zero of<span style="color:#f92672">=</span>/swap.dat bs<span style="color:#f92672">=</span><span style="color:#ae81ff">1024</span> count<span style="color:#f92672">=</span>512k
+</span></span><span style="display:flex;"><span>mkswap /swap.dat
+</span></span><span style="display:flex;"><span>swapon /swap.dat</span></span></code></pre></div>
 <p>После первой команды он немного подумает, так как будет создаваться swap-файл на 512 метров.</p>
 <p>И добавил в файл <code>/etc/fstab</code> строку:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">/swap.dat      none    swap    sw      <span style="color:#ae81ff">0</span>       <span style="color:#ae81ff">0</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>/swap.dat      none    swap    sw      <span style="color:#ae81ff">0</span>       <span style="color:#ae81ff">0</span></span></span></code></pre></div>
 <p>Не могу сказать, насколько это вообще хоть на что-то повлияло. Потому через некоторое время (после установки <strong>nginx</strong>) я его выключил:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">swapoff -a
-rm /swap.dat</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>swapoff -a
+</span></span><span style="display:flex;"><span>rm /swap.dat</span></span></code></pre></div>
 <p>И удалил строку из <code>/etc/fstab</code>.</p>
 <h1 id="плагины-wordpress">Плагины Wordpress</h1>
 <p>Попробовал как-то оптимизировать Wordpress с помощью плагинов.</p>
@@ -125,16 +125,12 @@ rm /swap.dat</code></pre></div>
 <p>Настроил я его так (вопреки рекомендуемым настройкам):</p>
 
 
-
-    <img class="image-post" src="/blog/2015/05/04/wordpress-and-512-ram/images/wpscache.png" alt="Настройки WP Super Cache">
-
+    <img class="image-post" loading="lazy" src="/blog/2015/05/04/wordpress-and-512-ram/images/wpscache.png" alt="Настройки WP Super Cache">
 
 <p>И также изменил настройки для <strong>Permalinks</strong>:</p>
 
 
-
-    <img class="image-post" src="/blog/2015/05/04/wordpress-and-512-ram/images/permalinks.png" alt="Настройки Permalinks">
-
+    <img class="image-post" loading="lazy" src="/blog/2015/05/04/wordpress-and-512-ram/images/permalinks.png" alt="Настройки Permalinks">
 
 <p>Но кстати после установки <strong>nginx</strong> я отключил этот плагин, и всплеска потребления ресурсов не произошло. Так что непонятно, есть от него польза или нет.</p>
 <h2 id="wp-memory-usage">WP-Memory-Usage</h2>
@@ -142,9 +138,7 @@ rm /swap.dat</code></pre></div>
 <p>Есть вот такой плагин: <a href="https://wordpress.org/plugins/wp-memory-usage/">WP-Memory-Usage</a> - позволяет смотреть потребление памяти прямо из админки (хотя не знаю, насколько значение соответствует действительности).</p>
 
 
-
-    <img class="image-post" src="/blog/2015/05/04/wordpress-and-512-ram/images/wpRAMusage.png" alt="Потребление памяти WordPress">
-
+    <img class="image-post" loading="lazy" src="/blog/2015/05/04/wordpress-and-512-ram/images/wpRAMusage.png" alt="Потребление памяти WordPress">
 
 <p>Судя по-всему, он показывает не общее потребление, а конкретно сколько памяти потребовалось, чтобы всё прогрузить для текущего пользователя, так что пользы не очень много. Выключил.</p>
 <h1 id="установка-nginx-в-качестве-прокси-сервера-для-apache">Установка nginx в качестве прокси-сервера для Apache</h1>
@@ -159,194 +153,194 @@ rm /swap.dat</code></pre></div>
 <p>Итак, сначала надо поставить плагин <a href="https://wordpress.org/plugins/permalink-fix-disable-canonical-redirects-pack/">Permalink Fix &amp; Disable Canonical Redirects Pack</a>, который исправляет что-то там с перенаправлениями в <strong>Permalinks</strong>.</p>
 <h2 id="настройки-apache">Настройки Apache</h2>
 <p>Сначала <code>/etc/apache2/apache2.conf</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-apache" data-lang="apache">ServerRoot <span style="color:#e6db74">&#34;/etc/apache2&#34;</span>
-Mutex file:${APACHE_LOCK_DIR} default
-PidFile ${APACHE_PID_FILE}
-Timeout <span style="color:#ae81ff">300</span>
-KeepAlive <span style="color:#66d9ef">Off</span>
-MaxKeepAliveRequests <span style="color:#ae81ff">100</span>
-KeepAliveTimeout <span style="color:#ae81ff">10</span>
-User ${APACHE_RUN_USER}
-Group ${APACHE_RUN_GROUP}
-HostnameLookups <span style="color:#66d9ef">Off</span>
-ErrorLog ${APACHE_LOG_DIR}/error.log
-LogLevel <span style="color:#66d9ef">crit</span>
-IncludeOptional mods-enabled/*.load
-IncludeOptional mods-enabled/*.conf
-Include ports.conf
-
-<span style="color:#f92672">&lt;Directory</span> <span style="color:#e6db74">/</span><span style="color:#f92672">&gt;</span>
-    Options FollowSymLinks
-    AllowOverride <span style="color:#66d9ef">None</span>
-    <span style="color:#f92672">&lt;Limit</span> <span style="color:#e6db74">PUT DELETE CONNECT OPTIONS PATCH PROPFIND PROPPATCH MKCOL COPY MOVE LOCK UNLOCK</span><span style="color:#f92672">&gt;</span>
-        deny from <span style="color:#66d9ef">all</span>
-    <span style="color:#f92672">&lt;/Limit&gt;</span>
-<span style="color:#f92672">&lt;/Directory&gt;</span>
-
-<span style="color:#f92672">&lt;Directory</span> <span style="color:#e6db74">/var/www</span><span style="color:#f92672">&gt;</span>
-        Options FollowSymLinks
-        AllowOverride FileInfo
-<span style="color:#f92672">&lt;/Directory&gt;</span>
-
-<span style="color:#f92672">&lt;Directory</span> <span style="color:#e6db74">/usr/share</span><span style="color:#f92672">&gt;</span>
-        AllowOverride <span style="color:#66d9ef">None</span>
-        Require <span style="color:#66d9ef">all</span> granted
-<span style="color:#f92672">&lt;/Directory&gt;</span>
-
-AccessFileName .htaccess
-
-<span style="color:#f92672">&lt;FilesMatch</span> <span style="color:#e6db74">&#34;^\.ht&#34;</span><span style="color:#f92672">&gt;</span>
-        Require <span style="color:#66d9ef">all</span> denied
-<span style="color:#f92672">&lt;/FilesMatch&gt;</span>
-
-
-AccessFileName .htaccess
-
-<span style="color:#f92672">&lt;FilesMatch</span> <span style="color:#e6db74">&#34;^\.ht&#34;</span><span style="color:#f92672">&gt;</span>
-  Require <span style="color:#66d9ef">all</span> denied
-<span style="color:#f92672">&lt;/FilesMatch&gt;</span>
-
-LogFormat <span style="color:#e6db74">&#34;%v:%p %h %l %u %t \&#34;%r\&#34; %&gt;s %O \&#34;%{Referer}i\&#34; \&#34;%{User-Agent}i\&#34;&#34;</span> vhost_combined
-LogFormat <span style="color:#e6db74">&#34;%h %l %u %t \&#34;%r\&#34; %&gt;s %O \&#34;%{Referer}i\&#34; \&#34;%{User-Agent}i\&#34;&#34;</span> combined
-LogFormat <span style="color:#e6db74">&#34;%h %l %u %t \&#34;%r\&#34; %&gt;s %O&#34;</span> common
-LogFormat <span style="color:#e6db74">&#34;%{Referer}i -&gt; %U&#34;</span> referer
-LogFormat <span style="color:#e6db74">&#34;%{User-agent}i&#34;</span> agent
-
-IncludeOptional conf-enabled/*.conf
-IncludeOptional sites-enabled/*.conf
-
-<span style="color:#f92672">&lt;DirectoryMatch</span> <span style="color:#e6db74">^.*/wp-content/uploads/</span><span style="color:#f92672">&gt;</span>
-  AllowOverride <span style="color:#66d9ef">None</span>
-  php_flag engine <span style="color:#66d9ef">off</span>
-  php_admin_value engine <span style="color:#66d9ef">Off</span>
-<span style="color:#f92672">&lt;/DirectoryMatch&gt;</span>
-
-<span style="color:#f92672">&lt;DirectoryMatch</span> <span style="color:#e6db74">^.*/wp-content/blogs.dir/</span><span style="color:#f92672">&gt;</span>
-  AllowOverride <span style="color:#66d9ef">None</span>
-  php_flag engine <span style="color:#66d9ef">off</span>
-  php_admin_value engine <span style="color:#66d9ef">Off</span>
-<span style="color:#f92672">&lt;/DirectoryMatch&gt;</span>
-
-<span style="color:#75715e">#&lt;DirectoryMatch ^.*/wp-admin/&gt;</span>
-<span style="color:#75715e">#  AuthType Basic</span>
-<span style="color:#75715e">#  AuthName &#34;Restricted Area&#34;</span>
-<span style="color:#75715e">#  AuthUserFile /etc/apache2/.htpasswd</span>
-<span style="color:#75715e">#  Require valid-user</span>
-<span style="color:#75715e">#&lt;/DirectoryMatch&gt;</span>
-<span style="color:#f92672">&lt;VirtualHost</span> <span style="color:#e6db74">*</span><span style="color:#f92672">&gt;</span>
-   ServerAdmin admin@example.com
-   DocumentRoot <span style="color:#e6db74">/var/www</span>
-   Servername example.com
-   ServerAlias example.com www.example.com
- <span style="color:#f92672">&lt;/VirtualHost&gt;</span>
-
- <span style="color:#f92672">&lt;IfModule</span> <span style="color:#e6db74">mpm_prefork_module</span><span style="color:#f92672">&gt;</span>
-    StartServers          <span style="color:#ae81ff">1</span>
-    MinSpareServers       <span style="color:#ae81ff">1</span>
-    MaxSpareServers       <span style="color:#ae81ff">4</span>
-    MaxClients            <span style="color:#ae81ff">4</span>
-    MaxRequestsPerChild   <span style="color:#ae81ff">1000</span>
-<span style="color:#f92672">&lt;/IfModule&gt;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-apache" data-lang="apache"><span style="display:flex;"><span>ServerRoot <span style="color:#e6db74">&#34;/etc/apache2&#34;</span>
+</span></span><span style="display:flex;"><span>Mutex file:${APACHE_LOCK_DIR} default
+</span></span><span style="display:flex;"><span>PidFile ${APACHE_PID_FILE}
+</span></span><span style="display:flex;"><span>Timeout <span style="color:#ae81ff">300</span>
+</span></span><span style="display:flex;"><span>KeepAlive <span style="color:#66d9ef">Off</span>
+</span></span><span style="display:flex;"><span>MaxKeepAliveRequests <span style="color:#ae81ff">100</span>
+</span></span><span style="display:flex;"><span>KeepAliveTimeout <span style="color:#ae81ff">10</span>
+</span></span><span style="display:flex;"><span>User ${APACHE_RUN_USER}
+</span></span><span style="display:flex;"><span>Group ${APACHE_RUN_GROUP}
+</span></span><span style="display:flex;"><span>HostnameLookups <span style="color:#66d9ef">Off</span>
+</span></span><span style="display:flex;"><span>ErrorLog ${APACHE_LOG_DIR}/error.log
+</span></span><span style="display:flex;"><span>LogLevel <span style="color:#66d9ef">crit</span>
+</span></span><span style="display:flex;"><span>IncludeOptional mods-enabled/*.load
+</span></span><span style="display:flex;"><span>IncludeOptional mods-enabled/*.conf
+</span></span><span style="display:flex;"><span>Include ports.conf
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;Directory</span> <span style="color:#e6db74">/</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>    Options FollowSymLinks
+</span></span><span style="display:flex;"><span>    AllowOverride <span style="color:#66d9ef">None</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;Limit</span> <span style="color:#e6db74">PUT DELETE CONNECT OPTIONS PATCH PROPFIND PROPPATCH MKCOL COPY MOVE LOCK UNLOCK</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>        deny from <span style="color:#66d9ef">all</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;/Limit&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/Directory&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;Directory</span> <span style="color:#e6db74">/var/www</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>        Options FollowSymLinks
+</span></span><span style="display:flex;"><span>        AllowOverride FileInfo
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/Directory&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;Directory</span> <span style="color:#e6db74">/usr/share</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>        AllowOverride <span style="color:#66d9ef">None</span>
+</span></span><span style="display:flex;"><span>        Require <span style="color:#66d9ef">all</span> granted
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/Directory&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>AccessFileName .htaccess
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;FilesMatch</span> <span style="color:#e6db74">&#34;^\.ht&#34;</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>        Require <span style="color:#66d9ef">all</span> denied
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/FilesMatch&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>AccessFileName .htaccess
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;FilesMatch</span> <span style="color:#e6db74">&#34;^\.ht&#34;</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>  Require <span style="color:#66d9ef">all</span> denied
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/FilesMatch&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>LogFormat <span style="color:#e6db74">&#34;%v:%p %h %l %u %t \&#34;%r\&#34; %&gt;s %O \&#34;%{Referer}i\&#34; \&#34;%{User-Agent}i\&#34;&#34;</span> vhost_combined
+</span></span><span style="display:flex;"><span>LogFormat <span style="color:#e6db74">&#34;%h %l %u %t \&#34;%r\&#34; %&gt;s %O \&#34;%{Referer}i\&#34; \&#34;%{User-Agent}i\&#34;&#34;</span> combined
+</span></span><span style="display:flex;"><span>LogFormat <span style="color:#e6db74">&#34;%h %l %u %t \&#34;%r\&#34; %&gt;s %O&#34;</span> common
+</span></span><span style="display:flex;"><span>LogFormat <span style="color:#e6db74">&#34;%{Referer}i -&gt; %U&#34;</span> referer
+</span></span><span style="display:flex;"><span>LogFormat <span style="color:#e6db74">&#34;%{User-agent}i&#34;</span> agent
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>IncludeOptional conf-enabled/*.conf
+</span></span><span style="display:flex;"><span>IncludeOptional sites-enabled/*.conf
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;DirectoryMatch</span> <span style="color:#e6db74">^.*/wp-content/uploads/</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>  AllowOverride <span style="color:#66d9ef">None</span>
+</span></span><span style="display:flex;"><span>  php_flag engine <span style="color:#66d9ef">off</span>
+</span></span><span style="display:flex;"><span>  php_admin_value engine <span style="color:#66d9ef">Off</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/DirectoryMatch&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;DirectoryMatch</span> <span style="color:#e6db74">^.*/wp-content/blogs.dir/</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>  AllowOverride <span style="color:#66d9ef">None</span>
+</span></span><span style="display:flex;"><span>  php_flag engine <span style="color:#66d9ef">off</span>
+</span></span><span style="display:flex;"><span>  php_admin_value engine <span style="color:#66d9ef">Off</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/DirectoryMatch&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#&lt;DirectoryMatch ^.*/wp-admin/&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#  AuthType Basic</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#  AuthName &#34;Restricted Area&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#  AuthUserFile /etc/apache2/.htpasswd</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#  Require valid-user</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#&lt;/DirectoryMatch&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;VirtualHost</span> <span style="color:#e6db74">*</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>   ServerAdmin admin@example.com
+</span></span><span style="display:flex;"><span>   DocumentRoot <span style="color:#e6db74">/var/www</span>
+</span></span><span style="display:flex;"><span>   Servername example.com
+</span></span><span style="display:flex;"><span>   ServerAlias example.com www.example.com
+</span></span><span style="display:flex;"><span> <span style="color:#f92672">&lt;/VirtualHost&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> <span style="color:#f92672">&lt;IfModule</span> <span style="color:#e6db74">mpm_prefork_module</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>    StartServers          <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>    MinSpareServers       <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>    MaxSpareServers       <span style="color:#ae81ff">4</span>
+</span></span><span style="display:flex;"><span>    MaxClients            <span style="color:#ae81ff">4</span>
+</span></span><span style="display:flex;"><span>    MaxRequestsPerChild   <span style="color:#ae81ff">1000</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/IfModule&gt;</span></span></span></code></pre></div>
 <p>Теперь <code>/etc/apache2/ports.conf</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-apache" data-lang="apache">Listen <span style="color:#ae81ff">127.0.0.1</span>:8080
-
-<span style="color:#f92672">&lt;IfModule</span> <span style="color:#e6db74">ssl_module</span><span style="color:#f92672">&gt;</span>
-  Listen <span style="color:#ae81ff">443</span>
-<span style="color:#f92672">&lt;/IfModule&gt;</span>
-
-<span style="color:#f92672">&lt;IfModule</span> <span style="color:#e6db74">mod_gnutls.c</span><span style="color:#f92672">&gt;</span>
-  Listen <span style="color:#ae81ff">443</span>
-<span style="color:#f92672">&lt;/IfModule&gt;</span>
-
-<span style="color:#75715e"># vim: syntax=apache ts=4 sw=4 sts=4 sr noet</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-apache" data-lang="apache"><span style="display:flex;"><span>Listen <span style="color:#ae81ff">127.0.0.1</span>:8080
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;IfModule</span> <span style="color:#e6db74">ssl_module</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>  Listen <span style="color:#ae81ff">443</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/IfModule&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;IfModule</span> <span style="color:#e6db74">mod_gnutls.c</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span>  Listen <span style="color:#ae81ff">443</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/IfModule&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># vim: syntax=apache ts=4 sw=4 sts=4 sr noet</span></span></span></code></pre></div>
 <p>Перезапускаем сервер:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">service apache2 restart</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>service apache2 restart</span></span></code></pre></div>
 <p>Теперь он работает на порту 8080, и сайт ваш стал недоступен из интернета. Даже если вы попробуете открыть его как <code>example.com:8080</code>.</p>
 <h2 id="настройки-nginx">Настройки nginx</h2>
 <p>Установка:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">apt-get install nginx</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install nginx</span></span></code></pre></div>
 <p>Пишем конфиг для сайта - просто файл без расширения - <code>/etc/nginx/sites-enabled/mysite</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">server</span> {
-    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span>;
-    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">example.com</span>;
-    <span style="color:#f92672">root</span> <span style="color:#e6db74">/var/www</span>;
-    <span style="color:#f92672">index</span> <span style="color:#e6db74">index.php</span>;
-
-    <span style="color:#f92672">gzip</span> <span style="color:#66d9ef">on</span>;
-    <span style="color:#f92672">gzip_disable</span> <span style="color:#e6db74">&#34;msie6&#34;</span>;
-    <span style="color:#f92672">gzip_types</span> <span style="color:#e6db74">text/plain</span> <span style="color:#e6db74">text/css</span> <span style="color:#e6db74">application/json</span> <span style="color:#e6db74">application/x-javascript</span> <span style="color:#e6db74">text/xml</span> <span style="color:#e6db74">application/xml</span> <span style="color:#e6db74">application/xml+rss</span> <span style="color:#e6db74">text/javascript</span> <span style="color:#e6db74">application/javascript</span>;
-
-    <span style="color:#f92672">location</span> ~ <span style="color:#e6db74">/\.</span> {
-            <span style="color:#f92672">deny</span> <span style="color:#e6db74">all</span>; <span style="color:#75715e"># запрет для скрытых файлов
-</span><span style="color:#75715e"></span>    }
-
-    <span style="color:#f92672">location</span> ~<span style="color:#e6db74">*</span> <span style="color:#e6db74">/(?:uploads|files)/.*\.php</span>$ {
-            <span style="color:#f92672">deny</span> <span style="color:#e6db74">all</span>; <span style="color:#75715e"># запрет для загруженных скриптов
-</span><span style="color:#75715e"></span>    }
-
-    <span style="color:#f92672">location</span> ~<span style="color:#e6db74">*</span> <span style="color:#e6db74">^.+\.(ogg|ogv|svg|svgz|eot|otf|woff|mp4|ttf|rss|atom|jpg|jpeg|gif|png|ico|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)</span>$ {
-            <span style="color:#f92672">access_log</span> <span style="color:#66d9ef">off</span>;
-            <span style="color:#f92672">log_not_found</span> <span style="color:#66d9ef">off</span>;
-            <span style="color:#f92672">expires</span> <span style="color:#e6db74">max</span>; <span style="color:#75715e"># кеширование статики
-</span><span style="color:#75715e"></span>    }
-
-    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
-        <span style="color:#f92672">try_files</span> $uri $uri/ <span style="color:#e6db74">/index.php?q=</span>$uri&amp;$args;
-    }
-
-    <span style="color:#f92672">location</span> ~ <span style="color:#e6db74">\.php$</span> {
-        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Real-IP</span>  $remote_addr;
-        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-For</span> $remote_addr;
-        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Host</span> $host;
-        <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://127.0.0.1:8080</span>;
-    }
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">example.com</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">root</span> <span style="color:#e6db74">/var/www</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">index</span> <span style="color:#e6db74">index.php</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">gzip</span> <span style="color:#66d9ef">on</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">gzip_disable</span> <span style="color:#e6db74">&#34;msie6&#34;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">gzip_types</span> <span style="color:#e6db74">text/plain</span> <span style="color:#e6db74">text/css</span> <span style="color:#e6db74">application/json</span> <span style="color:#e6db74">application/x-javascript</span> <span style="color:#e6db74">text/xml</span> <span style="color:#e6db74">application/xml</span> <span style="color:#e6db74">application/xml+rss</span> <span style="color:#e6db74">text/javascript</span> <span style="color:#e6db74">application/javascript</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">location</span> ~ <span style="color:#e6db74">/\.</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">deny</span> <span style="color:#e6db74">all</span>; <span style="color:#75715e"># запрет для скрытых файлов
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">location</span> ~<span style="color:#e6db74">*</span> <span style="color:#e6db74">/(?:uploads|files)/.*\.php</span>$ {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">deny</span> <span style="color:#e6db74">all</span>; <span style="color:#75715e"># запрет для загруженных скриптов
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">location</span> ~<span style="color:#e6db74">*</span> <span style="color:#e6db74">^.+\.(ogg|ogv|svg|svgz|eot|otf|woff|mp4|ttf|rss|atom|jpg|jpeg|gif|png|ico|zip|tgz|gz|rar|bz2|doc|xls|exe|ppt|tar|mid|midi|wav|bmp|rtf)</span>$ {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">access_log</span> <span style="color:#66d9ef">off</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">log_not_found</span> <span style="color:#66d9ef">off</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">expires</span> <span style="color:#e6db74">max</span>; <span style="color:#75715e"># кеширование статики
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">try_files</span> $uri $uri/ <span style="color:#e6db74">/index.php?q=</span>$uri&amp;$args;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">location</span> ~ <span style="color:#e6db74">\.php$</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Real-IP</span>  $remote_addr;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-For</span> $remote_addr;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Host</span> $host;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://127.0.0.1:8080</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Теперь конфиг всего сервера <code>/etc/nginx/nginx.conf</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-nginx" data-lang="nginx"><span style="color:#66d9ef">user</span> <span style="color:#e6db74">www-data</span>;
-<span style="color:#66d9ef">worker_processes</span> <span style="color:#ae81ff">1</span>;
-<span style="color:#66d9ef">pid</span> <span style="color:#e6db74">/run/nginx.pid</span>;
-
-<span style="color:#66d9ef">events</span> {
-	<span style="color:#f92672">worker_connections</span> <span style="color:#ae81ff">768</span>;
-    <span style="color:#f92672">use</span> <span style="color:#e6db74">epoll</span>;
-	<span style="color:#75715e"># multi_accept on;
-</span><span style="color:#75715e"></span>}
-
-<span style="color:#66d9ef">http</span> {
-
-	<span style="color:#75715e">##
-</span><span style="color:#75715e"></span>	<span style="color:#75715e"># Basic Settings
-</span><span style="color:#75715e"></span>	<span style="color:#75715e">##
-</span><span style="color:#75715e"></span>
-	<span style="color:#f92672">sendfile</span> <span style="color:#66d9ef">on</span>;
-	<span style="color:#f92672">tcp_nopush</span> <span style="color:#66d9ef">on</span>;
-	<span style="color:#f92672">tcp_nodelay</span> <span style="color:#66d9ef">on</span>;
-	<span style="color:#f92672">keepalive_timeout</span> <span style="color:#ae81ff">5</span>;
-	<span style="color:#f92672">types_hash_max_size</span> <span style="color:#ae81ff">2048</span>;
-
-	<span style="color:#f92672">include</span> <span style="color:#e6db74">/etc/nginx/mime.types</span>;
-	<span style="color:#f92672">default_type</span> <span style="color:#e6db74">application/octet-stream</span>;
-
-	<span style="color:#75715e">##
-</span><span style="color:#75715e"></span>	<span style="color:#75715e"># Logging Settings
-</span><span style="color:#75715e"></span>	<span style="color:#75715e">##
-</span><span style="color:#75715e"></span>
-	<span style="color:#f92672">access_log</span> <span style="color:#e6db74">/var/log/nginx/access.log</span>;
-	<span style="color:#f92672">error_log</span> <span style="color:#e6db74">/var/log/nginx/error.log</span>;
-
-	<span style="color:#75715e">##
-</span><span style="color:#75715e"></span>	<span style="color:#75715e"># Virtual Host Configs
-</span><span style="color:#75715e"></span>	<span style="color:#75715e">##
-</span><span style="color:#75715e"></span>
-	<span style="color:#f92672">include</span> <span style="color:#e6db74">/etc/nginx/conf.d/*.conf</span>;
-	<span style="color:#f92672">include</span> <span style="color:#e6db74">/etc/nginx/sites-enabled/*</span>;
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">user</span> <span style="color:#e6db74">www-data</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">worker_processes</span> <span style="color:#ae81ff">1</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">pid</span> <span style="color:#e6db74">/run/nginx.pid</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">events</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">worker_connections</span> <span style="color:#ae81ff">768</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">use</span> <span style="color:#e6db74">epoll</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e"># multi_accept on;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">http</span> {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">##
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e"># Basic Settings
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">##
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">sendfile</span> <span style="color:#66d9ef">on</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">tcp_nopush</span> <span style="color:#66d9ef">on</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">tcp_nodelay</span> <span style="color:#66d9ef">on</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">keepalive_timeout</span> <span style="color:#ae81ff">5</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">types_hash_max_size</span> <span style="color:#ae81ff">2048</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">include</span> <span style="color:#e6db74">/etc/nginx/mime.types</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">default_type</span> <span style="color:#e6db74">application/octet-stream</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">##
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e"># Logging Settings
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">##
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">access_log</span> <span style="color:#e6db74">/var/log/nginx/access.log</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">error_log</span> <span style="color:#e6db74">/var/log/nginx/error.log</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">##
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e"># Virtual Host Configs
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>	<span style="color:#75715e">##
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">include</span> <span style="color:#e6db74">/etc/nginx/conf.d/*.conf</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#f92672">include</span> <span style="color:#e6db74">/etc/nginx/sites-enabled/*</span>;
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Запуск сервера и перезагрузка настроек:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">service nginx start
-nginx -s reload</code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>service nginx start
+</span></span><span style="display:flex;"><span>nginx -s reload</span></span></code></pre></div>
 <p>Всё, <strong>nginx</strong> работает и раздаёт сайт.</p>
 <p>Проверить текущий веб-сервер можно командой:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl -s -I example.com|awk <span style="color:#e6db74">&#39;$1~/Server:/ {print $2}&#39;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>curl -s -I example.com|awk <span style="color:#e6db74">&#39;$1~/Server:/ {print $2}&#39;</span></span></span></code></pre></div>
 <p>В результате ваще этого всего - не то, чтобы я заметил драматическое снижение потребления оперативки, но падать от нехватки оной база перестала. Я уменьшил дроплет обратно с 1 ГБ до 512 МБ - всё огонь. Конечно, если одновременно подключится несколько десятков пользователей, то в какой-то момент некоторым начнёт выдаваться <strong>502 Bad Gateway</strong>, но база не падает, и как только нагрузка снизится, сайт будет отдаваться нормально.</p>
 <p>Короче, можно сказать, что для выживания <strong>WordPress</strong> на 512 МБ оперативной памяти необходим <strong>nginx</strong> и корректные настройки для него, <strong>Apache</strong> и <strong>MySQL</strong>. По желанию также можно попробовать различные припарки вроде <strong>swap</strong>-файла и плагина <strong>WP Super Cache</strong>.</p>
       </div>
