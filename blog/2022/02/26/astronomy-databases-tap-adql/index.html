@@ -60,7 +60,7 @@
 </svg> 2022-02-26 18:34:15 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 22 min read</div>
+</svg> 27 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -81,11 +81,18 @@
     </li>
     <li><a href="#tap-services-with-astronomical-data">TAP services with astronomical data</a>
       <ul>
-        <li><a href="#about-access-and-abusing-the-service">About access and abusing the service</a></li>
+        <li><a href="#about-access-and-not-abusing-the-service">About access and (not) abusing the service</a></li>
         <li><a href="#problems-and-challenges">Problems and challenges</a>
           <ul>
             <li><a href="#nasa-exoplanet-archive">NASA Exoplanet Archive</a>
               <ul>
+                <li><a href="#ps-vs-pscomppars">PS vs PSCompPars</a>
+                  <ul>
+                    <li><a href="#no-simple-mass-values">No simple mass values</a></li>
+                    <li><a href="#calculated-values">Calculated values</a></li>
+                    <li><a href="#missing-values">Missing values</a></li>
+                  </ul>
+                </li>
                 <li><a href="#planetary-data-is-organized-by-publications">Planetary data is organized by publications</a></li>
                 <li><a href="#planets-from-the-same-system-have-different-stellar-data">Planets from the same system have different stellar data</a></li>
                 <li><a href="#no-way-to-get-the-latest-stellar-data">No way to get the latest stellar data</a></li>
@@ -338,7 +345,7 @@
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> tap_schema.columns
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> <span style="color:#66d9ef">table_name</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;exoplanet.epn_core&#39;</span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">column_name</span></span></span></code></pre></div>
-<h2 id="about-access-and-abusing-the-service">About access and abusing the service</h2>
+<h2 id="about-access-and-not-abusing-the-service">About access and (not) abusing the service</h2>
 <p>I haven&rsquo;t yet encountered a service that would limit access to its data, and I believe that this is the way things should be - that kind of data must remain open for the scientific community.</p>
 <p>In turn, you too need to be a responsible user - do not execute crazy queries that fetch a milliard of columns with bazillion of rows. If your query doesn&rsquo;t have narrow enough <code>WHERE</code> clause, do add a <code>TOP</code> limiter to your <code>SELECT</code>, for example:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> TOP <span style="color:#ae81ff">11</span>
@@ -348,6 +355,97 @@
 <p>Working with the data, I did stumble upon various differences and peculiarities among TAP services.</p>
 <h3 id="nasa-exoplanet-archive">NASA Exoplanet Archive</h3>
 <p>Almost all the problems I had were with NASA Exoplanet Archive database. At the same time, the data from NASA seems to be the most updated and trustworthy, so I have mixed feelings about this source.</p>
+<h4 id="ps-vs-pscomppars">PS vs PSCompPars</h4>
+<p>There are two main tables in the database that you are likely to use: <code>PS</code> and <code>PSCompPars</code>. The difference between them is described in the <a href="https://exoplanetarchive.ipac.caltech.edu/docs/API_PS_columns.html">Choosing the Right Table For Your Needs</a> section. In short, the <code>PS</code> table is organized in a way that there is a row for every publication and the set of parameters described in that publication, so there can be several rows per planet (<em>and star?</em>); while <code>PSCompPars</code> has exactly one row per planet, and every parameter should have a value from the latest publication, and the publication is provided in the <code>PARAMETER-NAME_reflink</code> field/column.</p>
+<p>So it&rsquo;s obvious that one should use <code>PSCompPars</code>, right? Well, for me it was not so obvious, and I actually went with <code>PS</code>.</p>
+<p>Below I described specific details.</p>
+<h5 id="no-simple-mass-values">No simple mass values</h5>
+<p>Unlike <code>ps</code> table, <code>pscomppars</code> doesn&rsquo;t have &ldquo;simple&rdquo; mass (<em>and probably other</em>) values, for instance <code>pl_massj</code> and <code>pl_msinij</code>. Instead, the mass-related parameters are stored like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">column_name</span>, datatype, description
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> tap_schema.columns
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> <span style="color:#66d9ef">table_name</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;pscomppars&#39;</span> <span style="color:#66d9ef">AND</span> <span style="color:#66d9ef">column_name</span> <span style="color:#66d9ef">LIKE</span> <span style="color:#e6db74">&#39;pl_bmass%&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">column_name</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">13</span>
+</span></span><span style="display:flex;"><span>+-------------------+------------+------------------------------------------------------+
+</span></span><span style="display:flex;"><span>| column_name       | datatype   | description                                          |
+</span></span><span style="display:flex;"><span>|-------------------+------------+------------------------------------------------------|
+</span></span><span style="display:flex;"><span>| pl_bmasse         | double     | Planet Mass or Mass*sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span> <span style="color:#f92672">[</span>Earth Mass<span style="color:#f92672">]</span>              |
+</span></span><span style="display:flex;"><span>| pl_bmasse_reflink | char       | Planet Mass or Mass*sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span> <span style="color:#f92672">[</span>Earth Mass<span style="color:#f92672">]</span> Reference    |
+</span></span><span style="display:flex;"><span>| pl_bmasseerr1     | double     | Planet Mass or Mass*sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span> <span style="color:#f92672">[</span>Earth Mass<span style="color:#f92672">]</span> Upper Unc.   |
+</span></span><span style="display:flex;"><span>| pl_bmasseerr2     | double     | Planet Mass or Mass*sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span> <span style="color:#f92672">[</span>Earth Mass<span style="color:#f92672">]</span> Lower Unc.   |
+</span></span><span style="display:flex;"><span>| pl_bmasselim      | int        | Planet Mass or Mass*sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span> <span style="color:#f92672">[</span>Earth Mass<span style="color:#f92672">]</span> Limit Flag   |
+</span></span><span style="display:flex;"><span>| pl_bmassestr      | char       | Planet Mass or Mass*sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span> <span style="color:#f92672">[</span>Earth Mass<span style="color:#f92672">]</span>              |
+</span></span><span style="display:flex;"><span>| pl_bmassj         | double     | Planet Mass or Mass*sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span> <span style="color:#f92672">[</span>Jupiter Mass<span style="color:#f92672">]</span>            |
+</span></span><span style="display:flex;"><span>| pl_bmassj_reflink | char       | Planet Mass or Mass*sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span> <span style="color:#f92672">[</span>Jupiter Mass<span style="color:#f92672">]</span> Reference  |
+</span></span><span style="display:flex;"><span>| pl_bmassjerr1     | double     | Planet Mass or Mass*sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span> <span style="color:#f92672">[</span>Jupiter Mass<span style="color:#f92672">]</span> Upper Unc. |
+</span></span><span style="display:flex;"><span>| pl_bmassjerr2     | double     | Planet Mass or Mass*sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span> <span style="color:#f92672">[</span>Jupiter Mass<span style="color:#f92672">]</span> Lower Unc. |
+</span></span><span style="display:flex;"><span>| pl_bmassjlim      | int        | Planet Mass or Mass*sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span> <span style="color:#f92672">[</span>Jupiter Mass<span style="color:#f92672">]</span> Limit Flag |
+</span></span><span style="display:flex;"><span>| pl_bmassjstr      | char       | Planet Mass or Mass*sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span> <span style="color:#f92672">[</span>Jupiter Mass<span style="color:#f92672">]</span>            |
+</span></span><span style="display:flex;"><span>| pl_bmassprov      | char       | Planet Mass or Mass*sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span> Provenance                |
+</span></span><span style="display:flex;"><span>+-------------------+------------+------------------------------------------------------+</span></span></code></pre></div>
+<p>So instead of <code>pl_massj</code> one should use <code>pl_bmassj</code>, right, but then what does one suppose to use instead of <code>pl_msinij</code>? Turns out, it&rsquo;s the same <code>pl_bmassj</code>! And the type of what is stored in <code>pl_bmassj</code> is provided in <code>pl_bmassprov</code> (<em>does it also correspond for <code>pl_bmasse</code>?</em>). Here all the possible values of <code>pl_bmassprov</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">COUNT</span>(<span style="color:#f92672">*</span>) <span style="color:#66d9ef">AS</span> <span style="color:#e6db74">&#34;How many&#34;</span>, pl_bmassprov
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> pscomppars
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">GROUP</span> <span style="color:#66d9ef">BY</span> pl_bmassprov</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>+------------+------------------+
+</span></span><span style="display:flex;"><span>|   how many | pl_bmassprov     |
+</span></span><span style="display:flex;"><span>|------------+------------------|
+</span></span><span style="display:flex;"><span>|        <span style="color:#ae81ff">872</span> | Msini            |
+</span></span><span style="display:flex;"><span>|       <span style="color:#ae81ff">1335</span> | Mass             |
+</span></span><span style="display:flex;"><span>|         <span style="color:#ae81ff">21</span> | Msin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span>/sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span>   |
+</span></span><span style="display:flex;"><span>|       <span style="color:#ae81ff">2786</span> | M-R relationship |
+</span></span><span style="display:flex;"><span>+------------+------------------+</span></span></code></pre></div>
+<p>So okay, apparently you&rsquo;d need to add some more complexity to your queries and additionally check whether the value in <code>pl_bmassj</code> is of type <code>Mass</code> (<em>for <code>pl_massj</code> in <code>ps</code></em>) or <code>Msini</code> (<em>for <code>pl_msinij</code> in <code>ps</code></em>)? And what are the <code>Msin(i)/sin(i)</code> and <code>M-R relationship</code> types? By the way, there is <a href="#missing-values">another issue</a> related to that.</p>
+<p>Finally, as you can see, the <code>pl_bmassprov</code> field/column is not a dictionary value but a mere string! Needless to say how that adds to unreliability of querying the data.</p>
+<h5 id="calculated-values">Calculated values</h5>
+<p>If we query <code>pl_radj</code> for <code>HD 95872 b</code> planet from <code>ps</code> table, then we&rsquo;ll see that out of all publications there is no known value for it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_radj, pl_pubdate
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;HD 95872 b&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>+------------+------------+-----------+--------------+
+</span></span><span style="display:flex;"><span>| hostname   | pl_name    |   pl_radj | pl_pubdate   |
+</span></span><span style="display:flex;"><span>|------------+------------+-----------+--------------|
+</span></span><span style="display:flex;"><span>| HD <span style="color:#ae81ff">95872</span>   | HD <span style="color:#ae81ff">95872</span> b |       nan | 2017-03      |
+</span></span><span style="display:flex;"><span>| HD <span style="color:#ae81ff">95872</span>   | HD <span style="color:#ae81ff">95872</span> b |       nan | 2016-02      |
+</span></span><span style="display:flex;"><span>+------------+------------+-----------+--------------+</span></span></code></pre></div>
+<p>However, if we query the same from the <code>pscomppars</code> table, then suddenly there is a value:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_radj, pl_radj_reflink
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> pscomppars
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;HD 95872 b&#39;</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>+------------+------------+-----------+----------------------------------------------------------------------------------------------+
+</span></span><span style="display:flex;"><span>| hostname   | pl_name    |   pl_radj | pl_radj_reflink                                                                              |
+</span></span><span style="display:flex;"><span>|------------+------------+-----------+----------------------------------------------------------------------------------------------|
+</span></span><span style="display:flex;"><span>| HD <span style="color:#ae81ff">95872</span>   | HD <span style="color:#ae81ff">95872</span> b |      1.16 | &lt;a refstr<span style="color:#f92672">=</span>CALCULATED_VALUE href<span style="color:#f92672">=</span>/docs/composite_calc.html target<span style="color:#f92672">=</span>_blank&gt;Calculated Value&lt;/a&gt; |
+</span></span><span style="display:flex;"><span>+------------+------------+-----------+----------------------------------------------------------------------------------------------+</span></span></code></pre></div>
+<p>which, according to <code>reflink</code>, is a &ldquo;<a href="https://exoplanetarchive.ipac.caltech.edu/docs/composite_calc.html">calculated value</a>&rdquo;, so it is questionable whether one can rely on it or not. And if you&rsquo;d like to exclude &ldquo;calculated values&rdquo; from your results, then apparently you&rsquo;d need to add a (<em>reliable enough</em>) condition for <code>*_reflink</code> fields, which are strings, of course. Oh joy.</p>
+<h5 id="missing-values">Missing values</h5>
+<p>If we query <code>pl_msinij</code> for <code>HD 10180 d</code> planet from <code>ps</code> table, then we&rsquo;ll get values from two publications:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_massj, pl_msinij, pl_pubdate
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;HD 10180 d&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>+------------+------------+------------+-------------+--------------+
+</span></span><span style="display:flex;"><span>| hostname   | pl_name    |   pl_massj |   pl_msinij | pl_pubdate   |
+</span></span><span style="display:flex;"><span>|------------+------------+------------+-------------+--------------|
+</span></span><span style="display:flex;"><span>| HD <span style="color:#ae81ff">10180</span>   | HD <span style="color:#ae81ff">10180</span> d |        nan |     0.0378  | 2014-09      |
+</span></span><span style="display:flex;"><span>| HD <span style="color:#ae81ff">10180</span>   | HD <span style="color:#ae81ff">10180</span> d |        nan |     0.03697 | 2011-04      |
+</span></span><span style="display:flex;"><span>+------------+------------+------------+-------------+--------------+</span></span></code></pre></div>
+<p>So the latest value is <code>0.0378</code> from <code>2014-09</code> publication. But if we query this from <code>pscomppars</code>, then we&rsquo;ll only get <code>0.03697</code> value, which is from <code>2011-04</code> publication, so it is not the latest one available:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_bmassprov, pl_bmassj, pl_bmassj_reflink
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> pscomppars
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;HD 10180 d&#39;</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>+------------+------------+----------------+-------------+--------------------------------------------------------------------------------------------------------------------------------------+
+</span></span><span style="display:flex;"><span>| hostname   | pl_name    | pl_bmassprov   |   pl_bmassj | pl_bmassj_reflink                                                                                                                    |
+</span></span><span style="display:flex;"><span>|------------+------------+----------------+-------------+--------------------------------------------------------------------------------------------------------------------------------------|
+</span></span><span style="display:flex;"><span>| HD <span style="color:#ae81ff">10180</span>   | HD <span style="color:#ae81ff">10180</span> d | Msin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span>/sin<span style="color:#f92672">(</span>i<span style="color:#f92672">)</span> |     0.03697 | &lt;a refstr<span style="color:#f92672">=</span>LOVIS_ET_AL__2011 href<span style="color:#f92672">=</span>https://ui.adsabs.harvard.edu/abs/2011A%26A...528A.112L/abstract target<span style="color:#f92672">=</span>ref&gt; Lovis et al. <span style="color:#ae81ff">2011</span> &lt;/a&gt; |
+</span></span><span style="display:flex;"><span>+------------+------------+----------------+-------------+--------------------------------------------------------------------------------------------------------------------------------------+</span></span></code></pre></div>
+<p>On top of that, the <code>pl_bmassprov</code> says that <code>pl_bmassj</code> is of <code>Msin(i)/sin(i)</code> type, and so if we were looking for the <code>Msini</code> type, then we&rsquo;d miss it. And by the way, if according to <code>pscomppars</code> that is <code>Msin(i)/sin(i)</code> type, then how can one know that this value in <code>ps</code> table is of that type and not of <code>pl_msinij</code>/<code>Msini</code>? Or are <code>Msini</code> and <code>Msin(i)/sin(i)</code> actually the same type? Why then it&rsquo;s two different types in <code>pscomppars</code> table? Argh&hellip;</p>
+<p>Okay, now back to general issues with the NASA database.</p>
 <h4 id="planetary-data-is-organized-by-publications">Planetary data is organized by publications</h4>
 <p>Say you&rsquo;d like to get mass and radius of the <code>Kepler-107 b</code> planet. With PADC service the query will be this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> star_name, granule_uid, mass, radius
@@ -405,7 +503,7 @@
 </span></span><span style="display:flex;"><span>| Kepler-107 | Kepler-107 b |  nan       |   nan     | 2014-01-08       |
 </span></span><span style="display:flex;"><span>+------------+--------------+------------+-----------+------------------+</span></span></code></pre></div>
 <p>That is something you need to know about NASA&rsquo;s database, otherwise you might fetch obsolete/inaccurate data for your research.</p>
-<p>Furthermore, if you&rsquo;ll need, for example, the latest radius value, then you would execute the following query:</p>
+<p>Furthermore, if you&rsquo;ll need the latest <code>pl_radj</code> value, then you would execute the following query:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> TOP <span style="color:#ae81ff">1</span> pl_radj
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-107 b&#39;</span> <span style="color:#66d9ef">AND</span> pl_radj <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
@@ -430,6 +528,21 @@
 </span></span><span style="display:flex;"><span>| Kepler-107 | Kepler-107 e |     0.259 | 2019-02      |
 </span></span><span style="display:flex;"><span>+------------+--------------+-----------+--------------+</span></span></code></pre></div>
 <p>Looks pretty complex, but I am not sure if there is any other way.</p>
+<p>The documentation says that there is <code>default_flag</code> field/column, which you could think to use to query the latest data, but (<em>and I wonder if database maintainers are aware of this</em>) this obviously won&rsquo;t work in case when a planet has its parameters spread across several publications. For example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_massj, pl_radj, pl_pubdate, default_flag
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;HR 8799 b&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">4</span>
+</span></span><span style="display:flex;"><span>+------------+-----------+------------+-----------+--------------+----------------+
+</span></span><span style="display:flex;"><span>| hostname   | pl_name   |   pl_massj |   pl_radj | pl_pubdate   |   default_flag |
+</span></span><span style="display:flex;"><span>|------------+-----------+------------+-----------+--------------+----------------|
+</span></span><span style="display:flex;"><span>| HR <span style="color:#ae81ff">8799</span>    | HR <span style="color:#ae81ff">8799</span> b |        nan |     nan   | 2016-08      |              <span style="color:#ae81ff">0</span> |
+</span></span><span style="display:flex;"><span>| HR <span style="color:#ae81ff">8799</span>    | HR <span style="color:#ae81ff">8799</span> b |        nan |     nan   | 2016-03      |              <span style="color:#ae81ff">0</span> |
+</span></span><span style="display:flex;"><span>| HR <span style="color:#ae81ff">8799</span>    | HR <span style="color:#ae81ff">8799</span> b |        nan |       0.6 | 2016-03      |              <span style="color:#ae81ff">0</span> |
+</span></span><span style="display:flex;"><span>| HR <span style="color:#ae81ff">8799</span>    | HR <span style="color:#ae81ff">8799</span> b |          <span style="color:#ae81ff">7</span> |       1.2 | 2008-11      |              <span style="color:#ae81ff">1</span> |
+</span></span><span style="display:flex;"><span>+------------+-----------+------------+-----------+--------------+----------------+</span></span></code></pre></div>
+<p>So if you trusted blindly the <code>default_flag</code> and took the values from <code>2008-11</code> publication, then you&rsquo;d miss the newer <code>pl_radj</code> value from <code>2016-03</code> publication.</p>
 <h4 id="planets-from-the-same-system-have-different-stellar-data">Planets from the same system have different stellar data</h4>
 <p>If we take <code>HR 8799</code> system as an example, then its planet <code>HR 8799 b</code> has <code>st_teff</code> value of <code>7204.58</code> from the publication on <code>2016-08</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span>
