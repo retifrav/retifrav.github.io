@@ -1,0 +1,1058 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>LDAP authentication in ASP.NET Core MVC | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2022/06/16/dotnet-ldap-authentication/" />
+
+    <meta name="generator" content="Hugo 0.100.2" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="Authenticating users in an ASP.NET Core MVC web-application against Active Directory records via LDAP" />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="LDAP authentication in ASP.NET Core MVC" />
+<meta property="og:description" content="Authenticating users in an ASP.NET Core MVC web-application against Active Directory records via LDAP" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2022/06/16/dotnet-ldap-authentication/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2022-06-16T10:46:05+02:00" />
+<meta property="article:modified_time" content="2022-06-16T10:46:05+02:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2022/06/16/dotnet-ldap-authentication/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">LDAP authentication in ASP.NET Core MVC</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2022-06-16 10:46:05 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 22 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>We needed to make a (<em>yet another</em>) internal portal/website for employees, but this time, as that would be an internal resource, we decided to utilize users accounts data provided via <a href="https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol">LDAP</a> by our office&rsquo;s <a href="https://en.wikipedia.org/wiki/Active_Directory">Active Directory</a>, instead of (<em>yet again</em>) implementing &ldquo;local&rdquo; user identities like we did before with <a href="/blog/2018/03/20/csharp-dotnet-core-identity-mysql/">MySQL</a> and <a href="/blog/2020/10/17/dotnet-core-identity-postgresql/">PostgreSQL</a>.</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/06/16/dotnet-ldap-authentication/images/dotnet-core-ldap.png" alt=".NET Core LDAP">
+
+<p>(<em>Of course</em>) we chose <a href="https://dotnet.microsoft.com/en-us/apps/aspnet">ASP.NET Core</a> MVC for making the portal. And as both ASP.NET and Active Directory have been around for a while, and given the fact that both come from the same vendor, one would expect that implementing Active Directory users authentication via LDAP in such a setup to be a well-known topic with detailed documentation, examples and a lot of tutorials available. But as fucking usual, it&rsquo;s not quite like that.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#environment">Environment</a></li>
+    <li><a href="#whats-the-point-of-using-an-ldap-server">What&rsquo;s the point of using an LDAP server</a></li>
+    <li><a href="#checking-access-to-ldap-server">Checking access to LDAP server</a>
+      <ul>
+        <li><a href="#cli-tools">CLI tools</a></li>
+        <li><a href="#apache-directory-studio">Apache Directory Studio</a></li>
+      </ul>
+    </li>
+    <li><a href="#aspnet-core-mvc-project">ASP.NET Core MVC project</a>
+      <ul>
+        <li><a href="#required-nuget-packages">Required NuGet packages</a></li>
+        <li><a href="#platform-specific-dependencies">Platform-specific dependencies</a>
+          <ul>
+            <li><a href="#missing-libldap-on-gnulinux">Missing libldap on GNU/Linux</a></li>
+          </ul>
+        </li>
+        <li><a href="#ldap-settings">LDAP settings</a></li>
+      </ul>
+    </li>
+    <li><a href="#ldap-queries">LDAP queries</a>
+      <ul>
+        <li><a href="#sending-search-requests">Sending search requests</a>
+          <ul>
+            <li><a href="#platforms-specifics">Platforms specifics</a>
+              <ul>
+                <li><a href="#setting-the-port-in-connection-string-works-only-on-windows-hosts">Setting the port in connection string works only on Windows hosts</a></li>
+                <li><a href="#authentication-type-negotiate-is-implemented-only-on-windows-hosts">Authentication type Negotiate is implemented only on Windows hosts</a></li>
+                <li><a href="#username-needs-to-be-prepended-with-domain-on-non-windows-hosts">Username needs to be prepended with domain on non-Windows hosts</a></li>
+              </ul>
+            </li>
+            <li><a href="#ldap-servers-specifics">LDAP servers specifics</a>
+              <ul>
+                <li><a href="#ldap-protocol-version">LDAP protocol version</a></li>
+                <li><a href="#root-dse-attributes">Root DSE attributes</a></li>
+                <li><a href="#user-attributes">User attributes</a>
+                  <ul>
+                    <li><a href="#useraccountcontrol">userAccountControl</a></li>
+                  </ul>
+                </li>
+                <li><a href="#groups-cn">Groups CN</a></li>
+                <li><a href="#username">Username</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li><a href="#processing-results">Processing results</a>
+          <ul>
+            <li><a href="#attributes-with-several-values">Attributes with several values</a></li>
+            <li><a href="#objectguid-and-objectsid">objectGUID and objectSid</a></li>
+            <li><a href="#datetime-values">DateTime values</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#authentication">Authentication</a>
+      <ul>
+        <li><a href="#signinmanager">SignInManager</a>
+          <ul>
+            <li><a href="#claims">Claims</a></li>
+          </ul>
+        </li>
+        <li><a href="#application-services">Application services</a></li>
+        <li><a href="#authorization">Authorization</a></li>
+      </ul>
+    </li>
+    <li><a href="#an-example-project">An example project</a></li>
+  </ul>
+</nav>
+<h1 id="environment">Environment</h1>
+<p>To be fair, if we needed that to work only on Windows, things most likely would have been easier, but actually Windows target was almost of no interest, because our deployment target is GNU/Linux server, and development target is Mac OS, so everything should work on all these platforms.</p>
+<p>To be specific, here are the OS versions:</p>
+<ul>
+<li>GNU/Linux Ubuntu 22.04</li>
+<li>Mac OS 12.4 (Intel-based)</li>
+<li>Windows:
+<ul>
+<li>10.0.19043 21H1</li>
+<li>11.0.22000 21H2</li>
+</ul>
+</li>
+</ul>
+<p>Here&rsquo;s also .NET environment on the GNU/Linux target:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>.NET SDK <span style="color:#f92672">(</span>reflecting any global.json<span style="color:#f92672">)</span>:
+</span></span><span style="display:flex;"><span> Version:   6.0.300
+</span></span><span style="display:flex;"><span> Commit:    8473146e7d
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Runtime Environment:
+</span></span><span style="display:flex;"><span> OS Name:     ubuntu
+</span></span><span style="display:flex;"><span> OS Version:  22.04
+</span></span><span style="display:flex;"><span> OS Platform: Linux
+</span></span><span style="display:flex;"><span> RID:         ubuntu.22.04-x64
+</span></span><span style="display:flex;"><span> Base Path:   /usr/share/dotnet/sdk/6.0.300/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Host <span style="color:#f92672">(</span>useful <span style="color:#66d9ef">for</span> support<span style="color:#f92672">)</span>:
+</span></span><span style="display:flex;"><span>  Version: 6.0.5
+</span></span><span style="display:flex;"><span>  Commit:  70ae3df4a6
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>.NET SDKs installed:
+</span></span><span style="display:flex;"><span>  6.0.300 <span style="color:#f92672">[</span>/usr/share/dotnet/sdk<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>.NET runtimes installed:
+</span></span><span style="display:flex;"><span>  Microsoft.AspNetCore.App 6.0.5 <span style="color:#f92672">[</span>/usr/share/dotnet/shared/Microsoft.AspNetCore.App<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>  Microsoft.NETCore.App 6.0.5 <span style="color:#f92672">[</span>/usr/share/dotnet/shared/Microsoft.NETCore.App<span style="color:#f92672">]</span></span></span></code></pre></div>
+<p>As for LDAP server, then in our case it&rsquo;s an Active Directory on Windows Server 2019. But thanks to LDAP being standardized, most of the code will also work with other LDAP servers (<em>after <a href="#ldap-servers-specifics">some adjustments</a></em>), and in fact I&rsquo;ve successfully tested the <a href="#an-example-project">sample project</a> with a LDAP server provided by <a href="https://kb.synology.com/en-br/DSM/help/DirectoryServer/ldap_server?version=7">Synology DSM</a> (<em>v2.4.59</em>).</p>
+<h1 id="whats-the-point-of-using-an-ldap-server">What&rsquo;s the point of using an LDAP server</h1>
+<p>Here&rsquo;s what Captain Obvious has to say on the matter.</p>
+<p>If you are using Active Directory (<em>or some other <a href="https://en.wikipedia.org/wiki/List_of_LDAP_software#Server_software">LDAP server</a></em>) in your office/organization, then often (<em>always?</em>) that server is the source of truth for the information about all the employees, teams (<em>groups</em>) they are members of and other useful information about your company&rsquo;s IT infrastructure.</p>
+<p>When you need to add authentication/authorization to some resource such as a website, then instead of implementing (<em>potentially, yet another</em>) &ldquo;local&rdquo; user accounts for that resource (<em>usually, in the attached database</em>), you can just rely on the users accounts from your LDAP server.</p>
+<p>The main benefit of doing so is that you&rsquo;ll always have the latest information about users, originating from one place, which greatly simplifies users management.</p>
+<p>For example, when an employee leaves the company, his account gets disabled on the LDAP server (<em>hopefully, your administrators do communicate with HR department</em>), and so his user account will lose ability to sign-in into all your company resources at once (<em>do keep in mind though, he will likely remain still logged-in where he already is, until the session expires, which is why you might want to set a shorter expiration period for it</em>).</p>
+<p>Another example is that if some employee gets promoted and becomes eligible to an extended access on some resources. Then (<em>in a simplified scenario</em>) you will only need to add him to the corresponding group on the LDAP server, and his access rights will also get updated at once everywhere (<em>once he signs-off and signs-in again</em>).</p>
+<p>In addition, relying on users accounts data from LDAP server makes it easier to add authentication on 3rd-party resources which support that (<em>a lot of them do</em>). To name a few: YouTrack, TeamCity, GitLab, Gitea, JFrog Artifactory, etc.</p>
+<p>Now imagine if you were using &ldquo;local&rdquo; user accounts in every website/resource of yours. In that case you&rsquo;d need to perform the corresponding changes manually in each resource&rsquo;s database, which at the very least is tedious and an error-prone task.</p>
+<h1 id="checking-access-to-ldap-server">Checking access to LDAP server</h1>
+<p>Before creating a project, make sure that you can actually access your Active Directory / LDAP server.</p>
+<h2 id="cli-tools">CLI tools</h2>
+<p>You can do it with system CLI tools, such as <code>ldp.exe</code> on Windows or <code>ldapsearch</code> on Mac OS and GNU/Linux. For example, here&rsquo;s how you can query some basic information about your Active Directory with <code>ldapsearch</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ ldapsearch <span style="color:#f92672">-</span>h ad<span style="color:#f92672">.</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">.</span>com \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>D <span style="color:#a6e22e">SERVICE</span><span style="color:#f92672">-</span><span style="color:#a6e22e">USER</span><span style="color:#f92672">-</span><span style="color:#a6e22e">NAME</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>s base \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>x <span style="color:#f92672">-</span>W \
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;objectClass=*&#34;</span> \
+</span></span><span style="display:flex;"><span>    defaultNamingContext dnsHostName supportedCapabilities</span></span></code></pre></div>
+<p>Or here&rsquo;s how you can get all users of some group:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ ldapsearch <span style="color:#f92672">-</span>h ad<span style="color:#f92672">.</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">.</span>com \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>b <span style="color:#a6e22e">CN</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Users</span><span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>ad<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>com \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>D <span style="color:#a6e22e">SERVICE</span><span style="color:#f92672">-</span><span style="color:#a6e22e">USER</span><span style="color:#f92672">-</span><span style="color:#a6e22e">NAME</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>x <span style="color:#f92672">-</span>W \
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;(&amp;(objectCategory=person)(objectClass=user)(memberOf=CN=crew,CN=Users,DC=ad,DC=our-company,DC=com))&#34;</span> \
+</span></span><span style="display:flex;"><span>    sAMAccountName displayName mail</span></span></code></pre></div>
+<p>As you&rsquo;ll see <a href="#ldap-servers-specifics">later</a>, different LDAP servers have different attributes and other query specifics, and for example to query the same things from a Synology DSM LDAP server you&rsquo;ll need to modify these requests in the following manner:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ ldapsearch <span style="color:#f92672">-</span>h ad<span style="color:#f92672">.</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">.</span>com \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>D uid<span style="color:#66d9ef">=</span><span style="color:#a6e22e">SERVICE</span><span style="color:#f92672">-</span><span style="color:#a6e22e">USER</span><span style="color:#f92672">-</span><span style="color:#a6e22e">NAME</span><span style="color:#f92672">,</span><span style="color:#a6e22e">CN</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Users</span><span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>ad<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>com \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>s base \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>x <span style="color:#f92672">-</span>W \
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;objectClass=*&#34;</span> \
+</span></span><span style="display:flex;"><span>    namingContexts supportedControl supportedExtension</span></span></code></pre></div>
+<p>and:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ ldapsearch <span style="color:#f92672">-</span>h ad<span style="color:#f92672">.</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">.</span>com \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>b <span style="color:#a6e22e">CN</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Users</span><span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>ad<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>com \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>D uid<span style="color:#66d9ef">=</span><span style="color:#a6e22e">SERVICE</span><span style="color:#f92672">-</span><span style="color:#a6e22e">USER</span><span style="color:#f92672">-</span><span style="color:#a6e22e">NAME</span><span style="color:#f92672">,</span><span style="color:#a6e22e">CN</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Users</span><span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>ad<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>com \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>x <span style="color:#f92672">-</span>W \
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;(&amp;(objectClass=person)(memberOf=CN=crew,CN=Groups,DC=ad,DC=our-company,DC=com))&#34;</span> \
+</span></span><span style="display:flex;"><span>    uid displayName</span></span></code></pre></div>
+<h2 id="apache-directory-studio">Apache Directory Studio</h2>
+<p>There is also <a href="https://directory.apache.org/studio/">Apache Directory Studio</a> application. It is Java-based, so UI and performance won&rsquo;t be the greatest, but it is a GUI application, so it is more convenient for browsing the directory as a tree of nodes.</p>
+<p>Just in case, here&rsquo;s how the connection properties are set:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/06/16/dotnet-ldap-authentication/images/ads-network-parameter.png" alt="Apache Directory Studio, connection network parameter">
+
+<p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/06/16/dotnet-ldap-authentication/images/ads-authentication.png" alt="Apache Directory Studio, connection authentication">
+
+</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/06/16/dotnet-ldap-authentication/images/ads-browser-options.png" alt="Apache Directory Studio, connection browser options">
+
+<p>And here&rsquo;s how the tree of nodes looks like:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/06/16/dotnet-ldap-authentication/images/ads-tree.png" alt="Apache Directory Studio, tree of nodes">
+
+<h1 id="aspnet-core-mvc-project">ASP.NET Core MVC project</h1>
+<p>Creating a project is nothing special:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ mkdir dotnet<span style="color:#f92672">-</span>ldap<span style="color:#f92672">-</span>authentication <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#a6e22e">$_</span>
+</span></span><span style="display:flex;"><span>$ dotnet <span style="color:#66d9ef">new</span> mvc</span></span></code></pre></div>
+<h2 id="required-nuget-packages">Required NuGet packages</h2>
+<p>The cross-platform package from Microsoft for working with LDAP is <a href="https://www.nuget.org/packages/System.DirectoryServices.Protocols/">System.DirectoryServices.Protocols</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#f92672">&lt;PackageReference</span> <span style="color:#a6e22e">Include=</span><span style="color:#e6db74">&#34;System.DirectoryServices.Protocols&#34;</span> <span style="color:#a6e22e">Version=</span><span style="color:#e6db74">&#34;6.0.1&#34;</span> <span style="color:#f92672">/&gt;</span></span></span></code></pre></div>
+<p>Don&rsquo;t confuse it with <a href="https://www.nuget.org/packages/System.DirectoryServices/">System.DirectoryServices</a> package. Even though things are done <a href="https://www.codemag.com/article/1312041/Using-Active-Directory-in-.NET">easier</a> there, that package seems to work only on Windows (<em>at least, at the moment</em>), while <code>System.DirectoryServices.Protocols</code> does work on other platforms too.</p>
+<p>There is also another cross-platform package - <a href="https://www.nuget.org/packages/Novell.Directory.Ldap.NETStandard/">Novell.Directory.Ldap.NETStandard</a>. Before <code>System.DirectoryServices.Protocols</code> has been created, the <code>Novell.Directory.Ldap.NETStandard</code> package was the only (<em>cross-platform</em>) one available, as I understood. And apparently it still has some advantages and functionality that is still missing in the Microsoft&rsquo;s package, so you might consider using that one instead.</p>
+<h2 id="platform-specific-dependencies">Platform-specific dependencies</h2>
+<h3 id="missing-libldap-on-gnulinux">Missing libldap on GNU/Linux</h3>
+<p>Trying to run your project on Ubuntu 22.04 might fail with missing <code>libldap</code> dependency:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Unable to load shared library <span style="color:#e6db74">&#39;libldap-2.4.so.2&#39;</span> or one of its dependencies. In order to help diagnose loading problems, consider setting the LD_DEBUG environment variable: liblibldap-2.4.so.2: cannot open shared object file: No such file or directory</span></span></code></pre></div>
+<p>This is because Microsoft <a href="https://github.com/dotnet/runtime/issues/69456">has hardcoded</a> an exact version of <code>libldap</code>, which would work on Ubuntu 20.04, but obviously won&rsquo;t work where this library has a different version.</p>
+<p>So while we are waiting for Microsoft to fix that, one workaround would be to install the current version and &ldquo;fake&rdquo; the version <code>2.4</code> with a symlink:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt install libldap-2.5-0
+</span></span><span style="display:flex;"><span>$ sudo ln -s /usr/lib/x86_64-linux-gnu/<span style="color:#f92672">{</span>libldap-2.5.so.0,libldap-2.4.so.2<span style="color:#f92672">}</span></span></span></code></pre></div>
+<p>or (<em>preferably</em>) download and install exactly version <code>2.4</code> from <a href="https://packages.ubuntu.com/focal-updates/amd64/libldap-2.4-2/download">Ubuntu packages</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt install libgssapi3-heimdal
+</span></span><span style="display:flex;"><span>$ wget http://se.archive.ubuntu.com/ubuntu/pool/main/o/openldap/libldap-2.4-2_2.4.49+dfsg-2ubuntu1.9_amd64.deb
+</span></span><span style="display:flex;"><span>$ sudo dpkg -i ./libldap-2.4-2_2.4.49+dfsg-2ubuntu1.9_amd64.deb</span></span></code></pre></div>
+<h2 id="ldap-settings">LDAP settings</h2>
+<p>LDAP connection settings are stored in <code>appsettings.json</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;AD&#34;</span>: {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;port&#34;</span>: <span style="color:#ae81ff">389</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;zone&#34;</span>: <span style="color:#e6db74">&#34;com&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;domain&#34;</span>: <span style="color:#e6db74">&#34;our-company&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;subdomain&#34;</span>: <span style="color:#e6db74">&#34;ad&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;crew&#34;</span>: <span style="color:#e6db74">&#34;crew&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;managers&#34;</span>: <span style="color:#e6db74">&#34;managers&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;username&#34;</span>: <span style="color:#e6db74">&#34;SERVICE-USER-NAME&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;password&#34;</span>: <span style="color:#e6db74">&#34;SERVICE-USER-PASSWORD&#34;</span>
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>Naturally, all these values (<em>except maybe <code>port</code></em>) need to be replaced with yours.</p>
+<p>Here we provide LDAP connection string components (<em>port and <a href="https://en.wikipedia.org/wiki/Fully_qualified_domain_name">FQDN</a></em>), names of certain users groups and credentials of a service user, which will be used for querying the server.</p>
+<p>Just in case, some clarification about the users groups:</p>
+<ul>
+<li><code>crew</code> - group with all team members, it will be used as a part of authentication query;</li>
+<li><code>managers</code> - group for managers/administrators (<em>those who should have extended functionality</em>), it will be used as a part of <a href="#authorization">authorization</a>.</li>
+</ul>
+<p>This is just how we have it in our Active Directory, so you&rsquo;ll either need to rename them to your groups or simply not use them at all.</p>
+<p>Now these settings need to be made available in controllers. This can be done with <a href="https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/options?view=aspnetcore-6.0">IOptions</a>.</p>
+<p>First you declare a class with all the required properties:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ConfigurationAD</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">int</span> Port { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; } = <span style="color:#ae81ff">389</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> Zone { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; } = <span style="color:#66d9ef">string</span>.Empty;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> Domain { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; } = <span style="color:#66d9ef">string</span>.Empty;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> Subdomain { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; } = <span style="color:#66d9ef">string</span>.Empty;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> Username { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; } = <span style="color:#66d9ef">string</span>.Empty;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> Password { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; } = <span style="color:#66d9ef">string</span>.Empty;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> LDAPserver { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; } = <span style="color:#66d9ef">string</span>.Empty;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> LDAPQueryBase { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; } = <span style="color:#66d9ef">string</span>.Empty;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> Crew { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; } = <span style="color:#66d9ef">string</span>.Empty;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> Managers { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; } = <span style="color:#66d9ef">string</span>.Empty;
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>then instantiate and register it in services in <code>Program.cs</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">var</span> configuration = <span style="color:#66d9ef">new</span> ConfigurationBuilder().AddJsonFile(<span style="color:#e6db74">&#34;appsettings.json&#34;</span>).Build();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">var</span> builder = WebApplication.CreateBuilder(args);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>builder.Services.Configure&lt;ConfigurationAD&gt;
+</span></span><span style="display:flex;"><span>(
+</span></span><span style="display:flex;"><span>    c =&gt;
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        c.Port = configuration.GetSection(<span style="color:#e6db74">&#34;AD:port&#34;</span>).Get&lt;<span style="color:#66d9ef">int</span>&gt;();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        c.Zone = configuration.GetSection(<span style="color:#e6db74">&#34;AD:zone&#34;</span>).Value;
+</span></span><span style="display:flex;"><span>        c.Domain = configuration.GetSection(<span style="color:#e6db74">&#34;AD:domain&#34;</span>).Value;
+</span></span><span style="display:flex;"><span>        c.Subdomain = configuration.GetSection(<span style="color:#e6db74">&#34;AD:subdomain&#34;</span>).Value;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        c.Username = configuration.GetSection(<span style="color:#e6db74">&#34;AD:username&#34;</span>).Value;
+</span></span><span style="display:flex;"><span>        c.Password = configuration.GetSection(<span style="color:#e6db74">&#34;AD:password&#34;</span>).Value;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// connection string with port doesn&#39;t work on GNU/Linux and Mac OS</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//c.LDAPserver = $&#34;{c.Subdomain}.{c.Domain}.{c.Zone}:{c.Port}&#34;;</span>
+</span></span><span style="display:flex;"><span>        c.LDAPserver = <span style="color:#e6db74">$&#34;{c.Subdomain}.{c.Domain}.{c.Zone}&#34;</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// that depends on how it is in your LDAP server</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//c.LDAPQueryBase = $&#34;DC={c.Subdomain},DC={c.Domain},DC={c.Zone}&#34;;</span>
+</span></span><span style="display:flex;"><span>        c.LDAPQueryBase = <span style="color:#e6db74">$&#34;DC={c.Domain},DC={c.Zone}&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        c.Crew = <span style="color:#66d9ef">new</span> StringBuilder()
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">$&#34;CN={configuration.GetSection(&#34;</span>AD:crew<span style="color:#e6db74">&#34;).Value},&#34;</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// check which CN (Users or Groups) your LDAP server has the groups in</span>
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">$&#34;CN=Users,{c.LDAPQueryBase}&#34;</span>)
+</span></span><span style="display:flex;"><span>            .ToString();
+</span></span><span style="display:flex;"><span>        c.Managers = <span style="color:#66d9ef">new</span> StringBuilder()
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">$&#34;CN={configuration.GetSection(&#34;</span>AD:managers<span style="color:#e6db74">&#34;).Value},&#34;</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// check which CN (Users or Groups) your LDAP server has the groups in</span>
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">$&#34;CN=Users,{c.LDAPQueryBase}&#34;</span>)
+</span></span><span style="display:flex;"><span>            .ToString();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// ...</span></span></span></code></pre></div>
+<p>and then here&rsquo;s how it can be used in controllers:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">HomeController</span> : Controller
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> ConfigurationAD <span style="color:#ae81ff">_</span>configurationAD;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> HomeController(
+</span></span><span style="display:flex;"><span>        IOptions&lt;ConfigurationAD&gt; configurationAD
+</span></span><span style="display:flex;"><span>        )
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ae81ff">_</span>configurationAD = configurationAD.Value;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> IActionResult Index()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        Console.WriteLine(<span style="color:#ae81ff">_</span>configurationAD.Zone);
+</span></span><span style="display:flex;"><span>        Console.WriteLine(<span style="color:#ae81ff">_</span>configurationAD.Domain);
+</span></span><span style="display:flex;"><span>        Console.WriteLine(<span style="color:#ae81ff">_</span>configurationAD.Subdomain);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> View();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<h1 id="ldap-queries">LDAP queries</h1>
+<h2 id="sending-search-requests">Sending search requests</h2>
+<p>It is assumed that you are already familiar LDAP queries, but just in case here&rsquo;s <a href="https://confluence.atlassian.com/kb/how-to-write-ldap-search-filters-792496933.html">one tutorial</a> and here&rsquo;s <a href="https://theitbros.com/ldap-query-examples-active-directory/">another</a>.</p>
+<p>To send LDAP queries, let&rsquo;s create a common method (<em>based on <a href="https://github.com/dotnet/runtime/issues/36947#issuecomment-744046087">this example</a></em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> SearchResponse SearchInAD(
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> ldapServer,
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> ldapPort,
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> domainForAD,
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> username,
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> password,
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> targetOU,
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> query,
+</span></span><span style="display:flex;"><span>    SearchScope scope,
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">params</span> <span style="color:#66d9ef">string</span>[] attributeList
+</span></span><span style="display:flex;"><span>    )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// on Windows the authentication type is Negotiate, so there is no need to prepend</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// AD user login with domain. On other platforms at the moment only</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// Basic authentication is supported</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> authType = AuthType.Negotiate;
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// also can fail on non AD servers, so you might prefer</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// to just use AuthType.Basic everywhere</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (!OperatingSystem.IsWindows())
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        authType = AuthType.Basic;
+</span></span><span style="display:flex;"><span>        username = OperatingSystem.IsWindows()
+</span></span><span style="display:flex;"><span>            ? username
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// this might need to be changed to your actual AD domain value</span>
+</span></span><span style="display:flex;"><span>            : <span style="color:#e6db74">$&#34;{domainForAD}\\{username}&#34;</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// depending on LDAP server, username might require some proper wrapping</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// instead(!) of prepending username with domain</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//username = $&#34;uid={username},CN=Users,DC=subdomain,DC=domain,DC=zone&#34;;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//var connection = new LdapConnection(ldapServer)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> connection = <span style="color:#66d9ef">new</span> LdapConnection(
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">new</span> LdapDirectoryIdentifier(ldapServer, ldapPort)
+</span></span><span style="display:flex;"><span>        )
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        AuthType = authType,
+</span></span><span style="display:flex;"><span>        Credential = <span style="color:#66d9ef">new</span>(username, password)
+</span></span><span style="display:flex;"><span>    };
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// the default one is v2 (at least in that version), and it is unknown if v3</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// is actually needed, but at least Synology LDAP works only with v3,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// and since our Exchange doesn&#39;t complain, let it be v3</span>
+</span></span><span style="display:flex;"><span>    connection.SessionOptions.ProtocolVersion = <span style="color:#ae81ff">3</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// this is for connecting via LDAPS (636 port). It should be working,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// according to https://github.com/dotnet/runtime/issues/43890,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// but it doesn&#39;t (at least with Synology DSM LDAP), although perhaps</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// for a different reason</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//connection.SessionOptions.SecureSocketLayer = true;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    connection.Bind();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> request = <span style="color:#66d9ef">new</span> SearchRequest(targetOU, query, scope, attributeList);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> (SearchResponse)connection.SendRequest(request);
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>The method takes LDAP server connection string and port, user credentials and search query parameters. Speaking about credentials, in case of authentication query those of course will be username and password of the user that is trying to authenticate, but for all the other requests those are supposed to be credentials of some dedicated service user that has required read access to query your LDAP server.</p>
+<p>As you can see in the method code and comments, there are several platform-specific (<em>and LDAP-server-specific</em>) differences.</p>
+<h3 id="platforms-specifics">Platforms specifics</h3>
+<p>Depending on which host your application/website will be running on, there are certain things that are different between platforms.</p>
+<h4 id="setting-the-port-in-connection-string-works-only-on-windows-hosts">Setting the port in connection string works only on Windows hosts</h4>
+<p>As you might have noticed in the <a href="#ldap-settings">LDAP settings</a> section, the <code>LDAPserver</code> property is set like <code>$&quot;{c.Subdomain}.{c.Domain}.{c.Zone}&quot;</code> (<em>so it becomes <code>ad.our-company.com</code></em>), while <code>$&quot;{c.Subdomain}.{c.Domain}.{c.Zone}:{c.Port}&quot;</code> (<em><code>ad.our-company.com:389</code></em>) is commented out.</p>
+<p>This is because on GNU/Linux and Mac OS the LDAP connection string containing inline port fails with the following error:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>A bad parameter was passed to a routine<span style="color:#f92672">.</span></span></span></code></pre></div>
+<p>A <a href="https://github.com/dotnet/runtime/issues/59701">bugreport</a> for this has been submitted last year, and until it&rsquo;s fixed you&rsquo;d have to compose the connection string without specifying the port or construct it via <a href="https://docs.microsoft.com/en-us/dotnet/api/system.directoryservices.protocols.ldapdirectoryidentifier.-ctor?view=dotnet-plat-ext-6.0#system-directoryservices-protocols-ldapdirectoryidentifier-ctor(system-string-system-int32)">LdapDirectoryIdentifier()</a>.</p>
+<h4 id="authentication-type-negotiate-is-implemented-only-on-windows-hosts">Authentication type Negotiate is implemented only on Windows hosts</h4>
+<p>On Windows you can leave <code>authType</code> with default value, which is <code>AuthType.Negotiate</code>, but that will fail on GNU/Linux and Mac OS with the following error:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>The feature is not supported.</span></span></code></pre></div>
+<p>Because on those platforms only <code>AuthType.Basic</code> <a href="https://github.com/dotnet/runtime/issues/63759#issuecomment-1019318988">is supported</a>.</p>
+<p>Moreover, your LDAP server might not support <code>AuthType.Negotiate</code> either (<em>does any server support it at all, aside from Active Directory?</em>), so perhaps it should be just set to <code>AuthType.Basic</code> for all platforms.</p>
+<h4 id="username-needs-to-be-prepended-with-domain-on-non-windows-hosts">Username needs to be prepended with domain on non-Windows hosts</h4>
+<p>On Windows the <code>username</code> can be provided as is, so in case of <code>vasya@our-company.com</code> that would be just <code>vasya</code>. But on other platforms it needs to be prepended with domain, so it becomes <code>our-company\vasya</code>, otherwise you&rsquo;ll get this error:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>The supplied credential is invalid.</span></span></code></pre></div>
+<h3 id="ldap-servers-specifics">LDAP servers specifics</h3>
+<p>Depending on which LDAP server your application/website will be connecting to, there are certain adjustments that need to be made, in order to account for the LDAP implementation differences.</p>
+<p>Like I said in the beginning, my goal was to make it work with Active Directory, but with some adjustments it will (<em>should</em>) work with other LDAP servers too. I&rsquo;ve tested the one provided by Synology DSM, and below I&rsquo;ll list the differences that I&rsquo;ve noticed.</p>
+<p>You can also take a look at <a href="./synology-dsm-ldap.patch">this patch</a> (<em>supposed to be applied on the <a href="https://github.com/retifrav/dotnet-ldap-authentication-example/commit/55ca0f19b0245bfb189880c429705e9f31c61ce5">55ca0f19</a> commit</em>) which makes the required adjustments for the code to work with Synology DSM LDAP server.</p>
+<h4 id="ldap-protocol-version">LDAP protocol version</h4>
+<p>In <a href="#sending-search-requests">SearchInAD()</a> method we set <code>ProtocolVersion</code> to <code>3</code>. The default value is <code>2</code>, and that works with our Active Directory, but LDAP server provided by Synology DSM refuses to work with it, failing with this error:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>A protocol error occurred.</span></span></code></pre></div>
+<p>So to work with that particular server you&rsquo;d need to set it to <code>3</code>. And since Active Directory also can work with that version, it won&rsquo;t hurt to just set it to <code>3</code> by default.</p>
+<h4 id="root-dse-attributes">Root DSE attributes</h4>
+<p>Active Directory has the following attributes in the Root DSE - the very top object of the directory (<em>you could see it on the Apache Directory Studio tree <a href="./images/ads-tree.png">screenshot</a></em>):</p>
+<ul>
+<li><code>defaultNamingContext</code></li>
+<li><code>dnsHostName</code></li>
+<li><code>supportedCapabilities</code></li>
+</ul>
+<p>But Synology DSM LDAP doesn&rsquo;t have these attributes, so querying them won&rsquo;t return anything. Although, it does have <code>namingContexts</code>, which perhaps could be used as an alternative for <code>defaultNamingContext</code>.</p>
+<h4 id="user-attributes">User attributes</h4>
+<p>A correct search query for getting users in Active Directory might not find anything in Synology DSM LDAP, because in the latter the <code>objectClass</code> attribute in my case contains <code>apple-user</code> value (<em>I wonder why</em>) instead of just <code>user</code> as it is in Active Directory, and also instead of <code>objectCategory=person</code> Synology DSM LDAP has <code>objectClass=person</code>.</p>
+<p>So you will need to be careful composing your search queries, as they are pretty much server-specific.</p>
+<h5 id="useraccountcontrol">userAccountControl</h5>
+<p>Speaking about user attributes, there is an unusual (<em>and somewhat &ldquo;hidden&rdquo;, because I don&rsquo;t see it in query results using either of <a href="#checking-access-to-ldap-server">LDAP clients</a></em>) attribute called <code>userAccountControl</code>. It can have <a href="https://docs.microsoft.com/en-US/troubleshoot/windows-server/identity/useraccountcontrol-manipulate-account-properties#list-of-property-flags">many different values</a>, and out of those specifically the value <code>2</code> lets us to filter out disabled accounts, like this</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#f92672">(</span>!userAccountControl:1.2.840.113556.1.4.803:<span style="color:#f92672">=</span>2<span style="color:#f92672">)</span></span></span></code></pre></div>
+<p>On Windows hosts it&rsquo;s more forgiving, apparently, because there it works fine, but on GNU/Linux and Mac OS trying to send such a query will fail with the following error:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>The search filter is invalid.</span></span></code></pre></div>
+<p>This is because when negation with exclamation mark is used, then it needs to wrap the condition with one more pair of brackets, like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#f92672">(</span>!<span style="color:#f92672">(</span>userAccountControl:1.2.840.113556.1.4.803:<span style="color:#f92672">=</span>2<span style="color:#f92672">))</span></span></span></code></pre></div>
+<p>So Windows accepting it &ldquo;unwrapped&rdquo; is not entirely correct.</p>
+<p>This is quite a useful attribute, but adding it to the search query for Synology DSM LDAP does something unknown, because it doesn&rsquo;t find any users at all, no matter what value is provided, even though Synology&rsquo;s documentation claims that this attribute <a href="https://kb.synology.com/en-eu/DSM/tutorial/list_disabled_users_in_Synology_Directory_Server">is supported</a>.</p>
+<h4 id="groups-cn">Groups CN</h4>
+<p>In Active Directory (<em>at least in our instance</em>) checking for membership in the <code>crew</code> group would look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">(</span>memberOf<span style="color:#66d9ef">=</span><span style="color:#a6e22e">CN</span><span style="color:#66d9ef">=</span>crew<span style="color:#f92672">,</span><span style="color:#a6e22e">CN</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Users</span><span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>ad<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>com<span style="color:#f92672">)</span></span></span></code></pre></div>
+<p>But in Synology DSM LDAP groups live not in <code>CN=Users</code> but in <code>CN=Groups</code>, so the query should be this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">(</span>memberOf<span style="color:#66d9ef">=</span><span style="color:#a6e22e">CN</span><span style="color:#66d9ef">=</span>crew<span style="color:#f92672">,</span><span style="color:#a6e22e">CN</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Groups</span><span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>ad<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>com<span style="color:#f92672">)</span></span></span></code></pre></div>
+<h4 id="username">Username</h4>
+<p>As you saw earlier, for Active Directory authentication credentials it is enough to provide the username as it is (<em>or <a href="#username-needs-to-be-prepended-with-domain-on-non-windows-hosts">prepended with domain</a> on non-Windows hosts</em>), but Synology DSM LDAP will not accept that, as it requires username to be in the following form:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>uid<span style="color:#66d9ef">=</span><span style="color:#a6e22e">USER</span><span style="color:#f92672">-</span><span style="color:#a6e22e">NAME</span><span style="color:#f92672">,</span><span style="color:#a6e22e">CN</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Users</span><span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>ad<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>com</span></span></code></pre></div>
+<p>So this is how you&rsquo;d establish LDAP connection to Active Directory:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">var</span> connection = <span style="color:#66d9ef">new</span> LdapConnection(<span style="color:#e6db74">&#34;ad.our-company.com&#34;</span>)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    Credential = <span style="color:#66d9ef">new</span>(
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;SOME-USER-NAME&#34;</span>, <span style="color:#75715e">// or &#34;our-company\\SOME-USER-NAME&#34; on non-Windows hosts</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;SOME-USER-PASSWORD&#34;</span>
+</span></span><span style="display:flex;"><span>    )
+</span></span><span style="display:flex;"><span>};</span></span></code></pre></div>
+<p>and this is how you&rsquo;d need to do that for connecting to Synology DSM LDAP:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">var</span> connection = <span style="color:#66d9ef">new</span> LdapConnection(<span style="color:#e6db74">&#34;ad.our-company.com&#34;</span>)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    Credential = <span style="color:#66d9ef">new</span>(
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;uid=SOME-USER-NAME,CN=Users,DC=ad,DC=our-company,DC=com&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;SOME-USER-PASSWORD&#34;</span>
+</span></span><span style="display:flex;"><span>    )
+</span></span><span style="display:flex;"><span>};</span></span></code></pre></div>
+<h2 id="processing-results">Processing results</h2>
+<p>The <a href="#sending-search-requests">SearchInAD</a> method returns a <a href="https://docs.microsoft.com/en-us/dotnet/api/system.directoryservices.protocols.searchresponse?view=dotnet-plat-ext-6.0">SearchResponse</a> object, which can be processed like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">var</span> attributesToQuery = <span style="color:#66d9ef">new</span> <span style="color:#66d9ef">string</span>[]
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;objectGUID&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;sAMAccountName&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;displayName&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;mail&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;whenCreated&#34;</span>
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">var</span> searchResults = General.SearchInAD(
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">_</span>configurationAD.LDAPserver,
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">_</span>configurationAD.Port,
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">_</span>configurationAD.Domain,
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">_</span>configurationAD.Username,
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">_</span>configurationAD.Password,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">$&#34;CN=Users,{_configurationAD.LDAPQueryBase}&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">new</span> StringBuilder(<span style="color:#e6db74">&#34;(&amp;&#34;</span>)
+</span></span><span style="display:flex;"><span>        .Append(<span style="color:#e6db74">&#34;(objectCategory=person)&#34;</span>)
+</span></span><span style="display:flex;"><span>        .Append(<span style="color:#e6db74">&#34;(objectClass=user)&#34;</span>)
+</span></span><span style="display:flex;"><span>        .Append(<span style="color:#e6db74">$&#34;(memberOf={_configurationAD.Crew})&#34;</span>)
+</span></span><span style="display:flex;"><span>        .Append(<span style="color:#e6db74">&#34;(!(userAccountControl:1.2.840.113556.1.4.803:=2))&#34;</span>)
+</span></span><span style="display:flex;"><span>        .Append(<span style="color:#e6db74">&#34;)&#34;</span>)
+</span></span><span style="display:flex;"><span>        .ToString(),
+</span></span><span style="display:flex;"><span>    SearchScope.Subtree,
+</span></span><span style="display:flex;"><span>    attributesToQuery
+</span></span><span style="display:flex;"><span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">foreach</span> (<span style="color:#66d9ef">var</span> searchEntry <span style="color:#66d9ef">in</span> searchResults.Entries.Cast&lt;SearchResultEntry&gt;())
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">foreach</span> (<span style="color:#66d9ef">var</span> attr <span style="color:#66d9ef">in</span> attributesToQuery)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (searchEntry.Attributes[attr][<span style="color:#ae81ff">0</span>].GetType() != <span style="color:#66d9ef">typeof</span>(System.Byte[]))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> attrValue = searchEntry.Attributes[attr][<span style="color:#ae81ff">0</span>].ToString();
+</span></span><span style="display:flex;"><span>            Console.WriteLine(attrValue);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">else</span> <span style="color:#75715e">// must be bytes then</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> attrValue = searchEntry.Attributes[attr][<span style="color:#ae81ff">0</span>] <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">byte</span>[];
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (attrValue != <span style="color:#66d9ef">null</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// can&#39;t get a normal string out of it like this</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">var</span> gdString = Encoding.Default.GetString(attrValue);
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// only can compose a bare string representation of those bytes</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">var</span> gdStringBytes = <span style="color:#66d9ef">string</span>.Concat(attrValue!.Select(b =&gt; b.ToString(<span style="color:#e6db74">&#34;X2&#34;</span>)));
+</span></span><span style="display:flex;"><span>                Console.WriteLine(gdStringBytes);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>Here we query Active Directory for the non-disabled users from a certain group and request specific attributes. Then we simply iterate through the <code>SearchResponse</code> entries.</p>
+<p>Most of the attributes a strings, so you can get them as <code>searchEntry.Attributes[attr][0].ToString()</code>, but some require special treatment.</p>
+<h3 id="attributes-with-several-values">Attributes with several values</h3>
+<p>If an attribute contains more than one value, such as <code>memberOf</code>, then getting only the first value won&rsquo;t be correct, and so you should do it like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">var</span> groups = resultsEntry.Attributes[<span style="color:#e6db74">&#34;memberOf&#34;</span>];
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">foreach</span>(<span style="color:#66d9ef">var</span> g <span style="color:#66d9ef">in</span> groups)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> groupNameBytes = g <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">byte</span>[];
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (groupNameBytes != <span style="color:#66d9ef">null</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> groupNameString = Encoding.Default.GetString(groupNameBytes));
+</span></span><span style="display:flex;"><span>        Console.WriteLine(groupNameString);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<h3 id="objectguid-and-objectsid">objectGUID and objectSid</h3>
+<p>Some attributes are stored not as strings but as bytes, and not just bytes but special ones, which you cannot just read with <code>Encoding.Default.GetString()</code>. I mean, you certainly can, but the result won&rsquo;t be very useful.</p>
+<p>In particular, it&rsquo;s these two special attributes: <code>objectGUID</code> and <code>objectSid</code>. To get the meaningful values of those you need to use specific constructors: <code>new Guid()</code> and <code>new SecurityIdentifier()</code>.</p>
+<p>So for <code>objectGUID</code> that would be:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">var</span> bytes = searchEntry.Attributes[<span style="color:#e6db74">&#34;objectGUID&#34;</span>][<span style="color:#ae81ff">0</span>] <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">byte</span>[];
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> (bytes != <span style="color:#66d9ef">null</span>)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> guid = <span style="color:#66d9ef">new</span> Guid(bytes);
+</span></span><span style="display:flex;"><span>    Console.WriteLine(guid);
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>and for <code>objectSid</code> (<em>given that you requested it in the <code>attributesToQuery</code> list, and that your LDAP server actually has it</em>) that would be:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">var</span> bytes = searchEntry.Attributes[<span style="color:#e6db74">&#34;objectSid&#34;</span>][<span style="color:#ae81ff">0</span>] <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">byte</span>[];
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> (bytes != <span style="color:#66d9ef">null</span>)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> sid = <span style="color:#66d9ef">new</span> SecurityIdentifier(bytes, <span style="color:#ae81ff">0</span>);
+</span></span><span style="display:flex;"><span>    Console.WriteLine(sid);
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>Note, however, that <code>SecurityIdentifier</code> is implemented only on Windows hosts, and on other platforms you&rsquo;ll get the following error:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Windows Principal functionality is not supported on this platform.</span></span></code></pre></div>
+<h3 id="datetime-values">DateTime values</h3>
+<p>Date and time attributes, such as <code>whenCreated</code>, are returned as <code>yyyyMMddHHmmss.0Z</code> strings, so you need to use <a href="https://docs.microsoft.com/en-us/dotnet/api/system.datetime.parseexact?view=net-6.0">ParseExact()</a> to get a proper <a href="https://docs.microsoft.com/en-us/dotnet/api/system.datetime?view=net-6.0">DateTime</a> object:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">var</span> whenCreated = DateTime.ParseExact(
+</span></span><span style="display:flex;"><span>    searchEntry.Attributes[<span style="color:#e6db74">&#34;whenCreated&#34;</span>][<span style="color:#ae81ff">0</span>].ToString()!,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;yyyyMMddHHmmss.0Z&#34;</span>,
+</span></span><span style="display:flex;"><span>    System.Globalization.CultureInfo.InvariantCulture
+</span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
+<h1 id="authentication">Authentication</h1>
+<p>Now, when we can connect to Active Directory / LDAP server and query data from it, we can finally proceed with the authentication.</p>
+<p>To simplify things a bit (<em>a lot</em>), the ultimate goal of the authentication process is to call <a href="https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.authentication.authenticationhttpcontextextensions.signinasync?view=aspnetcore-6.0">HttpContext.SignInAsync()</a> method. But doing that for every visitor would defeat the purpose of authentication, wouldn&rsquo;t it, so first you need to check somehow whether this user can actually be authenticated.</p>
+<p>Since we are simplifying things, here&rsquo;s how we the whole process can be illustrated:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/06/16/dotnet-ldap-authentication/images/authentication-process.png" alt="ASP.NET Core Authentication process">
+
+<p>The big red <span style="color:red; font-weight:bold;">?</span> here is what we need to implement using Active Directory / LDAP server, in order to determine whether we can call <code>HttpContext.SignInAsync()</code> for the current user or not.</p>
+<h2 id="signinmanager">SignInManager</h2>
+<p>The code will live in a <code>SignInManager</code> (<em>can be called whatever</em>) class. Its purpose will be to query Active Directory / LDAP server and:</p>
+<ol>
+<li>Check that this user really does exist;</li>
+<li>Verify provided password;</li>
+<li>Make sure that this is an active (<em>non-disabled</em>) user;</li>
+<li>Check that this user is a member of a particular group (<em><code>crew</code></em>);</li>
+<li>Fetch various information about this user:
+<ul>
+<li>full name;</li>
+<li>e-mail;</li>
+<li>registration date;</li>
+<li>what other groups he belongs to (<em>such as <code>managers</code> group</em>);</li>
+<li>etc;</li>
+</ul>
+</li>
+<li>If it&rsquo;s all good, then call <code>HttpContext.SignInAsync()</code>.</li>
+</ol>
+<p>Here&rsquo;s the code:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#75715e">// declare the interface first</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> <span style="color:#a6e22e">ISignInManager</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    Task&lt;<span style="color:#66d9ef">bool</span>&gt; SignIn(<span style="color:#66d9ef">string</span> username, <span style="color:#66d9ef">string</span> password);
+</span></span><span style="display:flex;"><span>    Task SignOut();
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// and then implement it</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SignInManager</span> : ISignInManager
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> ConfigurationAD <span style="color:#ae81ff">_</span>configurationAD;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IHttpContextAccessor <span style="color:#ae81ff">_</span>httpContextAccessor;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> SignInManager(
+</span></span><span style="display:flex;"><span>        IOptions&lt;ConfigurationAD&gt; configurationAD,
+</span></span><span style="display:flex;"><span>        IHttpContextAccessor httpContextAccessor
+</span></span><span style="display:flex;"><span>        )
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ae81ff">_</span>configurationAD = configurationAD.Value;
+</span></span><span style="display:flex;"><span>        <span style="color:#ae81ff">_</span>httpContextAccessor = httpContextAccessor;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task&lt;<span style="color:#66d9ef">bool</span>&gt; SignIn(<span style="color:#66d9ef">string</span> username, <span style="color:#66d9ef">string</span> password)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> adUser = <span style="color:#66d9ef">new</span> ADUser();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> searchResults = General.SearchInAD(
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_</span>configurationAD.LDAPserver,
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_</span>configurationAD.Port,
+</span></span><span style="display:flex;"><span>            <span style="color:#ae81ff">_</span>configurationAD.Domain,
+</span></span><span style="display:flex;"><span>            username,
+</span></span><span style="display:flex;"><span>            password,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">$&#34;CN=Users,{_configurationAD.LDAPQueryBase}&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> StringBuilder(<span style="color:#e6db74">&#34;(&amp;&#34;</span>)
+</span></span><span style="display:flex;"><span>                .Append(<span style="color:#e6db74">&#34;(objectCategory=person)&#34;</span>)
+</span></span><span style="display:flex;"><span>                .Append(<span style="color:#e6db74">&#34;(objectClass=user)&#34;</span>)
+</span></span><span style="display:flex;"><span>                .Append(<span style="color:#e6db74">$&#34;(memberOf={_configurationAD.Crew})&#34;</span>)
+</span></span><span style="display:flex;"><span>                .Append(<span style="color:#e6db74">&#34;(!(userAccountControl:1.2.840.113556.1.4.803:=2))&#34;</span>)
+</span></span><span style="display:flex;"><span>                .Append(<span style="color:#e6db74">$&#34;(sAMAccountName={username})&#34;</span>)
+</span></span><span style="display:flex;"><span>                .Append(<span style="color:#e6db74">&#34;)&#34;</span>)
+</span></span><span style="display:flex;"><span>                .ToString(),
+</span></span><span style="display:flex;"><span>            SearchScope.Subtree,
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> <span style="color:#66d9ef">string</span>[]
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;objectGUID&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;sAMAccountName&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;displayName&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;mail&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;whenCreated&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;memberOf&#34;</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> results = searchResults.Entries.Cast&lt;SearchResultEntry&gt;();
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (results.Any())
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> resultsEntry = results.First();
+</span></span><span style="display:flex;"><span>            adUser = <span style="color:#66d9ef">new</span> ADUser()
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                objectGUID = <span style="color:#66d9ef">new</span> Guid((resultsEntry.Attributes[<span style="color:#e6db74">&#34;objectGUID&#34;</span>][<span style="color:#ae81ff">0</span>] <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">byte</span>[])!),
+</span></span><span style="display:flex;"><span>                sAMAccountName = resultsEntry.Attributes[<span style="color:#e6db74">&#34;sAMAccountName&#34;</span>][<span style="color:#ae81ff">0</span>].ToString()!,
+</span></span><span style="display:flex;"><span>                displayName = resultsEntry.Attributes[<span style="color:#e6db74">&#34;displayName&#34;</span>][<span style="color:#ae81ff">0</span>].ToString()!,
+</span></span><span style="display:flex;"><span>                mail = resultsEntry.Attributes[<span style="color:#e6db74">&#34;mail&#34;</span>][<span style="color:#ae81ff">0</span>].ToString()!,
+</span></span><span style="display:flex;"><span>                whenCreated = DateTime.ParseExact(
+</span></span><span style="display:flex;"><span>                    resultsEntry.Attributes[<span style="color:#e6db74">&#34;whenCreated&#34;</span>][<span style="color:#ae81ff">0</span>].ToString()!,
+</span></span><span style="display:flex;"><span>                    <span style="color:#e6db74">&#34;yyyyMMddHHmmss.0Z&#34;</span>,
+</span></span><span style="display:flex;"><span>                    System.Globalization.CultureInfo.InvariantCulture
+</span></span><span style="display:flex;"><span>                )
+</span></span><span style="display:flex;"><span>            };
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">var</span> groups = resultsEntry.Attributes[<span style="color:#e6db74">&#34;memberOf&#34;</span>];
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">foreach</span>(<span style="color:#66d9ef">var</span> g <span style="color:#66d9ef">in</span> groups)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">var</span> groupNameBytes = g <span style="color:#66d9ef">as</span> <span style="color:#66d9ef">byte</span>[];
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">if</span> (groupNameBytes != <span style="color:#66d9ef">null</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    adUser.memberOf.Add(Encoding.Default.GetString(groupNameBytes).ToLower());
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            Console.WriteLine(
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">$&#34;There is no such user in the [crew] group: {username}&#34;</span>
+</span></span><span style="display:flex;"><span>            );
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> claims = <span style="color:#66d9ef">new</span> List&lt;Claim&gt;
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> Claim(ClaimTypes.NameIdentifier, adUser.objectGUID.ToString()),
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> Claim(ClaimTypes.WindowsAccountName, adUser.sAMAccountName),
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> Claim(ClaimTypes.Name, adUser.displayName),
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> Claim(ClaimTypes.Email, adUser.mail),
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> Claim(<span style="color:#e6db74">&#34;whenCreated&#34;</span>, adUser.whenCreated.ToString(<span style="color:#e6db74">&#34;yyyy-MM-dd&#34;</span>))
+</span></span><span style="display:flex;"><span>        };
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// perhaps it should add a role for every group, but we only need one for now</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (adUser.memberOf.Contains(<span style="color:#ae81ff">_</span>configurationAD.Managers.ToLower()))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            claims.Add(<span style="color:#66d9ef">new</span> Claim(ClaimTypes.Role, <span style="color:#e6db74">&#34;managers&#34;</span>));
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> identity = <span style="color:#66d9ef">new</span> ClaimsIdentity(
+</span></span><span style="display:flex;"><span>            claims,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;LDAP&#34;</span>, <span style="color:#75715e">// what goes to User.Identity.AuthenticationType</span>
+</span></span><span style="display:flex;"><span>            ClaimTypes.Name, <span style="color:#75715e">// which claim is for storing user name in User.Identity.Name</span>
+</span></span><span style="display:flex;"><span>            ClaimTypes.Role <span style="color:#75715e">// which claim is for storing user roles, needed for User.IsInRole()</span>
+</span></span><span style="display:flex;"><span>        );
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> principal = <span style="color:#66d9ef">new</span> ClaimsPrincipal(identity);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (<span style="color:#ae81ff">_</span>httpContextAccessor.HttpContext != <span style="color:#66d9ef">null</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">try</span>
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">await</span> <span style="color:#ae81ff">_</span>httpContextAccessor.HttpContext.SignInAsync(
+</span></span><span style="display:flex;"><span>                    CookieAuthenticationDefaults.AuthenticationScheme,
+</span></span><span style="display:flex;"><span>                    principal
+</span></span><span style="display:flex;"><span>                );
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">catch</span> (Exception ex)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                Console.WriteLine(<span style="color:#e6db74">$&#34;Signing in has failed. {ex.Message}&#34;</span>);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">async</span> Task SignOut()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (<span style="color:#ae81ff">_</span>httpContextAccessor.HttpContext != <span style="color:#66d9ef">null</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">await</span> <span style="color:#ae81ff">_</span>httpContextAccessor.HttpContext.SignOutAsync(
+</span></span><span style="display:flex;"><span>                CookieAuthenticationDefaults.AuthenticationScheme
+</span></span><span style="display:flex;"><span>            );
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">throw</span> <span style="color:#66d9ef">new</span> Exception(
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;For some reasons, HTTP context is null, signing out cannot be performed&#34;</span>
+</span></span><span style="display:flex;"><span>            );
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>As you can see, it creates an object of <code>ADUser</code> class. That is not really required, at least here, but it will be useful to have it later as a model, so here it is:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ADUser</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> Guid objectGUID { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> sAMAccountName { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; } = <span style="color:#66d9ef">string</span>.Empty;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> displayName { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; } = <span style="color:#66d9ef">string</span>.Empty;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> mail { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; } = <span style="color:#66d9ef">string</span>.Empty;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> DateTime whenCreated { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> List&lt;<span style="color:#66d9ef">string</span>&gt; memberOf { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; } = <span style="color:#66d9ef">new</span> List&lt;<span style="color:#66d9ef">string</span>&gt;();
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>But that&rsquo;s minor detail, really. What&rsquo;s important is the list of <a href="https://docs.microsoft.com/en-us/dotnet/api/system.security.claims.claim?view=net-6.0">Claim</a> objects and the <a href="https://docs.microsoft.com/en-us/dotnet/api/system.security.claims.claimsidentity?view=net-6.0">ClaimsIdentity</a>.</p>
+<h3 id="claims">Claims</h3>
+<p>I&rsquo;d say, a claim is basically a key-value pair, and while the key can certainly be an arbitrary string of your choice (<em>such as what I did with <code>whenCreated</code> claim</em>), I think it&rsquo;s better to re-use standard/reserved names from the <a href="https://docs.microsoft.com/en-us/dotnet/api/system.security.claims.claimtypes?view=net-6.0">ClaimTypes</a> class (<em>where applicable</em>). The claims are used to store user information that we got from Active Directory / LDAP.</p>
+<p>Then, using the list of claims, we <a href="https://docs.microsoft.com/en-us/dotnet/api/system.security.claims.claimsidentity.-ctor?view=net-6.0#system-security-claims-claimsidentity-ctor%28system-collections-generic-ienumerable%28%28system-security-claims-claim%29%29-system-string-system-string-system-string%29">create</a> the <code>ClaimsIdentity</code> object. Aside from the claims list it also contains the following meta-information:</p>
+<ul>
+<li><code>authenticationType</code>: might be not affecting anything, but it is available in <code>User.Identity</code>, so I&rsquo;d set it to some meaningful value, such as <code>LDAP</code>;</li>
+<li><code>nameType</code> - what claim from the list is responsible for the user name (<em>it will become available as <code>User.Identity.Name</code></em>);</li>
+<li><code>roleType</code> - what claim from the list is responsible for user roles (<em>it will be used for calling <code>User.IsInRole()</code></em>).</li>
+</ul>
+<p>Finally, we create the <a href="https://docs.microsoft.com/en-us/dotnet/api/system.security.claims.claimsprincipal?view=net-6.0">ClaimsPrincipal</a> object based on our <code>ClaimsIdentity</code> and pass it to <code>HttpContext.SignInAsync()</code>.</p>
+<h2 id="application-services">Application services</h2>
+<p>For the following to work in <a href="#signinmanager">SignInManager</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#66d9ef">await</span> <span style="color:#ae81ff">_</span>httpContextAccessor.HttpContext.SignInAsync(
+</span></span><span style="display:flex;"><span>    CookieAuthenticationDefaults.AuthenticationScheme,
+</span></span><span style="display:flex;"><span>    principal
+</span></span><span style="display:flex;"><span>);</span></span></code></pre></div>
+<p>there should be a <a href="https://docs.microsoft.com/en-us/aspnet/core/fundamentals/http-context?view=aspnetcore-6.0">HttpContextAccessor</a> available, so it needs to be injected in <code>Program.cs</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span>builder.Services.AddSingleton&lt;IHttpContextAccessor, HttpContextAccessor&gt;();</span></span></code></pre></div>
+<p>In turn, <code>SignInManager</code> itself also needs to be added to services:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span>builder.Services.AddScoped&lt;ISignInManager, SignInManager&gt;();</span></span></code></pre></div>
+<p>And after that comes the actual authentication (<em>and authorization</em>) setup:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span>builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+</span></span><span style="display:flex;"><span>    .AddCookie(
+</span></span><span style="display:flex;"><span>        options =&gt;
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            options.ExpireTimeSpan = TimeSpan.FromDays(<span style="color:#ae81ff">11</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            options.LoginPath = <span style="color:#e6db74">&#34;/account/login&#34;</span>;
+</span></span><span style="display:flex;"><span>            options.AccessDeniedPath = <span style="color:#e6db74">&#34;/account/access-denied&#34;</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>builder.Services.AddAuthorization(options =&gt;
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    options.DefaultPolicy = <span style="color:#66d9ef">new</span> AuthorizationPolicyBuilder()
+</span></span><span style="display:flex;"><span>        .RequireAuthenticatedUser()
+</span></span><span style="display:flex;"><span>        .Build();
+</span></span><span style="display:flex;"><span>});
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>builder.Services.AddControllersWithViews(
+</span></span><span style="display:flex;"><span>    options =&gt;
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        options.Filters.Add(<span style="color:#66d9ef">new</span> AuthorizeFilter());
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>app.UseRouting();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// these two come between UseRouting() and MapControllerRoute()</span>
+</span></span><span style="display:flex;"><span>app.UseAuthentication();
+</span></span><span style="display:flex;"><span>app.UseAuthorization();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>app.MapControllerRoute(
+</span></span><span style="display:flex;"><span>    name: <span style="color:#e6db74">&#34;default&#34;</span>,
+</span></span><span style="display:flex;"><span>    pattern: <span style="color:#e6db74">&#34;{controller=Home}/{action=Index}/{id?}&#34;</span>
+</span></span><span style="display:flex;"><span>);</span></span></code></pre></div>
+<p>Having added <code>AuthorizeFilter()</code> we made all the controllers to have <a href="https://docs.microsoft.com/en-us/aspnet/core/security/authorization/simple?view=aspnetcore-6.0">[Authorize]</a> attribute, which applies default authorization policy, which in our case is simply <code>RequireAuthenticatedUser()</code> - only those who entered correct username and password can open website pages. Of course, you need to add <code>[AllowAnonymous]</code> attribute to <code>Account/Login</code> (<em>and probably to <code>Home/Error</code></em>) actions, otherwise no-one will ever be able to sign-in, as they won&rsquo;t have access even to the login page.</p>
+<h2 id="authorization">Authorization</h2>
+<p>Hopefully, you already know <a href="https://auth0.com/docs/get-started/identity-fundamentals/authentication-and-authorization">the difference</a> between authentication and authorization.</p>
+<p>A bare <code>[Authorize]</code> attribute is not exactly an authorization in our case, as the default policy that we&rsquo;ve set above is just to require all users to be authenticated.</p>
+<p>Suppose, you&rsquo;d like to have an <code>Admin</code> controller that should be available only to users who belong to <code>managers</code> group. Thanks to the way our <code>SignInManager</code> <a href="#claims">handles</a> users identities, you get this functionality almost for free, you only need to add authorization attribute with required roles, like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cs" data-lang="cs"><span style="display:flex;"><span><span style="color:#a6e22e">[Authorize(Roles = &#34;managers&#34;)]</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AdminController</span> : Controller
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>Now the users who are not in <code>managers</code> group will be getting <code>/account/access-denied</code> page, trying to open views that belong to this controller. Now that&rsquo;s more like an actual authorization.</p>
+<p>Also, here&rsquo;s how you can show certain parts of UI in Razor views based on whether current user belongs to a certain group or not:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span>@if (User.IsInRole(&#34;managers&#34;))
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    &lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;@(Url.Action(&#34;Index&#34;, &#34;Admin&#34;))&#39;</span>&gt;
+</span></span><span style="display:flex;"><span>        Portal administration panel
+</span></span><span style="display:flex;"><span>    &lt;/<span style="color:#f92672">a</span>&gt;
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<h1 id="an-example-project">An example project</h1>
+<p>A sample project with Active Directory / LDAP authentication (<em>which this article is based on</em>) is available <a href="https://github.com/retifrav/dotnet-ldap-authentication-example">here</a>.</p>
+<p>The login page looks like this:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/06/16/dotnet-ldap-authentication/images/example-project-login.png" alt="Login page">
+
+<p>Note that to the right from the website name in the header there should be a link to the administration page, which should be visible only to administrators, but it is not there now, because user isn&rsquo;t even authenticated yet.</p>
+<p>After user is authenticated, he can open his account page:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/06/16/dotnet-ldap-authentication/images/example-project-account.png" alt="Account page">
+
+<p>There he can see some of the attributes that his account has in Active Directory. Also, now the lock icon link in the header is visible (<em>because this user belongs to <code>managers</code> group</em>), and it leads to the administration page:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/06/16/dotnet-ldap-authentication/images/example-project-admin.png" alt="Administration page">
+
+<p>And there it displays some of the Root DSE attributes.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/dotnet/">dotnet</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a><a class="tag" href="https://retifrav.github.io/tags/ldap/">ldap</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div style="border:2px orange solid; background-color: floralwhite; border-radius:0.5rem; padding: 10px 14px; font-style:italic; font-size:0.9em;">
+              If you'd like to comment the article, you can do it on the
+              <a href="https://decovar.dev/blog/2022/06/16/dotnet-ldap-authentication/#remark42" style="font-weight:bold;">
+                  original website</a>. This one is just a mirror without comments.
+          </div>
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2022,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        <iframe src="https://github.com/sponsors/retifrav/button"
+            height="35" style="border:0;"
+            title="You can sponsor me">
+        </iframe>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5"
+                  data-telegram-post="decovar/306" data-width="100%" data-userpic="false">
+              </script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Top</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/top/cider">Cider</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (64)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (39)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (36)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (32)</a></li>
+                  
+                  <li><a href="/tags/review">review (27)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (24)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (24)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (16)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (14)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (13)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (11)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (7)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/azure">azure (2)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/ldap">ldap (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (1)</a></li>
+                  
+                  <li><a href="/tags/science">science (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>

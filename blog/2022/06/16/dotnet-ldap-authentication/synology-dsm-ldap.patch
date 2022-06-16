@@ -1,0 +1,164 @@
+diff --git a/Code/General.cs b/Code/General.cs
+index 562bcb5..d173123 100644
+--- a/Code/General.cs
++++ b/Code/General.cs
+@@ -78,15 +78,15 @@ public static class General
+         if (!OperatingSystem.IsWindows())
+         {
+             authType = AuthType.Basic;
+-            username = OperatingSystem.IsWindows()
+-                ? username
+-                // this might require modification to the actual AD domain value
+-                : $"{domainForAD}\\{username}";
++            // username = OperatingSystem.IsWindows()
++            //     ? username
++            //     // this might require modification to the actual AD domain value
++            //     : $"{domainForAD}\\{username}";
+         }
+ 
+         // depending on LDAP server, username might require some proper wrapping
+         // instead(!) of just prepending username with domain
+-        //username = $"uid={username},cn=users,dc=subdomain,dc=domain,dc=zone";
++        username = $"uid={username},cn=users,dc=ad,dc=our-company,dc=com";
+ 
+         //var connection = new LdapConnection(ldapServer)
+         var connection = new LdapConnection(
+diff --git a/Code/SignInManager.cs b/Code/SignInManager.cs
+index 93f6d1b..95504a2 100644
+--- a/Code/SignInManager.cs
++++ b/Code/SignInManager.cs
+@@ -45,22 +45,22 @@ namespace decovar.dev.Code
+                 $"CN=Users,{_configurationAD.LDAPQueryBase}",
+                 new StringBuilder("(&")
+                     // Active Directory attributes
+-                    .Append("(objectCategory=person)")
+-                    .Append("(objectClass=user)")
++                    //.Append("(objectCategory=person)")
++                    //.Append("(objectClass=user)")
+                     // ---
+                     // Synology DSM LDAP attribute
+-                    //.Append("(objectClass=person)")
++                    .Append("(objectClass=person)")
+                     // ---
+                     .Append($"(memberOf={_configurationAD.Crew})")
+                     // ---
+                     // fails on Synology DSM LDAP, even though it should be supported
+-                    .Append("(!(userAccountControl:1.2.840.113556.1.4.803:=2))")
++                    //.Append("(!(userAccountControl:1.2.840.113556.1.4.803:=2))")
+                     // ---
+                     // Active Directory attribute
+-                    .Append($"(sAMAccountName={username})")
++                    //.Append($"(sAMAccountName={username})")
+                     // ---
+                     // Synology DSM LDAP attribute
+-                    //.Append($"(uid={username})")
++                    .Append($"(uid={username})")
+                     // ---
+                     .Append(")")
+                     .ToString(),
+@@ -80,18 +80,18 @@ namespace decovar.dev.Code
+             if (results.Any())
+             {
+                 var resultsEntry = results.First();
+-                adUser = new ADUser()
+-                {
+-                    objectGUID = new Guid((resultsEntry.Attributes["objectGUID"][0] as byte[])!),
+-                    sAMAccountName = resultsEntry.Attributes["sAMAccountName"][0].ToString()!,
+-                    displayName = resultsEntry.Attributes["displayName"][0].ToString()!,
+-                    mail = resultsEntry.Attributes["mail"][0].ToString()!,
+-                    whenCreated = DateTime.ParseExact(
+-                        resultsEntry.Attributes["whenCreated"][0].ToString()!,
+-                        "yyyyMMddHHmmss.0Z",
+-                        System.Globalization.CultureInfo.InvariantCulture
+-                    )
+-                };
++                adUser = new ADUser();
++                // {
++                //     objectGUID = new Guid((resultsEntry.Attributes["objectGUID"][0] as byte[])!),
++                //     sAMAccountName = resultsEntry.Attributes["sAMAccountName"][0].ToString()!,
++                //     displayName = resultsEntry.Attributes["displayName"][0].ToString()!,
++                //     mail = resultsEntry.Attributes["mail"][0].ToString()!,
++                //     whenCreated = DateTime.ParseExact(
++                //         resultsEntry.Attributes["whenCreated"][0].ToString()!,
++                //         "yyyyMMddHHmmss.0Z",
++                //         System.Globalization.CultureInfo.InvariantCulture
++                //     )
++                // };
+                 var groups = resultsEntry.Attributes["memberof"];
+                 foreach(var g in groups)
+                 {
+diff --git a/Controllers/HomeController.cs b/Controllers/HomeController.cs
+index f6563a8..ed2bcf1 100644
+--- a/Controllers/HomeController.cs
++++ b/Controllers/HomeController.cs
+@@ -44,10 +44,11 @@ public class HomeController : Controller
+             _configurationAD.Password,
+             $"CN=Users,{_configurationAD.LDAPQueryBase}",
+             new StringBuilder("(&")
+-                .Append("(objectCategory=person)")
+-                .Append("(objectClass=user)")
++                //.Append("(objectCategory=person)")
++                //.Append("(objectClass=user)")
++                .Append("(objectClass=person)")
+                 .Append($"(memberOf={_configurationAD.Crew})")
+-                .Append("(!(userAccountControl:1.2.840.113556.1.4.803:=2))")
++                //.Append("(!(userAccountControl:1.2.840.113556.1.4.803:=2))")
+                 .Append(")")
+                 .ToString(),
+             SearchScope.Subtree,
+@@ -98,17 +99,17 @@ public class HomeController : Controller
+ 
+             listOfUsers.Add(
+                 new ADUser()
+-                {
+-                    objectGUID = new Guid((searchEntry.Attributes["objectGUID"][0] as byte[])!),
+-                    sAMAccountName = searchEntry.Attributes["sAMAccountName"][0].ToString()!,
+-                    displayName = searchEntry.Attributes["displayName"][0].ToString()!,
+-                    mail = searchEntry.Attributes["mail"][0].ToString()!,
+-                    whenCreated = DateTime.ParseExact(
+-                        searchEntry.Attributes["whenCreated"][0].ToString()!,
+-                        "yyyyMMddHHmmss.0Z",
+-                        System.Globalization.CultureInfo.InvariantCulture
+-                    )
+-                }
++                // {
++                //     objectGUID = new Guid((searchEntry.Attributes["objectGUID"][0] as byte[])!),
++                //     sAMAccountName = searchEntry.Attributes["sAMAccountName"][0].ToString()!,
++                //     displayName = searchEntry.Attributes["displayName"][0].ToString()!,
++                //     mail = searchEntry.Attributes["mail"][0].ToString()!,
++                //     whenCreated = DateTime.ParseExact(
++                //         searchEntry.Attributes["whenCreated"][0].ToString()!,
++                //         "yyyyMMddHHmmss.0Z",
++                //         System.Globalization.CultureInfo.InvariantCulture
++                //     )
++                // }
+             );
+         }
+ 
+diff --git a/Program.cs b/Program.cs
+index 062dbaa..4669262 100644
+--- a/Program.cs
++++ b/Program.cs
+@@ -35,18 +35,18 @@ try
+             //c.LDAPserver = $"{c.Subdomain}.{c.Domain}.{c.Zone}:{c.Port}";
+             c.LDAPserver = $"{c.Subdomain}.{c.Domain}.{c.Zone}";
+             // that depends on how it is in your LDAP server
+-            //c.LDAPQueryBase = $"DC={c.Subdomain},DC={c.Domain},DC={c.Zone}";
+-            c.LDAPQueryBase = $"DC={c.Domain},DC={c.Zone}";
++            c.LDAPQueryBase = $"DC={c.Subdomain},DC={c.Domain},DC={c.Zone}";
++            //c.LDAPQueryBase = $"DC={c.Domain},DC={c.Zone}";
+ 
+             c.Crew = new StringBuilder()
+                 .Append($"CN={configuration.GetSection("AD:crew").Value},")
+                 // check which CN (Users or Groups) your LDAP server has the groups in
+-                .Append($"CN=Users,{c.LDAPQueryBase}")
++                .Append($"CN=Groups,{c.LDAPQueryBase}")
+                 .ToString();
+             c.Managers = new StringBuilder()
+                 .Append($"CN={configuration.GetSection("AD:managers").Value},")
+                 // check which CN (Users or Groups) your LDAP server has the groups in
+-                .Append($"CN=Users,{c.LDAPQueryBase}")
++                .Append($"CN=Groups,{c.LDAPQueryBase}")
+                 .ToString();
+         }
+     );
