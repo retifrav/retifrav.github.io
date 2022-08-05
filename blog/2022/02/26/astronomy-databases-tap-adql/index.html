@@ -60,7 +60,7 @@
 </svg> 2022-02-26 18:34:15 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 27 min read</div>
+</svg> 28 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -95,7 +95,7 @@
                 </li>
                 <li><a href="#planetary-data-is-organized-by-publications">Planetary data is organized by publications</a></li>
                 <li><a href="#planets-from-the-same-system-have-different-stellar-data">Planets from the same system have different stellar data</a></li>
-                <li><a href="#no-way-to-get-the-latest-stellar-data">No way to get the latest stellar data</a></li>
+                <li><a href="#no-way-to-get-the-latest-data">No way to get the latest data</a></li>
                 <li><a href="#top-clause-is-broken">TOP clause is broken</a></li>
                 <li><a href="#missing-uncertainties-columns">Missing uncertainties columns</a></li>
               </ul>
@@ -564,13 +564,34 @@
 </span></span><span style="display:flex;"><span>+------------+-----------+-----------+--------------+</span></span></code></pre></div>
 <p>As this is a stellar parameter, one would expect it to be the same for every planet in the system, but as you can see other planets in that system, such as <code>HR 8799 e</code>, have different values (<em>there also might be no value at all</em>). How to know which one is the right one? Because <code>pl_pubdate</code> filed name implies that it applies to planetary parameters, and there are no <code>host_pubdate</code> or <code>star_pubdate</code> fields in the table.</p>
 <p>So we can only assume that <code>pl_pubdate</code> applies to stellar parameters too, and that means that if you are working with just <code>HR 8799 b</code>, and you are not interested in other planets, still you cannot just take <code>7204.58</code> value, you&rsquo;ll need to execute an additional query to get the first not null <code>st_teff</code> value ordered by publication date (<em>yes, also with CTE and ranking, because <a href="#top-clause-is-broken">TOP is broken</a></em>) from all the planets in the system.</p>
-<h4 id="no-way-to-get-the-latest-stellar-data">No way to get the latest stellar data</h4>
-<p>Following the previous issue, there actually seems to no way to get the actually latest stellar data. For instance, on <a href="https://exoplanetarchive.ipac.caltech.edu/overview/HR%208799">this page</a> we can see that this very same <code>HR 8799</code> star has even newer publication from <a href="https://iopscience.iop.org/article/10.3847/1538-3881/abd802/pdf">Swastik et al. 2021</a>, which states <code>st_teff</code> value of <code>7339</code>:</p>
+<h4 id="no-way-to-get-the-latest-data">No way to get the latest data</h4>
+<p>Following the previous issue, there actually seems to be no way to get data from the latest available publication. For instance, on <a href="https://exoplanetarchive.ipac.caltech.edu/overview/HR%208799">this page</a> we can see that this very same <code>HR 8799</code> star has even newer publication from <a href="https://iopscience.iop.org/article/10.3847/1538-3881/abd802/pdf">Swastik et al. 2021</a>, which states <code>st_teff</code> value of <code>7339</code>:</p>
 
 
-    <img class="image-post" loading="lazy" src="/blog/2022/02/26/astronomy-databases-tap-adql/images/st_teff.png" alt="Unavailable st_teff values in NASA database">
+    <img class="image-post" loading="lazy" src="/blog/2022/02/26/astronomy-databases-tap-adql/images/nasa-hr-8799-st_teff.png" alt="Unavailable st_teff values in NASA database">
 
-<p>How can one get this value from via TAP interface? Or the <code>7376.66</code> value from &ldquo;<em>Gaia DR2</em>&rdquo;? Neither of these are available in the <code>ps</code> table. Is there some other table with all the stellar data? And can it be joined with <code>ps</code> table by the <code>hostname</code> or some other identifier? I didn&rsquo;t find answers to that.</p>
+<p>How can one get this value from via TAP interface? Or the <code>7376.66</code> value from &ldquo;<em>Gaia DR2</em>&rdquo;, for that matter? Neither of these are available in the <code>ps</code> table. Is there some other table with all the stellar data? And can it be joined with <code>ps</code> table by the <code>hostname</code> or some other identifier? I didn&rsquo;t find answers to that.</p>
+<p>Here&rsquo;s another example. If we take <a href="https://exoplanetarchive.ipac.caltech.edu/overview/Kepler-450">Kepler-450</a> system, then web-interface says that the latest publication on <code>Kepler-450 b</code> is <a href="https://ui.adsabs.harvard.edu/abs/2021ApJ...908..114Y/abstract">Yoffe et al. 2021</a>, and there <code>pl_radj</code>, <code>pl_radjerr2</code>, <code>pl_radjerr1</code> have values of <code>0.54272</code> (<code>-0.00020</code>/<code>+0.00020</code>):</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/02/26/astronomy-databases-tap-adql/images/nasa-kepler-450b-pl_radj.png" alt="Unavailable pl_radj values in NASA database">
+
+<p>But if we&rsquo;ll query those via TAP, then here&rsquo;s what we&rsquo;ll get:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_radj, pl_radjerr2, pl_radjerr1, pl_pubdate
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Kepler-450 b&#39;</span> <span style="color:#66d9ef">AND</span> pl_radj <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">4</span>
+</span></span><span style="display:flex;"><span>+------------+--------------+-----------+---------------+---------------+--------------+
+</span></span><span style="display:flex;"><span>| hostname   | pl_name      |   pl_radj |   pl_radjerr2 |   pl_radjerr1 | pl_pubdate   |
+</span></span><span style="display:flex;"><span>|------------+--------------+-----------+---------------+---------------+--------------|
+</span></span><span style="display:flex;"><span>| Kepler-450 | Kepler-450 b |     0.543 |        -0     |         <span style="color:#ae81ff">0</span>     | 2020-11      |
+</span></span><span style="display:flex;"><span>| Kepler-450 | Kepler-450 b |     0.561 |        -0.026 |         0.036 | 2018-10      |
+</span></span><span style="display:flex;"><span>| Kepler-450 | Kepler-450 b |     0.531 |        -0.03  |         0.031 | 2016-05      |
+</span></span><span style="display:flex;"><span>| Kepler-450 | Kepler-450 b |     0.548 |        -0.029 |         0.029 | 2015-08      |
+</span></span><span style="display:flex;"><span>+------------+--------------+-----------+---------------+---------------+--------------+</span></span></code></pre></div>
+<p>So, again, it does not return values from <code>Yoffe et al. 2021</code>, and in fact the latest that it does return is some publication from <code>2020-11</code>, which is not shown via the web-interface and simply is nowhere to find! On top of that, <code>pl_radjerr2</code>/<code>pl_radjerr1</code> have the values of <code>0</code>, like there is no error at all. And it is like that for <code>Kepler-450 c</code> and <code>Kepler-450 d</code> planets too.</p>
+<p>So not only you cannot get the latest data (<em>which is available via web-interface</em>), it even may return incorrect values from some unknown publications, messing up your data. A-fucking-mazing, innit.</p>
 <h4 id="top-clause-is-broken">TOP clause is broken</h4>
 <p>So yeah, here are the radius values for the <code>Kepler-107 b</code> planet by publication date:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> pl_radj, pl_pubdate
