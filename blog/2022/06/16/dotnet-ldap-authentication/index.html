@@ -60,7 +60,7 @@
 </svg> 2022-06-16 10:46:05 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 22 min read</div>
+</svg> 23 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -109,6 +109,7 @@
                 <li><a href="#user-attributes">User attributes</a>
                   <ul>
                     <li><a href="#useraccountcontrol">userAccountControl</a></li>
+                    <li><a href="#memberof">memberOf</a></li>
                   </ul>
                 </li>
                 <li><a href="#groups-cn">Groups CN</a></li>
@@ -468,6 +469,17 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#f92672">(</span>!<span style="color:#f92672">(</span>userAccountControl:1.2.840.113556.1.4.803:<span style="color:#f92672">=</span>2<span style="color:#f92672">))</span></span></span></code></pre></div>
 <p>So Windows accepting it &ldquo;unwrapped&rdquo; is not entirely correct.</p>
 <p>This is quite a useful attribute, but adding it to the search query for Synology DSM LDAP does something unknown, because it doesn&rsquo;t find any users at all, no matter what value is provided, even though Synology&rsquo;s documentation claims that this attribute <a href="https://kb.synology.com/en-eu/DSM/tutorial/list_disabled_users_in_Synology_Directory_Server">is supported</a>.</p>
+<h5 id="memberof">memberOf</h5>
+<p>As it was pointed out in the comments, some servers, namely <a href="https://en.wikipedia.org/wiki/OpenLDAP#Available_overlays">OpenLDAP</a>, do not have <code>memberOf</code> attribute, or at least they do not have it set in default settings/configuration.</p>
+<p>Moreover, the OpenLDAP <a href="https://www.openldap.org/software/man.cgi?query=slapd.overlays&amp;apropos=0&amp;sektion=0&amp;manpath=OpenLDAP+2.6-Release&amp;arch=default&amp;format=html">manual page</a> says the following:</p>
+<blockquote>memberof - This overlay maintains automatic reverse group membership values, typically stored in an attribute called memberOf. This overlay is deprecated and should be replaced with dynlist.</blockquote>
+<p>That I don&rsquo;t really get. Is <code>memberOf</code> a part of the LDAP specification, or is it a vendor-specific extension (<em>coming from Microsoft and its Active Directory</em>)? How can one not support or deprecate it?</p>
+<p>Either way, the possible workarounds would be to:</p>
+<ul>
+<li>either <a href="https://stackoverflow.com/a/61101018/1688203">configure</a> your OpenLDAP server and add <code>memberOf</code> support to it;</li>
+<li>or modify your project sources and use whatever attribute OpenLDAP has instead of <code>memberOf</code> (<em>in <code>SignIn()</code> method and all other places</em>).</li>
+</ul>
+<p>I don&rsquo;t have an OpenLDAP server running and sadly I don&rsquo;t have time to launch one, so I haven&rsquo;t tested either of the options myself.</p>
 <h4 id="groups-cn">Groups CN</h4>
 <p>In Active Directory (<em>at least in our instance</em>) checking for membership in the <code>crew</code> group would look like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">(</span>memberOf<span style="color:#66d9ef">=</span><span style="color:#a6e22e">CN</span><span style="color:#66d9ef">=</span>crew<span style="color:#f92672">,</span><span style="color:#a6e22e">CN</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Users</span><span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>ad<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">,</span><span style="color:#a6e22e">DC</span><span style="color:#66d9ef">=</span>com<span style="color:#f92672">)</span></span></span></code></pre></div>
