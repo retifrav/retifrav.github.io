@@ -65,7 +65,7 @@ To clarify, this will be about so-called normal kind of library." />
 </svg> 2021-03-08 20:41:56 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 21 min read</div>
+</svg> 22 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -198,17 +198,16 @@ To clarify, this will be about so-called normal kind of library." />
 <h3 id="top-level-and-nested-projects">Top-level and nested projects</h3>
 <p>In CMake projects there is a variable called <a href="https://cmake.org/cmake/help/latest/variable/CMAKE_PROJECT_NAME.html">CMAKE_PROJECT_NAME</a>. It stores the top-level project name that you set with <a href="https://cmake.org/cmake/help/latest/command/project.html">project</a> command. This variable persists across all the nested projects, and so calling <code>project</code> command from nested projects will not change <code>CMAKE_PROJECT_NAME</code>, but will set another variable called <a href="https://cmake.org/cmake/help/latest/variable/PROJECT_NAME.html">PROJECT_NAME</a>.</p>
 <p>Knowing that, here&rsquo;s how you can check if you are in the top-level project or not:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">namespace</span> <span style="color:#e6db74">&#34;some&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>project(<span style="color:#e6db74">&#34;SomeLibrary&#34;</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">DESCRIPTION</span> <span style="color:#e6db74">&#34;Some library&#34;</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">VERSION</span> <span style="color:#e6db74">0.9.1</span>
-</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>project(<span style="color:#e6db74">&#34;SomeLibrary&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>if (<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">CMAKE_PROJECT_NAME</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">PROJECT_NAME</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;This project has a top-level one called [${CMAKE_PROJECT_NAME}]&#34;</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>else()<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;This project is a top-level one&#34;</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()</span></span></code></pre></div>
+<p>Later CMake versions added a <a href="https://cmake.org/cmake/help/latest/variable/PROJECT_IS_TOP_LEVEL.html">PROJECT_IS_TOP_LEVEL</a> variable, which might be more convenient.</p>
 <p>Why even bother with this? Because later we will be setting certain properties for the <a href="#target">target</a> (<em>our library</em>). And I saw in lots of places how people copy-paste project name value to every command, which I believe is just a bad idea - it is much better to use already defined <code>PROJECT_NAME</code> variable instead, innit.</p>
 <h3 id="target">Target</h3>
 <p>Here go the library <a href="https://cmake.org/cmake/help/latest/manual/cmake-buildsystem.7.html#introduction">target</a> and its sources:</p>
@@ -220,7 +219,7 @@ To clarify, this will be about so-called normal kind of library." />
 </span></span><span style="display:flex;"><span>    PRIVATE
 </span></span><span style="display:flex;"><span>        src<span style="color:#f92672">/</span>some.cpp
 </span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
-<p>Here the library is defined as <code>STATIC</code>, but there will be a section about <a href="#static-vs-shared">shared</a> libraries too.</p>
+<p>Here the library is defined as <code>STATIC</code>, but actually it&rsquo;s not a good idea to hardcode libraries type like that in their project files, because CMake has a global flag for this exact purpose - <a href="https://cmake.org/cmake/help/latest/variable/BUILD_SHARED_LIBS.html">BUILD_SHARED_LIBS</a> - and in general it&rsquo;s better to rely on that flag instead of setting libraries type inline. There will be also a section about shared libraries <a href="#static-vs-shared">later</a>.</p>
 <h3 id="include-directories">Include directories</h3>
 <p>Setting include directories correctly with <a href="https://cmake.org/cmake/help/latest/command/target_include_directories.html">target_include_directories</a> is very important:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>target_include_directories(<span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span>
@@ -704,8 +703,8 @@ To clarify, this will be about so-called normal kind of library." />
 <h2 id="static-vs-shared">STATIC vs SHARED</h2>
 <p>Hopefully, you already know the difference between static and shared libraries. If not, then, <a href="/blog/2018/02/17/build-qt-statically/#why-build-qt-statically">to put it simple</a>, static libraries are &ldquo;bundled&rdquo; into your binaries, and shared libraries are separate files which need to be discoverable by your binaries in order for the latter to work.</p>
 <p>A little practical example: let&rsquo;s build our library as static, link to it from external project, then build it as shared and link to that one.</p>
-<p>To make our library shared, simply replace <code>STATIC</code> with <code>SHARED</code> in <code>add_library</code> statement (<em>in the library&rsquo;s <code>CMakeLists.txt</code></em>).</p>
-<p>So, first thing that is different about resulting executable (<code>another-application</code>) is its size:</p>
+<p>To make our library shared, we need to replace <code>STATIC</code> with <code>SHARED</code> in <code>add_library</code> statement in the library&rsquo;s <code>CMakeLists.txt</code>. And once again, like I <a href="#target">already said</a>, the library type should not be hardcoded like that, as it would be better to have <code>add_library()</code> without type and instead set <code>-DBUILD_SHARED_LIBS=1</code> on project configuration.</p>
+<p>Anyway, first thing that will be different about resulting executable (<code>another-application</code>) is its size:</p>
 <ul>
 <li>statically linked with SomeLibrary: 51 920 bytes</li>
 <li>dynamically linked with SomeLibrary: 51 616 bytes</li>
@@ -724,7 +723,7 @@ To clarify, this will be about so-called normal kind of library." />
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ LD_LIBRARY_PATH<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;.&#34;</span> ./another-application</span></span></code></pre></div>
 <p>And on Windows it will fail even if you haven&rsquo;t touched the library in its install folder, however you can just copy it to the same folder where executable is, but more on that below.</p>
 <h3 id="shared-dll-on-windows">SHARED DLL on Windows</h3>
-<p>Shared libraries on Windows are a special thing. There it is not enough just to replace <code>STATIC</code> with <code>SHARED</code> in <code>add_library</code> statement.</p>
+<p>Shared libraries on Windows are a special thing. There it is not enough just to replace <code>STATIC</code> with <code>SHARED</code> in <code>add_library</code> statement (<em>or set <code>-DBUILD_SHARED_LIBS=1</code></em>).</p>
 <p>If you build and install it having done nothing else, then you will get this error trying to configure a project that needs to link to it:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>CMake Error at C:/code/cmake-library-example/internal-project/libraries/SomeLibrary/install/cmake/SomeLibraryConfig.cmake:72 <span style="color:#f92672">(</span>message<span style="color:#f92672">)</span>:
 </span></span><span style="display:flex;"><span>  The imported target <span style="color:#e6db74">&#34;some::SomeLibrary&#34;</span> references the file
@@ -748,9 +747,9 @@ To clarify, this will be about so-called normal kind of library." />
 <p>And indeed, there is no <code>SomeLibrary.lib</code> in <code>install/lib/</code>, only <code>SomeLibrary.dll</code> in <code>install/bin/</code>. That is because a <a href="https://en.wikipedia.org/wiki/Dynamic-link_library">DLL on Windows</a> needs an explicit listing of all the symbols that it will export, and apparently this is what <code>SomeLibrary.lib</code> is supposed to be.</p>
 <p>As I understood, in order to produce it, in past it was required to add <code>__declspec</code> compiler directives to every public single class or function declaration in your library sources, which is quite a bummer, especially if you have a lot of those. Here&rsquo;s <a href="https://cmake.org/pipermail/cmake/2008-August/023194.html">one example</a> of how this is done.</p>
 <p>Fortunately, starting with CMake 3.4, this is <a href="https://blog.kitware.com/create-dlls-on-windows-without-declspec-using-new-cmake-export-all-feature/">no longer required</a>. Instead you can just set the <a href="https://cmake.org/cmake/help/latest/prop_tgt/WINDOWS_EXPORT_ALL_SYMBOLS.html">CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS</a> option when configuring the library:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cmake -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS<span style="color:#f92672">=</span>TRUE ..</span></span></code></pre></div>
-<p>If you haven&rsquo;t set <code>SHARED</code> in <code>add_library</code> and it also doesn&rsquo;t explicitly state <code>STATIC</code>, then you can also set <code>-DBUILD_SHARED_LIBS=TRUE</code> option to make that library <code>SHARED</code>.</p>
-<p>Either way, now you can build and install the library as usual. However, if you are using Visual Studio <a href="https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html">CMake generator</a>, then <code>-DCMAKE_BUILD_TYPE</code> won&rsquo;t work, because you need to specify configuration on build step:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cmake -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> ..</span></span></code></pre></div>
+<p>However, I saw somewhere that it is not recommended to export all the symbols like that. I didn&rsquo;t quite get why, but probably there is a reason, so just keep that in mind.</p>
+<p>Either way, now you can build and install the library as usual. Note that if you are using Visual Studio <a href="https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html">CMake generator</a>, then <code>-DCMAKE_BUILD_TYPE</code> won&rsquo;t work, because there configuration is specified on build step:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cmake --build . --target install --config Release</span></span></code></pre></div>
 <p>After that configuring and building the external application will also succeed, because now it will get that missing <code>SomeLibrary.lib</code>.</p>
 <p>However, unlike Mac OS and Linux, trying to run the resulting application will fail even if you haven&rsquo;t touched the <code>SomeLibrary.dll</code> in the install folder:</p>
