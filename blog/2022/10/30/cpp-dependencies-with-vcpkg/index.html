@@ -151,12 +151,19 @@
 <h1 id="about-vcpkg">About vcpkg</h1>
 <p>In short, vcpkg is a combination of a <a href="https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html">CMake toolchain</a> and a <a href="https://github.com/microsoft/vcpkg-tool">CLI tool</a>. Together they handle the following:</p>
 <ul>
-<li>fetching dependencies sources;</li>
 <li>figuring out build environment (<em>platform, compiler, linking</em>);</li>
-<li>building (<em>or restoring</em>) those dependencies before configuring the main project.</li>
+<li>fetching dependencies sources, patching them if required;</li>
+<li>building <u>or restoring</u> those dependencies before configuring the main project.</li>
 </ul>
-<p>Restoring means that if dependencies have been already built before, then instead of building them again vcpkg will restore their pre-built binary packages either from local cache or from a remote storage. This functionality is called <a href="https://github.com/microsoft/vcpkg/blob/master/docs/users/binarycaching.md">binary caching</a>, and as <a href="/blog/2022/02/06/cpp-dependencies-with-conan/#why-bother">with Conan</a> that&rsquo;s our main reasoning for using vcpkg for resolving dependencies - to avoid re-building the code that changes only so often. For us local cache on CI/CD buildbots will be absolutely enough. And later we&rsquo;ll perhaps also consider optionally storing pre-built packages in a remote (<em>in-house</em>) storage (<em>probably in a form of NuGet packages</em>).</p>
-<p>There was a good talk at <a href="https://ndcoslo.com">NDC Oslo</a> conference about vcpkg, Conan and in general dependency management for C++ projects, but they still haven&rsquo;t published that recording, unfortunately. It was in September 2022, and on <a href="https://youtube.com/c/NDCConferences/videos">their channel</a> the latest published recording right now is for a talk from June 2022, so I guess September recordings will be published somewhere closer to January.</p>
+<p>Restoring means that if dependencies have been already built before, then instead of building them again vcpkg will restore their pre-built binary packages either from local cache or from a remote storage. This functionality is called <a href="https://github.com/microsoft/vcpkg/blob/master/docs/users/binarycaching.md">binary caching</a>, and as <a href="/blog/2022/02/06/cpp-dependencies-with-conan/#why-bother">with Conan</a> that&rsquo;s our main reasoning for using vcpkg for resolving dependencies - to avoid re-building the code that changes only so often.</p>
+<p>Schematically simplified vcpkg functionality can be visualized like this:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/vcpkg-schema.png" alt="vcpkg functionality schema">
+
+<p>There will be more details about what&rsquo;s going on here later, but in short it shows <a href="#in-a-project">a project</a> that depends on 3 libraries (<em>and 3 CMake helpers</em>), and vcpkg handles fetching and building dependencies before building the main project. If dependencies have been already built before, then they are just restored from cache.</p>
+<p>For us local cache on CI/CD buildbots will be absolutely enough, but later we&rsquo;ll probably also consider optionally storing pre-built dependencies packages in a centralized remote (<em>in-house</em>) storage, perhaps in a form of NuGet packages. In terms of the schema above the only change in that case would be that the cache will be stored not on the same machine but on some other server.</p>
+<!--There was a good talk at [NDC Oslo](https://ndcoslo.com) conference about vcpkg, Conan and in general dependency management for C++ projects, but they still haven't published that recording, unfortunately. It was in September 2022, and on [their channel](https://youtube.com/c/NDCConferences/videos) the latest published recording right now is for a talk from June 2022, so I guess September recordings will be published somewhere closer to January.-->
 <h2 id="installation">Installation</h2>
 <p>You need to have one of the latest CMake versions in the system, otherwise vcpkg installer script will download it for you and put it somewhere in the system, so you&rsquo;ll have more than one CMake on your computer. In my case it required CMake 3.24 as a minimum.</p>
 <p>Regarding system environment, I have Windows, Mac OS and GNU/Linux hosts, and while here in the article it is assumed that one uses Mac OS environment, all the steps will be 99% the same on any other platform. And on Windows, as usual, I recommend to use Git BASH.</p>
@@ -1164,7 +1171,8 @@
 <p>Like I said, essentially, vspkg is just a combination of CMake and Git (<em>plus some glue provided by the vcpkg CLI tool</em>), which are very common basic instruments everyone is (<em>should be</em>) already familiar with.</p>
 <p>They are fewer components or moving parts than it is with Conan. Especially when it comes to registries: there is no need to involve a complex 3rd-party service such as JFrog Artifactory (<em>even though you can host it in-house</em>), because vcpkg registries are just good old plain Git repositories, which are very simple to create and maintain.</p>
 <h2 id="speed">Speed</h2>
-<p>The &ldquo;speed&rdquo; might not be the right term here, but for me creating vcpkg <del>packages</del> ports is easier to understand and simpler to implement than creating Conan packages. For instance, the same <a href="http://localhost:1313/blog/2022/02/06/cpp-dependencies-with-conan/images/dependencies-graph.png">research project</a> that took about two weeks to implement with Conan, with vcpkg it barely took 3 days.</p>
+<p>The &ldquo;speed&rdquo; might not be the right term here, but for me creating vcpkg <del>packages</del> ports and integrating vcpkg into a project was easier to understand and simpler to implement than doing the same with Conan.</p>
+<p>For instance, the <a href="/blog/2022/02/06/cpp-dependencies-with-conan/images/dependencies-graph.png">research project</a> that took about two weeks to implement with Conan, with vcpkg it barely took 3 days.</p>
 <h2 id="documentation">Documentation</h2>
 <p>Paradoxically enough, vcpkg&rsquo;s documentation seems worse than Conan&rsquo;s, or at least less detailed (<em>and sometimes just missing</em>), and yet it was easier to get started with vcpkg than it was with Conan. Things just make sense and many questions/problems you can figure out on your own.</p>
 <p>Speaking about documentation, there are 3 different places/domains where you can find it. Certainly, all of them likely have the same source, but still such distribution does not help to inspire confidence:</p>
