@@ -60,7 +60,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 40 min read</div>
+</svg> 45 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -118,13 +118,19 @@
           </ul>
         </li>
         <li><a href="#cmake-helpers">CMake helpers</a></li>
+        <li><a href="#partial-targets-installation">Partial targets installation</a>
+          <ul>
+            <li><a href="#sparse-checkout">Sparse checkout</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
-    <li><a href="#installing-packages-from-a-registry">Installing packages from a registry</a>
+    <li><a href="#installing-ports-from-a-registry">Installing ports from a registry</a>
       <ul>
         <li><a href="#without-a-project">Without a project</a></li>
         <li><a href="#in-a-project">In a project</a>
           <ul>
+            <li><a href="#multiple-registries">Multiple registries</a></li>
             <li><a href="#cmake-presets">CMake presets</a></li>
             <li><a href="#updating-a-dependency-version">Updating a dependency version</a></li>
             <li><a href="#static-crtmsvc-linkage">Static CRT/MSVC linkage</a></li>
@@ -634,7 +640,101 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># what is that
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">VCPKG_POLICY_CMAKE_HELPER_PORT</span> <span style="color:#e6db74">enabled</span>)</span></span></code></pre></div>
-<h1 id="installing-packages-from-a-registry">Installing packages from a registry</h1>
+<h2 id="partial-targets-installation">Partial targets installation</h2>
+<p>It could be that your project contains several libraries/components/targets, so one can build and install just them, without building the entire project:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/some/project
+</span></span><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd $_
+</span></span><span style="display:flex;"><span>$ cmake -G Ninja -DCMAKE_BUILD_TYPE<span style="color:#f92672">=</span>Release -DCMAKE_INSTALL_PREFIX<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../install&#34;</span> ..
+</span></span><span style="display:flex;"><span>$ cmake --build . --target SomeLibrary
+</span></span><span style="display:flex;"><span>$ cmake --install ./libraries/SomeLibrary
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># or</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># $ cmake --install . --component SomeLibrary</span></span></span></code></pre></div>
+<p>And then let&rsquo;s say one of your customers/users is asking you to make a vcpkg port only for this one library. He doesn&rsquo;t need your entire project (<em>at the very least because it takes too long to build the whole thing</em>), he only needs this one library. So what do you do?</p>
+<p>I&rsquo;d say, ideally, it might be a good idea to move them out from your super repository into their own repositories and add them as dependencies to the main repository via vcpkg. But that is not always possible, and it wasn&rsquo;t possible in our case (<em>horrible legacy ways of including internal headers spread around and other stuff like that</em>), so let&rsquo;s see what else can be done here.</p>
+<p>Surprisingly, vcpkg doesn&rsquo;t not have out-of-the-box functionality for such scenario. As I mentioned earlier, <a href="#vcpkg_cmake_install">vcpkg_cmake_install</a> simply calls the <a href="https://github.com/microsoft/vcpkg/blob/master/docs/maintainers/vcpkg_cmake_build.md">vcpkg_cmake_build()</a> function with <code>TARGET install</code> parameter, which means that you too can set any build target for <code>vcpkg_cmake_build()</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># vcpkg_cmake_install() # we don&#39;t need the entire project
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># build only one of the libraries/components
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>vcpkg_cmake_build(<span style="color:#e6db74">TARGET</span> <span style="color:#e6db74">SomeLibrary</span>)</span></span></code></pre></div>
+<p>But there is no CMake helper to run the installation (<em>the <code>vcpkg_cmake_install()</code> function doesn&rsquo;t not have such a parameter</em>), so one just has to fallback to running a bare CMake CLI command:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>vcpkg_execute_build_process(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">COMMAND</span> <span style="color:#e6db74">cmake</span> <span style="color:#e6db74">--install</span> <span style="color:#e6db74">./libraries/SomeLibrary</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>CURRENT_BUILDTREES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-dbg</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">build-SomeLibrary-</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-dbg</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_execute_build_process(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">COMMAND</span> <span style="color:#e6db74">cmake</span> <span style="color:#e6db74">--install</span> <span style="color:#e6db74">./libraries/SomeLibrary</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>CURRENT_BUILDTREES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-rel</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">build-SomeLibrary-</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-rel</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_cmake_config_fixup(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PACKAGE_NAME</span> <span style="color:#e6db74">&#34;SomeLibrary&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CONFIG_PATH</span> <span style="color:#e6db74">&#34;cmake&#34;</span> <span style="color:#75715e"># we install CMake configs here
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>)</span></span></code></pre></div>
+<p>Yes, you need to install both Debug and Release configurations. As you can see, that certainly doesn&rsquo;t look too nice, but it works. It is probably worth creating a CMake helper to wrap this into something nicer.</p>
+<p>As a bonus complexity, some of our libraries/components in the main repository in turn depend on other internal libraries/components within that repository, and those need to be installed too. And the problem here is that the consuming project won&rsquo;t be able to discover that other library, because that library&rsquo;s CMake configs for <code>find_package()</code> will end up in the <code>SomeLibrary</code> folder. A resolution/workaround for that would be to add even more crutches, so the whole thing would look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># the &#34;main&#34; library
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>vcpkg_cmake_build(<span style="color:#e6db74">TARGET</span> <span style="color:#e6db74">SomeLibrary</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_execute_build_process(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">COMMAND</span> <span style="color:#e6db74">cmake</span> <span style="color:#e6db74">--install</span> <span style="color:#e6db74">./libraries/SomeLibrary</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>CURRENT_BUILDTREES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-dbg</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">build-SomeLibrary-</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-dbg</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_execute_build_process(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">COMMAND</span> <span style="color:#e6db74">cmake</span> <span style="color:#e6db74">--install</span> <span style="color:#e6db74">./libraries/SomeLibrary</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>CURRENT_BUILDTREES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-rel</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">build-SomeLibrary-</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-rel</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># its dependency - another internal library
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>vcpkg_cmake_build(<span style="color:#e6db74">TARGET</span> <span style="color:#e6db74">AnotherLibrary</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_execute_build_process(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">COMMAND</span> <span style="color:#e6db74">cmake</span> <span style="color:#e6db74">--install</span> <span style="color:#e6db74">./libraries/AnotherLibrary</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>CURRENT_BUILDTREES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-dbg</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">build-AnotherLibrary-</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-dbg</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_execute_build_process(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">COMMAND</span> <span style="color:#e6db74">cmake</span> <span style="color:#e6db74">--install</span> <span style="color:#e6db74">./libraries/AnotherLibrary</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>CURRENT_BUILDTREES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-rel</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">build-AnotherLibrary-</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-rel</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># collect this other library CMake configs into a list
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>file(<span style="color:#e6db74">GLOB</span> <span style="color:#e6db74">AnotherLibraryFiles</span> <span style="color:#f92672">${</span>CURRENT_PACKAGES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/cmake/AnotherLibrary*.cmake</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># create folders for its configs in proper paths, where vcpkg would expect them to be
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>file(<span style="color:#e6db74">MAKE_DIRECTORY</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">${</span>CURRENT_PACKAGES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/share/AnotherLibrary</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">${</span>CURRENT_PACKAGES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/debug/share/AnotherLibrary</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># move out every AnotherLibrary&#39;s CMake config from SomeLibrary folder
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># and copy them to both Debug and Release share folders
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>foreach(<span style="color:#e6db74">AnotherLibraryFile</span> <span style="color:#f92672">${</span>AnotherLibraryFiles<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    get_filename_component(<span style="color:#e6db74">AnotherLibraryFileName</span> <span style="color:#f92672">${</span>AnotherLibraryFile<span style="color:#f92672">}</span> <span style="color:#e6db74">NAME</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    file(<span style="color:#e6db74">RENAME</span> <span style="color:#f92672">${</span>AnotherLibraryFile<span style="color:#f92672">}</span> <span style="color:#f92672">${</span>CURRENT_PACKAGES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/share/AnotherLibrary/</span><span style="color:#f92672">${</span>AnotherLibraryFileName<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    file(
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">COPY</span> <span style="color:#f92672">${</span>CURRENT_PACKAGES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/share/AnotherLibrary/</span><span style="color:#f92672">${</span>AnotherLibraryFileName<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">DESTINATION</span> <span style="color:#f92672">${</span>CURRENT_PACKAGES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/debug/share/AnotherLibrary/</span>
+</span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endforeach()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># now fix the &#34;main&#34; library configs
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>vcpkg_cmake_config_fixup(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PACKAGE_NAME</span> <span style="color:#e6db74">&#34;SomeLibrary&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CONFIG_PATH</span> <span style="color:#e6db74">&#34;cmake&#34;</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># and the other one&#39;s
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>vcpkg_cmake_config_fixup(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PACKAGE_NAME</span> <span style="color:#e6db74">&#34;AnotherLibrary&#34;</span>
+</span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
+<p>So now the portfile looks even worse, but it does work fine, so untill a better alternative comes up, that will be the way.</p>
+<p>It would probably be better to make <code>AnotherLibrary</code> its own port, which <code>SomeLibrary</code> could depend on, but then they might eventually end up having different <code>REF</code> commit values, causing your users to fetch different snapshots of the same repository (<em>and that would be the least of potential problems</em>).</p>
+<h3 id="sparse-checkout">Sparse checkout</h3>
+<p>While we are here, when you only need to build just some targets of your big project, it might be an overkill to make your users download your entire repository, especially if it&rsquo;s rather big (<em>even as a snapshot</em>).</p>
+<p>Partial repository cloning can be done with <a href="https://git-scm.com/docs/git-sparse-checkout">sparse checkout</a>. For example, if I only want to get the <code>SomeLibrary</code> component/target from one of my projects:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ git clone <span style="color:#f92672">--</span>depth <span style="color:#ae81ff">1</span> <span style="color:#f92672">--</span>filter<span style="color:#66d9ef">=</span>blob<span style="color:#66d9ef">:</span><span style="color:#66d9ef">none</span> <span style="color:#66d9ef">--sparse</span> <span style="color:#66d9ef">git@github.com:retifrav/cmake-library-example.git</span>
+</span></span><span style="display:flex;"><span>$ cd <span style="color:#f92672">./</span>cmake<span style="color:#f92672">-</span>library<span style="color:#f92672">-</span>example
+</span></span><span style="display:flex;"><span>$ git sparse<span style="color:#f92672">-</span>checkout set <span style="color:#f92672">--</span>no<span style="color:#f92672">-</span>cone internal<span style="color:#f92672">-</span>project<span style="color:#f92672">/</span>libraries<span style="color:#f92672">/</span><span style="color:#a6e22e">SomeLibrary</span></span></span></code></pre></div>
+<p>But default vcpkg CMake functions such as <a href="https://github.com/microsoft/vcpkg/blob/master/scripts/cmake/vcpkg_from_git.cmake">vcpkg_from_git</a> unfortunately do not have an option for sparse cloning and checkout, so I&rsquo;ll probably implement my own custom function/helper for that (<em>or at least register a feature request for it</em>).</p>
+<h1 id="installing-ports-from-a-registry">Installing ports from a registry</h1>
 <h2 id="without-a-project">Without a project</h2>
 <p>You can try to install the <a href="#port-structure">GLFW port</a> even without having a project that would depend on it. It is a convenient ability to have when you want to quickly test your new port:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/your/vcpkg-registry
@@ -785,7 +885,6 @@
 </span></span><span style="display:flex;"><span>    },
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;registries&#34;</span>: []
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
-<p>It is also possible to have <a href="https://github.com/microsoft/vcpkg/blob/master/docs/users/registries.md">multiple registries</a> here and specify which packages should be fetched from which one - isn&rsquo;t that beautiful. Much better than how it is handled in Conan (<em>it&rsquo;s not, if I got that correctly</em>).</p>
 <p>Now we should be able to get all the dependencies with vcpkg and configure the project:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>glfw<span style="color:#f92672">-</span>imgui<span style="color:#f92672">-</span>example
 </span></span><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#a6e22e">$_</span>
@@ -927,7 +1026,7 @@
 <p>Unrelated to that, you might have noticed an <code>ololo</code> message being printed out during the installation of <code>dear-imgui</code> package. That message came from <a href="#cmake-helpers">decovar-vcpkg-cmake</a> helper port, which <code>dear-imgui</code> port depends on and calls <code>decovar_vcpkg_cmake_ololo()</code> function from.</p>
 <p>The total time to fetch all dependencies sources, configure and build them and install (<em>and cache</em>) the binaries is 34 seconds. If we now remove everything from the <code>build</code> folder and try again:</p>
 <p><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ rm -r ./*; rm .ninja*; ls -lah</span></span></code></pre></div>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ $ cmake <span style="color:#f92672">-</span>G <span style="color:#a6e22e">Ninja</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> \
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cmake <span style="color:#f92672">-</span>G <span style="color:#a6e22e">Ninja</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> \
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_INSTALL_PREFIX</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../install&#34;</span> \
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DUSING_PACKAGE_MANAGER_VCPKG</span><span style="color:#66d9ef">=</span><span style="color:#ae81ff">1</span> \
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_TOOLCHAIN_FILE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake&#34;</span> \
@@ -1009,6 +1108,51 @@
 </span></span><span style="display:flex;"><span><span style="color:#ae81ff">794</span>    <span style="color:#ae81ff">927</span>    <span style="color:#ae81ff">1666772953635024427</span>    glfw-imgui    b12d88b40ff7db85</span></span></code></pre></div>
 <p>takes <strong>1 second</strong> (<em>958 ms</em>) and involves compiling only 3 items, instead of the full 29, as <a href="/blog/2022/02/06/cpp-dependencies-with-conan/#why-bother">it is demonstrated</a> with the same project in the article about Conan.</p>
 <p>That same article also states that building the project and all its dependencies from sources takes 13.5 seconds, while with vcpkg building the dependencies alone took 34 seconds, so it might look like vcpkg doesn&rsquo;t improve but degrades build time. However, you shouldn&rsquo;t forget that vcpkg builds both Debug and Release configurations, not just one (<em>which, by the way, will catch up with the time when you&rsquo;ll be building the project and dependencies in a different configuration</em>), plus it does packing and cashing, which also takes time. And anyway, this matters only once - when dependencies are built for the first time, while without using pre-built dependencies you&rsquo;ll be wasting time building dependencies over and over again.</p>
+<h3 id="multiple-registries">Multiple registries</h3>
+<p>It is also possible to have <a href="https://github.com/microsoft/vcpkg/blob/master/docs/users/registries.md">multiple registries</a> in a project and specify which packages should be fetched from which registry.</p>
+<p>For example, let&rsquo;s say I want my in-house custom registry to be the default one, and for the purpose of testing/comparing my custom ports I&rsquo;d need to be able to get their variants from Microsoft&rsquo;s registry:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;default-registry&#34;</span>:
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;kind&#34;</span>: <span style="color:#e6db74">&#34;git&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;repository&#34;</span>: <span style="color:#e6db74">&#34;git@github.com:retifrav/vcpkg-registry.git&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;baseline&#34;</span>: <span style="color:#e6db74">&#34;5c1a089c3a542dfbe818625bf4a3dadfb834e2af&#34;</span>
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;registries&#34;</span>:
+</span></span><span style="display:flex;"><span>    [
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;kind&#34;</span>: <span style="color:#e6db74">&#34;git&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;repository&#34;</span>: <span style="color:#e6db74">&#34;https://github.com/microsoft/vcpkg.git&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;baseline&#34;</span>: <span style="color:#e6db74">&#34;71f51b100be2b5d32e3907572d99dc2f97088c8d&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;packages&#34;</span>:
+</span></span><span style="display:flex;"><span>            [
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;glslang&#34;</span>
+</span></span><span style="display:flex;"><span>            ]
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    ]
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>This is what I had in <code>vcpkg-configuration.json</code> in one of my other projects where I had some problems with linking to <code>HLSL</code> that was installed from <code>glslang</code>. So I tried to use its port from Microsoft&rsquo;s registry to see if it is built differently there (<em>and indeed it was</em>), and while <code>glslang</code> is listed in the <code>dependencies</code> list inside <code>vcpkg.json</code>, here I&rsquo;m telling vcpkg that it should be actually fetched from the Microsoft&rsquo;s registry instead of the default one. As you can see below, now vcpkg uses two registries, and even though I already have <code>glslang</code> pre-built in my local cache (<em>and the same version too</em>), now it will be built anew, for it is a port from a different registry:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Fetching</span> registry information from git<span style="color:#a6e22e">@github</span><span style="color:#f92672">.</span>com<span style="color:#66d9ef">:</span><span style="color:#66d9ef">retifrav/vcpkg-registry.git</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">HEAD</span><span style="color:#f92672">)</span><span style="color:#66d9ef">...</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">Fetching</span> <span style="color:#66d9ef">registry</span> <span style="color:#66d9ef">information</span> <span style="color:#66d9ef">from</span> <span style="color:#66d9ef">https://github.com/microsoft/vcpkg.git</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">HEAD</span><span style="color:#f92672">)</span><span style="color:#66d9ef">...</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">...</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">Installing</span> <span style="color:#960050;background-color:#1e0010">9</span><span style="color:#66d9ef">/</span><span style="color:#960050;background-color:#1e0010">19</span> <span style="color:#66d9ef">glslang:x64-windows-static...</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">Building</span> <span style="color:#66d9ef">glslang</span><span style="color:#f92672">[</span><span style="color:#66d9ef">core</span><span style="color:#f92672">]</span><span style="color:#66d9ef">:</span><span style="color:#66d9ef">x64-windows-static...</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">--</span> <span style="color:#66d9ef">Installing</span> <span style="color:#66d9ef">port</span> <span style="color:#66d9ef">from</span> <span style="color:#66d9ef">location:</span> <span style="color:#66d9ef">C:\Users\USERNAME\AppData\Local\vcpkg\registries\git-trees\4d7780995e9523d16a56714fcef0159f18ecfa52</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">Downloading</span> https<span style="color:#66d9ef">:</span><span style="color:#75715e">//github.com/KhronosGroup/glslang/archive/11.8.0.tar.gz -&gt; KhronosGroup-glslang-11.8.0.tar.gz...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#f92672">--</span> <span style="color:#a6e22e">Extracting</span> source D<span style="color:#66d9ef">:</span><span style="color:#66d9ef">/programs/vcpkg/downloads/KhronosGroup-glslang-</span><span style="color:#960050;background-color:#1e0010">11</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">8</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">.tar.gz</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">Applying</span> patch ignore<span style="color:#f92672">-</span>crt<span style="color:#f92672">.</span>patch
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">Applying</span> patch always<span style="color:#f92672">-</span>install<span style="color:#f92672">-</span>resource<span style="color:#f92672">-</span>limits<span style="color:#f92672">.</span>patch
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">Using</span> source at D<span style="color:#66d9ef">:</span><span style="color:#66d9ef">/programs/vcpkg/buildtrees/glslang/src/</span><span style="color:#960050;background-color:#1e0010">11</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">8</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">2</span><span style="color:#66d9ef">a85409eb5.clean</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">Configuring</span> x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">Building</span> x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static<span style="color:#f92672">-</span>dbg
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">Building</span> x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static<span style="color:#f92672">-</span>rel
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">Installing</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">D:/programs/vcpkg/packages/glslang_x64-windows-static/share/glslang/copyright</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">Performing</span> post<span style="color:#f92672">-</span>build validation
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">Performing</span> post<span style="color:#f92672">-</span>build validation done
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Stored</span> binary cache<span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">&#34;</span><span style="color:#66d9ef">C:\Users\USERNAME\AppData\Local\vcpkg\archives\8b\8b16920d54a7798ed9edb2c11b8cfe6a824cb4fab31365b9f3fe820486bbd669.zip</span><span style="color:#960050;background-color:#1e0010">&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">Elapsed</span> <span style="color:#66d9ef">time</span> <span style="color:#66d9ef">to</span> <span style="color:#66d9ef">handle</span> <span style="color:#66d9ef">glslang:x64-windows-static:</span> <span style="color:#960050;background-color:#1e0010">46</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">16</span> <span style="color:#66d9ef">s</span></span></span></code></pre></div>
+<p>Isn&rsquo;t that beautiful. With Conan I couldn&rsquo;t come up with a working setup for this, and with vcpkg it just works with a minimal effort.</p>
 <h3 id="cmake-presets">CMake presets</h3>
 <p>In (<em>relatively</em>) recent versions of CMake a new feature has been added - <a href="https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html">CMake presets</a>. It first appeared in version <code>3.19</code>, and then versions <code>3.20</code> and <code>3.21</code> further expended it with newer revisions. I am now using presets revision <code>3</code> (<em>that&rsquo;s the one version <code>3.21</code> brought in</em>), but later CMake versions added even more.</p>
 <p>In short, it is a JSON file, in which you can define &ldquo;presets&rdquo; - sets of CMake options for building your project. For example, here are <a href="https://github.com/retifrav/glfw-imgui-example/blob/master/CMakePresets.json">several presets</a> for configuring and building <a href="#in-a-project">that project</a>, and now instead of that long error-prone CMake command I can just do this:</p>
