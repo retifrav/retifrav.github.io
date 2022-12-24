@@ -1,0 +1,443 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Qt on MCU | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2022/12/24/qt-on-mcu/" />
+
+    <meta name="generator" content="Hugo 0.107.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="PoC of Qt running on selected MCU models: STM32F469, STM32F746 and STM32F769. Porting Qt to RTEMS RTOS." />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="Qt on MCU" />
+<meta property="og:description" content="PoC of Qt running on selected MCU models: STM32F469, STM32F746 and STM32F769. Porting Qt to RTEMS RTOS." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2022/12/24/qt-on-mcu/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2022-12-24T17:21:19+01:00" />
+<meta property="article:modified_time" content="2022-12-24T17:21:19+01:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1a9d5434fbba746ef09ebde219b0064b5d4318930fc8463f51550f13a0e1b54.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2022/12/24/qt-on-mcu/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Qt on MCU</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2022-12-24 17:21:19 &#43;0100</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 8 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>On the 2018-05-03 the was a blog post published in Qt blog: <a href="https://blog.qt.io/blog/2018/05/03/qt-microncontrollers-mcu/">Qt on Microcontrollers</a>. It was about the first PoC of Qt running on several selected MCUs. I say &ldquo;was&rdquo;, because for unknown reasons that post is no longer available in the Qt blog.</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/12/24/qt-on-mcu/images/qt-on-mcu.jpg" alt="Qt on MCU">
+
+<p>All the work on that PoC was single-handedly done by <a href="https://linkedin.com/in/msvetkin">Mikhail Svetkin</a>, who was an embedded software developer in The Qt Company back at the time, and looks like the post was taken down at some point after he left the company (<em>Internet Archive has the last snapshot on <a href="http://web.archive.org/web/20190502214913/https://blog.qt.io/blog/2018/05/03/qt-microncontrollers-mcu/">2019-05-02</a></em>). Perhaps the new project owner didn&rsquo;t like something about that article?</p>
+<p>Anyway, I thought I&rsquo;ll resurrect the post and publish it here for the history. Everything below is published almost as it was in the original post in the Qt blog.</p>
+<p>Эта статья <a href="/blog/2022/12/24/qt-on-mcu-ru/">на русском</a> 🇷🇺.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#what-is-the-point-of-using-microcontrollers">What is the point of using microcontrollers</a></li>
+    <li><a href="#why-use-qt-on-an-mcu">Why use Qt on an MCU</a></li>
+    <li><a href="#research">Research</a>
+      <ul>
+        <li><a href="#getting-started">Getting started</a></li>
+        <li><a href="#porting">Porting</a></li>
+      </ul>
+    </li>
+    <li><a href="#results">Results</a>
+      <ul>
+        <li><a href="#qt-widgets-demo">Qt Widgets demo</a></li>
+        <li><a href="#qt-quick--qml-demo">Qt Quick / QML demo</a></li>
+        <li><a href="#e-bike-demo">E-bike demo</a></li>
+      </ul>
+    </li>
+    <li><a href="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+<p>People often ask us about if it&rsquo;s possible to use Qt for software development on microcontrollers (<em>MCU</em>), and if Qt can run without an operating system (<em>&ldquo;bare metal&rdquo;</em>). Today we will answer these questions and show you some concrete examples.</p>
+<h1 id="what-is-the-point-of-using-microcontrollers">What is the point of using microcontrollers</h1>
+<p><a href="https://en.wikipedia.org/wiki/Microcontroller">MCUs</a> are small computers on a single integrated circuit. They&rsquo;re similar to systems on a chip (<em>SoC</em>), albeit less sophisticated. Microcontrollers are used in automatically controlled products and devices, such as car engine control systems, implantable medical devices, wearables, remote controls, office machines, appliances, power tools, toys, and other embedded systems. The main advantage of using MCUs is their small size and comparatively very low cost – especially for large volumes of production.</p>
+<p>So, we can already see the main features of MCUs from the definition: small size, low power consumption and, naturally, low price per unit. Thus, we can say that the main point of using MCU is a natural desire to save cost.</p>
+<h1 id="why-use-qt-on-an-mcu">Why use Qt on an MCU</h1>
+<p>Low computing power applies certain restrictions to the choice of software development tools, especially if we talk about the GUI, e.g. in regards to firmware size, runtime memory usage and how &ldquo;fancy&rdquo; the GUI can be.</p>
+<p>Today we do not have a universal GUI library for MCUs. Sure, there are some that could solve some part of the task for this or that particular MCU model, but that is not enough. And quite rarely (<em>or actually never</em>) those libraries are created with &ldquo;cross-platform-ability&rdquo; in mind.</p>
+<p>Although some commercial toolkits are actually pretty good, in most cases they have a closed source code. So you&rsquo;re buying a &ldquo;black box&rdquo; and risk to find yourself vendor-locked.</p>
+<p>Now imagine how great it would be if we could use the Qt framework: cross-platform and comprehensive library of classes (<em>including GUI</em>), with excellent documentation and lots of examples, and with a fantastic Open Source community.</p>
+<p>Unfortunately, up to this moment, due to the mentioned hardware restrictions, embedded development with Qt (<em><a href="https://www.qt.io/qt-for-device-creation/">Qt for Device Creation</a></em>) was <a href="https://doc.qt.io/Boot2Qt/qtdc-supported-platforms.html">officially supported</a> only on devices of Cortex-A level, mostly under Linux and some commercial RTOSes (<em>INTEGRITY, QNX, and VxWorks</em>).</p>
+<p>But today, this situation has changed.</p>
+<h1 id="research">Research</h1>
+<h2 id="getting-started">Getting started</h2>
+<p>So, we got ourselves a research: investigate the possibilities of running Qt on MCU hardware.</p>
+<p>Let&rsquo;s be clear from the beginning on what microcontrollers we&rsquo;re talking about exactly, because some might start to dream about MCUs with a 12 MHz CPU and 128 bytes of RAM. That would be quite a gap because Qt&rsquo;s current <a href="https://doc.qt.io/Boot2Qt/qtdc-supported-platforms.html#qt-performance-on-target-devices">hardware requirements</a> are:</p>
+<ul>
+<li>256 MB of RAM;</li>
+<li>500 MHz CPU (<em>1 GHz preferred</em>);</li>
+<li>OpenGL ES 2.0 support.</li>
+</ul>
+<p>Definitely not the microcontroller level, because those have a far smaller footprint.</p>
+<p>And the boards we selected for the research are:</p>
+
+
+
+<figure>
+    <img class="image-post" loading="lazy" src="/blog/2022/12/24/qt-on-mcu/images/STM32F469.jpg" alt="STM32F469">
+    <footer>
+        <i><a href='http://www.st.com/en/evaluation-tools/32f469idiscovery.html'>STM32F469</a> - ARM Cortex-M4, FPU unit single precision.</i>
+    </footer>
+</figure>
+
+
+
+
+<figure>
+    <img class="image-post" loading="lazy" src="/blog/2022/12/24/qt-on-mcu/images/STM32F746.jpg" alt="STM32F746">
+    <footer>
+        <i><a href='http://www.st.com/en/evaluation-tools/32f746gdiscovery.html'>STM32F746</a> - ARM Cortex-M7, FPU unit single precision, L1 Cache (Data/Instruction).</i>
+    </footer>
+</figure>
+
+
+
+
+<figure>
+    <img class="image-post" loading="lazy" src="/blog/2022/12/24/qt-on-mcu/images/STM32F769.jpg" alt="STM32F769">
+    <footer>
+        <i><a href='http://www.st.com/en/evaluation-tools/32f769idiscovery.html'>STM32F769</a> - ARM Cortex-M7, FPU unit double precision, L1 Cache (Data/Instruction).</i>
+    </footer>
+</figure>
+
+<p>As you can see from specifications, their hardware resources are way lower than what Qt &ldquo;officially&rdquo; requires.</p>
+<p>Regarding OpenGL support, thanks to <a href="http://doc.qt.io/QtQuick2DRenderer/">Qt Quick 2D Renderer</a> it is not a strict requirement, because we can render our graphics using raster paint engine.</p>
+<p>We started with porting the following Qt modules:</p>
+<ul>
+<li><a href="https://doc.qt.io/qt-5.10/qtcore-index.html">Qt Core</a>;</li>
+<li><a href="https://doc.qt.io/qt-5.10/qtgui-index.html">Qt GUI</a>;
+<ul>
+<li><a href="https://doc.qt.io/qt-5.10/qtwidgets-index.html">Qt Widgets</a>;</li>
+<li><a href="https://doc.qt.io/qt-5.10/qtqml-index.html">Qt QML</a>;</li>
+<li><a href="https://doc.qt.io/qt-5.10/qtquickcontrols2-index.html">Qt Quick Controls 2</a>;</li>
+</ul>
+</li>
+<li><a href="https://doc.qt.io/qt-5.10/qtnetwork-index.html">Qt Network</a>.</li>
+</ul>
+<h2 id="porting">Porting</h2>
+<p>How do you port Qt to different target platforms? Well, first we need to understand what exactly is required for Qt to function. And in general, there are two main requirements you need to meet:</p>
+<ul>
+<li>POSIX-compatible operating system;</li>
+<li>C++11-compatible compiler.</li>
+</ul>
+<p>Let&rsquo;s start with C++11 requirement. With version 5.7, Qt started to require platforms to support C++11 because we aim to provide a powerful and modern C++ framework. However, if your platform can only support C++98 at best, then you can of course try to do it with Qt 5.6 (<em>or older</em>), but then considering the fact that new <a href="http://doc.qt.io/qt-5/configure-options.html">configuration system</a> (<em>so-called <a href="http://blog.qt.io/blog/2016/08/18/introducing-the-qt-lite-project-qt-for-any-platform-any-thing-any-size/">Qt Lite</a></em>) was introduced only with Qt 5.8, it will be a tough task for you to &ldquo;squeeze&rdquo; Qt into an MCU environment.</p>
+<p>Now regarding <a href="https://en.wikipedia.org/wiki/POSIX">POSIX</a> - Portable Operating System Interface. That actually answers the question why Qt does not work on &ldquo;bare metal&rdquo; out of the box. Inside Qt we are using a lot of POSIX functions (<em><a href="https://en.wikipedia.org/wiki/POSIX_Threads">pthreads</a>, <a href="https://en.wikipedia.org/wiki/Mmap">mmap</a>, <code>fopen</code>, <code>open</code> and others</em>), so if we want to run Qt on bare metal, we need to create your own implementation of POSIX – basically implement our own operating system. Fortunately, that isn&rsquo;t the case in our research.</p>
+<p>We decided to use an Open Source RTOS and we chose <a href="https://en.wikipedia.org/wiki/RTEMS">RTEMS</a> for its most notable features:</p>
+<ul>
+<li>simplicity;</li>
+<li>POSIX support;</li>
+<li>it supports various file systems, including NFS and FAT;</li>
+<li>it includes a port of the FreeBSD TCP/IP stack;</li>
+<li>C++11 support;</li>
+<li>Open Source license (<em>modified GPL</em>);</li>
+<li>an <a href="https://lists.rtems.org/pipermail/devel/">active</a> <a href="https://lists.rtems.org/pipermail/users/">community</a>.</li>
+</ul>
+<p>The process of porting Qt to RTEMS consists of the following steps:</p>
+<ol>
+<li>Configure the board: set clock generator (<em>frequency</em>), memory (<em>SDRAM, caches, MPU</em>), initialize peripheral and so on;</li>
+<li>Port RTEMS to STM32F4/F7 (<em>create a <a href="https://en.wikipedia.org/wiki/Board_support_package">BSP</a></em>);</li>
+<li>Port Qt to RTEMS:
+<ul>
+<li>Add support for it in Qt Core;</li>
+<li>Create a new <a href="http://doc.qt.io/qt-5/qpa.html">QPA</a> plugin.</li>
+</ul>
+</li>
+</ol>
+<p>Porting Qt itself can be presented on the following illustration:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/12/24/qt-on-mcu/images/porting-qt.png" alt="Porting Qt">
+
+<p>We won&rsquo;t describe the whole process in detail (<em>from configuring the board till the creation of a new QPA</em>) just yet, even though that&rsquo;s probably the most interesting part of the research. But this article was aiming only to tell you about the research and not to provide a step-by-step manual. If you are interested in conduction a pilot project, <a href="https://www.qt.io/contact-qt-services-team">please contact us</a> and submit your request.</p>
+<h1 id="results">Results</h1>
+<p>To demonstrate the results, we created 3 firmwares with different demo applications:</p>
+
+
+
+
+
+
+    <video  controls="yes"   class="video">
+        <source src="/blog/2022/12/24/qt-on-mcu/video/qt-on-mcu.mp4" type="video/mp4">
+    </video>
+    
+    <p class="video-fallback">If video doesn’t play in your browser, you can download it <a href="/blog/2022/12/24/qt-on-mcu/video/qt-on-mcu.mp4">here</a></p>
+    
+
+
+<h2 id="qt-widgets-demo">Qt Widgets demo</h2>
+<ul>
+<li>firmware size: 6.6 MB</li>
+<li>RAM required: 3.4 MB</li>
+<li>video: <a href="https://youtu.be/aKioZ48KW4M">https://youtu.be/aKioZ48KW4M</a> (<em>The Qt Company has made the video private, so it&rsquo;s no longer available</em>)</li>
+</ul>
+<p>As we can see (<em>too bad you actually can&rsquo;t</em>), Qt Widgets runs just fine.</p>
+<h2 id="qt-quick--qml-demo">Qt Quick / QML demo</h2>
+<ul>
+<li>firmware size: 9 MB</li>
+<li>RAM required: 5 MB</li>
+<li>video: <a href="https://youtu.be/Px4_Ut1kwNQ">https://youtu.be/Px4_Ut1kwNQ</a> (<em>The Qt Company has made the video private, so it&rsquo;s no longer available</em>)</li>
+</ul>
+<p>It&rsquo;s easy to see (<em>if video was actually available</em>) that Qt QML&rsquo;s dragging animation is somewhat slow on STM32F4/F746, but the clocks work rather well. Such behavior is an excellent example of lacking JIT compilation because those MCUs don&rsquo;t support <a href="https://en.wikipedia.org/wiki/Double-precision_floating-point_format">double-precision floating-point</a>. However, STM32F769 does support it, thus the dragging animation looks much nicer on this board.</p>
+<h2 id="e-bike-demo">E-bike demo</h2>
+<p>We decided not to stop on simple demos and for the third firmware, we tried to run something more interesting. For instance - our recent <a href="https://resources.qt.io/videos/e-bike-instrument-cluster-with-low-end-system-on-chip-soc">e-bike demo</a>.</p>
+<ul>
+<li>firmware size: 13 MB</li>
+<li>RAM required: 10 MB</li>
+<li>video: <a href="https://youtu.be/UZrlSHZW9A0">https://youtu.be/UZrlSHZW9A0</a> (<em>The Qt Company has made the video private, so it&rsquo;s no longer available</em>)</li>
+</ul>
+<p>And even this demo works fine too. By the way, thanks to the cross-platform nature of Qt, we didn&rsquo;t have to change a single line of code to compile it for RTEMS (<em>the original target was running on Linux</em>).</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>We can conclude that our research was successful. Sure, it is not a ready out-of-the-box solution right now, but we will continue to work on it.</p>
+<p>Current tasks include the following:</p>
+<ul>
+<li>porting more Qt modules, and first of all - libraries from <a href="http://doc.qt.io/QtForAutomation/index.html">Qt for Automation</a> addon;</li>
+<li>further port optimizations and performance improvements, e.g. to make use of the graphics accelerators provided by the boards, which we haven&rsquo;t utilized yet;</li>
+<li>further tinkering with the Qt configuration system (<em>Qt Lite</em>);</li>
+<li>adding support for development on MCUs into Qt Creator.</li>
+</ul>
+<p>So, what does this research mean for you and your projects? The source code of the new QPA and other modifications to the Qt code base should be available in Open Source (<em>most probably under GPLv3</em>), and of course in commercial license too, so you&rsquo;ll be able to try it out yourself.</p>
+<p>And we plan to provide consultancy services for preparing a system image and porting Qt to your MCU-based platform. We&rsquo;ll have more information about that very soon, so stay tuned!</p>
+<p><del>In the meantime, make sure to sign up for the <a href="https://www.qt.io/webinars-qt-on-mcus">Qt on MCUs webinar</a> where we tell you more about the topic, show you some demos and answer your questions!</del> The webinar is no longer available via that link, but here&rsquo;s a recording (<em>~24 MB</em>):</p>
+
+
+
+
+
+
+    <video  controls="yes"   class="video">
+        <source src="/blog/2022/12/24/qt-on-mcu/video/webinar-qt-on-mcu.mp4" type="video/mp4">
+    </video>
+    
+    <p class="video-fallback">If video doesn’t play in your browser, you can download it <a href="/blog/2022/12/24/qt-on-mcu/video/webinar-qt-on-mcu.mp4">here</a></p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/qt/">qt</a><a class="tag" href="https://retifrav.github.io/tags/embedded/">embedded</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div style="border:2px orange solid; background-color: floralwhite; border-radius:0.5rem; padding: 10px 14px; font-style:italic; font-size:0.9em;">
+              If you'd like to comment the article, you can do it on the
+              <a href="https://decovar.dev/blog/2022/12/24/qt-on-mcu/#remark42" style="font-weight:bold;">
+                  original website</a>. This one is just a mirror without comments.
+          </div>
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014-2022,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+        <iframe src="https://github.com/sponsors/retifrav/button"
+            height="35" style="border:0;"
+            title="You can sponsor me">
+        </iframe>
+        
+        <div class="sidebar-section">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <div id="telegram" class="sidebar-section">
+              <script async src="https://telegram.org/js/telegram-widget.js?5"
+                  data-telegram-post="decovar/312" data-width="100%" data-userpic="false">
+              </script>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (65)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (39)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (36)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (34)</a></li>
+                  
+                  <li><a href="/tags/review">review (27)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (24)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (24)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (22)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (18)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (17)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (14)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (13)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (11)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (8)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (8)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/games">games (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/android">android (3)</a></li>
+                  
+                  <li><a href="/tags/azure">azure (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (3)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (2)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/ldap">ldap (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/science">science (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    
+    
+  </body>
+</html>
