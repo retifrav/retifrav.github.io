@@ -59,7 +59,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 46 min read</div>
+</svg> 48 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -126,9 +126,18 @@
     </li>
     <li><a href="#installing-ports-from-a-registry">Installing ports from a registry</a>
       <ul>
-        <li><a href="#without-a-project">Without a project</a></li>
+        <li><a href="#without-a-project">Without a project</a>
+          <ul>
+            <li><a href="#dummy-installation">Dummy installation</a></li>
+          </ul>
+        </li>
         <li><a href="#in-a-project">In a project</a>
           <ul>
+            <li><a href="#locking-on-dependencies-versions">Locking on dependencies versions</a>
+              <ul>
+                <li><a href="#transitive-dependencies">Transitive dependencies</a></li>
+              </ul>
+            </li>
             <li><a href="#multiple-registries">Multiple registries</a></li>
             <li><a href="#cmake-presets">CMake presets</a></li>
             <li><a href="#updating-a-dependency-version">Updating a dependency version</a></li>
@@ -187,7 +196,7 @@
 <h2 id="what-is-a-vcpkg-package">What is a vcpkg package</h2>
 <p>Right away, it is not correct to call them &ldquo;<em>packages</em>&rdquo;, because they are more like recipes for configuring and building. In vcpkg&rsquo;s terminology they are called &ldquo;<em>ports</em>&rdquo;.</p>
 <p>In its basic form a vcpkg port is just these two files:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">./</span>fmt
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">./</span>glfw
 </span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> portfile<span style="color:#f92672">.</span>cmake
 </span></span><span style="display:flex;"><span><span style="color:#f92672">└──</span> vcpkg<span style="color:#f92672">.</span>json</span></span></code></pre></div>
 <p>here:</p>
@@ -198,7 +207,7 @@
 <p>If a library, which you want to add as a dependency to you project, is already has a nice and modern CMake project file and with proper installation too, then you won&rsquo;t need anything but these two files to make a package for it.</p>
 <p>But quite often (<em>way too often</em>) you will need at the very least to patch the original library&rsquo;s <code>CMakeLists.txt</code> or even create one from scratch, as the original library&rsquo;s repository might not have anything for CMake out of the box. Either way, the point is that <code>portfile.cmake</code> file isn&rsquo;t a replacement for a potentially missing <code>CMakeLists.txt</code>, as it&rsquo;s purpose will always be to get the sources, patch them if needed, configure, build and install the library binaries/artifacts.</p>
 <p>Missing/additional files are supposed to be just placed into the package folder alongside and refered to from <code>portfile.cmake</code>. For example, here&rsquo;s how a more complex package might look like:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">./</span>dear<span style="color:#f92672">-</span>imgui<span style="color:#f92672">/</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">./</span>dear<span style="color:#f92672">-</span>imgui
 </span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
 </span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> fixing<span style="color:#f92672">-</span>something<span style="color:#f92672">.</span>patch
 </span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> portfile<span style="color:#f92672">.</span>cmake
@@ -291,7 +300,8 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">&#34;${CURRENT_PACKAGES_DIR}/share/${PORT}&#34;</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">RENAME</span> <span style="color:#e6db74">copyright</span>
 </span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
-<p>If you, like me, started by reading <a href="https://devblogs.microsoft.com/cppblog/registries-bring-your-own-libraries-to-vcpkg/">that blog post</a>, then at first you&rsquo;ll have the following functions in your <code>portfile.cmake</code>:</p>
+<p>The <code>${PORT}</code> thing is of course not a standard CMake variable. <a href="https://github.com/microsoft/vcpkg/blob/master/docs/maintainers/vcpkg_common_definitions.md">Here</a> you can take a look at the full(?) list of vcpkg variables that can be used in portfiles.</p>
+<p>Now, if you, like me, started by reading <a href="https://devblogs.microsoft.com/cppblog/registries-bring-your-own-libraries-to-vcpkg/">that blog post</a>, then at first you&rsquo;ll have the following functions in your <code>portfile.cmake</code>:</p>
 <ul>
 <li><a href="https://github.com/Microsoft/vcpkg/blob/master/docs/maintainers/vcpkg_configure_cmake.md">vcpkg_configure_cmake()</a></li>
 <li><a href="https://github.com/Microsoft/vcpkg/blob/master/docs/maintainers/vcpkg_install_cmake.md">vcpkg_install_cmake()</a></li>
@@ -407,27 +417,32 @@
 <p>I think this is not a correct structure, as it seems that the intention is to have one folder per port. It all works fine like this, but I&rsquo;m concerned that it might cause problems in future.</p>
 <h3 id="versions">Versions</h3>
 <h4 id="baselinejson">baseline.json</h4>
-<p>The <code>baseline.json</code>, as I understood, lists the latest (<em>or &ldquo;default&rdquo;?</em>) versions of all the packages that are available in that registry:</p>
+<p>The <code>baseline.json</code>, as I understood, lists default (<em>minimum?</em>) versions of all the packages that are available in that registry:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;default&#34;</span>:
 </span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;dear-imgui&#34;</span>:
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;baseline&#34;</span>: <span style="color:#e6db74">&#34;1.88.0&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;port-version&#34;</span>: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;glad&#34;</span>:
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;baseline&#34;</span>: <span style="color:#e6db74">&#34;0.1.36&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;port-version&#34;</span>: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>        },
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;glfw&#34;</span>:
 </span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;baseline&#34;</span>: <span style="color:#e6db74">&#34;3.3.8&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;baseline&#34;</span>: <span style="color:#e6db74">&#34;3.3.7&#34;</span>,
 </span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;port-version&#34;</span>: <span style="color:#ae81ff">0</span>
 </span></span><span style="display:flex;"><span>        },
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;vcpkg-cmake&#34;</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;...&#34;</span>:
 </span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;baseline&#34;</span>: <span style="color:#e6db74">&#34;2022-08-18&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;port-version&#34;</span>: <span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>        },
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;vcpkg-cmake-config&#34;</span>:
-</span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;baseline&#34;</span>: <span style="color:#e6db74">&#34;2022-02-06&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;port-version&#34;</span>: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>
 </span></span><span style="display:flex;"><span>        }
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>What I realized a bit later is that even if you have older versions of a port available in your registry - for example my <code>glfw</code> port has versions <code>3.3.7</code> and <code>3.3.8</code> in its <a href="https://github.com/retifrav/vcpkg-registry/blob/master/versions/g-/glfw.json">versions file</a> - setting <code>baseline</code> version to <code>3.3.8</code> will make version <code>3.3.7</code> (<em>and all the older versions</em>) unavailible/undiscoverable (<em>or perhaps this is only the case when using <code>&gt;=</code> - the minimum version approach?</em>), and that is what I fixed in <a href="https://github.com/retifrav/vcpkg-registry/commit/56b8f117b362a2d22d4469a2a04b71c77afb97b6">this commit</a>.</p>
 <h4 id="versions-file">Versions file</h4>
 <p>Individual <code>*.json</code> files establish which version of the port is available in which commit, for example here&rsquo;s <code>glfw.json</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
@@ -825,6 +840,43 @@
 </span></span><span style="display:flex;"><span>    find_package<span style="color:#f92672">(</span>glfw3 CONFIG REQUIRED<span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span>    target_link_libraries<span style="color:#f92672">(</span>main PRIVATE glfw<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>As you can see, this time it just restored pre-built artifacts that were already available in cache.</p>
+<h3 id="dummy-installation">Dummy installation</h3>
+<p>This still doesn&rsquo;t count as a <a href="#in-a-project">proper project</a>, because there is no CMake project file or anything at all really, but also this is not exactly the same as installing from within a registry using <code>--overlay-ports</code>. This option might be convenient when you want to quickly test not one, not all, but a selected set of ports.</p>
+<p>Create an empty <code>dummy</code> folder and put there <code>vcpkg-configuration.json</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;default-registry&#34;</span>:
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;kind&#34;</span>: <span style="color:#e6db74">&#34;git&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;repository&#34;</span>: <span style="color:#e6db74">&#34;git@github.com:retifrav/vcpkg-registry.git&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;baseline&#34;</span>: <span style="color:#e6db74">&#34;4b4ae3fea063fc04c2d5a6089c8aa7c2d0129879&#34;</span>
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;registries&#34;</span>: []
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>and <code>vcpkg.json</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;some&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;0&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;dependencies&#34;</span>:
+</span></span><span style="display:flex;"><span>    [
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;glad&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;glfw&#34;</span>
+</span></span><span style="display:flex;"><span>    ]
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>Here it will go with default versions and features, but you can of course specify anything you&rsquo;d need just like you would do it in an actual project.</p>
+<p>And now you can install these ports:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>dummy
+</span></span><span style="display:flex;"><span>$ tree <span style="color:#f92672">.</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> vcpkg<span style="color:#f92672">-</span>configuration<span style="color:#f92672">.</span>json
+</span></span><span style="display:flex;"><span><span style="color:#f92672">└──</span> vcpkg<span style="color:#f92672">.</span>json
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ vcpkg install <span style="color:#f92672">--</span>triplet<span style="color:#66d9ef">=</span>x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static <span style="color:#f92672">--</span>host<span style="color:#f92672">-</span>triplet<span style="color:#66d9ef">=</span>x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static</span></span></code></pre></div>
+<p>Overriding triplets is here just as an example.</p>
+<p>Furthermore, you can now refer to installed libraries from a non-vcpkg project just like you would with any other pre-built dependency:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>some
+</span></span><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#a6e22e">$_</span>
+</span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">-</span>G <span style="color:#a6e22e">Ninja</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_PREFIX_PATH</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/path/to/dummy/vcpkg_installed/x64-windows-static&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">..</span></span></span></code></pre></div>
 <h2 id="in-a-project">In a project</h2>
 <p>I&rsquo;ll use my <a href="https://github.com/retifrav/glfw-imgui-example">GLFW Dear ImGui application</a> created in <a href="https://decovar.dev/blog/2019/08/04/glfw-dear-imgui/">this article</a> as an example. It already has an option of resolving dependencies <a href="/blog/2022/02/06/cpp-dependencies-with-conan/#resolving-dependencies-in-a-project">with Conan</a>, and now I&rsquo;ll add an option of resolving the same dependencies with vcpkg.</p>
 <p>Dependencies are listed in the project&rsquo;s <a href="https://github.com/retifrav/glfw-imgui-example/blob/master/vcpkg.json">vcpkg.json</a>:</p>
@@ -842,41 +894,10 @@
 </span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;backend-glfw&#34;</span>
 </span></span><span style="display:flex;"><span>            ]
 </span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    ],
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;overrides&#34;</span>:
-</span></span><span style="display:flex;"><span>    [
-</span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;glad&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;0.1.36&#34;</span>
-</span></span><span style="display:flex;"><span>        },
-</span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;glfw&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;3.3.8&#34;</span>
-</span></span><span style="display:flex;"><span>        },
-</span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;dear-imgui&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;1.88.0&#34;</span>
-</span></span><span style="display:flex;"><span>        }
 </span></span><span style="display:flex;"><span>    ]
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
-<p>You might think that <code>overrides</code> block is redundant and you will probably want to set versions right in the <code>dependencies</code> block like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;glfw-imgui-example&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;dependencies&#34;</span>:
-</span></span><span style="display:flex;"><span>    [
-</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;...&#34;</span>,
-</span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;glfw&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;3.3.8&#34;</span>
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    ]
-</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
-<p>But that will fail:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>error: <span style="color:#66d9ef">while</span> loading /path/to/glfw-imgui-example/vcpkg.json:
-</span></span><span style="display:flex;"><span>$.dependencies<span style="color:#f92672">[</span>2<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>a dependency<span style="color:#f92672">)</span>: unexpected field <span style="color:#e6db74">&#39;version&#39;</span>, did you mean <span style="color:#e6db74">&#39;version&gt;=&#39;</span>?See https://github.com/Microsoft/vcpkg/tree/master/docs/users/manifests.md <span style="color:#66d9ef">for</span> more information.</span></span></code></pre></div>
-<p>Indeed, setting it like <code>&quot;version&gt;=&quot;: &quot;3.3.8&quot;</code> will succeed, but then it will accept newer versions too, when they become available in the registry. So, if you want to &ldquo;<em>pin exact versions for individual dependencies</em>&rdquo;, then you will have to use <a href="https://github.com/microsoft/vcpkg/blob/master/docs/users/manifests.md#overrides">overrides</a>. In my opinion, this is a bit weird and not intuitive, but okay.</p>
-<p>To tell vcpkg which registry I want to use, I&rsquo;ve set the following in the <a href="https://github.com/retifrav/glfw-imgui-example/blob/master/vcpkg-configuration.json">vcpkg-configuration.json</a>:</p>
+<p>The <code>glfw</code> dependency is not really needed here, because it will still be added through <code>dear-imgui</code>, as we are saying here that we want it with <code>backend-glfw</code> <a href="#features">feature</a>, and that one adds <code>glfw</code> dependency. But it wouldn&rsquo;t hurt to set it explicitly, as the project does depend on it regardless of Dear ImGui.</p>
+<p>To tell vcpkg, which registry I want to use, I&rsquo;ve set the following in the <a href="https://github.com/retifrav/glfw-imgui-example/blob/master/vcpkg-configuration.json">vcpkg-configuration.json</a>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;default-registry&#34;</span>:
 </span></span><span style="display:flex;"><span>    {
@@ -1109,6 +1130,86 @@
 </span></span><span style="display:flex;"><span><span style="color:#ae81ff">794</span>    <span style="color:#ae81ff">927</span>    <span style="color:#ae81ff">1666772953635024427</span>    glfw-imgui    b12d88b40ff7db85</span></span></code></pre></div>
 <p>takes <strong>1 second</strong> (<em>958 ms</em>) and involves compiling only 3 items, instead of the full 29, as <a href="/blog/2022/02/06/cpp-dependencies-with-conan/#why-bother">it is demonstrated</a> with the same project in the article about Conan.</p>
 <p>That same article also states that building the project and all its dependencies from sources takes 13.5 seconds, while with vcpkg building the dependencies alone took 34 seconds, so it might look like vcpkg doesn&rsquo;t improve but degrades build time. However, you shouldn&rsquo;t forget that vcpkg builds both Debug and Release configurations, not just one (<em>which, by the way, will catch up with the time when you&rsquo;ll be building the project and dependencies in a different configuration</em>), plus it does packing and cashing, which also takes time. And anyway, this matters only once - when dependencies are built for the first time, while without using pre-built dependencies you&rsquo;ll be wasting time building dependencies over and over again.</p>
+<h3 id="locking-on-dependencies-versions">Locking on dependencies versions</h3>
+<p>If you&rsquo;d like to lock on specific versions of dependencies (<em>you should</em>), it can be done with <a href="https://github.com/microsoft/vcpkg/blob/master/docs/users/versioning.md#overrides">overrides</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;glfw-imgui-example&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;0&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;dependencies&#34;</span>:
+</span></span><span style="display:flex;"><span>    [
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;glad&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;glfw&#34;</span>,
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;dear-imgui&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;features&#34;</span>:
+</span></span><span style="display:flex;"><span>            [
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;backend-glfw&#34;</span>
+</span></span><span style="display:flex;"><span>            ]
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    ],
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;overrides&#34;</span>:
+</span></span><span style="display:flex;"><span>    [
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;glad&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;0.1.36&#34;</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;glfw&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;3.3.8&#34;</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;dear-imgui&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;1.88.0&#34;</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    ]
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>Here you might think that <code>overrides</code> block is redundant and you will probably want to set versions right in the <code>dependencies</code> block like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;glfw-imgui-example&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;dependencies&#34;</span>:
+</span></span><span style="display:flex;"><span>    [
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;...&#34;</span>,
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;glfw&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;3.3.8&#34;</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    ]
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>But that will fail:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>error: <span style="color:#66d9ef">while</span> loading /path/to/glfw-imgui-example/vcpkg.json:
+</span></span><span style="display:flex;"><span>$.dependencies<span style="color:#f92672">[</span>2<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>a dependency<span style="color:#f92672">)</span>: unexpected field <span style="color:#e6db74">&#39;version&#39;</span>, did you mean <span style="color:#e6db74">&#39;version&gt;=&#39;</span>?See https://github.com/Microsoft/vcpkg/tree/master/docs/users/manifests.md <span style="color:#66d9ef">for</span> more information.</span></span></code></pre></div>
+<p>It just does not accept this, and indeed, setting it like <code>&quot;version&gt;=&quot;: &quot;3.3.8&quot;</code> will succeed, <del>but then it will accept newer versions too, when they become available in the registry</del> and it should not pick up newer versions, because vcpkg uses a <a href="https://github.com/microsoft/vcpkg/blob/master/docs/specifications/versioning.md#42-declaring-minimum-version-constraints">minimum version approach</a>.</p>
+<p>And so if you want to lock/pin exact versions of dependencies, then you have to use <a href="https://github.com/microsoft/vcpkg/blob/master/docs/users/manifests.md#overrides">overrides</a>. In my opinion, this whole system is a bit weird and not intuitive, but okay.</p>
+<h4 id="transitive-dependencies">Transitive dependencies</h4>
+<p>&hellip;but weirdness doesn&rsquo;t stop there. You cannot use <code>overrides</code> in ports manifests (<code>vcpkg.json</code>) of dependencies of dependencies (<em>transitive dependencies</em>). Or, rather, you can, but it will be ignored. As explained in <a href="https://github.com/microsoft/vcpkg/discussions/24655#discussioncomment-2735348">this answer</a>:</p>
+<blockquote>
+<p>You can only use overrides at the root level and not in a port. Within a port you can only use <code>&quot;version&gt;=&quot;: &quot;...&quot;</code>.</p>
+<p>If you could use overrides in a port, you could create two ports with a dependency on <code>A</code> where port #1 required version <code>1.0.0</code> and port #2 required version <code>1.0.1</code>. This would result in unsolvable version constraints.</p>
+</blockquote>
+<p>So, if I&rsquo;d want to lock on <code>glfw</code> version <code>3.3.8</code> in <code>dear-imgui</code> port <a href="https://github.com/retifrav/vcpkg-registry/blob/master/ports/dear-imgui/vcpkg.json">manifest</a>, then I would need to do it like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;dear-imgui&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;dependencies&#34;</span>:
+</span></span><span style="display:flex;"><span>    [
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;...&#34;</span>
+</span></span><span style="display:flex;"><span>    ],
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;features&#34;</span>:
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;backend-glfw&#34;</span>:
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Using GLFW as graphics backend&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;dependencies&#34;</span>:
+</span></span><span style="display:flex;"><span>            [
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;glfw&#34;</span>,
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&#34;version&gt;=&#34;</span>: <span style="color:#e6db74">&#34;3.3.8&#34;</span>
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            ]
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <h3 id="multiple-registries">Multiple registries</h3>
 <p>It is also possible to have <a href="https://github.com/microsoft/vcpkg/blob/master/docs/users/registries.md">multiple registries</a> in a project and specify which packages should be fetched from which registry.</p>
 <p>For example, let&rsquo;s say I want my in-house custom registry to be the default one, and for the purpose of testing/comparing my custom ports I&rsquo;d need to be able to get their variants from Microsoft&rsquo;s registry:</p>
