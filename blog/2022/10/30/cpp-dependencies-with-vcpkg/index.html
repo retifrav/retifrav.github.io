@@ -59,7 +59,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 48 min read</div>
+</svg> 51 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -113,15 +113,16 @@
             <li><a href="#adding-files">Adding files</a></li>
             <li><a href="#patches">Patches</a></li>
             <li><a href="#features">Features</a></li>
-            <li><a href="#updating-a-port">Updating a port</a></li>
           </ul>
         </li>
         <li><a href="#cmake-helpers">CMake helpers</a></li>
+        <li><a href="#cmake-wrapper">CMake wrapper</a></li>
         <li><a href="#partial-targets-installation">Partial targets installation</a>
           <ul>
             <li><a href="#sparse-checkout">Sparse checkout</a></li>
           </ul>
         </li>
+        <li><a href="#updating-a-port">Updating a port</a></li>
       </ul>
     </li>
     <li><a href="#installing-ports-from-a-registry">Installing ports from a registry</a>
@@ -142,7 +143,11 @@
             <li><a href="#cmake-presets">CMake presets</a></li>
             <li><a href="#updating-a-dependency-version">Updating a dependency version</a></li>
             <li><a href="#static-crtmsvc-linkage">Static CRT/MSVC linkage</a></li>
-            <li><a href="#dynamic-and-static-linking">Dynamic and static linking</a></li>
+            <li><a href="#dynamic-and-static-linking">Dynamic and static linking</a>
+              <ul>
+                <li><a href="#what-if-a-library-is-static-only">What if a library is static only</a></li>
+              </ul>
+            </li>
           </ul>
         </li>
       </ul>
@@ -574,17 +579,6 @@
 </span></span><span style="display:flex;"><span>        }
 </span></span><span style="display:flex;"><span>    ]
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
-<h3 id="updating-a-port">Updating a port</h3>
-<p>Not once and not twice you&rsquo;ll need to change something in your existing port, especially when you are working on the very first version of it.</p>
-<p>As a concrete example, I forgot to add <code>include_guard(GLOBAL)</code> in my <code>ports/decovar-vcpkg-cmake</code> helper package. Here&rsquo;s what I needed to do in order to fix that:</p>
-<ol>
-<li>Edit <code>./ports/decovar-vcpkg-cmake/vcpkg-port-config.cmake</code> and commit this change, but not push yet;</li>
-<li>Run <code>git rev-parse HEAD:./ports/decovar-vcpkg-cmake</code> and set the new value to <code>git-tree</code> in <code>./versions/d-/decovar-vcpkg-cmake.json</code>;</li>
-<li>Stage that change and amend the commit from the step 1 by running <code>git commit --amend --no-edit</code>;</li>
-<li>Push.</li>
-</ol>
-<p>You can inspect <a href="https://github.com/retifrav/vcpkg-registry/commit/3332ca16e36cf806256e963bfbe9ab2fef7460e0">that commit</a> in my example registry. As you can see, it&rsquo;s almost the same steps as with <a href="#several-versions-of-a-port">adding a new version</a> of a port, except that here the version stays the same.</p>
-<p>Also don&rsquo;t forget to update Git hash value (<em>current <code>HEAD</code> of the entire registry repository, not just this dependency</em>) for <code>baseline</code> property in <a href="https://github.com/retifrav/glfw-imgui-example/blob/master/vcpkg-configuration.json#L6">vcpkg-configuration.json</a> of the &ldquo;consuming&rdquo; project, otherwise it will not &ldquo;know&rdquo; about the updated version in the registry. Moreover, if you force-pushed that fix, then vcpkg will simply fail to resolve dependencies, as that commit would no longer exist.</p>
 <h2 id="cmake-helpers">CMake helpers</h2>
 <p>As you saw in <a href="#portfilecmake">portfile.cmake</a>, one can use helper packages, which are not libraries for development but CMake modules for extending portfiles functionality. The <code>vcpkg-cmake</code> and <code>vcpkg-cmake-config</code> packages are examples of such helpers.</p>
 <p>Naturally, you can <a href="https://github.com/microsoft/vcpkg/blob/master/docs/maintainers/authoring-script-ports.md">create a helper</a> like this yourself. Here&rsquo;s a <a href="https://github.com/retifrav/vcpkg-registry/tree/master/ports/decovar-vcpkg-cmake">one I made</a>:</p>
@@ -614,15 +608,16 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include(Installing)
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>include(<span style="color:#e6db74">&#34;${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/decovar-vcpkg-cmake/Installing.cmake&#34;</span>)</span></span></code></pre></div>
 <p>I don&rsquo;t know if this is a correct way of shipping and including common CMake modules, but first of all, it does work like this, and secondly, I just didn&rsquo;t find another way.</p>
-<p>One thing to note here is that since I am relying on <code>VCPKG_TARGET_TRIPLET</code> here, it will fail when host dependencies are installed using a different triplet:</p>
+<p>I said &ldquo;<em>it does work</em>&rdquo;, but actually since I am relying on <code>VCPKG_TARGET_TRIPLET</code> here, it will fail when host dependencies are installed using a different triplet:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>The following packages will be built and installed:
 </span></span><span style="display:flex;"><span>    jsoncpp<span style="color:#f92672">[</span>core<span style="color:#f92672">]</span>:x64-windows-static -&gt; 1.9.5
 </span></span><span style="display:flex;"><span>    pdqsort<span style="color:#f92672">[</span>core<span style="color:#f92672">]</span>:x64-windows-static -&gt; 2021.3.14
 </span></span><span style="display:flex;"><span>  * vcpkg-cmake<span style="color:#f92672">[</span>core<span style="color:#f92672">]</span>:x64-windows -&gt; 2022-08-18
 </span></span><span style="display:flex;"><span>  * vcpkg-cmake-config<span style="color:#f92672">[</span>core<span style="color:#f92672">]</span>:x64-windows -&gt; 2022-02-06
 </span></span><span style="display:flex;"><span>    zstd<span style="color:#f92672">[</span>core<span style="color:#f92672">]</span>:x64-windows-static -&gt; 1.5.2</span></span></code></pre></div>
-<p>You see how everything but helpers is using <code>x64-windows-static</code> tripler, and helpers are using <code>x64-windows</code>? That will cause the <code>include()</code> statement to fail, because it will expect helper package to have a different path. To resolve this problem you could perhaps use <code>${VCPKG_INSTALLED_DIR}/${VCPKG_HOST_TRIPLET}</code> instead of <code>${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}</code>, but I decided to just set both to the same value:</p>
+<p>You see how everything but helpers is using <code>x64-windows-static</code> triplet, and helpers are using <code>x64-windows</code>? That will cause the <code>include()</code> statement to fail, because it will expect helper package to have a different path. To resolve this problem you could perhaps use <code>${VCPKG_INSTALLED_DIR}/${VCPKG_HOST_TRIPLET}</code> instead of <code>${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}</code>, but I decided to just set both to the same value:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">-</span><span style="color:#a6e22e">DVCPKG_TARGET_TRIPLET</span><span style="color:#66d9ef">=</span>x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static <span style="color:#f92672">-</span><span style="color:#a6e22e">DVCPKG_HOST_TRIPLET</span><span style="color:#66d9ef">=</span>x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static</span></span></code></pre></div>
+<p>And then it works. But! Later I discovered that forcing host and target triplets to match is incorrect, and one shouldn&rsquo;t do that. Furthermore, it now seems to me that the way I&rsquo;ve implemented sharing common files through a CMake helper port is not entirely correct either, so perhaps you shouldn&rsquo;t use it as an example of doing so. I&rsquo;ll re-investigate this at some point later and will update the article.</p>
 <p>Finally, the helper&rsquo;s <code>portfile.cmake</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>if(<span style="color:#e6db74">VCPKG_CROSSCOMPILING</span>) <span style="color:#75715e"># if(NOT TARGET_TRIPLET STREQUAL _HOST_TRIPLET)
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e"># make FATAL_ERROR in CI when issue #16773 fixed
@@ -656,6 +651,57 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># what is that
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">VCPKG_POLICY_CMAKE_HELPER_PORT</span> <span style="color:#e6db74">enabled</span>)</span></span></code></pre></div>
+<h2 id="cmake-wrapper">CMake wrapper</h2>
+<p>I couldn&rsquo;t find documentation about this functionality, but it&rsquo;s not very complex to figure out on your own. Basically, adding a CMake wrapper into your port allows you to &ldquo;inject&rdquo; CMake statements before or after <code>find_package()</code> call.</p>
+<p>For example, let&rsquo;s take <a href="https://github.com/retifrav/vcpkg-registry/tree/master/ports/xerces-c">Xerces-C++</a> port. It builds fine, but when you&rsquo;ll try to actually use it in some project on Mac OS, then you will get the following linking errors:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Undefined symbols <span style="color:#66d9ef">for</span> architecture arm64: 
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;_CFRelease&#34;</span>, referenced from:
+</span></span><span style="display:flex;"><span>      xercesc_3_2::MacOSUnicodeConverter::upperCase<span style="color:#f92672">(</span>char16_t*<span style="color:#f92672">)</span> in libxerces-c.a<span style="color:#f92672">(</span>MacOSUnicodeConverter.cpp.o<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>      xercesc_3_2::MacOSUnicodeConverter::lowerCase<span style="color:#f92672">(</span>char16_t*<span style="color:#f92672">)</span> in libxerces-c.a<span style="color:#f92672">(</span>MacOSUnicodeConverter.cpp.o<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;_CFStringCreateMutableWithExternalCharactersNoCopy&#34;</span>, referenced from:
+</span></span><span style="display:flex;"><span>      xercesc_3_2::MacOSUnicodeConverter::upperCase<span style="color:#f92672">(</span>char16_t*<span style="color:#f92672">)</span> in libxerces-c.a<span style="color:#f92672">(</span>MacOSUnicodeConverter.cpp.o<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>      xercesc_3_2::MacOSUnicodeConverter::lowerCase<span style="color:#f92672">(</span>char16_t*<span style="color:#f92672">)</span> in libxerces-c.a<span style="color:#f92672">(</span>MacOSUnicodeConverter.cpp.o<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;_CFStringLowercase&#34;</span>, referenced from:
+</span></span><span style="display:flex;"><span>      xercesc_3_2::MacOSUnicodeConverter::lowerCase<span style="color:#f92672">(</span>char16_t*<span style="color:#f92672">)</span> in libxerces-c.a<span style="color:#f92672">(</span>MacOSUnicodeConverter.cpp.o<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;_CFStringUppercase&#34;</span>, referenced from:
+</span></span><span style="display:flex;"><span>      xercesc_3_2::MacOSUnicodeConverter::upperCase<span style="color:#f92672">(</span>char16_t*<span style="color:#f92672">)</span> in libxerces-c.a<span style="color:#f92672">(</span>MacOSUnicodeConverter.cpp.o<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>...</span></span></code></pre></div>
+<p>This is because on Mac OS your project also needs to link to CoreServices framework (<em>or rather Xerces-C++ requires that and so does your project</em>).</p>
+<p>Of course, you could resolve this by adding the following to your project&rsquo;s <code>CMakeLists.txt</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>if(<span style="color:#e6db74">APPLE</span>) <span style="color:#75715e"># probably also check that it&#39;s exactly Mac OS, otherwise this also applies to iOS and others
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    target_link_libraries(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">PRIVATE</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;-framework CoreServices&#34;</span>
+</span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()</span></span></code></pre></div>
+<p>But then you would need to add that to all your projects that depend on Xerces-C++. And a better option would be to do it once in the <a href="https://github.com/retifrav/vcpkg-registry/blob/master/ports/xerces-c/vcpkg-cmake-wrapper.cmake">CMake wrapper</a> that comes from the port.</p>
+<p>As I understand it, the way it works is that you add a file named <code>vcpkg-cmake-wrapper.cmake</code> to your port, and it will &ldquo;replace&rdquo; (<em>or actually wrap</em>) the <code>find_package()</code> call. Here&rsquo;s how it looks for Xerces-C++:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># do some stuff before the package will be attempted to be found
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># [stuff]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>_find_package(<span style="color:#f92672">${</span>ARGS<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># or after the package has been found
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># [stuff]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># for instance, add required linking to CoreServices on Mac OS
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>if(<span style="color:#e6db74">APPLE</span>) <span style="color:#75715e"># probably also check that it&#39;s exactly Mac OS
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    if(<span style="color:#e6db74">TARGET</span> <span style="color:#e6db74">XercesC::XercesC</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        set_target_properties(<span style="color:#e6db74">XercesC::XercesC</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">PROPERTIES</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">INTERFACE_LINK_LIBRARIES</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#e6db74">&#34;-framework CoreServices&#34;</span>
+</span></span><span style="display:flex;"><span>        )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        list(<span style="color:#e6db74">APPEND</span> <span style="color:#e6db74">XercesC_LIBRARIES</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;-framework CoreServices&#34;</span>
+</span></span><span style="display:flex;"><span>        )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()</span></span></code></pre></div>
+<p>In this particular case it might be that linking to CoreServices could have been done in a better way, but it does work like this.</p>
+<p>And then you install this wrapper into <code>${CURRENT_PACKAGES_DIR}/share/${PORT}</code> path. But be careful to check that port name and actual package name are the same. If they are different, then it is important that you install the wrapper exacty into the package folder and not into the port folder, otherwise it won&rsquo;t be used. For instance, in my registry Xerces-C++ port name is <code>xerces-c</code> and its package name is <code>XercesC</code>, and so here&rsquo;s how I install the wrapper:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>file(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">INSTALL</span> <span style="color:#e6db74">&#34;${CURRENT_PORT_DIR}/vcpkg-cmake-wrapper.cmake&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">&#34;${CURRENT_PACKAGES_DIR}/share/XercesC&#34;</span>
+</span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
 <h2 id="partial-targets-installation">Partial targets installation</h2>
 <p>It could be that your project contains several libraries/components/targets, so one can build and install just them, without building the entire project:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/some/project
@@ -750,6 +796,17 @@
 </span></span><span style="display:flex;"><span>$ cd <span style="color:#f92672">./</span>cmake<span style="color:#f92672">-</span>library<span style="color:#f92672">-</span>example
 </span></span><span style="display:flex;"><span>$ git sparse<span style="color:#f92672">-</span>checkout set <span style="color:#f92672">--</span>no<span style="color:#f92672">-</span>cone internal<span style="color:#f92672">-</span>project<span style="color:#f92672">/</span>libraries<span style="color:#f92672">/</span><span style="color:#a6e22e">SomeLibrary</span></span></span></code></pre></div>
 <p>But default vcpkg CMake functions such as <a href="https://github.com/microsoft/vcpkg/blob/master/scripts/cmake/vcpkg_from_git.cmake">vcpkg_from_git</a> unfortunately do not have an option for sparse cloning and checkout, so I&rsquo;ll probably implement my own custom function/helper for that (<em>or at least register a feature request for it</em>).</p>
+<h2 id="updating-a-port">Updating a port</h2>
+<p>Not once and not twice you&rsquo;ll need to change something in your existing port, especially when you are working on the very first version of it.</p>
+<p>As a concrete example, I forgot to add <code>include_guard(GLOBAL)</code> in my <code>ports/decovar-vcpkg-cmake</code> helper package. Here&rsquo;s what I needed to do in order to fix that:</p>
+<ol>
+<li>Edit <code>./ports/decovar-vcpkg-cmake/vcpkg-port-config.cmake</code> and commit this change, but not push yet;</li>
+<li>Run <code>git rev-parse HEAD:./ports/decovar-vcpkg-cmake</code> and set the new value to <code>git-tree</code> in <code>./versions/d-/decovar-vcpkg-cmake.json</code>;</li>
+<li>Stage that change and amend the commit from the step 1 by running <code>git commit --amend --no-edit</code>;</li>
+<li>Push.</li>
+</ol>
+<p>You can inspect <a href="https://github.com/retifrav/vcpkg-registry/commit/3332ca16e36cf806256e963bfbe9ab2fef7460e0">that commit</a> in my example registry. As you can see, it&rsquo;s almost the same steps as with <a href="#several-versions-of-a-port">adding a new version</a> of a port, except that here the version stays the same.</p>
+<p>Also don&rsquo;t forget to update Git hash value (<em>current <code>HEAD</code> of the entire registry repository, not just this dependency</em>) for <code>baseline</code> property in <a href="https://github.com/retifrav/glfw-imgui-example/blob/master/vcpkg-configuration.json#L6">vcpkg-configuration.json</a> of the &ldquo;consuming&rdquo; project, otherwise it will not &ldquo;know&rdquo; about the updated version in the registry. Moreover, if you force-pushed that fix, then vcpkg will simply fail to resolve dependencies, as that commit would no longer exist.</p>
 <h1 id="installing-ports-from-a-registry">Installing ports from a registry</h1>
 <h2 id="without-a-project">Without a project</h2>
 <p>You can try to install the <a href="#port-structure">GLFW port</a> even without having a project that would depend on it. It is a convenient ability to have when you want to quickly test your new port:</p>
@@ -1412,6 +1469,13 @@
 <li><code>glfw-imgui.exe</code> - 947 KB</li>
 </ul>
 <p>which means that to run on another computer it will require user to have <a href="https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist">Visual C++ Redistributable</a> installed.</p>
+<h4 id="what-if-a-library-is-static-only">What if a library is static only</h4>
+<p>Some libraries might not &ldquo;support&rdquo; dynamic linking, which in most cases means that you can&rsquo;t build them as DLLs on Windows, as they don&rsquo;t export any symbols. That&rsquo;s okay, you&rsquo;ll just have to force static linking on them by putting the following in the very beginning of their portfile:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>if (<span style="color:#e6db74">VCPKG_LIBRARY_LINKAGE</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">dynamic</span>) <span style="color:#75715e"># probably also check if it is Windows, as it might be fine on other platforms
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;[INFO] ${PORT} doesn&#39;t support building as dynamic library, overriding to static&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    set(<span style="color:#e6db74">VCPKG_LIBRARY_LINKAGE</span> <span style="color:#e6db74">static</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>It also won&rsquo;t hurt to check in the library&rsquo;s <code>CMakeLists.txt</code> that its authors don&rsquo;t hardcode the library type in <code>add_library()</code> statements.</p>
 <h1 id="so-how-is-vcpkg-comparing-with-conan">So, how is vcpkg comparing with Conan</h1>
 <h2 id="simplicity">Simplicity</h2>
 <p>Like I said, essentially, vspkg is just a combination of CMake and Git (<em>plus some glue provided by the vcpkg CLI tool</em>), which are very common basic instruments everyone is (<em>should be</em>) already familiar with.</p>
