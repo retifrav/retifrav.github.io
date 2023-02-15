@@ -59,7 +59,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 58 min read</div>
+</svg> 63 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -103,11 +103,7 @@
             </li>
           </ul>
         </li>
-        <li><a href="#triplets">Triplets</a>
-          <ul>
-            <li><a href="#wasm32-emscripten">wasm32-emscripten</a></li>
-          </ul>
-        </li>
+        <li><a href="#triplets">Triplets</a></li>
       </ul>
     </li>
     <li><a href="#creating-your-own-ports">Creating your own ports</a>
@@ -157,6 +153,16 @@
                 <li><a href="#what-if-a-library-is-static-only">What if a library is static only</a></li>
               </ul>
             </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#platform-specific-things">Platform-specific things</a>
+      <ul>
+        <li><a href="#webassembly">WebAssembly</a>
+          <ul>
+            <li><a href="#chainloading-emscripten-toolchain">Chainloading Emscripten toolchain</a></li>
+            <li><a href="#enabling-pthreads-support">Enabling pthreads support</a></li>
           </ul>
         </li>
       </ul>
@@ -509,48 +515,6 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_CRT_LINKAGE</span> <span style="color:#e6db74">dynamic</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_LIBRARY_LINKAGE</span> <span style="color:#e6db74">dynamic</span>)</span></span></code></pre></div>
 <p>Like I said, while you can set <code>static</code> value for the <code>VCPKG_LIBRARY_LINKAGE</code> here, I would definitely not recommend doing that. Instead, for this particular case, you can use another standard triplet - <code>x64-windows-static.cmake</code> - and that one will build your libraries as <code>STATIC</code>. To use that triplet instead of the default one, set <code>-DVCPKG_TARGET_TRIPLET=&quot;x64-windows-static&quot;</code>. And if there wasn&rsquo;t such triplet in the standard collection, then you could have just created one yourself.</p>
-<h3 id="wasm32-emscripten">wasm32-emscripten</h3>
-<p>While we are here on the topic of triplets, if you are to build your stuff for Emscripten/WASM, then you likely will be using <code>wasm32-emscripten</code> triplet. And while dependencies will (<em>hopefully</em>) build just fine, here&rsquo;s a surprise that will be waiting for you when CMake will try to <code>find_package()</code> them:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>CMake Error at D:/programs/vcpkg/scripts/buildsystems/vcpkg.cmake:843 <span style="color:#f92672">(</span>_find_package<span style="color:#f92672">)</span>:
-</span></span><span style="display:flex;"><span>  Could not find a configuration file <span style="color:#66d9ef">for</span> package <span style="color:#e6db74">&#34;fmt&#34;</span> that is compatible
-</span></span><span style="display:flex;"><span>  with requested version <span style="color:#e6db74">&#34;&#34;</span>.
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>  The following configuration files were considered but not accepted:
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    D:/temp/emsc/build/vcpkg-default-triplet/vcpkg_installed/wasm32-emscripten/share/fmt/fmt-config.cmake, version: 8.1.1 <span style="color:#f92672">(</span>32bit<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>Call Stack <span style="color:#f92672">(</span>most recent call first<span style="color:#f92672">)</span>:
-</span></span><span style="display:flex;"><span>  CMakeLists.txt:8 <span style="color:#f92672">(</span>find_package<span style="color:#f92672">)</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>-- Configuring incomplete, errors occurred!</span></span></code></pre></div>
-<p>And it is not just about fmt, you&rsquo;ll get this for other dependencies too (<em>not all of them, details below</em>). The actual fuck. Just what am I supposed to do with this?</p>
-<p>After some googling I found this <a href="https://stackoverflow.com/questions/74171098/find-package-failed-when-using-vcpkg-with-emscripten">question at StackOverflow</a> with some more details. So apparently this happens when a package contains a version config (<em>fmt does contain it</em>) that is generated by <a href="https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html#command:write_basic_package_version_file">write_basic_package_version_file()</a> without <code>ARCH_INDEPENDENT</code> set (<em>and I have never seen it being set in any package</em>), because it adds the following condition:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># check that the installed version has the same 32/64bit-ness as the one which is currently searching:
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>if(<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">CMAKE_SIZEOF_VOID_P</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;4&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  math(<span style="color:#e6db74">EXPR</span> <span style="color:#e6db74">installedBits</span> <span style="color:#e6db74">&#34;4 * 8&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  set(<span style="color:#e6db74">PACKAGE_VERSION</span> <span style="color:#e6db74">&#34;${PACKAGE_VERSION} (${installedBits}bit)&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  set(<span style="color:#e6db74">PACKAGE_VERSION_UNSUITABLE</span> <span style="color:#e6db74">TRUE</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()</span></span></code></pre></div>
-<p>And that is why <code>find_package()</code> fails - because <code>CMAKE_SIZEOF_VOID_P</code> equals <code>8</code>. So, whose fault is that <code>CMAKE_SIZEOF_VOID_P</code> is set to <code>8</code>, while the package is built for <code>4</code>? I suspect vcpkg, but I don&rsquo;t understand this well enough to say for sure.</p>
-<p>Moreover, even if <code>write_basic_package_version_file()</code> did have <code>ARCH_INDEPENDENT</code> set, here&rsquo;s a related <a href="https://gitlab.kitware.com/cmake/cmake/-/issues/24375">CMake bugreport</a>, from which it seems that it wouldn&rsquo;t work anyway (<em>at least not until CMake 3.26 (or even newer) it wouldn&rsquo;t</em>).</p>
-<p>Needless to say that packages not containing a version config are found without problems, as they do not have this condition. It is quite amusing that those who went an extra mile to make a proper package turned out to be those whose packages are causing problems (<em>of course it&rsquo;s not their packages who are to blame, but still</em>).</p>
-<p>Anyway, we certainly aren&rsquo;t going to patch all the ports that we depend on to set this argument or to disable generating version configs altogether. At the very least because this really feels like an ugly hack, and instead probably it&rsquo;s vcpkg who should handle this (<em>somehow</em>).</p>
-<p>So what can one do? Like I said, fuck if I know, but after some more googling I&rsquo;ve stumbled upon this <a href="https://code.qt.io/cgit/qt/qtbase.git/tree/cmake/QtBuild.cmake?h=wip/cmake&amp;id=0d177053b9406e2fb21802d23f2b2cdc0f974377#n3127">workaround</a> in Qt sources, where they just clear the <code>CMAKE_SIZEOF_VOID_P</code> variable before finding a package and then set it back. In my case it would be like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e">#message(STATUS &#34;CMAKE_SIZEOF_VOID_P: ${CMAKE_SIZEOF_VOID_P}&#34;)
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">BACKUP_CMAKE_SIZEOF_VOID_P</span> <span style="color:#e6db74">&#34;${CMAKE_SIZEOF_VOID_P}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CMAKE_SIZEOF_VOID_P</span> <span style="color:#e6db74">&#34;&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>find_package(<span style="color:#e6db74">fmt</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CMAKE_SIZEOF_VOID_P</span> <span style="color:#e6db74">&#34;${BACKUP_CMAKE_SIZEOF_VOID_P}&#34;</span>)</span></span></code></pre></div>
-<p>Then the package is found, and configuration succeeds. But I have 30+ dependencies in my project, and they are spread across several different subprojects, so I most definitely don&rsquo;t want to wrap every single <code>find_package()</code> like this.</p>
-<p>How is it that no one has encountered this problem yet, as it still exists? I mean, vcpkg wasn&rsquo;t created just yesterday, and there must be more people targeting Emscripten/WASM platform, so how do they resolve this? Or am I doing something wrong here, but then what is the right way? Fucking hell.</p>
-<p>And then a couple of days later I tried to add <code>VCPKG_CHAINLOAD_TOOLCHAIN_FILE</code> when running CMake:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cmake <span style="color:#f92672">-</span>G <span style="color:#a6e22e">Ninja</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> \
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_TOOLCHAIN_FILE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake&#34;</span> \
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DVCPKG_CHAINLOAD_TOOLCHAIN_FILE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake&#34;</span> \
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DVCPKG_TARGET_TRIPLET</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;wasm32-emscripten&#34;</span> \
-</span></span><span style="display:flex;"><span>    <span style="color:#f92672">..</span></span></span></code></pre></div>
-<p>&hellip;even though <code>wasm32-emscripten</code> triplet already does (<em>or at least seems to</em>) chainload this toolchain. And what would you know, now I didn&rsquo;t get the errors about non-compatible 32bit packages, as this time <code>CMAKE_SIZEOF_VOID_P</code> equaled <code>4</code>. So I&rsquo;d say there is certainly something wrong with the <code>wasm32-emscripten</code> triplet.</p>
 <h1 id="creating-your-own-ports">Creating your own ports</h1>
 <p>A good portion of this topic is already covered in the section about <a href="#registry">vcpkg registry</a>, but there are some more things to tell about.</p>
 <p>The Microsoft&rsquo;s registry already has a good collection of <del>packages</del> ports. If those are not enough, for instance if you&rsquo;d like to build some library differently or if your library of interest is simply missing from the registry, then you can always create your own port and store it in your registry or/and publish it to Microsoft&rsquo;s registry.</p>
@@ -1765,6 +1729,169 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    set(<span style="color:#e6db74">VCPKG_LIBRARY_LINKAGE</span> <span style="color:#e6db74">static</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
 </span></span></span></code></pre></div><p>It also won&rsquo;t hurt to check in the library&rsquo;s <code>CMakeLists.txt</code> that its authors don&rsquo;t hardcode the library type in <code>add_library()</code> statements.</p>
+<h1 id="platform-specific-things">Platform-specific things</h1>
+<h2 id="webassembly">WebAssembly</h2>
+<h3 id="chainloading-emscripten-toolchain">Chainloading Emscripten toolchain</h3>
+<p>Just like with other platforms, targetting WebAssembly (<em>WASM</em>) requires you to use an appropriate <a href="#triplets">triplet</a>. There is no suitable triplet among the &ldquo;official&rdquo; ones at the moment, but there is a community triplet <code>wasm32-emscripten</code>.</p>
+<p>And while the dependencies (<em>ports</em>) will (<em>hopefully</em>) build just fine, here&rsquo;s a surprise that will be waiting for you when CMake will try to <code>find_package()</code> them for your main project:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>CMake Error at D:/programs/vcpkg/scripts/buildsystems/vcpkg.cmake:843 <span style="color:#f92672">(</span>_find_package<span style="color:#f92672">)</span>:
+</span></span><span style="display:flex;"><span>  Could not find a configuration file <span style="color:#66d9ef">for</span> package <span style="color:#e6db74">&#34;fmt&#34;</span> that is compatible
+</span></span><span style="display:flex;"><span>  with requested version <span style="color:#e6db74">&#34;&#34;</span>.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  The following configuration files were considered but not accepted:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    D:/temp/emsc/build/vcpkg-default-triplet/vcpkg_installed/wasm32-emscripten/share/fmt/fmt-config.cmake, version: 8.1.1 <span style="color:#f92672">(</span>32bit<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Call Stack <span style="color:#f92672">(</span>most recent call first<span style="color:#f92672">)</span>:
+</span></span><span style="display:flex;"><span>  CMakeLists.txt:8 <span style="color:#f92672">(</span>find_package<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>-- Configuring incomplete, errors occurred!</span></span></code></pre></div>
+<p>And this is not just about fmt, you&rsquo;ll get this error for other dependencies too (<em>although not all of them, details below</em>). The actual fuck. Just what am I supposed to do with this?</p>
+<p>After some googling I found this <a href="https://stackoverflow.com/questions/74171098/find-package-failed-when-using-vcpkg-with-emscripten">question at StackOverflow</a> with some more details. So apparently this happens when a package contains a version config (<em>fmt does contain one</em>) that is generated by <a href="https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html#command:write_basic_package_version_file">write_basic_package_version_file()</a> without <code>ARCH_INDEPENDENT</code> being set (<em>and I have never seen it being set in any package</em>), because then the following condition is added to the config:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># check that the installed version has the same 32/64bit-ness as the one which is currently searching:
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>if(<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">CMAKE_SIZEOF_VOID_P</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;4&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  math(<span style="color:#e6db74">EXPR</span> <span style="color:#e6db74">installedBits</span> <span style="color:#e6db74">&#34;4 * 8&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  set(<span style="color:#e6db74">PACKAGE_VERSION</span> <span style="color:#e6db74">&#34;${PACKAGE_VERSION} (${installedBits}bit)&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  set(<span style="color:#e6db74">PACKAGE_VERSION_UNSUITABLE</span> <span style="color:#e6db74">TRUE</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()</span></span></code></pre></div>
+<p>I also checked what kind of binary I got built, and it was in fact a WebAssembly binary:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /tmp
+</span></span><span style="display:flex;"><span>$ mkdir fmt-lib-contents <span style="color:#f92672">&amp;&amp;</span> cd $_
+</span></span><span style="display:flex;"><span>$ ar xv /path/to/your-project/build/vcpkg_installed/wasm32-emscripten/lib/libfmt.a
+</span></span><span style="display:flex;"><span>x - format.cc.o
+</span></span><span style="display:flex;"><span>x - os.cc.o
+</span></span><span style="display:flex;"><span>$ ls
+</span></span><span style="display:flex;"><span>format.cc.o  os.cc.o
+</span></span><span style="display:flex;"><span>$ file ./*
+</span></span><span style="display:flex;"><span>./format.cc.o: WebAssembly <span style="color:#f92672">(</span>wasm<span style="color:#f92672">)</span> binary module version 0x1 <span style="color:#f92672">(</span>MVP<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>./os.cc.o:     WebAssembly <span style="color:#f92672">(</span>wasm<span style="color:#f92672">)</span> binary module version 0x1 <span style="color:#f92672">(</span>MVP<span style="color:#f92672">)</span></span></span></code></pre></div>
+<p>And yet <code>find_package()</code> was failing, because <code>CMAKE_SIZEOF_VOID_P</code> equaled <code>8</code>. So, whose fault is that <code>CMAKE_SIZEOF_VOID_P</code> is set to <code>8</code>, while the package is built for <code>4</code>?</p>
+<p>By the way, even if <code>write_basic_package_version_file()</code> did have <code>ARCH_INDEPENDENT</code> set, here&rsquo;s a related <a href="https://gitlab.kitware.com/cmake/cmake/-/issues/24375">CMake bugreport</a>, from which it seems that it wouldn&rsquo;t work anyway (<em>at least not until CMake 3.26 (or even newer) it wouldn&rsquo;t</em>). But this is actually not important, more details to follow.</p>
+<p>So what can one do? After some more googling I&rsquo;ve stumbled upon this <a href="https://code.qt.io/cgit/qt/qtbase.git/tree/cmake/QtBuild.cmake?h=wip/cmake&amp;id=0d177053b9406e2fb21802d23f2b2cdc0f974377#n3127">workaround</a> in Qt sources, where they just clear the <code>CMAKE_SIZEOF_VOID_P</code> variable before finding a package and then set it back. In my case it would be like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e">#message(STATUS &#34;CMAKE_SIZEOF_VOID_P: ${CMAKE_SIZEOF_VOID_P}&#34;)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">BACKUP_CMAKE_SIZEOF_VOID_P</span> <span style="color:#e6db74">&#34;${CMAKE_SIZEOF_VOID_P}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CMAKE_SIZEOF_VOID_P</span> <span style="color:#e6db74">&#34;&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>find_package(<span style="color:#e6db74">fmt</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CMAKE_SIZEOF_VOID_P</span> <span style="color:#e6db74">&#34;${BACKUP_CMAKE_SIZEOF_VOID_P}&#34;</span>)</span></span></code></pre></div>
+<p>Then the package is found, and configuration succeeds. But I have 30+ dependencies in my project, and they are spread across several different subprojects, so I most definitely don&rsquo;t want to wrap every single <code>find_package()</code> like this. And anyway, this doesn&rsquo;t seem like a correct way to deal with the situation.</p>
+<p>And then a couple of days later I finally tried to set the <code>VCPKG_CHAINLOAD_TOOLCHAIN_FILE</code> in CLI when running CMake:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>emsdk
+</span></span><span style="display:flex;"><span>$ source <span style="color:#f92672">./</span>emsdk_env<span style="color:#f92672">.</span>sh
+</span></span><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>some<span style="color:#f92672">/</span>project
+</span></span><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#a6e22e">$_</span>
+</span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">-</span>G <span style="color:#a6e22e">Ninja</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_TOOLCHAIN_FILE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DVCPKG_CHAINLOAD_TOOLCHAIN_FILE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DVCPKG_TARGET_TRIPLET</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;wasm32-emscripten&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">..</span>
+</span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target install</span></span></code></pre></div>
+<p>I mean, I&rsquo;ve been always setting it with <code>-DDCMAKE_TOOLCHAIN_FILE=&quot;...&quot;</code> when I was building my projects with Emscripten for WASM, but now with vcpkg the <code>wasm32-emscripten</code> triplet already does chainload it, and so I thought that I then should not. But as it turns out, counter-intuitively enough, <em>both</em> of these chainloads are required, because (<em>the way I understand it</em>) the one chainloaded inside the triplet is used for building vcpkg ports, and the one set with <code>-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=&quot;...&quot;</code> in CLI is used for building the main project.</p>
+<p>And what would you know, having done that, I didn&rsquo;t get the errors about non-compatible 32bit packages, as this time <code>CMAKE_SIZEOF_VOID_P</code> equaled <code>4</code>.</p>
+<p>It certainly wouldn&rsquo;t hurt to have this documented somewhere.</p>
+<h3 id="enabling-pthreads-support">Enabling pthreads support</h3>
+<p>Emscripten can compile to <a href="https://emscripten.org/docs/porting/pthreads.html">WASM with pthreads</a> (<em><a href="https://en.wikipedia.org/wiki/Pthreads">POSIX threads</a></em>) support enabled. For that one needs to set <code>-pthread</code> compiler flag when building one&rsquo;s project.</p>
+<p>I did set that flag in my main project, started the build, got the ports built, got the project built too, but then I got the following errors on linking:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>wasm-ld: error: --shared-memory is disallowed by png.c.o because it was not compiled with <span style="color:#e6db74">&#39;atomics&#39;</span> or <span style="color:#e6db74">&#39;bulk-memory&#39;</span> features.
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>wasm-ld: error: --shared-memory is disallowed by 4D_api.cpp.o because it was not compiled with <span style="color:#e6db74">&#39;atomics&#39;</span> or <span style="color:#e6db74">&#39;bulk-memory&#39;</span> features.
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>wasm-ld: error: --shared-memory is disallowed by Threads.c.o because it was not compiled with <span style="color:#e6db74">&#39;atomics&#39;</span> or <span style="color:#e6db74">&#39;bulk-memory&#39;</span> features.</span></span></code></pre></div>
+<p>From these I realized that adding <code>-pthread</code> flag in the main project is not enough, as it also needs to be set for ports compilation too. To test this theory I&rsquo;ve patched those ports with errors (<em>as you can see, the first one is from PNG and the second one is from PROJ</em>) to set the flags:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#75715e"># string(APPEND ... &#34; ...&#34;) would do fine too</span>
+</span></span><span style="display:flex;"><span>set(CMAKE_C_FLAGS           <span style="color:#e6db74">&#34;$</span><span style="color:#e6db74">{CMAKE_C_FLAGS}</span><span style="color:#e6db74"> -pthread&#34;</span>)
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#set(CMAKE_C_FLAGS_DEBUG     &#34;${CMAKE_C_FLAGS_DEBUG} -pthread&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#set(CMAKE_C_FLAGS_RELEASE   &#34;${CMAKE_C_FLAGS_RELEASE} -pthread&#34;)</span>
+</span></span><span style="display:flex;"><span>set(CMAKE_CXX_FLAGS         <span style="color:#e6db74">&#34;$</span><span style="color:#e6db74">{CMAKE_CXX_FLAGS}</span><span style="color:#e6db74"> -pthread&#34;</span>)
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#set(CMAKE_CXX_FLAGS_DEBUG   &#34;${CMAKE_CXX_FLAGS_DEBUG} -pthread&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#set(CMAKE_CXX_FLAGS_RELEASE &#34;${CMAKE_CXX_FLAGS_RELEASE} -pthread&#34;)</span></span></span></code></pre></div>
+<p>And indeed, after that the first two errors went away, but the third one was still remaining, and I had no idea which port is it from and is it from a port at all.</p>
+<p>But okay, at least this confirmed that I was on the right track, just needed to figure out how to set a compiler flag for all the ports at once, as one certainly should not patch the flags in every single port.</p>
+<p>So how does one set a &ldquo;global&rdquo; compilation flag to be applied to building all the ports? My first naive idea was to just set these <code>CMAKE_*_FLAGS</code> in the triplet, which I naively did, but as it turned out, they were never passed further, because ports didn&rsquo;t &ldquo;receive&rdquo; them (<em>I checked that by printing out all the flags with <code>message()</code></em>).</p>
+<p>Additional googling led me <a href="https://github.com/microsoft/vcpkg/issues/3577">here</a>, and from there I eventually got to an understanding.</p>
+<p>Related vcpkg documentation says that &ldquo;<em>when not using <code>VCPKG_CHAINLOAD_TOOLCHAIN_FILE</code></em>&rdquo; compiler flags can be set with <a href="https://github.com/microsoft/vcpkg/blob/d8e60ef4741584f2957788ed0786dd365c92c4d9/docs/users/triplets.md#vcpkg_cxx_flags">VCPKG_*_FLAGS</a> variables in the triplet:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">VCPKG_C_FLAGS</span>   <span style="color:#e6db74">&#34;-pthread&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_CXX_FLAGS</span> <span style="color:#e6db74">&#34;-pthread&#34;</span>)</span></span></code></pre></div>
+<p>and then the toolchain (<em>one of the <code>/path/to/vcpkg/scripts/toolchains/*.cmake</code> ones</em>) will use these variables to set the <a href="https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS_INIT.html">CMAKE_*_FLAGS_INIT</a> variables, which in turn will be used to set the <code>CMAKE_*_FLAGS</code> variables, which are the flags we are after.</p>
+<p>But we are in fact using <code>VCPKG_CHAINLOAD_TOOLCHAIN_FILE</code>, so setting <code>VCPKG_*_FLAGS</code> variables in the triplet won&rsquo;t work (<em>certainly didn&rsquo;t work for me</em>), so what does one do then?</p>
+<p>It is my understanding (<em>which might be wrong</em>) that in this case one would need to set <code>CMAKE_*_FLAGS_INIT</code> variables in the chainloaded toolchain itself. But we are chainloading the Emscripten toolchain from <code>${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake</code>, and it won&rsquo;t be correct to modify the original file, especially that it is still expected to be used for non-pthreads-enabled WASM builds, so I guess we&rsquo;ll need to copy and modify the original. But then in turn we will need to use a custom triplet too, because the default one chainloads the original Emscripten toolchain.</p>
+<p>So, here comes a custom triplet <code>my-wasm32-emscripten-pthreads.cmake</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># that is required (only on Windows?), otherwise it won&#39;t get environment variables
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">VCPKG_ENV_PASSTHROUGH_UNTRACKED</span> <span style="color:#e6db74">EMSCRIPTEN_TOOLCHAIN_FILE_PATH</span> <span style="color:#e6db74">EMSDK</span> <span style="color:#e6db74">PATH</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>if(<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">DEFINED</span> <span style="color:#e6db74">ENV{EMSDK}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">FATAL_ERROR</span> <span style="color:#e6db74">&#34;[ERROR] The EMSDK environment variable isn&#39;t set, you probably haven&#39;t sourced emsdk_env.sh&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">EMSCRIPTEN_TOOLCHAIN_FILE_PATH</span> <span style="color:#e6db74">&#34;$ENV{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># yet to find a better way to pass this value to the triplet, but so far an environment variable seems to be the way
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>if(<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">DEFINED</span> <span style="color:#e6db74">ENV{EMSCRIPTEN_TOOLCHAIN_FILE_PATH}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;Didn&#39;t get EMSCRIPTEN_TOOLCHAIN_FILE_PATH from environment, keeping default value: ${EMSCRIPTEN_TOOLCHAIN_FILE_PATH}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>else()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    set(<span style="color:#e6db74">EMSCRIPTEN_TOOLCHAIN_FILE_PATH</span> <span style="color:#e6db74">&#34;$ENV{EMSCRIPTEN_TOOLCHAIN_FILE_PATH}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;Got EMSCRIPTEN_TOOLCHAIN_FILE_PATH from environment: ${EMSCRIPTEN_TOOLCHAIN_FILE_PATH}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>if(<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">EXISTS</span> <span style="color:#f92672">${</span>EMSCRIPTEN_TOOLCHAIN_FILE_PATH<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">FATAL_ERROR</span> <span style="color:#e6db74">&#34;[ERROR] Could not find Emscripten.cmake toolchain file, expected it to be at ${EMSCRIPTEN_TOOLCHAIN_FILE_PATH}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_TARGET_ARCHITECTURE</span> <span style="color:#e6db74">wasm32</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_CRT_LINKAGE</span> <span style="color:#e6db74">dynamic</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_LIBRARY_LINKAGE</span> <span style="color:#e6db74">static</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_CMAKE_SYSTEM_NAME</span> <span style="color:#e6db74">Emscripten</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># required, otherwise &#34;Unable to determine toolchain use for my-wasm32-emscripten-pthreads with CMAKE_SYSTEM_NAME Emscripten&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># and yes, for building the main project you&#39;ll yet again need to provide `-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=&#34;...&#34;` in CLI
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">VCPKG_CHAINLOAD_TOOLCHAIN_FILE</span> <span style="color:#f92672">${</span>EMSCRIPTEN_TOOLCHAIN_FILE_PATH<span style="color:#f92672">}</span>)</span></span></code></pre></div>
+<p>And the custom Emscripten toolchain (<em>the one passed in <code>EMSCRIPTEN_TOOLCHAIN_FILE_PATH</code> environment variable</em>) is a copy of the original one from <code>$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake</code>, but with the following addition in the end:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># pthreads (https://emscripten.org/docs/porting/pthreads.html)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set(EMSCRIPTEN_PTHREADS_FLAGS <span style="color:#e6db74">&#34;-pthread&#34;</span>)
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># it is likely that not all of these need to be set, CMAKE_{C,CXX}_FLAGS_INIT seems to be enough</span>
+</span></span><span style="display:flex;"><span>string(APPEND CMAKE_C_FLAGS_INIT                     <span style="color:#e6db74">&#34; $</span><span style="color:#e6db74">{EMSCRIPTEN_PTHREADS_FLAGS}</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_C_FLAGS_DEBUG_INIT               &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_C_FLAGS_RELEASE_INIT             &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span>string(APPEND CMAKE_CXX_FLAGS_INIT                   <span style="color:#e6db74">&#34; $</span><span style="color:#e6db74">{EMSCRIPTEN_PTHREADS_FLAGS}</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_CXX_FLAGS_DEBUG_INIT             &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_CXX_FLAGS_RELEASE_INIT           &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_STATIC_LINKER_FLAGS_INIT         &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_STATIC_LINKER_FLAGS_DEBUG_INIT   &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_STATIC_LINKER_FLAGS_RELEASE_INIT &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_SHARED_LINKER_FLAGS_INIT         &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_SHARED_LINKER_FLAGS_DEBUG_INIT   &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE_INIT &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_MODULE_LINKER_FLAGS_INIT         &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_MODULE_LINKER_FLAGS_DEBUG_INIT   &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_MODULE_LINKER_FLAGS_RELEASE_INIT &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_EXE_LINKER_FLAGS_INIT            &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG_INIT      &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE_INIT    &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span></span></span></code></pre></div>
+<p>Having saved it somewhere at <code>/path/to/custom/toolchains/Emscripten-pthreads.cmake</code>, we can now configure and build the project like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>emsdk
+</span></span><span style="display:flex;"><span>$ source <span style="color:#f92672">./</span>emsdk_env<span style="color:#f92672">.</span>sh
+</span></span><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>some<span style="color:#f92672">/</span>project
+</span></span><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#a6e22e">$_</span>
+</span></span><span style="display:flex;"><span>$ <span style="color:#a6e22e">EMSCRIPTEN</span><span style="color:#f92672">=</span>$<span style="color:#f92672">{</span><span style="color:#a6e22e">EMSDK</span><span style="color:#f92672">}/</span>upstream<span style="color:#f92672">/</span>emscripten <span style="color:#a6e22e">EMSCRIPTEN_TOOLCHAIN_FILE_PATH</span><span style="color:#f92672">=/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>custom<span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span><span style="color:#a6e22e">Emscripten</span><span style="color:#f92672">-</span>pthreads<span style="color:#f92672">.</span>cmake \
+</span></span><span style="display:flex;"><span>cmake <span style="color:#f92672">-</span>G <span style="color:#a6e22e">Ninja</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DVCPKG_OVERLAY_TRIPLETS</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/path/to/custom/triplets&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DVCPKG_TARGET_TRIPLET</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;my-wasm32-emscripten-pthreads&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_TOOLCHAIN_FILE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DVCPKG_CHAINLOAD_TOOLCHAIN_FILE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">..</span>
+</span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target install</span></span></code></pre></div>
+<p>Some clarification about all that:</p>
+<ul>
+<li>why I am setting environment variables inline instead of exporting them - because it&rsquo;s better like this for experimentation (<em>so I don&rsquo;t forget them being set in the environment from the previous runs</em>);
+<ul>
+<li><code>EMSCRIPTEN_TOOLCHAIN_FILE_PATH</code> is set because I haven&rsquo;t found another way to pass the path to my custom Emscripten toolchain into the triplet;</li>
+<li><code>EMSCRIPTEN</code> is set because for whatever reason everything fails, complaining that this variable is missing, even though I certainly did not set it when I used the default toolchain/triplet;</li>
+</ul>
+</li>
+<li><code>-DVCPKG_OVERLAY_TRIPLETS=&quot;...&quot;</code> is how you tell vcpkg where to look for additional/custom triplets;</li>
+<li><code>-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=&quot;...&quot;</code> still points to the default Emscripten toolchain because I am already setting <code>-pthread</code> compiler flags (<em>plus some linker flags</em>) inside my main project&rsquo;s <code>CMakeLists.txt</code>, so I don&rsquo;t need a custom toolchain that does that. But I probably should use the same custom toolchain (<em>the one that is chainloaded inside <code>my-wasm32-emscripten-pthreads</code> triplet for building ports</em>) here too, I will see about that.</li>
+</ul>
+<p>Now everything finally builds and links into WASM with pthreads enabled.</p>
 <h1 id="so-how-is-vcpkg-comparing-with-conan">So, how is vcpkg comparing with Conan</h1>
 <h2 id="simplicity">Simplicity</h2>
 <p>Like I said, essentially, vspkg is just a combination of CMake and Git (<em>plus some glue provided by the vcpkg CLI tool</em>), which are very common basic instruments everyone is (<em>should be</em>) already familiar with.</p>
