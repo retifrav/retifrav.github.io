@@ -59,7 +59,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 64 min read</div>
+</svg> 65 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -157,7 +157,7 @@
         </li>
       </ul>
     </li>
-    <li><a href="#problems-specific-to-particular-platforms">Problems specific to particular platforms</a>
+    <li><a href="#per-platform-specifics">Per-platform specifics</a>
       <ul>
         <li><a href="#webassembly">WebAssembly</a>
           <ul>
@@ -168,6 +168,11 @@
         <li><a href="#windows">Windows</a>
           <ul>
             <li><a href="#msvc-toolset">MSVC toolset</a></li>
+          </ul>
+        </li>
+        <li><a href="#gnulinux">GNU/Linux</a>
+          <ul>
+            <li><a href="#missing-executable-attribute">Missing executable attribute</a></li>
           </ul>
         </li>
       </ul>
@@ -1734,7 +1739,7 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    set(<span style="color:#e6db74">VCPKG_LIBRARY_LINKAGE</span> <span style="color:#e6db74">static</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
 </span></span></span></code></pre></div><p>It also won&rsquo;t hurt to check in the library&rsquo;s <code>CMakeLists.txt</code> that its authors don&rsquo;t hardcode the library type in <code>add_library()</code> statements.</p>
-<h1 id="problems-specific-to-particular-platforms">Problems specific to particular platforms</h1>
+<h1 id="per-platform-specifics">Per-platform specifics</h1>
 <h2 id="webassembly">WebAssembly</h2>
 <h3 id="chainloading-emscripten-toolchain">Chainloading Emscripten toolchain</h3>
 <p>Just like with other platforms, targetting WebAssembly (<em>WASM</em>) requires you to use an appropriate <a href="#triplets">triplet</a>. There is no suitable triplet among the &ldquo;official&rdquo; ones at the moment, but there is a community triplet <code>wasm32-emscripten</code>.</p>
@@ -1922,6 +1927,29 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">..</span>
 </span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target install <span style="color:#f92672">--</span>config <span style="color:#a6e22e">Release</span></span></span></code></pre></div>
 <p>As usual, this better to be run from the corresponding MSVC command prompt, so you&rsquo;ll need to adjust the shell-specific things.</p>
+<h2 id="gnulinux">GNU/Linux</h2>
+<h3 id="missing-executable-attribute">Missing executable attribute</h3>
+<p>When trying to build iconv port on GNU/Linux I got the following rather unexpected error:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>/bin/bash: ./../src/133172cac4-7cae2f41cd.clean/configure: Permission denied</span></span></code></pre></div>
+<p>And indeed, the <code>configure</code> script doesn&rsquo;t have <code>x</code> attribute/mode, so it is not an executable:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ls -l /path/to/vcpkg/buildtrees/iconv/src/133172cac4-7cae2f41cd.clean | grep config
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> build build  <span style="color:#ae81ff">50810</span> Feb  <span style="color:#ae81ff">2</span> 14:09 config.h.in
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> build build <span style="color:#ae81ff">891440</span> Feb  <span style="color:#ae81ff">2</span> 14:09 configure
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> build build   <span style="color:#ae81ff">6087</span> Feb  <span style="color:#ae81ff">2</span> 14:09 configure.ac</span></span></code></pre></div>
+<p>I don&rsquo;t know how is that this attribute is missing, and why I didn&rsquo;t get this problem on Mac OS, but to resolve this I had to to call <code>chmod</code> via <code>vcpkg_execute_build_process()</code> in the iconv portfile:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>if(<span style="color:#e6db74">VCPKG_HOST_IS_LINUX</span>) <span style="color:#75715e"># OR VCPKG_HOST_IS_OSX
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e"># on GNU/Linux (and Mac OS?) the configure script might(?) be not an executable
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    vcpkg_execute_build_process(
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">COMMAND</span> <span style="color:#e6db74">chmod</span> <span style="color:#e6db74">+x</span> <span style="color:#e6db74">./configure</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>SOURCE_PATH<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">config-</span><span style="color:#f92672">${</span>PORT<span style="color:#f92672">}</span><span style="color:#e6db74">-</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-chmod</span>
+</span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_configure_make(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">SOURCE_PATH</span> <span style="color:#e6db74">&#34;${SOURCE_PATH}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>)</span></span></code></pre></div>
 <h1 id="so-how-is-vcpkg-comparing-with-conan">So, how is vcpkg comparing with Conan</h1>
 <h2 id="simplicity">Simplicity</h2>
 <p>Like I said, essentially, vspkg is just a combination of CMake and Git (<em>plus some glue provided by the vcpkg CLI tool</em>), which are very common basic instruments everyone is (<em>should be</em>) already familiar with.</p>
