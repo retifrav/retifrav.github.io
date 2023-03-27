@@ -59,7 +59,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 65 min read</div>
+</svg> 67 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -122,9 +122,14 @@
         </li>
         <li><a href="#cmake-helpers">CMake helpers</a></li>
         <li><a href="#cmake-wrapper">CMake wrapper</a></li>
-        <li><a href="#partial-targets-installation">Partial targets installation</a>
+        <li><a href="#multiple-targetscomponents-in-one-project">Multiple targets/components in one project</a>
           <ul>
-            <li><a href="#sparse-checkout">Sparse checkout</a></li>
+            <li><a href="#making-cmake-configs-discoverable">Making CMake configs discoverable</a></li>
+            <li><a href="#partial-components-installation">Partial components installation</a>
+              <ul>
+                <li><a href="#sparse-checkout">Sparse checkout</a></li>
+              </ul>
+            </li>
           </ul>
         </li>
         <li><a href="#updating-a-port">Updating a port</a></li>
@@ -963,8 +968,86 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">INSTALL</span> <span style="color:#e6db74">&#34;${CURRENT_PORT_DIR}/vcpkg-cmake-wrapper.cmake&#34;</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">&#34;${CURRENT_PACKAGES_DIR}/share/XercesC&#34;</span>
 </span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
-<h2 id="partial-targets-installation">Partial targets installation</h2>
-<p>It could be that your project contains several libraries/components/targets, so one can build and install just them, without building the entire project:</p>
+<h2 id="multiple-targetscomponents-in-one-project">Multiple targets/components in one project</h2>
+<p>I should warn you first that the stuff described in this section is my own understanding of the listed scenarios and how one is supposed to solve them. My understanding might be wrong, and there might be better ways of dealing with this, so perhaps you shouldn&rsquo;t blindly follow these instructions.</p>
+<h3 id="making-cmake-configs-discoverable">Making CMake configs discoverable</h3>
+<p>Say, your project has several targets/components and the &ldquo;main&rdquo; target depends on some/all of them. For example, here&rsquo;s <code>Config.cmake.in</code> template for the main target <code>SomeLibrary</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">@PACKAGE_INIT</span><span style="color:#66d9ef">@</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>include<span style="color:#f92672">(</span><span style="color:#a6e22e">CMakeFindDependencyMacro</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>find_dependency<span style="color:#f92672">(</span><span style="color:#a6e22e">AnotherLibrary</span> <span style="color:#a6e22e">CONFIG</span> <span style="color:#a6e22e">REQUIRED</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>find_dependency<span style="color:#f92672">(</span><span style="color:#a6e22e">DifferentLibrary</span> <span style="color:#a6e22e">CONFIG</span> <span style="color:#a6e22e">REQUIRED</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>include<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>check_required_components<span style="color:#f92672">(</span><span style="color:#a6e22e">@PROJECT_NAME</span><span style="color:#f92672">@)</span></span></span></code></pre></div>
+<p>So there are two internal targets which it depends on: <code>AnotherLibrary</code> and <code>DifferentLibrary</code>.</p>
+<p>If you will make a port for this project as you normally would:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_cmake_install()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_cmake_config_fixup(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PACKAGE_NAME</span> <span style="color:#e6db74">&#34;SomeLibrary&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CONFIG_PATH</span> <span style="color:#e6db74">&#34;cmake&#34;</span> <span style="color:#75715e"># we install CMake configs here
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>)</span></span></code></pre></div>
+<p>&hellip;then projects that depend on this port will fail to configure:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>CMake Error at /path/to/vcpkg/scripts/buildsystems/vcpkg.cmake:852 <span style="color:#f92672">(</span>_find_package<span style="color:#f92672">)</span>:
+</span></span><span style="display:flex;"><span>  Could not find a package configuration file provided by <span style="color:#e6db74">&#34;AnotherLibrary&#34;</span> with
+</span></span><span style="display:flex;"><span>  any of the following names:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    AnotherLibraryConfig.cmake
+</span></span><span style="display:flex;"><span>    AnotherLibrary-config.cmake
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Add the installation prefix of <span style="color:#e6db74">&#34;AnotherLibrary&#34;</span> to CMAKE_PREFIX_PATH or set
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;AnotherLibrary_DIR&#34;</span> to a directory containing one of the above files.  If
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;AnotherLibrary&#34;</span> provides a separate development package or SDK, be sure it
+</span></span><span style="display:flex;"><span>  has been installed.
+</span></span><span style="display:flex;"><span>Call Stack <span style="color:#f92672">(</span>most recent call first<span style="color:#f92672">)</span>:
+</span></span><span style="display:flex;"><span>  /path/to/cmake/share/cmake-3.25/Modules/CMakeFindDependencyMacro.cmake:47 <span style="color:#f92672">(</span>find_package<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>  build/vcpkg_installed/x64-windows/share/SomeLibrary/SomeLibraryConfig.cmake:30 <span style="color:#f92672">(</span>find_dependency<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>  /path/to/vcpkg/scripts/buildsystems/vcpkg.cmake:852 <span style="color:#f92672">(</span>_find_package<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>  CMakeLists.txt:292 <span style="color:#f92672">(</span>find_package<span style="color:#f92672">)</span></span></span></code></pre></div>
+<p>&hellip;because <code>AnotherLibrary*.cmake</code> (<em>as well as <code>DifferentLibrary*.cmake</code> and all other targets/components of your <code>SomeLibrary</code> project</em>) configs are located inside <code>build/vcpkg_installed/x64-windows/share/SomeLibrary/</code> folder, while CMake is looking for them one level up - in <code>build/vcpkg_installed/x64-windows/share/COMPONENT-NAME-HERE/</code>.</p>
+<p>I do not know what is the proper way of resolving this. I imagine, the installation procedure of <code>SomeLibrary</code> project might need to be different, or maybe the main port needs to be split into several ports (<em>one per component</em>), but I don&rsquo;t like either of these options, as they would require changing the project that installs just fine otherwise. So instead I&rsquo;ve come up with the following:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_cmake_install()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_cmake_config_fixup(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PACKAGE_NAME</span> <span style="color:#e6db74">&#34;SomeLibrary&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CONFIG_PATH</span> <span style="color:#e6db74">&#34;cmake&#34;</span> <span style="color:#75715e"># we install CMake configs here
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># internal components/dependencies CMake configs need to be available in ${CURRENT_PACKAGES_DIR}/share/COMPONENT-NAME-HERE,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># otherwise find_dependency() in consuming project will fail to find them. Until a better/proper way is found,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># they will be moved out to those paths &#34;manually&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># list of components
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>list(<span style="color:#e6db74">APPEND</span> <span style="color:#e6db74">SomeLibraryComponents</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">AnotherLibrary</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">DifferentLibrary</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>foreach(<span style="color:#e6db74">SomeLibraryComponent</span> <span style="color:#f92672">${</span>SomeLibraryComponents<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#75715e">#message(STATUS &#34;Moving out ${SomeLibraryComponent}&#34;)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e"># collect this component&#39;s CMake configs into a list
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    file(<span style="color:#e6db74">GLOB</span> <span style="color:#e6db74">SomeLibraryComponentFiles</span> <span style="color:#e6db74">&#34;${CURRENT_PACKAGES_DIR}/share/SomeLibrary/${SomeLibraryComponent}*.cmake&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#75715e">#message(STATUS &#34;${SomeLibraryComponent} files: ${SomeLibraryComponentFiles}&#34;)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e"># create a folder for its configs where vcpkg would expect them to be
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    file(<span style="color:#e6db74">MAKE_DIRECTORY</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;${CURRENT_PACKAGES_DIR}/share/${SomeLibraryComponent}&#34;</span>
+</span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#75715e"># and move them there
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    foreach(<span style="color:#e6db74">SomeLibraryComponentFile</span> <span style="color:#f92672">${</span>SomeLibraryComponentFiles<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        <span style="color:#75715e">#message(STATUS &#34;file: ${SomeLibraryComponentFile}&#34;)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        get_filename_component(<span style="color:#e6db74">SomeLibraryComponentFileName</span> <span style="color:#f92672">${</span>SomeLibraryComponentFile<span style="color:#f92672">}</span> <span style="color:#e6db74">NAME</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        file(<span style="color:#e6db74">RENAME</span> <span style="color:#f92672">${</span>SomeLibraryComponentFile<span style="color:#f92672">}</span> <span style="color:#e6db74">&#34;${CURRENT_PACKAGES_DIR}/share/${SomeLibraryComponent}/${SomeLibraryComponentFileName}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    endforeach()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endforeach()</span></span></code></pre></div>
+<p>So right after the usual CMake config fixup for the main target I iterate through the list of all other targets/components and move their configs one level up to their own folders. I know, this looks like a dirty hack, but it works.</p>
+<h3 id="partial-components-installation">Partial components installation</h3>
+<p>There is a different scenario. It could be that your project contains several targets/components, which can be built and installed without building the entire project:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/some/project
 </span></span><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd $_
 </span></span><span style="display:flex;"><span>$ cmake -G Ninja -DCMAKE_BUILD_TYPE<span style="color:#f92672">=</span>Release -DCMAKE_INSTALL_PREFIX<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../install&#34;</span> ..
@@ -974,7 +1057,7 @@
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># $ cmake --install . --component SomeLibrary</span></span></span></code></pre></div>
 <p>And then let&rsquo;s say one of your customers/users is asking you to make a vcpkg port only for this one library. He doesn&rsquo;t need your entire project (<em>at the very least because it takes too long to build the whole thing</em>), he only needs this one library. So what do you do?</p>
 <p>I&rsquo;d say, ideally, it might be a good idea to move them out from your super repository into their own repositories and add them as dependencies to the main repository via vcpkg. But that is not always possible, and it wasn&rsquo;t possible in our case (<em>horrible legacy ways of including internal headers spread around and other stuff like that</em>), so let&rsquo;s see what else can be done here.</p>
-<p>Surprisingly, vcpkg doesn&rsquo;t not have out-of-the-box functionality for such scenario. As I mentioned earlier, <a href="#vcpkg_cmake_install">vcpkg_cmake_install</a> simply calls the <a href="https://github.com/microsoft/vcpkg/blob/master/docs/maintainers/vcpkg_cmake_build.md">vcpkg_cmake_build()</a> function with <code>TARGET install</code> parameter, which means that you too can set any build target for <code>vcpkg_cmake_build()</code>:</p>
+<p>As far as I can tell, vcpkg doesn&rsquo;t not have an out-of-the-box functionality for this scenario. As I mentioned earlier, <a href="#vcpkg_cmake_install">vcpkg_cmake_install</a> simply calls the <a href="https://github.com/microsoft/vcpkg/blob/master/docs/maintainers/vcpkg_cmake_build.md">vcpkg_cmake_build()</a> function with <code>TARGET install</code> parameter, which means that you too can set any build target for <code>vcpkg_cmake_build()</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># vcpkg_cmake_install() # we don&#39;t need the entire project
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"># build only one of the libraries/components
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>vcpkg_cmake_build(<span style="color:#e6db74">TARGET</span> <span style="color:#e6db74">SomeLibrary</span>)</span></span></code></pre></div>
@@ -1049,8 +1132,8 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PACKAGE_NAME</span> <span style="color:#e6db74">&#34;AnotherLibrary&#34;</span>
 </span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
 <p>So now the portfile looks even worse, but it does work fine, so untill a better alternative comes up, that will be the way.</p>
-<p>It would probably be better to make <code>AnotherLibrary</code> its own port, which <code>SomeLibrary</code> could depend on, but then they might eventually end up having different <code>REF</code> commit values, causing your users to fetch different snapshots of the same repository (<em>and that would be the least of potential problems</em>).</p>
-<h3 id="sparse-checkout">Sparse checkout</h3>
+<p>As I already mentioned, it would probably be better to make <code>AnotherLibrary</code> its own port, which <code>SomeLibrary</code> could depend on, but then they might eventually end up having different <code>REF</code> commit values, causing your users to fetch different snapshots of the same repository (<em>which would be the least of potential problems caused by this</em>).</p>
+<h4 id="sparse-checkout">Sparse checkout</h4>
 <p>While we are here, when you only need to build just some targets of your big project, it might be an overkill to make your users download your entire repository, especially if it&rsquo;s rather big (<em>even as a snapshot</em>).</p>
 <p>Partial repository cloning can be done with <a href="https://git-scm.com/docs/git-sparse-checkout">sparse checkout</a>. For example, if I only want to get the <code>SomeLibrary</code> component/target from one of my projects:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ git clone <span style="color:#f92672">--</span>depth <span style="color:#ae81ff">1</span> <span style="color:#f92672">--</span>filter<span style="color:#66d9ef">=</span>blob<span style="color:#66d9ef">:</span><span style="color:#66d9ef">none</span> <span style="color:#66d9ef">--sparse</span> <span style="color:#66d9ef">git@github.com:retifrav/cmake-library-example.git</span>
