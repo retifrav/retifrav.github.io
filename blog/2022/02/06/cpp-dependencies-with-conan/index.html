@@ -5,7 +5,7 @@
     <title>Conan and resolving dependencies in a C&#43;&#43; project | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2022/02/06/cpp-dependencies-with-conan/" />
 
-    <meta name="generator" content="Hugo 0.109.0" />
+    <meta name="generator" content="Hugo 0.111.3" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -459,15 +459,15 @@
 </span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;Xerces-C/3.2.3@YOUR-PREFIX/public&#34;</span>
 </span></span><span style="display:flex;"><span>    ]</span></span></code></pre></div>
 <p>But that&rsquo;s not enough, because E57Format&rsquo;s <code>CMakeLists.txt</code> does not contain required commands for running Conan stuff, and that means that we need to make a patch (<em><code>dependencies-resources/e57format/patches/2.2.0/CMakeLists.txt.patch</code></em>) for adding them:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-patch" data-lang="patch"><span style="display:flex;"><span>44a45,47
-</span></span><span style="display:flex;"><span>&gt; include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-</span></span><span style="display:flex;"><span>&gt; conan_basic_setup()
-</span></span><span style="display:flex;"><span>&gt;
-</span></span><span style="display:flex;"><span>106c109
-</span></span><span style="display:flex;"><span>&lt;         DEBUG_POSTFIX &#34;-d&#34;
-</span></span><span style="display:flex;"><span><span style="color:#f92672">---
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span>&gt;         DEBUG_POSTFIX &#34;d&#34;
-</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-patch" data-lang="patch"><span style="display:flex;"><span><span style="color:#75715e">44a45,47
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#a6e22e">&gt; include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">&gt; conan_basic_setup()
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span>&gt;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">106c109
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#f92672">&lt;         DEBUG_POSTFIX &#34;-d&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="font-weight:bold">---
+</span></span></span><span style="display:flex;"><span><span style="font-weight:bold"></span><span style="color:#a6e22e">&gt;         DEBUG_POSTFIX &#34;d&#34;
+</span></span></span></code></pre></div>
 <p>Here we also override their hardcoded <code>DEBUG_POSTFIX</code>, because we use <code>d</code> in our libraries and we would like this to be consistent. By the way, that hardcoding is a good example of doing bad things in CMake, because in that case user loses the ability to override this value with a <code>-D</code> argument (<em>so a better patch would be to delete this line instead of replacing it</em>).</p>
 <p>The build step for E57Format project in CI/CD looks like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>mkdir build

@@ -5,7 +5,7 @@
     <title>At last, let&#39;s build Qt statically | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2018/02/17/build-qt-statically/" />
 
-    <meta name="generator" content="Hugo 0.109.0" />
+    <meta name="generator" content="Hugo 0.111.3" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -165,6 +165,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </span></span><span style="display:flex;"><span>$ <span style="color:#f92672">../</span>configure <span style="color:#f92672">-</span>static <span style="color:#f92672">-</span>release <span style="color:#f92672">-</span>no<span style="color:#f92672">-</span>pch <span style="color:#f92672">-</span>prefix <span style="color:#e6db74">&#34;/path/to/qt/5.15.2-static&#34;</span> <span style="color:#f92672">-</span>skip qtwebengine <span style="color:#f92672">-</span>nomake tests <span style="color:#f92672">-</span>nomake examples
 </span></span><span style="display:flex;"><span>$ make <span style="color:#f92672">-</span>j8
 </span></span><span style="display:flex;"><span>$ make <span style="color:#f92672">-</span>j8 install</span></span></code></pre></div>
+<p>Also note that this article was written when Qt 5.x was the latest version available, so it doesn&rsquo;t account for all the peculiarities of building Qt 6.x or newer (<em>although the process is mostly the same</em>). But here is a more recent partly related article about <a href="/blog/2020/12/04/qt-without-installer/">installing Qt without official installer</a>, which covers Qt 6.x too.</p>
 <h1 id="why-build-qt-statically">Why build Qt statically</h1>
 <p>There are 3 main reasons:</p>
 <ol>
@@ -181,7 +182,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
     <img class="image-post" loading="lazy" src="/blog/2018/02/17/build-qt-statically/images/dynamic-vs-static.png" alt="Qt static vs dynamic">
 
 <p>As you can see, even though 1 statically linked application takes less space than 1 dynamically linked, but when you have 4 applications, then you can save more space on your disk by using dynamic linking: 620 - 220 = 400 MB of space saved. Not bad indeed, but again - this is just a simplified example, and real numbers probably won&rsquo;t be that exciting.</p>
-<p>Speaking about security - that one usually references to the fact that application relying on shared libraries is easier to hack (because you can replace libraries with the modified ones). But I am not sure if it&rsquo;s really the case, because if shared libraries are exposed for hacking then it probably means that the whole OS is compromised, so there is no much point to fight the fire in the ashtray when entire building is on fire. And also as far as I know it is possible to sign shared libraries and perform checks before actually calling them.</p>
+<p>Speaking about security - that one usually refers to the fact that application relying on shared libraries is easier to hack (because you can replace libraries with the modified ones). But I am not sure if it&rsquo;s really the case, because if shared libraries are exposed for hacking then it probably means that the whole OS is compromised, so there is no much point to fight the fire in the ashtray when entire building is in flames. And also as far as I know it is possible to sign shared libraries and perform checks before actually loading them.</p>
 <h2 id="about-open-source-licenses-compliance">About Open Source licenses compliance</h2>
 <p>Be aware, that if you are using Qt under LGPL, then using static linking might make it harder for you to comply with the license terms and keep your code private at the same time.</p>
 <p>But if you are using Qt under GPL, then it doesn&rsquo;t matter to you anyway as your code already belongs to community.</p>
@@ -582,7 +583,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 <li><code>-ltcg</code> - Link-Time Code Generation, optimizes something. I took it from <a href="https://youtu.be/mbs3-XE0HNE">here</a></li>
 <li><code>-optimize-size</code> - seems to be optimizing release builds in terms of resulting binaries size (<em>by sacrificing build time</em>)</li>
 </ul>
-<p>To see the actual effect of such optimi`ation, I built Qt 5.12.3 on Mac OS twice, first time with these options:</p>
+<p>To see the actual effect of such optimization, I built Qt 5.12.3 on Mac OS twice, first time with these options:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ <span style="color:#f92672">../</span>configure <span style="color:#f92672">-</span>static <span style="color:#f92672">-</span>release <span style="color:#f92672">-</span>ltcg <span style="color:#f92672">-</span>optimize<span style="color:#f92672">-</span>size <span style="color:#f92672">-</span>no<span style="color:#f92672">-</span>pch <span style="color:#f92672">-</span>prefix <span style="color:#e6db74">&#34;/path/to/qt/5123-static&#34;</span> <span style="color:#f92672">-</span>skip webengine <span style="color:#f92672">-</span>nomake tools <span style="color:#f92672">-</span>nomake tests <span style="color:#f92672">-</span>nomake examples</span></span></code></pre></div>
 <p>and second time without them:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ <span style="color:#f92672">../</span>configure <span style="color:#f92672">-</span>static <span style="color:#f92672">-</span>release <span style="color:#f92672">-</span>no<span style="color:#f92672">-</span>pch <span style="color:#f92672">-</span>prefix <span style="color:#e6db74">&#34;/path/to/qt/5123-static&#34;</span> <span style="color:#f92672">-</span>skip webengine <span style="color:#f92672">-</span>nomake tools <span style="color:#f92672">-</span>nomake tests <span style="color:#f92672">-</span>nomake examples</span></span></code></pre></div>
