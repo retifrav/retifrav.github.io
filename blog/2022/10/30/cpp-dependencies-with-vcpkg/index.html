@@ -59,7 +59,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 67 min read</div>
+</svg> 68 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -97,6 +97,7 @@
                 <li><a href="#versions-file">Versions file</a>
                   <ul>
                     <li><a href="#several-versions-of-a-port">Several versions of a port</a></li>
+                    <li><a href="#checking-versions-and-hashes">Checking versions and hashes</a></li>
                   </ul>
                 </li>
               </ul>
@@ -522,6 +523,39 @@
 </span></span><span style="display:flex;"><span>error: git failed with exit code: <span style="color:#f92672">(</span>128<span style="color:#f92672">)</span>.
 </span></span><span style="display:flex;"><span>fatal: not a tree object: cdeffa673205b611d8ced28468cce6a06f1fdffd</span></span></code></pre></div>
 <p>then it could be because you didn&rsquo;t update the <code>git-tree</code> value in that dependency&rsquo;s version JSON in the registry, or perhaps the <code>baseline</code> value in your project&rsquo;s <code>vcpkg-configuration.json</code> points to a wrong commit.</p>
+<h5 id="checking-versions-and-hashes">Checking versions and hashes</h5>
+<p>It is quite easy to forget to update the <code>git-tree</code> value, so you might end up with a somewhat broken port, like it is shown in the previous section when it fails with an error. But there also might be a different situation: when <code>git-tree</code> points to an existing state of the registry, so there will be no error, but you won&rsquo;t be getting the actually latest ports state for that version either.</p>
+<p>And the bigger your registry will get, the harder it will be to watch for potential mismatches, so you&rsquo;ll likely want to automate this somehow. For example, with a <a href="https://github.com/retifrav/vcpkg-registry/blob/master/scripts/check-versions-and-hashes.sh">shell script</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ./scripts/check-versions-and-hashes.sh
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                port |      version |                                          |
+</span></span><span style="display:flex;"><span>-------------------------------------------------------------------------------------------------------------------------
+</span></span><span style="display:flex;"><span>                curl |        8.1.2 | 308dc1fccea69d04003fef9103c9d7bd13d0bb32 | 308dc1fccea69d04003fef9103c9d7bd13d0bb32
+</span></span><span style="display:flex; background-color:#3c3d38"><span>           dearimgui |       1.88.0 | fda742f0dd720fcd2af3cb8e946173069d70435f | a8838baa1c0125a8a2aaccc3889f8518ecfeac40
+</span></span><span style="display:flex;"><span> decovar-vcpkg-cmake |   2022-10-15 | 5b70c3ba46b51c88044c335b8ad030f0edc609e5 | 5b70c3ba46b51c88044c335b8ad030f0edc609e5
+</span></span><span style="display:flex;"><span>           e57format |        2.3.0 | e01f35b5353848abef4cb47e8ff9f25dbb05ad81 | e01f35b5353848abef4cb47e8ff9f25dbb05ad81
+</span></span><span style="display:flex;"><span>                glad |       0.1.36 | 2341f5144ce8e76a256289517d61abb4ab9fb72c | 2341f5144ce8e76a256289517d61abb4ab9fb72c
+</span></span><span style="display:flex; background-color:#3c3d38"><span>                glfw |        3.3.8 | 597fa07e1afd57c50dfdbeb0c0d28f4157748564 | ff428db2871ef4e409c2ea9f29a866b63ba5b90b
+</span></span><span style="display:flex;"><span>                 icu |       72.1.0 | 330edeacb91afe9d9aa0007cbacc08f6a2b4a3f3 | 330edeacb91afe9d9aa0007cbacc08f6a2b4a3f3
+</span></span><span style="display:flex;"><span>       json-nlohmann |       3.11.2 | 489dbd7358b610e1153e93accf36123a5afe3ce3 | 489dbd7358b610e1153e93accf36123a5afe3ce3
+</span></span><span style="display:flex;"><span>                lyra |        1.6.1 | 0cb627c7ee8f8ec2769b41b41f82b335c50e984b | 0cb627c7ee8f8ec2769b41b41f82b335c50e984b
+</span></span><span style="display:flex;"><span>                lzma |       22.1.0 | 04277d0cee83f6c4b8ce44f6756ed044b2691fbe | 04277d0cee83f6c4b8ce44f6756ed044b2691fbe
+</span></span><span style="display:flex;"><span>              sqlite |       3.41.0 | 765037d4fa9cee6d6c7639006e546cf1ad8d675a | 765037d4fa9cee6d6c7639006e546cf1ad8d675a
+</span></span><span style="display:flex;"><span>         vcpkg-cmake |   2022-08-18 | 84c200e8e625d4d99b1649525fcdf81a73197078 | 84c200e8e625d4d99b1649525fcdf81a73197078
+</span></span><span style="display:flex;"><span>  vcpkg-cmake-config |   2022-02-06 | e23b39e21f0dd42ecc615262640d211c39696aa1 | e23b39e21f0dd42ecc615262640d211c39696aa1
+</span></span><span style="display:flex;"><span>            xerces-c |        3.2.4 | ebfeb33e67607b103c583656109cbfeeb1406260 | ebfeb33e67607b103c583656109cbfeeb1406260
+</span></span><span style="display:flex;"><span>                zlib |       1.2.12 | 7feb1b251066f9213881134c320cba2d853d1b45 | 7feb1b251066f9213881134c320cba2d853d1b45
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>The following ports have a mismatch between their stated and actual Git hashes:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>- dearimgui
+</span></span><span style="display:flex;"><span>- glfw</span></span></code></pre></div>
+<p>The hashes matching is highlighted with colors, here&rsquo;s a screenshot:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/check-versions-and-hashes.png" alt="vcpkg, check versions and hashes">
+
+<p>Aside from the colors and summary in the end of the output, if there is at least one mismatch, the exit code is set to non-zero, so you can also use this script as a pre-commit <a href="https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks#_client_side_hooks">Git hook</a>.</p>
 <h2 id="triplets">Triplets</h2>
 <p>A <a href="https://github.com/microsoft/vcpkg/blob/master/docs/users/triplets.md">vcpkg triplet</a> is a file with a set of values that together &ldquo;identify&rdquo; the target platform: CPU architecture, type of linking and so on. One could probably say that it&rsquo;s like <a href="https://docs.conan.io/en/latest/reference/config_files/default_profile.html">Conan profiles</a>, but with fewer(?) parameters.</p>
 <p>Default triplets are located here: <code>/path/to/programs/vcpkg/triplets/</code>. If you are not happy with the standard collection, you can add your own triplets as well, but don&rsquo;t edit the default ones, as it will certainly backfire at you at some point later.</p>
