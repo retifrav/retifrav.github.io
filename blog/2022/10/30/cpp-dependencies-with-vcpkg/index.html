@@ -59,7 +59,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 68 min read</div>
+</svg> 72 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -183,6 +183,7 @@
         </li>
       </ul>
     </li>
+    <li><a href="#dependency-graph">Dependency graph</a></li>
     <li><a href="#so-how-is-vcpkg-comparing-with-conan">So, how is vcpkg comparing with Conan</a>
       <ul>
         <li><a href="#simplicity">Simplicity</a></li>
@@ -2065,6 +2066,78 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">SOURCE_PATH</span> <span style="color:#e6db74">&#34;${SOURCE_PATH}&#34;</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>)</span></span></code></pre></div>
+<h1 id="dependency-graph">Dependency graph</h1>
+<p>Conan has a convenient out-of-the-box functionality for generating a <a href="/blog/2022/02/06/cpp-dependencies-with-conan/#dependency-graph">dependency graph</a>, both as a plain-text JSON file and as an interactive HTML page.</p>
+<p>The vcpkg&rsquo;s capabilities in that regard are rather modest in comparison. It has a <a href="https://learn.microsoft.com/en-us/vcpkg/commands/depend-info">depend-info</a> command, which can list dependencies either in a somewhat structured plain-text format or in two graph formats: <a href="https://en.wikipedia.org/wiki/DOT_(graph_description_language)">DOT</a> and <a href="https://en.wikipedia.org/wiki/DGML">DGML</a>. Neither of these formats can be customized, and all of them output just port names (<em>no version, license or any other information</em>).</p>
+<p>Furthermore, when it comes to graphs, it is still your responsibility to visualize them (<em>with <a href="https://graphviz.org">Graphviz</a> or some other tool</em>), as vcpkg only produces the text representation. For example, let&rsquo;s use the DOT format to build a dependency graph for that project <a href="/blog/2022/10/30/cpp-dependencies-with-vcpkg/#in-a-project">from before</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ vcpkg depend<span style="color:#f92672">-</span>info glfw<span style="color:#f92672">-</span>imgui<span style="color:#f92672">-</span>example \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>overlay<span style="color:#f92672">-</span>ports<span style="color:#f92672">=/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>project \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>overlay<span style="color:#f92672">-</span>ports<span style="color:#f92672">=/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>vcpkg<span style="color:#f92672">-</span>registry<span style="color:#f92672">/</span>ports \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>dot <span style="color:#f92672">|</span> nop <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>dot</span></span></code></pre></div>
+<p>Here the first <code>--overlay-ports</code> path points to the project folder (<em>that contains the project&rsquo;s <code>vcpkg.json</code> manifest</em>) and the second <code>--overlay-ports</code> path points to a local clone of my registry. Note that I still needed to provide the <code>glfw-imgui-example</code> project name. The piped <code>nop</code> utility is a part of Graphviz tools and what it does is it formats the graph text into a nicer readable representation.</p>
+<p>If I wanted to build a graph not for a project but for a port from registry, then I would&rsquo;ve invoked the command with just one <code>--overlay-ports</code> path, like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ vcpkg depend<span style="color:#f92672">-</span>info some<span style="color:#f92672">-</span>port \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>overlay<span style="color:#f92672">-</span>ports<span style="color:#f92672">=/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>vcpkg<span style="color:#f92672">-</span>registry<span style="color:#f92672">/</span>ports \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>dot <span style="color:#f92672">|</span> nop <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>dot</span></span></code></pre></div>
+<p>But I don&rsquo;t yet have ports with a lot of dependencies in my registry, so let&rsquo;s continue with the project graph.</p>
+<p>The contents of the generated (<em>and formatted</em>) <code>graph.dot</code> are this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#a6e22e">digraph</span> <span style="color:#a6e22e">G</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">graph</span> [<span style="color:#a6e22e">overlap</span><span style="color:#f92672">=</span><span style="color:#66d9ef">false</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">rankdir</span><span style="color:#f92672">=</span><span style="color:#a6e22e">LR</span>
+</span></span><span style="display:flex;"><span>    ];
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">edge</span> [<span style="color:#a6e22e">minlen</span><span style="color:#f92672">=</span><span style="color:#ae81ff">3</span>];
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">dearimgui</span> <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">decovar_vcpkg_cmake</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">dearimgui</span> <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">glfw</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">dearimgui</span> <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">vcpkg_cmake</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">dearimgui</span> <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">vcpkg_cmake_config</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">glfw</span> <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">vcpkg_cmake</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">glfw</span> <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">vcpkg_cmake_config</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">glad</span> <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">vcpkg_cmake</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">glad</span> <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">vcpkg_cmake_config</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">glfw_imgui_example</span> <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">dearimgui</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">glfw_imgui_example</span> <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">glfw</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">glfw_imgui_example</span> <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">glad</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">empty</span>    [<span style="color:#a6e22e">label</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;3 singletons...&#34;</span>];
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>That can be visualized with Graphviz like so:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ dot <span style="color:#f92672">-</span>T svg <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>dot \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">Nfontcolor</span><span style="color:#66d9ef">=</span>blue <span style="color:#f92672">-</span><span style="color:#a6e22e">Nshape</span><span style="color:#66d9ef">=</span>rect <span style="color:#f92672">-</span><span style="color:#a6e22e">Grankdir</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">TB</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">Gsplines</span><span style="color:#66d9ef">=</span>ortho \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>o <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>svg</span></span></code></pre></div>
+<p>The result will look like this:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/graph-unprocessed.svg" alt="Graphviz, unprocessed dot-graph of vcpkg dependencies">
+
+<p>So it works, but the visualization could benefit from some improvements, such as removing redundant elements and adding some different colors/accents. To automate the process, modifications in the <code>graph.dot</code> can be done using regular expressions, and for that purpose it would probably be better to re-generate the <code>graph.dot</code> without formatting (<em>without piping to <code>nop</code></em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ vcpkg depend<span style="color:#f92672">-</span>info glfw<span style="color:#f92672">-</span>imgui<span style="color:#f92672">-</span>example \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>overlay<span style="color:#f92672">-</span>ports<span style="color:#f92672">=/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>project \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>overlay<span style="color:#f92672">-</span>ports<span style="color:#f92672">=/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>vcpkg<span style="color:#f92672">-</span>registry<span style="color:#f92672">/</span>ports \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>dot <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>dot</span></span></code></pre></div>
+<p>First thing to get rid of is the &ldquo;<em>3 singletons&hellip;</em>&rdquo; label (<em>the fuck is that, I didn&rsquo;t ask for it</em>). It can be removed with <code>sed</code> (<em>or <code>gsed</code>, in case of Mac OS</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-perl" data-lang="perl"><span style="display:flex;"><span>$ sed <span style="color:#f92672">-</span>i <span style="color:#e6db74">&#39;s/empty \[label=&#34;[[:digit:]]\+ singletons\.\{3\}&#34;\];//&#39;</span> <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>dot</span></span></code></pre></div>
+<p>but actually, <code>sed</code> and its crazy regular expressions flavor can go to hell, so do it with Perl instead:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-perl" data-lang="perl"><span style="display:flex;"><span>$ perl <span style="color:#f92672">-</span>pi <span style="color:#f92672">-</span>e <span style="color:#e6db74">&#39;s/empty \[label=&#34;\d+ singletons\.{3}&#34;\];//&#39;</span> <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>dot</span></span></code></pre></div>
+<p>Next thing you might want to do is to remove helper ports, because they are not actual C++ dependencies, and also every single port depends on them, so they only add noise to the graph, which becomes a bigger problem on bigger graphs. Ether remove them one by one:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-perl" data-lang="perl"><span style="display:flex;"><span>$ perl <span style="color:#f92672">-</span>pi <span style="color:#f92672">-</span>e <span style="color:#e6db74">&#39;s/[\w]+ -&gt; vcpkg_cmake;//g&#39;</span> <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>dot
+</span></span><span style="display:flex;"><span>$ perl <span style="color:#f92672">-</span>pi <span style="color:#f92672">-</span>e <span style="color:#e6db74">&#39;s/[\w]+ -&gt; vcpkg_cmake_config;//g&#39;</span> <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>dot
+</span></span><span style="display:flex;"><span>$ perl <span style="color:#f92672">-</span>pi <span style="color:#f92672">-</span>e <span style="color:#e6db74">&#39;s/[\w]+ -&gt; decovar_vcpkg_cmake;//g&#39;</span> <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>dot</span></span></code></pre></div>
+<p>or all at once, if they have a common part in their names:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-perl" data-lang="perl"><span style="display:flex;"><span>$ perl <span style="color:#f92672">-</span>pi <span style="color:#f92672">-</span>e <span style="color:#e6db74">&#39;s/[\w]+ -&gt; (decovar_)?vcpkg_cmake(_config)?;//g&#39;</span> <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>dot</span></span></code></pre></div>
+<p>Finally, let&rsquo;s color connections to direct dependencies with blue color, and connections to transitive dependencies will be dashed:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-perl" data-lang="perl"><span style="display:flex;"><span>$ perl <span style="color:#f92672">-</span>pi <span style="color:#f92672">-</span>e <span style="color:#e6db74">&#39;s/(glfw_imgui_example -&gt; .+?(?=;))/$1 [color=blue]/g&#39;</span> <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>dot
+</span></span><span style="display:flex;"><span>$ perl <span style="color:#f92672">-</span>pi <span style="color:#f92672">-</span>e <span style="color:#e6db74">&#39;s/((?!glfw_imgui_example\b)\b\w+ -&gt; .+?(?=;))/$1 [style=dashed]/g&#39;</span> <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>dot</span></span></code></pre></div>
+<p>Now the visualized graph will look like this:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/graph-processed.svg" alt="Graphviz, processed dot-graph of vcpkg dependencies">
+
+<p>Much cleaner, isn&rsquo;t it. Although, still not as good as what Conan provides (<em>via a single command without additional massaging</em>), but more or less an okay result.</p>
+<p>One last thing to note is that on the graph above the <code>glfw</code> port is both a direct and a transitive dependency (<em>through <code>dearimgui</code></em>), so perhaps the point of having differently styled connections to transitive dependencies isn&rsquo;t very clear. But here&rsquo;s a graph for a bigger project:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/graph-bigger-port.svg" alt="Graphviz, dot-graph with more dependencies">
+
+<p>And this one has (<em>just one but nevertheless</em>) a &ldquo;purely&rdquo; transitive dependency - <code>brotli</code> (<em>through <code>cpp_http</code></em>), which is easier to spot thanks to a dashed black connection and no solid blue connections comming to it.</p>
 <h1 id="so-how-is-vcpkg-comparing-with-conan">So, how is vcpkg comparing with Conan</h1>
 <h2 id="simplicity">Simplicity</h2>
 <p>Like I said, essentially, vspkg is just a combination of CMake and Git (<em>plus some glue provided by the vcpkg CLI tool</em>), which are very common basic instruments everyone is (<em>should be</em>) already familiar with.</p>
