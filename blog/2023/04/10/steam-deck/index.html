@@ -59,7 +59,7 @@
 </svg> 2023-04-10 14:24:31 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 110 min read</div>
+</svg> 111 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -237,6 +237,7 @@
         <li><a href="#connecting-to-external-display-or-tv">Connecting to external display or TV</a></li>
       </ul>
     </li>
+    <li><a href="#showcasing-steam-deck-on-your-steam-profile">Showcasing Steam Deck on your Steam profile</a></li>
     <li><a href="#overall">Overall</a></li>
   </ul>
 </nav>
@@ -2375,6 +2376,35 @@
 <p>I also tried using it on a TV, by my TV isn&rsquo;t very modern, which probably explains why the picture quality was not great: mostly the colors weren&rsquo;t as nice as they are on the Steam Deck&rsquo;s own screen or on my PC display.</p>
 <p>Moreover, even though I have a <a href="https://playstation.com/en-us/accessories/dualsense-wireless-controller/">DualSense gamepad</a>, it is so much inferior comparing to Steam Deck in terms of available controls (<em>and the touchpad area is just a fucking disgrace</em>), so I don&rsquo;t see myself playing my games on TV. In particular, <a href="#diablo-ii-resurrected">Diablo II</a> gameplay instantly drops to a handicapped level, and <a href="#heroes-of-might-and-magic-3">HoMM 3</a> and <a href="#space-rangers">Space Rangers</a> I don&rsquo;t even want to talk about. Majestic <a href="#steam-input">Steam Input</a> and fantastic Steam Deck <a href="#controls">controls</a> have spoiled me way too fast, I can&rsquo;t settle for anything even a tiny bit worse.</p>
 <p>But for gamepad-supported / console-oriented games, where I don&rsquo;t really need such advanced controls, the DualSense gamepad should be enough to enjoy playing on TV. I only need to get a better TV.</p>
+<h1 id="showcasing-steam-deck-on-your-steam-profile">Showcasing Steam Deck on your Steam profile</h1>
+<p>If you&rsquo;d like to showcase Steam Deck as a favorite game on your Steam profile page, you&rsquo;ll be frustrated to discover that you can&rsquo;t to select it from the list of games in the showcase widget. But Valve has left a little loophole (<em>might be unintentionally</em>) by not verifying client input on the backend, so it is still possible to do.</p>
+<p>All the credits go to <a href="https://steamcommunity.com/app/1675200/discussions/0/3823032344633204186/">this thread</a>, I&rsquo;m only re-posting the recipe here.</p>
+<p>Open your Steam profile page, go to Edit Profile and there to Featured Showcase tab. Add a Favorite Game showcase. Open Web Developer Tools or equivalent in your web-browser, go to Debugger tab, open <code>global.js</code> script and set a breakpoint on the line <code>CGameSelectorOwnedGames.NormalizeGameNames</code> in <code>onSuccess</code> handler of <code>Ajax.Request('https://steamcommunity.com/actions/GetOwnedApps/'</code>.</p>
+<p>Click on the showcase widget to select a game for showcasing:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2023/04/10/steam-deck/images/profile-favorite-game/edit-showcase-favorite-game.png" alt="Steam profile, selecting a game for showcasing">
+
+<p>The script execution should stop on that breakpoint:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2023/04/10/steam-deck/images/profile-favorite-game/firefox-debugger-steam-profile.png" alt="Firefox debugger breakpoint on Steam profile page script" style="border:1px solid black;">
+
+<p>Now go to Console tab and execute:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#a6e22e">CGameSelectorOwnedGames</span>.<span style="color:#a6e22e">s_rgOwnedGames</span> <span style="color:#f92672">=</span> [
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;appid&#34;</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">1675200</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;name&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Steam Deck&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;icon&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/1675200/21a29a1fa319b6f186ff91a647bea354a09fe51e.jpg&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;logo&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;https://cdn.akamai.steamstatic.com/steam/apps/1675200/capsule_184x69.jpg&#34;</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>];</span></span></code></pre></div>
+<p>That operation will replace the contents of <code>s_rgOwnedGames</code> list with just one item - <code>Steam Deck</code>. If anything, setting a different picture for <code>logo</code> (<em>such as <a href="https://store.cloudflare.steamstatic.com/public/images/steamdeck/steamdeck_promo_01.png">this one</a></em>) won&rsquo;t persist, as it seems that no properties actually matter except for the <code>appid</code>.</p>
+<p>Go back to Debugger tab and resume the script execution. Click on search input field in the showcase and start typing <code>Steam Deck</code> (<em>it will be the only item to find in the list</em>). Select it and save your profile. The result will look like this:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2023/04/10/steam-deck/images/profile-favorite-game/steam-deck-favorite-game.png" alt="Steam Deck as a favorite game on Steam profile page">
+
 <h1 id="overall">Overall</h1>
 <p>Never have I ever been so happy about getting something. It&rsquo;s a pure joy every single day.</p>
 <p>For the last several years I&rsquo;ve been playing on my desktop gaming PC about 1.5 hours a day, and it was mostly Dota and only occasionally some other games. Since I got Steam Deck, I haven&rsquo;t played on my PC at all, my average gaming time per day is now about 3-4 hours (<em>that&rsquo;s actually not a good thing</em>), and the variety of games I&rsquo;m playing got much wider (<em>my Steam wishlist got longer too</em>).</p>
