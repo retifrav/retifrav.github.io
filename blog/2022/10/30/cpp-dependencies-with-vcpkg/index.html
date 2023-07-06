@@ -1969,16 +1969,17 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"># and yes, for building the main project you&#39;ll yet again need to provide `-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=&#34;...&#34;` in CLI
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">VCPKG_CHAINLOAD_TOOLCHAIN_FILE</span> <span style="color:#f92672">${</span>EMSCRIPTEN_TOOLCHAIN_FILE_PATH<span style="color:#f92672">}</span>)</span></span></code></pre></div>
 <p>And the custom Emscripten toolchain (<em>the one passed in <code>EMSCRIPTEN_TOOLCHAIN_FILE_PATH</code> environment variable</em>) is a copy of the original one from <code>$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake</code>, but with the following addition in the end:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># an exact copy of Emscripten.cmake file contents</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># pthreads (https://emscripten.org/docs/porting/pthreads.html)</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>set(EMSCRIPTEN_PTHREADS_FLAGS <span style="color:#e6db74">&#34;-pthread&#34;</span>)
+</span></span><span style="display:flex;"><span>set<span style="color:#f92672">(</span>EMSCRIPTEN_PTHREADS_FLAGS <span style="color:#e6db74">&#34;-pthread&#34;</span><span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># it is likely that not all of these need to be set, CMAKE_{C,CXX}_FLAGS_INIT seems to be enough</span>
-</span></span><span style="display:flex;"><span>string(APPEND CMAKE_C_FLAGS_INIT                     <span style="color:#e6db74">&#34; $</span><span style="color:#e6db74">{EMSCRIPTEN_PTHREADS_FLAGS}</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>string<span style="color:#f92672">(</span>APPEND CMAKE_C_FLAGS_INIT                     <span style="color:#e6db74">&#34; </span><span style="color:#e6db74">${</span>EMSCRIPTEN_PTHREADS_FLAGS<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_C_FLAGS_DEBUG_INIT               &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_C_FLAGS_RELEASE_INIT             &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
-</span></span><span style="display:flex;"><span>string(APPEND CMAKE_CXX_FLAGS_INIT                   <span style="color:#e6db74">&#34; $</span><span style="color:#e6db74">{EMSCRIPTEN_PTHREADS_FLAGS}</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>string<span style="color:#f92672">(</span>APPEND CMAKE_CXX_FLAGS_INIT                   <span style="color:#e6db74">&#34; </span><span style="color:#e6db74">${</span>EMSCRIPTEN_PTHREADS_FLAGS<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_CXX_FLAGS_DEBUG_INIT             &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_CXX_FLAGS_RELEASE_INIT           &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_STATIC_LINKER_FLAGS_INIT         &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
@@ -1993,6 +1994,14 @@
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_EXE_LINKER_FLAGS_INIT            &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG_INIT      &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE_INIT    &#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;)</span></span></span></code></pre></div>
+<p>But actually instead of copying the entire toolchain file contents wouldn&rsquo;t it be smarter to just include it, right, so here&rsquo;s a better variant:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>include<span style="color:#f92672">(</span>$ENV<span style="color:#f92672">{</span>EMSDK<span style="color:#f92672">}</span>/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># pthreads (https://emscripten.org/docs/porting/pthreads.html)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set<span style="color:#f92672">(</span>EMSCRIPTEN_PTHREADS_FLAGS <span style="color:#e6db74">&#34;-pthread&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>string<span style="color:#f92672">(</span>APPEND CMAKE_C_FLAGS_INIT   <span style="color:#e6db74">&#34; </span><span style="color:#e6db74">${</span>EMSCRIPTEN_PTHREADS_FLAGS<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>string<span style="color:#f92672">(</span>APPEND CMAKE_CXX_FLAGS_INIT <span style="color:#e6db74">&#34; </span><span style="color:#e6db74">${</span>EMSCRIPTEN_PTHREADS_FLAGS<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>Having saved it somewhere at <code>/path/to/custom/toolchains/Emscripten-pthreads.cmake</code>, we can now configure and build the project like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>emsdk
 </span></span><span style="display:flex;"><span>$ source <span style="color:#f92672">./</span>emsdk_env<span style="color:#f92672">.</span>sh
@@ -2343,7 +2352,7 @@
         const telegramBlock = document.getElementById("telegramWidgetBlock");
         window.onload = () =>
         {
-            const pinnedTelegramPosts = [319]
+            const pinnedTelegramPosts = [277,279,306,312,319]
             const randomedPostID = pinnedTelegramPosts[
                 Math.floor(Math.random() * pinnedTelegramPosts.length)
             ];
