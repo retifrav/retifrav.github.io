@@ -59,7 +59,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 72 min read</div>
+</svg> 78 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -174,6 +174,12 @@
         <li><a href="#windows">Windows</a>
           <ul>
             <li><a href="#msvc-toolset">MSVC toolset</a></li>
+            <li><a href="#release-binaries-size-is-bigger-with-vcpkg">Release binaries size is bigger with vcpkg</a>
+              <ul>
+                <li><a href="#removing-z7-flag-from-release-configuration">Removing /Z7 flag from Release configuration</a></li>
+                <li><a href="#comparison-of-binary-sizes-with-and-without-z7">Comparison of binary sizes with and without /Z7</a></li>
+              </ul>
+            </li>
           </ul>
         </li>
         <li><a href="#gnulinux">GNU/Linux</a>
@@ -2052,9 +2058,179 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">..</span>
 </span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target install <span style="color:#f92672">--</span>config <span style="color:#a6e22e">Release</span></span></span></code></pre></div>
 <p>As usual, this better to be run from the corresponding MSVC command prompt, so you&rsquo;ll need to adjust the shell-specific things.</p>
+<h3 id="release-binaries-size-is-bigger-with-vcpkg">Release binaries size is bigger with vcpkg</h3>
+<p>Suddenly I noticed that my Windows build artifacts got bigger in size. They were smaller before I started resolving dependencies with vcpkg, but now they got bigger.</p>
+<p>I suspected that there might be some optimization flags not set, and I was almost right, although the other way around - turns out, by default vcpkg sets Debug flag <code>/Z7</code> for Release configuration! See for yourself in the Windows toolchain (<em><code>/path/to/vcpkg/scripts/toolchains/windows.cmake</code></em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">CMAKE_CXX_FLAGS_RELEASE</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;${VCPKG_CRT_LINK_FLAG_PREFIX} /O2 /Oi /Gy /DNDEBUG /Z7 ${VCPKG_CXX_FLAGS_RELEASE}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CACHE</span> <span style="color:#e6db74">STRING</span> <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CMAKE_C_FLAGS_RELEASE</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;${VCPKG_CRT_LINK_FLAG_PREFIX} /O2 /Oi /Gy /DNDEBUG /Z7 ${VCPKG_C_FLAGS_RELEASE}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CACHE</span> <span style="color:#e6db74">STRING</span> <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
+<p>From the <a href="https://learn.microsoft.com/en-us/cpp/build/reference/z7-zi-zi-debug-information-format#z7">documentation</a> for <code>/Z7</code> flag:</p>
+<blockquote>The <code>/Z7</code> option produces object files that also contain full symbolic debugging information for use with the debugger. These object files and any libraries built from them can be substantially larger than files that have no debugging information.</blockquote>
+<p>I mean, sounds useful for Debug configuration, but why is it set for Release configuration too?</p>
+<p>Googling this question brought me to <a href="https://github.com/microsoft/vcpkg/issues/9084">this issue</a> in vcpkg repository, so at least I wasn&rsquo;t the only one to question the sanity of this. And here&rsquo;s what one of the vcpkg maintainers said in the discussion thread <a href="https://github.com/microsoft/vcpkg/issues/9084#issuecomment-667347451">over there</a>:</p>
+<blockquote>There's no reason to remove debugging information; we believe CMake's default setting which includes not even stripped symbols in release mode is an incorrect default.</blockquote>
+<p>Well, I certainly believe that CMake does this absolutely correctly, as there is no bloody point to have anything of the sort in the Release binaries. If you want to debug, you take Debug binaries; that is why Debug/Release separation exists in the first place, is it not? Why on earth would you want to be able to debug with Release binaries? Sweet suffering Jehovah.</p>
+<h4 id="removing-z7-flag-from-release-configuration">Removing /Z7 flag from Release configuration</h4>
+<p>So, as we don&rsquo;t have unlimited storage for our packages and distributives and in general we don&rsquo;t like wasting network bandwidth transferring useless data, we&rsquo;d like to remove <code>/Z7</code> flag from the default Windows toolchain to reduce our dependencies binaries size back to normal.</p>
+<p>The procedure is very similar to how I added <code>-pthread</code> flag to <a href="#enabling-pthreads-support">enable pthreads support</a> in Enscripten/WASM builds. There are several options:</p>
+<ol>
+<li>Make patches for every single port sources to override flags in their <code>CMakeLists.txt</code> files. That is the worst option out of all listed here;</li>
+<li>Modify the flags directly in the default toolchain (<em><code>/path/to/vcpkg/scripts/toolchains/windows.cmake</code></em>). I would not recommend this, because:
+<ul>
+<li>that modification will get overridden on the next vcpkg update/reinstall;</li>
+<li>you&rsquo;ll need to do that on your every machine or/and every buildbot in your CI/CD;</li>
+<li>other people with default toolchains will be getting different build artifacts even though they&rsquo;d be using the same triplets as you, and that might backfire at some point;</li>
+</ul>
+</li>
+<li>Copy the default toolchain into your project repository, modify the flags there and chainload it with <code>VCPKG_CHAINLOAD_TOOLCHAIN_FILE</code>. This option is better, but dragging around a copy of the default toolchain isn&rsquo;t ideal either, at the very least because it will eventually go out of sync with the default one;</li>
+<li>Instead of copying the contents of the default toolchain, simply include it in your custom chainloaded toolchain and override the flags right after that.</li>
+</ol>
+<p>I had one more option, which is what I tried first: still create a custom toolchain for chainloading but without including the default toolchain, just seting new values to the flags and that&rsquo;s it. But I soon discovered two problems with this:</p>
+<ul>
+<li>you need to somehow get the current values of the flags that have been already set upper in the chain (<em>and then remove <code>/Z7</code> from them</em>). I didn&rsquo;t find a way to do it. You can of course just set the flags to whatever you want, but ideally one would like to preserve all the original flags and remove just the <code>/Z7</code>;</li>
+<li>if you don&rsquo;t include the default toolchain, then all the flags it sets won&rsquo;t be set at all (<em>for example, <code>/utf-8</code> flag will be missing, so you might get <code>too many characters in constant</code> compilation error</em>). I, for one, was expecting those flags to be set, since my custom toolchain is <em>chainloaded</em> and not <em>loaded instead of</em> the default one, but apparently I&rsquo;m missing something about the way <a href="https://learn.microsoft.com/en-us/vcpkg/users/buildsystems/cmake-integration#using-multiple-toolchain-files">chainloading</a> works.</li>
+</ul>
+<p>So the 4th option is what I went with (<em>include the default toolchain in a <a href="https://github.com/microsoft/vcpkg/issues/26699#issuecomment-1245130589">custom toolchain</a> and override flags right after</em>). Yes, it seems to be redundant and rather weird to include the exact same toolchain that has been (<em>hasn&rsquo;t it?</em>) just used upper in the chain, but that is what worked for me.</p>
+<p>Here&rsquo;s my custom toolchain (<em><code>/path/to/custom/toolchains/windows.cmake</code></em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># for $ENV{VCPKG_ROOT} to work the triplet should contain `set(VCPKG_ENV_PASSTHROUGH_UNTRACKED VCPKG_ROOT)`
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>include(<span style="color:#e6db74">&#34;$ENV{VCPKG_ROOT}/scripts/toolchains/windows.cmake&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># remove /Z7 from the default set of C flags
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>string(<span style="color:#e6db74">REPLACE</span> <span style="color:#e6db74">&#34;/Z7&#34;</span> <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CMAKE_C_FLAGS_RELEASE_WITHOUT_Z7</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;${CMAKE_C_FLAGS_RELEASE}&#34;</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># override Release flags variable with the new value
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">CMAKE_C_FLAGS_RELEASE</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;${CMAKE_C_FLAGS_RELEASE_WITHOUT_Z7}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CACHE</span> <span style="color:#e6db74">STRING</span> <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># it&#39;s important to apply FORCE here, as this variable is CACHE
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e"># and it has been already set in the default toolchain above
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#e6db74">FORCE</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># and the same for CXX flags
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>string(<span style="color:#e6db74">REPLACE</span> <span style="color:#e6db74">&#34;/Z7&#34;</span> <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CMAKE_CXX_FLAGS_RELEASE_WITHOUT_Z7</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;${CMAKE_CXX_FLAGS_RELEASE}&#34;</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CMAKE_CXX_FLAGS_RELEASE</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;${CMAKE_CXX_FLAGS_RELEASE_WITHOUT_Z7}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CACHE</span> <span style="color:#e6db74">STRING</span> <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">FORCE</span>
+</span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
+<p>And here&rsquo;s my custom triplet (<em><code>/path/to/custom/triplets/my-x64-windows-static-md.cmake</code></em>) that chainloads it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># default values from the original x64-windows-static-md.cmake
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">VCPKG_TARGET_ARCHITECTURE</span> <span style="color:#e6db74">x64</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_CRT_LINKAGE</span> <span style="color:#e6db74">dynamic</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_LIBRARY_LINKAGE</span> <span style="color:#e6db74">static</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># without this the VCPKG_ROOT environment variable
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># won&#39;t be available in the chainloaded toolchain
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">VCPKG_ENV_PASSTHROUGH_UNTRACKED</span> <span style="color:#e6db74">VCPKG_ROOT</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e">#
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># overriding default flags to remove /Z7 from Release builds,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># because no one (except Microsoft) needs Debug stuff in Release binaries
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># this could do with a better path instead of ..
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">VCPKG_CHAINLOAD_TOOLCHAIN_FILE</span> <span style="color:#f92672">${</span>CMAKE_CURRENT_LIST_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/../toolchains/windows.cmake</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># on Windows VCPKG_CHAINLOAD_TOOLCHAIN_FILE deactivates VS variables,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># so those need to be loaded again
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">VCPKG_LOAD_VCVARS_ENV</span> <span style="color:#e6db74">1</span>)</span></span></code></pre></div>
+<p>Two things are important to note here:</p>
+<ul>
+<li><code>VCPKG_ROOT</code> environment variable needs to be passed through, otherwise chainloaded toolchain won&rsquo;t have it;</li>
+<li>unless you&rsquo;ve read about this in <a href="https://learn.microsoft.com/en-us/vcpkg/users/triplets#vcpkg_load_vcvars_env">documentation</a>, you wouldn&rsquo;t know that in case of chainloaded toolchains the <code>VCPKG_LOAD_VCVARS_ENV</code> is set to <code>OFF</code>, which leads to CMake errors like <code>No CMAKE_C_COMPILER could be found</code> and other typical problems of not finding compilers and tools, so you need to set it back to <code>ON</code>/<code>1</code>.</li>
+</ul>
+<p>Now I can configure and build my project like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>some<span style="color:#f92672">/</span>project
+</span></span><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#a6e22e">$_</span>
+</span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">-</span>G <span style="color:#a6e22e">Ninja</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_TOOLCHAIN_FILE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DVCPKG_OVERLAY_TRIPLETS</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/path/to/custom/triplets&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DVCPKG_TARGET_TRIPLET</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;my-x64-windows-static-md&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">..</span>
+</span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target install</span></span></code></pre></div>
+<p>For that to work the custom toolchain needs to be in <code>/path/to/custom/toolchains/</code>, as for triplet the <code>${CMAKE_CURRENT_LIST_DIR}</code> will evaluate to <code>/path/to/custom/triplets/</code>, and so <code>../toolchains/</code> with be the right path.</p>
+<h4 id="comparison-of-binary-sizes-with-and-without-z7">Comparison of binary sizes with and without /Z7</h4>
+<p>Let&rsquo;s see some real sizes of Release binaries that are built with and without <code>/Z7</code> flag. If you&rsquo;d like to repeat the experiment yourself, here&rsquo;s a <a href="./z7-binary-size-comparison.7z">dummy project</a> that I used for it.</p>
+<p>First build the libraries with default Release flags (<em>so with <code>/Z7</code> among them</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>z7<span style="color:#f92672">-</span>binary<span style="color:#f92672">-</span>size<span style="color:#f92672">-</span>comparison
+</span></span><span style="display:flex;"><span>$ vcpkg install <span style="color:#f92672">--</span>triplet x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static<span style="color:#f92672">-</span>md
+</span></span><span style="display:flex;"><span>$ du <span style="color:#f92672">-</span>hs <span style="color:#f92672">./</span>vcpkg_installed<span style="color:#f92672">/</span>x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static<span style="color:#f92672">-</span>md<span style="color:#f92672">/</span>lib</span></span></code></pre></div>
+<p>Then build the same libraries but with a custom triplet to remove <code>/Z7</code> from Release flags:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ mv <span style="color:#f92672">./</span>vcpkg_installed <span style="color:#f92672">./</span>vcpkg_installed_z7
+</span></span><span style="display:flex;"><span>$ vcpkg install <span style="color:#f92672">--</span>overlay<span style="color:#f92672">-</span>triplets <span style="color:#f92672">./</span>triplets <span style="color:#f92672">--</span>triplet my<span style="color:#f92672">-</span>x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static<span style="color:#f92672">-</span>md
+</span></span><span style="display:flex;"><span>$ du <span style="color:#f92672">-</span>hs <span style="color:#f92672">./</span>vcpkg_installed<span style="color:#f92672">/</span>my<span style="color:#f92672">-</span>x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static<span style="color:#f92672">-</span>md<span style="color:#f92672">/</span>lib</span></span></code></pre></div>
+<p>In my case the results were:</p>
+<div style="overflow-x:auto;">
+    <table class="table">
+        <thead>
+            <tr>
+                <th rowspan=2></th>
+                <th rowspan=2>Debug</th>
+                <th colspan=2>Release</th>
+            </tr>
+            <tr>
+                <th>With <code>/Z7</code></th>
+                <th>Without <code>/Z7</code></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>dearimgui.lib</th>
+                <td>5.8 MB</td>
+                <td style="color:red;">7.4 MB</td>
+                <td style="color:green;">3.4 MB</td>
+            </tr>
+            <tr>
+                <th>draco.lib</th>
+                <td style="color:red;">109.5 MB</td>
+                <td>94.4 MB</td>
+                <td style="color:green;">27 MB</td>
+            </tr>
+            <tr>
+                <th>glfw3.lib</th>
+                <td>1.9 MB</td>
+                <td style="color:red;">2.1 MB</td>
+                <td style="color:green;">633.1 KB</td>
+            </tr>
+            <tr>
+                <th>sqlite3.lib</th>
+                <td>3.2 MB</td>
+                <td style="color:red;">6.5 MB</td>
+                <td style="color:green;">2.7 MB</td>
+            </tr>
+            <tr>
+                <th>zlib.lib</th>
+                <td>364.1 KB</td>
+                <td style="color:red;">441 KB</td>
+                <td style="color:green;">186.5 KB</td>
+            </tr>
+            <tr>
+                <th>zstd.lib</th>
+                <td>3.8 MB</td>
+                <td style="color:red;">6.6 MB</td>
+                <td style="color:green;">1.8 MB</td>
+            </tr>
+            <tr>
+                <th colspan=2></th>
+                <th style="color:red;">117.44 MB</th>
+                <th style="color:green;">35.72 MB</th>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<p>So not only Release binaries with <code>/Z7</code> flag are more than 3 times bigger than their variants without it, but also for most libraries they are even bigger than the Debug variants.</p>
+<p>I mean, goddamn. The only valid reason for setting this flag by default in Release configurations would be if people behind vcpkg were selling data storage or other hosting services of the kind. Wait&hellip; oh shi~</p>
 <h2 id="gnulinux">GNU/Linux</h2>
 <h3 id="missing-executable-attribute">Missing executable attribute</h3>
-<p>When trying to build iconv port on GNU/Linux I got the following rather unexpected error:</p>
+<p>Trying to build <a href="https://en.wikipedia.org/wiki/Iconv">iconv</a> port on GNU/Linux I got the following rather unexpected error:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>/bin/bash: ./../src/133172cac4-7cae2f41cd.clean/configure: Permission denied</span></span></code></pre></div>
 <p>And indeed, the <code>configure</code> script doesn&rsquo;t have <code>x</code> attribute/mode, so it is not an executable:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ls -l /path/to/vcpkg/buildtrees/iconv/src/133172cac4-7cae2f41cd.clean | grep config
