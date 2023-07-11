@@ -59,7 +59,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 78 min read</div>
+</svg> 79 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -1192,6 +1192,12 @@
 </ol>
 <p>You can inspect <a href="https://github.com/retifrav/vcpkg-registry/commit/3332ca16e36cf806256e963bfbe9ab2fef7460e0">that commit</a> in my example registry. As you can see, it&rsquo;s almost the same steps as with <a href="#several-versions-of-a-port">adding a new version</a> of a port, except that here the version stays the same.</p>
 <p>Also don&rsquo;t forget to update Git hash value (<em>current <code>HEAD</code> of the entire registry repository, not just this dependency</em>) for <code>baseline</code> property in <a href="https://github.com/retifrav/glfw-imgui-example/blob/master/vcpkg-configuration.json#L6">vcpkg-configuration.json</a> of the &ldquo;consuming&rdquo; project, otherwise it will not &ldquo;know&rdquo; about the updated version in the registry. Moreover, if you force-pushed that fix, then vcpkg will simply fail to resolve dependencies, as that commit would no longer exist.</p>
+<p>But actually that last bit about changing <code>baseline</code> property in the project&rsquo;s <code>vcpkg-configuration.json</code> when updating the same version of a port in the registry (<em>when the same port v1.2.3 has different configuration/patches/etc in different registry commits/states</em>) is something I am not very confident about, because I am not really sure how exactly the <code>baseline</code> value is used for resolving the port version/state:</p>
+<ol>
+<li>Does vcpkg look for a version with <code>git-tree</code> value that was available no later than that commit?</li>
+<li>Or does vcpkg use that commit hash value only for getting <code>versions/baseline.json</code> from that exact commit (<em>to establish a minimum port version</em>), and then it will still find the latest version&rsquo;s <code>git-tree</code> value that might be pointing to a later repository state and take that one? So one cannot rely on <code>baseline</code> property to &ldquo;prevent&rdquo; vcpkg from getting updated port versions available in the registry?</li>
+</ol>
+<p>I was hoping it&rsquo;s the former, but looks like it&rsquo;s actually the latter. In that case I now better understand the point of <a href="https://learn.microsoft.com/en-us/vcpkg/users/versioning#port-version">port-version</a>.</p>
 <h1 id="installing-ports-from-a-registry">Installing ports from a registry</h1>
 <h2 id="without-a-project">Without a project</h2>
 <p>You can try to install the <a href="#port-structure">GLFW port</a> even without having a project that would depend on it. It is a convenient ability to have when you want to quickly test your new port:</p>
@@ -1312,7 +1318,7 @@
 </span></span><span style="display:flex;"><span><span style="color:#f92672">└──</span> vcpkg<span style="color:#f92672">.</span>json
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ vcpkg install <span style="color:#f92672">--</span>triplet<span style="color:#66d9ef">=</span>x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static <span style="color:#f92672">--</span>host<span style="color:#f92672">-</span>triplet<span style="color:#66d9ef">=</span>x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static</span></span></code></pre></div>
-<p>Overriding triplets is here just as an example.</p>
+<p>Overriding triplets is here just as an example, especially that you probably will never need to override <code>--host-triplet</code>.</p>
 <p>Furthermore, you can now refer to installed libraries from a non-vcpkg project just like you would with any other pre-built dependency:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>some
 </span></span><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#a6e22e">$_</span>
@@ -2087,13 +2093,13 @@
 <li>other people with default toolchains will be getting different build artifacts even though they&rsquo;d be using the same triplets as you, and that might backfire at some point;</li>
 </ul>
 </li>
-<li>Copy the default toolchain into your project repository, modify the flags there and chainload it with <code>VCPKG_CHAINLOAD_TOOLCHAIN_FILE</code>. This option is better, but dragging around a copy of the default toolchain isn&rsquo;t ideal either, at the very least because it will eventually go out of sync with the default one;</li>
+<li>Copy the default toolchain into your project repository, modify the flags there and chainload it with <code>VCPKG_CHAINLOAD_TOOLCHAIN_FILE</code>. This option is almost good, but dragging around a copy of the default toolchain isn&rsquo;t ideal, at the very least because it will eventually go out of sync with the default one;</li>
 <li>Instead of copying the contents of the default toolchain, simply include it in your custom chainloaded toolchain and override the flags right after that.</li>
 </ol>
-<p>I had one more option, which is what I tried first: still create a custom toolchain for chainloading but without including the default toolchain, just seting new values to the flags and that&rsquo;s it. But I soon discovered two problems with this:</p>
+<p>I actually had one more option, which is what I tried first: still create a custom toolchain to be chainloaded but without including the default toolchain - just seting new values to the flags and that&rsquo;s it. But right away I discovered two problems with this:</p>
 <ul>
-<li>you need to somehow get the current values of the flags that have been already set upper in the chain (<em>and then remove <code>/Z7</code> from them</em>). I didn&rsquo;t find a way to do it. You can of course just set the flags to whatever you want, but ideally one would like to preserve all the original flags and remove just the <code>/Z7</code>;</li>
-<li>if you don&rsquo;t include the default toolchain, then all the flags it sets won&rsquo;t be set at all (<em>for example, <code>/utf-8</code> flag will be missing, so you might get <code>too many characters in constant</code> compilation error</em>). I, for one, was expecting those flags to be set, since my custom toolchain is <em>chainloaded</em> and not <em>loaded instead of</em> the default one, but apparently I&rsquo;m missing something about the way <a href="https://learn.microsoft.com/en-us/vcpkg/users/buildsystems/cmake-integration#using-multiple-toolchain-files">chainloading</a> works.</li>
+<li>you need to somehow get the current values of the flags that have been already set upper in the chain. You can of course just set the flags to whatever you want, but ideally one would like to preserve all the original flags and just remove the <code>/Z7</code>. And I didn&rsquo;t find a way to do it;</li>
+<li>the real showstopper, however, is the fact that if you don&rsquo;t include the default toolchain, then all the flags it sets won&rsquo;t be set at all (<em>for example, <code>/utf-8</code> flag will be missing, so you might get <code>too many characters in constant</code> compilation error</em>). I, for one, was expecting those flags to be set, since my custom toolchain is <em>chainloaded</em> and not <em>loaded instead of</em> the default one, but apparently I&rsquo;m missing something about the way <a href="https://learn.microsoft.com/en-us/vcpkg/users/buildsystems/cmake-integration#using-multiple-toolchain-files">chainloading</a> works.</li>
 </ul>
 <p>So the 4th option is what I went with (<em>include the default toolchain in a <a href="https://github.com/microsoft/vcpkg/issues/26699#issuecomment-1245130589">custom toolchain</a> and override flags right after</em>). Yes, it seems to be redundant and rather weird to include the exact same toolchain that has been (<em>hasn&rsquo;t it?</em>) just used upper in the chain, but that is what worked for me.</p>
 <p>Here&rsquo;s my custom toolchain (<em><code>/path/to/custom/toolchains/windows.cmake</code></em>):</p>
@@ -2183,6 +2189,12 @@
         </thead>
         <tbody>
             <tr>
+                <th>assimp-vc143-mt.lib</th>
+                <td style="color:red;">214.9 MB</td>
+                <td>195.3 MB</td>
+                <td style="color:green;">63.8 MB</td>
+            </tr>
+            <tr>
                 <th>dearimgui.lib</th>
                 <td>5.8 MB</td>
                 <td style="color:red;">7.4 MB</td>
@@ -2220,8 +2232,8 @@
             </tr>
             <tr>
                 <th colspan=2></th>
-                <th style="color:red;">117.44 MB</th>
-                <th style="color:green;">35.72 MB</th>
+                <th style="color:red;">312.74 MB</th>
+                <th style="color:green;">99.52 MB</th>
             </tr>
         </tbody>
     </table>
