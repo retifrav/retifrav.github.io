@@ -59,7 +59,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 79 min read</div>
+</svg> 80 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -167,7 +167,11 @@
       <ul>
         <li><a href="#webassembly">WebAssembly</a>
           <ul>
-            <li><a href="#chainloading-emscripten-toolchain">Chainloading Emscripten toolchain</a></li>
+            <li><a href="#chainloading-emscripten-toolchain">Chainloading Emscripten toolchain</a>
+              <ul>
+                <li><a href="#cmake_prefix_path-isnt-used">CMAKE_PREFIX_PATH isn&rsquo;t used</a></li>
+              </ul>
+            </li>
             <li><a href="#enabling-pthreads-support">Enabling pthreads support</a></li>
           </ul>
         </li>
@@ -1927,6 +1931,40 @@
 <p>I mean, I&rsquo;ve been always setting it with <code>-DDCMAKE_TOOLCHAIN_FILE=&quot;...&quot;</code> when I was building my projects with Emscripten for WASM, but now with vcpkg the <code>wasm32-emscripten</code> triplet already does chainload it, and so I thought that I then should not. But as it turns out, counter-intuitively enough, <em>both</em> of these chainloads are required, because (<em>the way I understand it</em>) the one chainloaded inside the triplet is used for building vcpkg ports, and the one set with <code>-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=&quot;...&quot;</code> in CLI is used for building the main project.</p>
 <p>And what would you know, having done that, I didn&rsquo;t get the errors about non-compatible 32bit packages, as this time <code>CMAKE_SIZEOF_VOID_P</code> equaled <code>4</code>.</p>
 <p>It certainly wouldn&rsquo;t hurt to have this documented somewhere.</p>
+<h4 id="cmake_prefix_path-isnt-used">CMAKE_PREFIX_PATH isn&rsquo;t used</h4>
+<p>That&rsquo;s not exactly related to vcpkg, but since we are on the topic of Emscripten toolchain: when I tried to use vcpkg-resolved dependencies and my library in another project, like so:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>some<span style="color:#f92672">/</span>other<span style="color:#f92672">/</span>project
+</span></span><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd <span style="color:#a6e22e">$_</span>
+</span></span><span style="display:flex;"><span>$ cmake <span style="color:#f92672">-</span>G <span style="color:#e6db74">&#34;Ninja&#34;</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_PREFIX_PATH</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/path/to/my/library/install&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_TOOLCHAIN_FILE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">..</span></span></span></code></pre></div>
+<p>I suddenly got errors about not finding packages configs, even though <code>CMAKE_PREFIX_PATH</code> is clearly set and is correct.</p>
+<p>And it <a href="https://stackoverflow.com/a/40080575/1688203">turned out</a> that Emscripten toolchain sets certain variables which &ldquo;disable&rdquo; using <code>CMAKE_PREFIX_PATH</code> for packages discovery. There are also some more details (<em>and confusion</em>) in <a href="https://github.com/emscripten-core/emscripten/issues/19243">this thread</a>.</p>
+<p>Here&rsquo;s that particular fragment from <code>Emscripten.cmake</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># Since Emscripten is a cross-compiler, we should never look at the
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># system-provided directories like /usr/include and so on. Therefore only
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># CMAKE_FIND_ROOT_PATH should be used as a find directory. See
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># http://www.cmake.org/cmake/help/v3.0/variable/CMAKE_FIND_ROOT_PATH_MODE_INCLUDE.html
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>if (<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">CMAKE_FIND_ROOT_PATH_MODE_LIBRARY</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  set(<span style="color:#e6db74">CMAKE_FIND_ROOT_PATH_MODE_LIBRARY</span> <span style="color:#e6db74">ONLY</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>if (<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">CMAKE_FIND_ROOT_PATH_MODE_INCLUDE</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  set(<span style="color:#e6db74">CMAKE_FIND_ROOT_PATH_MODE_INCLUDE</span> <span style="color:#e6db74">ONLY</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>if (<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">CMAKE_FIND_ROOT_PATH_MODE_PACKAGE</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#960050;background-color:#1e0010"></span>  set(<span style="color:#e6db74">CMAKE_FIND_ROOT_PATH_MODE_PACKAGE</span> <span style="color:#e6db74">ONLY</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()</span></span></code></pre></div>
+<p>So it&rsquo;s <code>CMAKE_FIND_ROOT_PATH_MODE_PACKAGE</code> being set to <code>ONLY</code> what&rsquo;s causing the problem. And so then there are two &ldquo;solutions&rdquo; for that.</p>
+<p>Either provide <code>CMAKE_FIND_ROOT_PATH</code> instead of <code>CMAKE_PREFIX_PATH</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cmake <span style="color:#f92672">-</span>G <span style="color:#e6db74">&#34;Ninja&#34;</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_FIND_ROOT_PATH</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/path/to/my/library/install&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_TOOLCHAIN_FILE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">..</span></span></span></code></pre></div>
+<p>or keep <code>CMAKE_PREFIX_PATH</code> but set <code>CMAKE_FIND_ROOT_PATH_MODE_PACKAGE</code> to <code>BOTH</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cmake <span style="color:#f92672">-</span>G <span style="color:#e6db74">&#34;Ninja&#34;</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_PREFIX_PATH</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/path/to/my/library/install&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;BOTH&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_TOOLCHAIN_FILE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake&#34;</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">..</span></span></span></code></pre></div>
+<p>I do not know which one is &ldquo;correct&rdquo;. Both of the &ldquo;solutions&rdquo; worked (<em>equally?</em>) fine for me, as I haven&rsquo;t noticed any problems so far.</p>
 <h3 id="enabling-pthreads-support">Enabling pthreads support</h3>
 <p>Emscripten can compile to <a href="https://emscripten.org/docs/porting/pthreads.html">WASM with pthreads</a> (<em><a href="https://en.wikipedia.org/wiki/Pthreads">POSIX threads</a></em>) support enabled. For that one needs to set <code>-pthread</code> compiler flag when building one&rsquo;s project.</p>
 <p>I did set that flag in my main project, started the build, got the ports built, got the project built too, but then I got the following errors on linking:</p>
