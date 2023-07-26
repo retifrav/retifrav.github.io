@@ -5,7 +5,7 @@
     <title>Managing dependencies in a C&#43;&#43; project with vcpkg | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2022/10/30/cpp-dependencies-with-vcpkg/" />
 
-    <meta name="generator" content="Hugo 0.111.3" />
+    <meta name="generator" content="Hugo 0.115.4" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -894,7 +894,7 @@
 <p>Which of course means that one can mess-up features by seting for example <code>use-jpeg-turbo</code> and <code>pdf-jpeg-original</code> at the same time, which will collide on dependencies installation.</p>
 <h2 id="cmake-helpers">CMake helpers</h2>
 <p>As you saw in <a href="#portfilecmake">portfile.cmake</a>, one can use helper packages, which are not libraries for development but CMake modules for extending portfiles functionality. The <code>vcpkg-cmake</code> and <code>vcpkg-cmake-config</code> packages are examples of such helpers.</p>
-<p>Naturally, you can <a href="https://github.com/microsoft/vcpkg/blob/master/docs/maintainers/authoring-script-ports.md">create a helper</a> like this yourself. Here&rsquo;s a <a href="https://github.com/retifrav/vcpkg-registry/tree/master/ports/decovar-vcpkg-cmake">one I made</a>:</p>
+<p>Naturally, you can <a href="https://github.com/microsoft/vcpkg/blob/master/docs/maintainers/authoring-script-ports.md">create a helper</a> like this yourself. Here&rsquo;s a <a href="https://github.com/retifrav/vcpkg-registry/tree/6a1cbcac33a84fad0c577e7aad8b6921ac64162b/ports/decovar-vcpkg-cmake">one I made</a> (<em>this version was not entirely correct, so it got updated later</em>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">./</span>ports<span style="color:#f92672">/</span>decovar<span style="color:#f92672">-</span>vcpkg<span style="color:#f92672">-</span>cmake
 </span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> <span style="color:#a6e22e">Config</span><span style="color:#f92672">.</span>cmake<span style="color:#f92672">.</span>in
 </span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> <span style="color:#a6e22e">Installing</span><span style="color:#f92672">.</span>cmake
@@ -903,7 +903,7 @@
 </span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> portfile<span style="color:#f92672">.</span>cmake
 </span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> vcpkg<span style="color:#f92672">-</span>port<span style="color:#f92672">-</span>config<span style="color:#f92672">.</span>cmake
 </span></span><span style="display:flex;"><span><span style="color:#f92672">└──</span> vcpkg<span style="color:#f92672">.</span>json</span></span></code></pre></div>
-<p>If the helper is supposed to provide CMake function(s) which could be used in portfiles, then it must contain <code>vcpkg-port-config.cmake</code> - these files get automatically imported by vcpkg. The contents of that file should be something like this:</p>
+<p>If the helper is supposed to provide CMake function(s) which could be used in portfiles, then it must contain <code>vcpkg-port-config.cmake</code> - these files get automatically imported/included by vcpkg. The contents of that file should be something like:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>include(<span style="color:#e6db74">&#34;${CMAKE_CURRENT_LIST_DIR}/decovar_vcpkg_cmake_ololo.cmake&#34;</span>)</span></span></code></pre></div>
 <p>The <code>decovar_vcpkg_cmake_ololo.cmake</code> in turn contains the following:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>include_guard(<span style="color:#e6db74">GLOBAL</span>)<span style="color:#960050;background-color:#1e0010">
@@ -912,32 +912,29 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;ololo&#34;</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endfunction()</span></span></code></pre></div>
 <p>So now any package that has <code>decovar-vcpkg-cmake</code> helper as a dependency will be able to call <code>decovar_vcpkg_cmake_ololo()</code> function in its portfile (<em>but not in its <code>CMakeLists.txt</code></em>).</p>
-<p>Apart from this module my helper also contains <code>Installing.cmake</code> and <code>Config.cmake.in</code> - my common/shared installation instructions for CMake projects that are lacking those. In order to use them, a project needs to add the following to its <code>CMakeLists.txt</code>:</p>
+<p>Apart from this module my helper also contains <code>Installing.cmake</code> and <code>Config.cmake.in</code> - my common/shared installation instructions for CMake projects that are lacking those. In order to use them, I thought, a project needs to add the following to its <code>CMakeLists.txt</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e">#list(APPEND CMAKE_MODULE_PATH
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"># &#34;${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/decovar-vcpkg-cmake&#34;
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e">#)
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include(Installing)
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>include(<span style="color:#e6db74">&#34;${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/decovar-vcpkg-cmake/Installing.cmake&#34;</span>)</span></span></code></pre></div>
-<p>I don&rsquo;t know if this is a correct way of shipping and including common CMake modules, but first of all, it does work like this, and secondly, I just didn&rsquo;t find another way.</p>
-<p>I said &ldquo;<em>it does work</em>&rdquo;, but actually since I am relying on <code>VCPKG_TARGET_TRIPLET</code> here, it will fail when host dependencies are installed using a different triplet:</p>
+<p>But that turned out to be not a correct way of shipping and including common CMake modules. It might work like this, but as you see I am relying on <code>VCPKG_TARGET_TRIPLET</code> here, and so it will fail when host dependencies are installed using a different triplet:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>The following packages will be built and installed:
 </span></span><span style="display:flex;"><span>    jsoncpp<span style="color:#f92672">[</span>core<span style="color:#f92672">]</span>:x64-windows-static -&gt; 1.9.5
 </span></span><span style="display:flex;"><span>    pdqsort<span style="color:#f92672">[</span>core<span style="color:#f92672">]</span>:x64-windows-static -&gt; 2021.3.14
 </span></span><span style="display:flex;"><span>  * vcpkg-cmake<span style="color:#f92672">[</span>core<span style="color:#f92672">]</span>:x64-windows -&gt; 2022-08-18
 </span></span><span style="display:flex;"><span>  * vcpkg-cmake-config<span style="color:#f92672">[</span>core<span style="color:#f92672">]</span>:x64-windows -&gt; 2022-02-06
 </span></span><span style="display:flex;"><span>    zstd<span style="color:#f92672">[</span>core<span style="color:#f92672">]</span>:x64-windows-static -&gt; 1.5.2</span></span></code></pre></div>
-<p>You see how everything but helpers is using <code>x64-windows-static</code> triplet, and helpers are using <code>x64-windows</code>? That will cause the <code>include()</code> statement to fail, because it will expect helper package to have a different path. To resolve this problem you could perhaps use <code>${VCPKG_INSTALLED_DIR}/${VCPKG_HOST_TRIPLET}</code> instead of <code>${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}</code>, but I decided to just set both to the same value:</p>
+<p>You see how everything but helpers is using <code>x64-windows-static</code> triplet, and helpers are using <code>x64-windows</code>? That will cause the <code>include()</code> statement to fail, because it will expect helper package to have a different path. To resolve this problem I thought that I could just set them both to the same value:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">-</span><span style="color:#a6e22e">DVCPKG_TARGET_TRIPLET</span><span style="color:#66d9ef">=</span>x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static <span style="color:#f92672">-</span><span style="color:#a6e22e">DVCPKG_HOST_TRIPLET</span><span style="color:#66d9ef">=</span>x64<span style="color:#f92672">-</span>windows<span style="color:#f92672">-</span>static</span></span></code></pre></div>
-<p>And then it works. But! Later I discovered that forcing host and target triplets to match is incorrect, and one shouldn&rsquo;t do that. Furthermore, it now seems to me that the way I&rsquo;ve implemented sharing common files through a CMake helper port is not entirely correct either, so perhaps you shouldn&rsquo;t use it as an example of doing so. I&rsquo;ll re-investigate this at some point later and will update the article.</p>
-<p>Finally, the helper&rsquo;s <code>portfile.cmake</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>if(<span style="color:#e6db74">VCPKG_CROSSCOMPILING</span>) <span style="color:#75715e"># if(NOT TARGET_TRIPLET STREQUAL _HOST_TRIPLET)
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e"># make FATAL_ERROR in CI when issue #16773 fixed
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    message(<span style="color:#e6db74">WARNING</span> <span style="color:#e6db74">&#34;decovar-vcpkg-cmake is a host-only port; mark it as a host port in your dependencies&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+<p>And then it works. But! Forcing host and target triplets to match is absolutely not correct, you should certainly not do that. As I later discovered, there is a <a href="https://learn.microsoft.com/en-us/vcpkg/maintainers/variables#current_host_installed_dir">CURRENT_HOST_INSTALLED_DIR</a> variable that can be used in a portfile, and that made everything easier, as you&rsquo;ll soon see.</p>
+<p>For now, here&rsquo;s the helper&rsquo;s <code>portfile.cmake</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>if(<span style="color:#e6db74">VCPKG_CROSSCOMPILING</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#75715e"># should be FATAL_ERROR
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    message(<span style="color:#e6db74">WARNING</span> <span style="color:#e6db74">&#34;${PORT} is a host-only port, mark it as a host dependency in your ports&#34;</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># basically, the only thing this port does is it copies these files,
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># so they are available to be included in other packages
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>file(
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>file(
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">INSTALL</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#75715e"># to be used in other projects CMakeLists.txt project files
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#e6db74">&#34;${CMAKE_CURRENT_LIST_DIR}/Installing.cmake&#34;</span>
@@ -946,7 +943,7 @@
 </span></span><span style="display:flex;"><span>        <span style="color:#75715e"># to be used in other projects portfiles
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#e6db74">&#34;${CMAKE_CURRENT_LIST_DIR}/decovar_vcpkg_cmake_ololo.cmake&#34;</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#75715e"># this one just includes decovar_vcpkg_cmake_ololo.cmake
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e"># and is automatically included itself by vcpkg
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e"># and itself gets automatically included by vcpkg
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#e6db74">&#34;${CMAKE_CURRENT_LIST_DIR}/vcpkg-port-config.cmake&#34;</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">DESTINATION</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;${CURRENT_PACKAGES_DIR}/share/${PORT}&#34;</span>
@@ -960,8 +957,19 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">RENAME</span> <span style="color:#e6db74">copyright</span>
 </span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># what is that
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">VCPKG_POLICY_CMAKE_HELPER_PORT</span> <span style="color:#e6db74">enabled</span>)</span></span></code></pre></div>
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_POLICY_CMAKE_HELPER_PORT</span> <span style="color:#e6db74">enabled</span>)</span></span></code></pre></div>
+<p>The actual port that would be using this helper will be then able to copy the common files into its source directory using that <code>CURRENT_HOST_INSTALLED_DIR</code> variable, as it will always point to the host dependencies path:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>file(<span style="color:#e6db74">COPY</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;${CURRENT_HOST_INSTALLED_DIR}/share/decovar-vcpkg-cmake/Installing.cmake&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">&#34;${SOURCE_PATH}&#34;</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>file(<span style="color:#e6db74">COPY</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;${CURRENT_HOST_INSTALLED_DIR}/share/decovar-vcpkg-cmake/Config.cmake.in&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">&#34;${SOURCE_PATH}&#34;</span>
+</span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
+<p>And then in project&rsquo;s <code>CMakeLists.txt</code> it will be just this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>include(<span style="color:#e6db74">&#34;${CMAKE_CURRENT_SOURCE_DIR}/Installing.cmake&#34;</span>)</span></span></code></pre></div>
+<p>You can take a look at how <a href="https://github.com/retifrav/vcpkg-registry/tree/300646731e809c0a217cf3c133f856be82add3ad/ports/dearimgui">Dear ImGui port</a> does it.</p>
 <h2 id="cmake-wrapper">CMake wrapper</h2>
 <p>I couldn&rsquo;t find documentation about this functionality, but it&rsquo;s not very complex to figure out on your own. Basically, adding a CMake wrapper into your port allows you to &ldquo;inject&rdquo; CMake statements before or after <code>find_package()</code> call.</p>
 <p>For example, let&rsquo;s take <a href="https://github.com/retifrav/vcpkg-registry/tree/master/ports/xerces-c">Xerces-C++</a> port. It builds fine, but when you&rsquo;ll try to actually use it in some project on Mac OS (<em>using <code>x64-osx</code> or <code>arm64-osx</code> triplets</em>), then you will get the following linking errors:</p>
