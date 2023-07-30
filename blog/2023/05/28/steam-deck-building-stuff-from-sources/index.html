@@ -59,7 +59,7 @@
 </svg> 2023-05-28 20:46:09 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 35 min read</div>
+</svg> 38 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -93,6 +93,11 @@
             <li><a href="#problem-with-vaapi-in-qt-multimedia-static-build">Problem with VAAPI in Qt Multimedia static build</a></li>
           </ul>
         </li>
+      </ul>
+    </li>
+    <li><a href="#inspecting-applications-with-renderdoc">Inspecting applications with RenderDoc</a>
+      <ul>
+        <li><a href="#capturing-a-windows-application-running-with-proton">Capturing a Windows application running with Proton</a></li>
       </ul>
     </li>
     <li><a href="#what-about-ides">What about IDEs</a></li>
@@ -1157,6 +1162,87 @@
 <p>Since it builds fine with shared Qt, this probably means that static Qt expects a static build of that VAAPI thing? But where should it come from, is it a FFmpeg/VAAPI thing or is it something else?</p>
 <p>I tried building FFmpeg from sources using Qt&rsquo;s Coin script in <code>/path/to/qt/src/6.5.1/coin/provisioning/qtci-linux-Ubuntu-22.04-x86_64/90-install-ffmpeg.sh</code> and then configuring Qt with <code>-- -DFFMPEG_DIR=&quot;/path/to/ffmpeg/install&quot;</code> (<em>that build looked static to me, because it had <code>.a</code> libraries</em>), but still my application failed to configure even with that Qt build.</p>
 <p>I couldn&rsquo;t figure out this problem yet.</p>
+<h1 id="inspecting-applications-with-renderdoc">Inspecting applications with RenderDoc</h1>
+<p>If you work with something that puts pixels on a screen, you&rsquo;ll probably want to inspect your application/game with <a href="https://renderdoc.org">RenderDoc</a>. It does support GNU/Linux hosts, and in fact <code>renderdoccmd</code> is already available on Steam Deck out of the box (<em>unless it was me who installed it at some point</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ renderdoccmd --version
+</span></span><span style="display:flex;"><span>renderdoccmd x64 v1.22 built from NO_GIT_COMMIT_HASH_DEFINED
+</span></span><span style="display:flex;"><span>Packaged for SteamOS (1.22) - joshua@froggi.es
+</span></span><span style="display:flex;"><span>APIs supported at compile-time: Vulkan, GL, GLES.
+</span></span><span style="display:flex;"><span>Windowing systems supported at compile-time: xlib, XCB, Vulkan KHR_display.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ which renderdoccmd
+</span></span><span style="display:flex;"><span>/usr/bin/renderdoccmd</span></span></code></pre></div>
+<p>Either way, you can also download it from its website; and you&rsquo;ll have to do that if you need the GUI application (<em><code>qrenderdoc</code></em>), as, unlike <code>renderdoccmd</code>, it isn&rsquo;t available in the system by default. Once you download it, keep in mind that you might need to register that one for Vulkan capture instead of the default one. I kept the default one, just in case (<em>I only needed the GUI anyway</em>).</p>
+<p>Let&rsquo;s try to inspect an OpenGL application, such as <a href="#a-simple-application">this one</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ renderdoccmd capture <span style="color:#e6db74">&#34;/path/to/glfw-imgui&#34;</span></span></span></code></pre></div>
+<p>The application will launch and you&rsquo;ll see RenderDoc&rsquo;s info in the top left corner:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2023/05/28/steam-deck-building-stuff-from-sources/images/renderdoc-glfw-imgui-capture.png" alt="RenderDoc, capturing an OpenGL application">
+
+<p>If you press F12, it will make a capture and save it to <code>/tmp/RenderDoc/glfw-imgui_2023.07.30_15.20_frame6983.rdc</code> file. That file can now be openned in RenderDoc GUI (<em>File → Open Capture</em>):</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2023/05/28/steam-deck-building-stuff-from-sources/images/renderdoc-glfw-imgui-view.png" alt="RenderDoc, viewing an OpenGL capture">
+
+<p>You can inspect Vulkan applications as well, here&rsquo;s an example with a default <code>vkcube</code> sample:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ renderdoccmd capture <span style="color:#e6db74">&#34;vkcube&#34;</span></span></span></code></pre></div>
+<p>Alternatively, in case of Vulkan applications, you can just set the <code>ENABLE_VULKAN_RENDERDOC_CAPTURE</code> environment variable:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ <span style="color:#a6e22e">ENABLE_VULKAN_RENDERDOC_CAPTURE</span><span style="color:#66d9ef">=</span><span style="color:#ae81ff">1</span> vkcube</span></span></code></pre></div>
+<p>It will again launch the application with RenderDoc info in the top-left corner:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2023/05/28/steam-deck-building-stuff-from-sources/images/renderdoc-vkcube-capture.png" alt="RenderDoc, capturing a Vulkan application">
+
+<p>If you&rsquo;d like to inspect captures in RenderDoc GUI application right on Steam Deck, then you better do that with an external display, because the GUI is rather packed with controls and widgets to be viewed on Steam Deck&rsquo;s own screen.</p>
+<p>You can also move the capture file over to your main machine with a big screen and open it there, but chances are you have a different GPU on it, and so the capture will fail to load:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2023/05/28/steam-deck-building-stuff-from-sources/images/renderdoc-error-opening-capture.png" alt="RenderDoc, error opening capture">
+
+<p>To be able to view it on that host, you&rsquo;ll need to run <code>renderdoccmd</code> on Steam Deck in server mode:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ renderdoccmd remoteserver <span style="color:#f92672">-</span>p <span style="color:#ae81ff">4321</span></span></span></code></pre></div>
+<p>then discover it on your main host:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2023/05/28/steam-deck-building-stuff-from-sources/images/renderdoc-remote-host-manager.png" alt="RenderDoc, remote host manager">
+
+<p>and then you&rsquo;ll be able to choose Remote option:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2023/05/28/steam-deck-building-stuff-from-sources/images/renderdoc-openning-capture-on-remote-host.png" alt="RenderDoc, openning capture on remote host">
+
+<p>and that will work:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2023/05/28/steam-deck-building-stuff-from-sources/images/renderdoc-vkcube-view-remote.png" alt="RenderDoc, viewing a Vulkan capture">
+
+<p>You should also be able to launch applications remotely, which should eliminate the step of manually transferring capture files from Steam Deck to you main host. I could indeed launch an application remotely, but then I didn&rsquo;t find a way to remotely trigger a capture and view captured results.</p>
+<h2 id="capturing-a-windows-application-running-with-proton">Capturing a Windows application running with Proton</h2>
+<p>In general, it should be just a matter of running that application/game <a href="/blog/2023/04/10/steam-deck/#how-to-run-an-application-with-proton">with Proton</a> and wrapping that call into <code>renderdoccmd capture</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ STEAM_COMPAT_CLIENT_INSTALL_PATH<span style="color:#f92672">=</span>/home/deck/.steam/steam <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    STEAM_COMPAT_DATA_PATH<span style="color:#f92672">=</span>/home/deck/.local/share/Steam/steamapps/compatdata/2718988064 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    renderdoccmd capture /home/deck/.local/share/Steam/compatibilitytools.d/GE-Proton8-4/proton waitforexitandrun <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    /run/media/mmcblk0p1/games/diablo-2-resurrected/D2R.exe -launch</span></span></code></pre></div>
+<p>But for me that just ran the game without RenderDoc capturing it. And I didn&rsquo;t find a way to make it work with <code>renderdoccmd capture</code>, but fortunately this game is using Vulkan (<em>or rather DirectX via Vulkan?</em>), and so the variant with setting environment variable works fine:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ENABLE_VULKAN_RENDERDOC_CAPTURE<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    STEAM_COMPAT_CLIENT_INSTALL_PATH<span style="color:#f92672">=</span>/home/deck/.steam/steam <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    STEAM_COMPAT_DATA_PATH<span style="color:#f92672">=</span>/home/deck/.local/share/Steam/steamapps/compatdata/2718988064 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    /home/deck/.local/share/Steam/compatibilitytools.d/GE-Proton8-4/proton waitforexitandrun <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    /run/media/mmcblk0p1/games/diablo-2-resurrected/D2R.exe -launch</span></span></code></pre></div>
+<p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2023/05/28/steam-deck-building-stuff-from-sources/images/renderdoc-diablo-capture.jpg" alt="RenderDoc, capturing Diablo II Resurrected">
+
+</p>
+<p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2023/05/28/steam-deck-building-stuff-from-sources/images/renderdoc-diablo-view.png" alt="RenderDoc, viewing Diablo II Resurrected">
+
+</p>
+<p>Obviously, if that game/application is already added to your Steam library, then you can just set this variable in its launch options instead of running it from bare CLI.</p>
 <h1 id="what-about-ides">What about IDEs</h1>
 <p>I reckon, it&rsquo;s the same as with any other GNU/Linux hosts - whatever you can install there, most likely can be installed on Steam Deck too. And if you are connecting to it via SSH, then you probably will use IDEs that you have on your main machine anyway.</p>
 <p>Personally, I do not care much about IDEs, because, as you might have noticed, I prefer to build stuff from CLI. The code editing is a different story, of course, but even then I do not like full-blown IDEs, as they are too &ldquo;slow&rdquo; and &ldquo;clumsy&rdquo; for me.</p>
