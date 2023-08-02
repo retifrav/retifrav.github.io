@@ -469,7 +469,7 @@
 <p>I think this is not a correct structure, as it seems that the intention is to have one folder per port. It all works fine like this, but I&rsquo;m concerned that it might cause problems in future.</p>
 <h3 id="versions">Versions</h3>
 <h4 id="baselinejson">baseline.json</h4>
-<p>The <code>baseline.json</code>, as I understood, lists default (<em>minimum?</em>) versions of all the packages that are available in that registry:</p>
+<p>The <code>baseline.json</code>, as I understood, lists default versions of all the packages that are available in that registry:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;default&#34;</span>:
 </span></span><span style="display:flex;"><span>    {
@@ -494,7 +494,7 @@
 </span></span><span style="display:flex;"><span>        }
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
-<p>What I realized a bit later is that even if you have older versions of a port available in your registry - for example my <code>glfw</code> port has versions <code>3.3.7</code> and <code>3.3.8</code> in its <a href="https://github.com/retifrav/vcpkg-registry/blob/master/versions/g-/glfw.json">versions file</a> - setting <code>baseline</code> version to <code>3.3.8</code> will make version <code>3.3.7</code> (<em>and all the older versions</em>) unavailible/undiscoverable (<em>or perhaps this is only the case when using <code>&gt;=</code> - the minimum version approach?</em>), and that is what I fixed in <a href="https://github.com/retifrav/vcpkg-registry/commit/56b8f117b362a2d22d4469a2a04b71c77afb97b6">this commit</a>.</p>
+<p>Then if a project has no <a href="#locking-on-dependencies-versions">overrides</a>, these will be the versions vcpkg will get for it. And if a project lists a dependency with <code>version&gt;=</code> field, then in case it&rsquo;s lower than the baselined, vcpkg will skip all higher versions untill the baselined value; otherwise it will take the first versions that is equal or higher.</p>
 <h4 id="versions-file">Versions file</h4>
 <p>Individual <code>*.json</code> files establish which version of the port is available in which commit, for example here&rsquo;s <code>glfw.json</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
@@ -1616,15 +1616,18 @@
 </span></span><span style="display:flex;"><span>    [
 </span></span><span style="display:flex;"><span>        {
 </span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;glad&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;0.1.36&#34;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;0.1.36&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;port-version&#34;</span>: <span style="color:#ae81ff">0</span>
 </span></span><span style="display:flex;"><span>        },
 </span></span><span style="display:flex;"><span>        {
 </span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;glfw&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;3.3.8&#34;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;3.3.8&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;port-version&#34;</span>: <span style="color:#ae81ff">0</span>
 </span></span><span style="display:flex;"><span>        },
 </span></span><span style="display:flex;"><span>        {
 </span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;dearimgui&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;1.88.0&#34;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;1.88.0&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;port-version&#34;</span>: <span style="color:#ae81ff">0</span>
 </span></span><span style="display:flex;"><span>        }
 </span></span><span style="display:flex;"><span>    ]
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
@@ -1644,8 +1647,9 @@
 <p>But that will fail:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>error: <span style="color:#66d9ef">while</span> loading /path/to/glfw-imgui-example/vcpkg.json:
 </span></span><span style="display:flex;"><span>$.dependencies<span style="color:#f92672">[</span>2<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>a dependency<span style="color:#f92672">)</span>: unexpected field <span style="color:#e6db74">&#39;version&#39;</span>, did you mean <span style="color:#e6db74">&#39;version&gt;=&#39;</span>?See https://github.com/Microsoft/vcpkg/tree/master/docs/users/manifests.md <span style="color:#66d9ef">for</span> more information.</span></span></code></pre></div>
-<p>It just does not accept this, and indeed, setting it like <code>&quot;version&gt;=&quot;: &quot;3.3.8&quot;</code> will succeed, <del>but then it will accept newer versions too, when they become available in the registry</del> and it should not pick up newer versions, because vcpkg uses a <a href="https://github.com/microsoft/vcpkg/blob/master/docs/specifications/versioning.md#42-declaring-minimum-version-constraints">minimum version approach</a>.</p>
-<p>And so if you want to lock/pin exact versions of dependencies, then you have to use <a href="https://github.com/microsoft/vcpkg/blob/master/docs/users/manifests.md#overrides">overrides</a>. In my opinion, this whole system is a bit weird and not intuitive, but okay.</p>
+<p>So it just does not accept this, and indeed, setting it like <code>&quot;version&gt;=&quot;: &quot;3.3.8&quot;</code> will succeed, <del>but then it will accept newer versions too, when they become available in the registry</del> and it should not pick up newer versions, because vcpkg uses a <a href="https://github.com/microsoft/vcpkg/blob/master/docs/specifications/versioning.md#42-declaring-minimum-version-constraints">minimum version approach</a>. Unless, like I said <a href="#baselinejson">before</a>, if you set a dependency version with <code>version&gt;=</code> and that value is lower than baselined version, then vcpkg will skip all the versions between that one and the baselined and will take the baselined version.</p>
+<p>And so if you want to pin/lock on <em>exact</em> version of a dependency, then you have to use <a href="https://github.com/microsoft/vcpkg/blob/master/docs/users/manifests.md#overrides">overrides</a>.</p>
+<p>In my opinion, this whole system is quite weird and not intuitive.</p>
 <h4 id="transitive-dependencies">Transitive dependencies</h4>
 <p>&hellip;but weirdness doesn&rsquo;t stop there. You cannot use <code>overrides</code> in ports manifests (<code>vcpkg.json</code>) of dependencies of dependencies (<em>transitive dependencies</em>). Or, rather, you can, but it will be ignored. As explained in <a href="https://github.com/microsoft/vcpkg/discussions/24655#discussioncomment-2735348">this answer</a>:</p>
 <blockquote>
@@ -1675,6 +1679,12 @@
 </span></span><span style="display:flex;"><span>        }
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>To make things more interesting, if you&rsquo;d like to specify the <a href="https://learn.microsoft.com/en-us/vcpkg/users/versioning#port-version">port version</a> too, this is how you would do it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;glfw&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;version&gt;=&#34;</span>: <span style="color:#e6db74">&#34;3.3.8#1&#34;</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>Yeah, no separate field/property - just this <code>#</code> separator followed by the port version.</p>
 <h3 id="multiple-registries">Multiple registries</h3>
 <p>It is also possible to have <a href="https://github.com/microsoft/vcpkg/blob/master/docs/users/registries.md">multiple registries</a> in a project and specify which packages should be fetched from which registry.</p>
 <p>For example, let&rsquo;s say I want my in-house custom registry to be the default one, and for the purpose of testing/comparing my custom ports I&rsquo;d need to be able to get their variants from Microsoft&rsquo;s registry:</p>
