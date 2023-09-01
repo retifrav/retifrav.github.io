@@ -5,7 +5,7 @@
     <title>Managing dependencies in a C&#43;&#43; project with vcpkg | Declaration of VAR</title>
     <link rel="canonical" href="https://decovar.dev/blog/2022/10/30/cpp-dependencies-with-vcpkg/" />
 
-    <meta name="generator" content="Hugo 0.115.4" />
+    <meta name="generator" content="Hugo 0.117.0" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link href="/favicon.png" rel="icon">
@@ -59,7 +59,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 85 min read</div>
+</svg> 88 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -205,6 +205,11 @@
         <li><a href="#speed">Speed</a></li>
         <li><a href="#documentation">Documentation</a></li>
         <li><a href="#overall-impression">Overall impression</a></li>
+      </ul>
+    </li>
+    <li><a href="#updates">Updates</a>
+      <ul>
+        <li><a href="#2023-09-01--build-time-improvements">2023-09-01 | Build time improvements</a></li>
       </ul>
     </li>
   </ul>
@@ -2507,6 +2512,33 @@
 <p>Yet again I&rsquo;d like to say once more that our less fortunate experience with Conan might be because we used it wrong, and probably we should have spent some more time reading the documentation. But at the same time with vcpkg we were on the right track from the very beginning, so perhaps one could say that vcpkg is more intuitive to use (<em>when you already have good enough experience with CMake</em>).</p>
 <p>I cannot say that Conan is worse. Even though we <a href="#why-we-didnt-proceed-with-conan">did not proceed</a> with it for all our projects, I did add it to some of our smaller projects, mostly tools and demos, where it wasn&rsquo;t so time-consuming to integrate, and there it was doing the job quite nicely. But now we have decided to go with integrating vcpkg in all our projects.</p>
 <p>With that said, it&rsquo;s surely nice to have alternatives, and so it&rsquo;s only great that C++ developers have more than one package manager to choose from.</p>
+<hr class="updates-separator">
+<h1 id="updates">Updates</h1>
+<h2 id="2023-09-01--build-time-improvements">2023-09-01 | Build time improvements</h2>
+<p>Some months later we finished the work of moving all of our project&rsquo;s bundled/vendored dependencies from the repository and making ports for them in our vcpkg registry. Along the way we also stopped producing object libraries and made all of the dependencies normal libraries.</p>
+<p>The total amount of ports in the registry ended up being more than 60 - that is both our direct dependencies and transitive dependencies (<em>dependencies of dependencies</em>). Of course, after excluding platform-specific and feature-specific dependencies the number becomes about 30-40 in average, but still, that is quite a number.</p>
+<p>So, naturally, we expected a big improvement in build times, since all the dependencies are now restored from local cache instead of being built every time from sources. And we did get an improvement, but not as big as we thought we would:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/build-time-improvements-buildbots.png" alt="vcpkg, build time improvements on buildbots">
+
+<p>Some clarification:</p>
+<ul>
+<li>the &ldquo;bundled&rdquo; column shows project build time with dependencies built from bundled sources, and &ldquo;vcpkg&rdquo; column shows project build time when dependencies are restored pre-built from local cache;</li>
+<li>not all platforms are building the same amount of components. For example, Windows Clang and some other configurations do not build tools, samples and demos, so they have less work to do;</li>
+<li>the project is built on several different buildbots, and not all of them have the same performance (<em>for instance, mac-1 buildbot is considerably faster than mac-8</em>).</li>
+</ul>
+<p>But why most of the Windows builds got so little improvement - that I cannot explain. Using Ninja instead of Visual Studio would certainly result in faster builds, but unfortunately we are stuck with the latter for now, and anyway the ratio would likely still be the same.</p>
+<p>The only guess I have is based on the fact that all of those &ldquo;slow&rdquo; configurations (<em>less than 10% improvement</em>) are building everything (<em>not just our SDK libraries but also tools, samples and demos</em>), and configurations with big improvements (<em>30% and more</em>) are building just our SDK libraries, so no tools, samples or demos. And I am guessing that while <em>compiling</em> time has improved consistently(?) across all platforms, one should not forget that there is also <em>linking</em>, and apparently that process actually degraded in those configurations that build applications (<em>tools/samples/demos</em>). Like I said, we were building part of our dependencies as object libraries, and so now when all of the dependencies became normal libraries, that added more work for the linker (<em>did it really?</em>). I guess. If not that, I don&rsquo;t know what then.</p>
+<p>To test that theory I&rsquo;ve run one of the Windows builds on my machine, first with everything enabled and then with disabled tools/samples/demos:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/build-time-improvements-personal.png" alt="vcpkg, build time improvements on personal machine">
+
+<p>Surprisingly, even with the full build there was a 24% improvement on my machine versus 7% improvement on buildbot. Why the hell is it so? Well, I did use Ninja instead of Visual Studio generator, which certainly speeded up the build, but that applies to both build times (<em>with and without vcpkg</em>), so the ratio shouldn&rsquo;t be affected, should it?</p>
+<p>If you are curious why the total build time is 15/14 minutes on buildbot and only 10/8 minutes on my machine, that is because buildbots also run certain preparation steps and then do packing and publishing after the build, and all that adds up to the total time.</p>
+<p>And then the build without tools/samples/demos got 41% improvement! So that would confirm my theory about &ldquo;degraded&rdquo; linking times, but I am still not sure if it really is the actual reason.</p>
+<p>Either way, while it&rsquo;s nice to get faster builds, for us that was not the main goal of using a package manager. We are mostly happy about the fact that we can finally stop bundling/vendoring 3rd-party sources in our repository and resolve the project dependencies like adults.</p>
       </div>
     </article>
     <div><div id="tags">
