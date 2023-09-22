@@ -1,0 +1,169 @@
+diff -uraBN /path/to/qt-everywhere-src-5.15.2/qtbase/src/corelib/global/qfloat16.h /e/tools/qt/src/5.15.2/qtbase/src/corelib/global/qfloat16.h
+--- /path/to/qt-everywhere-src-5.15.2/qtbase/src/corelib/global/qfloat16.h	2020-10-27 09:02:11.000000000 +0100
++++ /e/tools/qt/src/5.15.2/qtbase/src/corelib/global/qfloat16.h	2023-09-19 14:10:56.661572500 +0200
+@@ -44,6 +44,7 @@
+ #include <QtCore/qglobal.h>
+ #include <QtCore/qmetatype.h>
+ #include <string.h>
++#include <limits>
+ 
+ #if defined(QT_COMPILER_SUPPORTS_F16C) && defined(__AVX2__) && !defined(__F16C__)
+ // All processors that support AVX2 do support F16C too. That doesn't mean
+diff -uraBN /path/to/qt-everywhere-src-5.15.2/qtbase/src/corelib/text/qbytearraymatcher.h /e/tools/qt/src/5.15.2/qtbase/src/corelib/text/qbytearraymatcher.h
+--- /path/to/qt-everywhere-src-5.15.2/qtbase/src/corelib/text/qbytearraymatcher.h	2020-10-27 09:02:11.000000000 +0100
++++ /e/tools/qt/src/5.15.2/qtbase/src/corelib/text/qbytearraymatcher.h	2023-09-19 14:13:41.594131600 +0200
+@@ -41,6 +41,7 @@
+ #define QBYTEARRAYMATCHER_H
+ 
+ #include <QtCore/qbytearray.h>
++#include <limits>
+ 
+ QT_BEGIN_NAMESPACE
+ 
+diff -uraBN /path/to/qt-everywhere-src-5.15.2/qtconnectivity/src/bluetooth/qbluetoothservicediscoveryagent_win.cpp /e/tools/qt/src/5.15.2/qtconnectivity/src/bluetooth/qbluetoothservicediscoveryagent_win.cpp
+--- /path/to/qt-everywhere-src-5.15.2/qtconnectivity/src/bluetooth/qbluetoothservicediscoveryagent_win.cpp	2020-10-27 09:02:11.000000000 +0100
++++ /e/tools/qt/src/5.15.2/qtconnectivity/src/bluetooth/qbluetoothservicediscoveryagent_win.cpp	2023-09-19 17:28:46.140947600 +0200
+@@ -206,12 +206,13 @@
+     return sequence;
+ }
+ 
+-#if defined(Q_CC_MINGW)
+-# define SDP_CALLBACK
+-#else
+-# define SDP_CALLBACK QT_WIN_CALLBACK
+-#endif
+-static BOOL SDP_CALLBACK bluetoothSdpCallback(ULONG attributeId, LPBYTE valueStream, ULONG streamSize, LPVOID param)
++// #if defined(Q_CC_MINGW)
++// # define SDP_CALLBACK
++// #else
++// # define SDP_CALLBACK QT_WIN_CALLBACK
++// #endif
++// static BOOL SDP_CALLBACK bluetoothSdpCallback(ULONG attributeId, LPBYTE valueStream, ULONG streamSize, LPVOID param)
++static BOOL QT_WIN_CALLBACK bluetoothSdpCallback(ULONG attributeId, LPBYTE valueStream, ULONG streamSize, LPVOID param)
+ {
+     QBluetoothServiceInfo *result = static_cast<QBluetoothServiceInfo*>(param);
+ 
+diff -uraBN /path/to/qt-everywhere-src-5.15.2/qtdeclarative/src/3rdparty/masm/yarr/Yarr.h /e/tools/qt/src/5.15.2/qtdeclarative/src/3rdparty/masm/yarr/Yarr.h
+--- /path/to/qt-everywhere-src-5.15.2/qtdeclarative/src/3rdparty/masm/yarr/Yarr.h	2020-10-27 09:02:12.000000000 +0100
++++ /e/tools/qt/src/5.15.2/qtdeclarative/src/3rdparty/masm/yarr/Yarr.h	2023-09-19 15:03:17.061455300 +0200
+@@ -27,7 +27,7 @@
+ 
+ #pragma once
+ 
+-#include <limits.h>
++#include <limits>
+ #include "YarrErrorCode.h"
+ 
+ namespace JSC { namespace Yarr {
+diff -uraBN /path/to/qt-everywhere-src-5.15.2/qtdeclarative/src/plugins/scenegraph/d3d12/qsgd3d12engine.cpp /e/tools/qt/src/5.15.2/qtdeclarative/src/plugins/scenegraph/d3d12/qsgd3d12engine.cpp
+--- /path/to/qt-everywhere-src-5.15.2/qtdeclarative/src/plugins/scenegraph/d3d12/qsgd3d12engine.cpp	2020-10-27 09:02:12.000000000 +0100
++++ /e/tools/qt/src/5.15.2/qtdeclarative/src/plugins/scenegraph/d3d12/qsgd3d12engine.cpp	2023-09-19 15:37:46.614045400 +0200
+@@ -45,6 +45,7 @@
+ #include <QLoggingCategory>
+ #include <qmath.h>
+ #include <qalgorithms.h>
++#include <d3d12sdklayers.h>
+ 
+ // Comment out to disable DeviceLossTester functionality in order to reduce
+ // code size and improve startup perf a tiny bit.
+@@ -221,7 +222,8 @@
+         if (SUCCEEDED(factory->EnumAdapters1(adapterIndex, &adapter))) {
+             adapter->GetDesc1(&desc);
+             const QString name = QString::fromUtf16((char16_t *) desc.Description);
+-            HRESULT hr = D3D12CreateDevice(adapter.Get(), fl, _uuidof(ID3D12Device), nullptr);
++            //HRESULT hr = D3D12CreateDevice(adapter.Get(), fl, _uuidof(ID3D12Device), nullptr);
++            HRESULT hr = D3D12CreateDevice(adapter.Get(), fl, __uuidof(ID3D12Device), nullptr);
+             if (SUCCEEDED(hr)) {
+                 qCDebug(QSG_LOG_INFO_GENERAL, "Using requested adapter '%s'", qPrintable(name));
+                 *outAdapter = adapter.Detach();
+@@ -238,7 +240,8 @@
+         if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+             continue;
+ 
+-        if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), fl, _uuidof(ID3D12Device), nullptr))) {
++        //if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), fl, _uuidof(ID3D12Device), nullptr))) {
++        if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), fl, __uuidof(ID3D12Device), nullptr))) {
+             const QString name = QString::fromUtf16((char16_t *) desc.Description);
+             qCDebug(QSG_LOG_INFO_GENERAL, "Using adapter '%s'", qPrintable(name));
+             break;
+diff -uraBN /path/to/qt-everywhere-src-5.15.2/qtdeclarative/src/qmldebug/qqmlprofilerevent_p.h /e/tools/qt/src/5.15.2/qtdeclarative/src/qmldebug/qqmlprofilerevent_p.h
+--- /path/to/qt-everywhere-src-5.15.2/qtdeclarative/src/qmldebug/qqmlprofilerevent_p.h	2020-10-27 09:02:12.000000000 +0100
++++ /e/tools/qt/src/5.15.2/qtdeclarative/src/qmldebug/qqmlprofilerevent_p.h	2023-09-19 15:43:13.647234000 +0200
+@@ -49,6 +49,7 @@
+ 
+ #include <initializer_list>
+ #include <type_traits>
++#include <limits>
+ 
+ //
+ //  W A R N I N G
+diff -uraBN /path/to/qt-everywhere-src-5.15.2/qtmultimedia/src/plugins/wmf/player/mfvideorenderercontrol.cpp /e/tools/qt/src/5.15.2/qtmultimedia/src/plugins/wmf/player/mfvideorenderercontrol.cpp
+--- /path/to/qt-everywhere-src-5.15.2/qtmultimedia/src/plugins/wmf/player/mfvideorenderercontrol.cpp	2020-10-27 09:02:12.000000000 +0100
++++ /e/tools/qt/src/5.15.2/qtmultimedia/src/plugins/wmf/player/mfvideorenderercontrol.cpp	2023-09-19 17:40:30.359828200 +0200
+@@ -56,6 +56,23 @@
+ //#define DEBUG_MEDIAFOUNDATION
+ #define PAD_TO_DWORD(x)  (((x) + 3) & ~3)
+ 
++// Custom interface for handling IMFStreamSink::PlaceMarker calls asynchronously.
++#ifdef __MINGW32__
++DEFINE_GUID(IID_IMarker, 0xa3ff32de, 0x1031, 0x438a, 0x8b,0x47,0x82,0xf8,0xac,0xda,0x59,0xb7);
++//const GUID IID_IMarker = { 0xa3ff32de, 0x1031, 0x438a, { 0x8b,0x47,0x82,0xf8,0xac,0xda,0x59,0xb7 } };
++#endif
++MIDL_INTERFACE("a3ff32de-1031-438a-8b47-82f8acda59b7")
++IMarker : public IUnknown
++{
++    virtual STDMETHODIMP GetMarkerType(MFSTREAMSINK_MARKER_TYPE *pType) = 0;
++    virtual STDMETHODIMP GetMarkerValue(PROPVARIANT *pvar) = 0;
++    virtual STDMETHODIMP GetContext(PROPVARIANT *pvar) = 0;
++};
++
++#ifdef __CRT_UUID_DECL
++__CRT_UUID_DECL(IMarker, 0xa3ff32de, 0x1031, 0x438a, 0x8b,0x47,0x82,0xf8,0xac,0xda,0x59,0xb7)
++#endif
++
+ namespace
+ {
+     class MediaSampleVideoBuffer : public QAbstractVideoBuffer
+@@ -116,14 +133,14 @@
+         MapMode m_mapMode;
+     };
+ 
+-    // Custom interface for handling IMFStreamSink::PlaceMarker calls asynchronously.
+-    MIDL_INTERFACE("a3ff32de-1031-438a-8b47-82f8acda59b7")
+-    IMarker : public IUnknown
+-    {
+-        virtual STDMETHODIMP GetMarkerType(MFSTREAMSINK_MARKER_TYPE *pType) = 0;
+-        virtual STDMETHODIMP GetMarkerValue(PROPVARIANT *pvar) = 0;
+-        virtual STDMETHODIMP GetContext(PROPVARIANT *pvar) = 0;
+-    };
++    // // Custom interface for handling IMFStreamSink::PlaceMarker calls asynchronously.
++    // MIDL_INTERFACE("a3ff32de-1031-438a-8b47-82f8acda59b7")
++    // IMarker : public IUnknown
++    // {
++    //     virtual STDMETHODIMP GetMarkerType(MFSTREAMSINK_MARKER_TYPE *pType) = 0;
++    //     virtual STDMETHODIMP GetMarkerValue(PROPVARIANT *pvar) = 0;
++    //     virtual STDMETHODIMP GetContext(PROPVARIANT *pvar) = 0;
++    // };
+ 
+     class Marker : public IMarker
+     {
+@@ -904,7 +921,7 @@
+             MFTIME m_time;
+         };
+ 
+-    protected:
++    //protected:
+         void customEvent(QEvent *event)
+         {
+             QMutexLocker locker(&m_mutex);
+diff -uraBN /path/to/qt-everywhere-src-5.15.2/qtmultimedia/src/plugins/wmf/player/player.pri /e/tools/qt/src/5.15.2/qtmultimedia/src/plugins/wmf/player/player.pri
+--- /path/to/qt-everywhere-src-5.15.2/qtmultimedia/src/plugins/wmf/player/player.pri	2020-10-27 09:02:12.000000000 +0100
++++ /e/tools/qt/src/5.15.2/qtmultimedia/src/plugins/wmf/player/player.pri	2023-09-19 17:41:18.250837300 +0200
+@@ -1,6 +1,6 @@
+ INCLUDEPATH += $$PWD
+ 
+-LIBS += -lgdi32 -luser32
++LIBS += -lgdi32 -luser32 -lamstrmid
+ QMAKE_USE += wmf
+ 
+ HEADERS += \
