@@ -59,7 +59,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 92 min read</div>
+</svg> 94 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -200,7 +200,17 @@
           <ul>
             <li><a href="#combinedfatuniversal-binaries-for-devices-and-simulator">Combined/fat/universal binaries for devices and simulator</a>
               <ul>
+                <li><a href="#merging-different-architectures-into-one-universal-binary">Merging different architectures into one universal binary</a></li>
                 <li><a href="#jpeg-turbo-doesnt-support-building-with-more-than-one-architecture">jpeg-turbo doesn&rsquo;t support building with more than one architecture</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li><a href="#mac-os">Mac OS</a>
+          <ul>
+            <li><a href="#universal-binaries">Universal binaries</a>
+              <ul>
+                <li><a href="#png-fails-to-generate-tf1">PNG fails to generate tf1</a></li>
               </ul>
             </li>
           </ul>
@@ -2441,7 +2451,7 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>set(CMAKE_XCODE_ATTRIBUTE_ARCHS[sdk<span style="color:#f92672">=</span>iphonesimulator<span style="color:#f92672">*</span>] <span style="color:#e6db74">&#34;x86_64&#34;</span>)
 </span></span><span style="display:flex;"><span>set(CMAKE_XCODE_ATTRIBUTE_VALID_ARCHS[sdk<span style="color:#f92672">=</span>iphonesimulator<span style="color:#f92672">*</span>] <span style="color:#e6db74">&#34;x86_64&#34;</span>)</span></span></code></pre></div>
-<p>And as usual (<em>as you saw in previous sections</em>), to apply these to every vcpkg-managed build you&rsquo;ll need to chainload a <a href="https://github.com/retifrav/vcpkg-registry/blob/master/toolchains/ios-fat.cmake">custom toolchain</a>:</p>
+<p>And as usual (<em>as you saw in previous sections</em>), to apply these to every vcpkg-managed build you&rsquo;ll need to chainload a <a href="https://github.com/retifrav/vcpkg-registry/blob/d44a8d0eaab7d60f0a31b8e75d5cd6a241711eff/toolchains/ios-fat.cmake">custom toolchain</a>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e"># for $ENV{VCPKG_ROOT} to work the triplet should contain `set(VCPKG_ENV_PASSTHROUGH_UNTRACKED VCPKG_ROOT)`
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>include(<span style="color:#e6db74">&#34;$ENV{VCPKG_ROOT}/scripts/toolchains/ios.cmake&#34;</span>)
 </span></span><span style="display:flex;"><span>
@@ -2456,17 +2466,19 @@
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># and probably also set these flags
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e">#set(CMAKE_IOS_INSTALL_COMBINED 1)
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e">#set(CMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH 0)</span></span></span></code></pre></div>
-<p>from a <a href="https://github.com/retifrav/vcpkg-registry/blob/master/triplets/decovar-arm64-ios-fat.cmake">custom triplet</a>:</p>
+<p>from a <a href="https://github.com/retifrav/vcpkg-registry/blob/d44a8d0eaab7d60f0a31b8e75d5cd6a241711eff/triplets/decovar-arm64-ios-fat.cmake">custom triplet</a>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">VCPKG_TARGET_ARCHITECTURE</span> <span style="color:#e6db74">arm64</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_CRT_LINKAGE</span> <span style="color:#e6db74">dynamic</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_LIBRARY_LINKAGE</span> <span style="color:#e6db74">static</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_CMAKE_SYSTEM_NAME</span> <span style="color:#e6db74">iOS</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># without this the VCPKG_ROOT environment variable won&#39;t be available in the chainloaded toolchain
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">VCPKG_ENV_PASSTHROUGH_UNTRACKED</span> <span style="color:#e6db74">VCPKG_ROOT</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># setting Xcode attributes for specifying device/simulator architectures
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">VCPKG_CHAINLOAD_TOOLCHAIN_FILE</span> <span style="color:#f92672">${</span>CMAKE_CURRENT_LIST_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/../toolchains/ios-fat.cmake</span>)</span></span></code></pre></div>
-<p>To show it in action, if I build my <a href="https://github.com/retifrav/vcpkg-registry/tree/master/ports/thingy">Thingy</a> port with default <code>arm64-ios</code> triplet:</p>
+<p>And actually you could probably get away without using a chainloaded toolchain, because you can <a href="https://github.com/retifrav/vcpkg-registry/commit/dd75fdfa5980336891b612654f59c9788079a76c">move</a> <code>CMAKE_OSX_ARCHITECTURES</code> from toolchain to triplet&rsquo;s <code>VCPKG_OSX_ARCHITECTURES</code> variable. But I suspect that <code>CMAKE_XCODE_ATTRIBUTE_*</code> variables still need to be set, and in that case toolchain isn&rsquo;t going away.</p>
+<p>Anyway, both variants seem to work equally fine, and to show it in action, if I build my <a href="https://github.com/retifrav/vcpkg-registry/tree/master/ports/thingy">Thingy</a> port with default <code>arm64-ios</code> triplet:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ vcpkg install <span style="color:#f92672">--</span>triplet arm64<span style="color:#f92672">-</span>ios</span></span></code></pre></div>
 <p>then here&rsquo;s the binary I will get:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ du <span style="color:#f92672">-</span>h <span style="color:#f92672">./</span>vcpkg_installed<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>ios<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>libThingy<span style="color:#f92672">.</span>a
@@ -2501,12 +2513,28 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ lipo <span style="color:#f92672">-</span>info <span style="color:#f92672">./</span>vcpkg_installed<span style="color:#f92672">/</span>decovar<span style="color:#f92672">-</span>arm64<span style="color:#f92672">-</span>ios<span style="color:#f92672">-</span>fat<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>libThingy<span style="color:#f92672">.</span>a
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">Architectures</span> in the fat file<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">./vcpkg_installed/decovar-arm64-ios-fat/lib/libThingy.a</span> <span style="color:#66d9ef">are:</span> <span style="color:#66d9ef">x86_64</span> <span style="color:#66d9ef">arm64</span></span></span></code></pre></div>
-<p>So it is indeed a combined/fat/universal binary.</p>
-<p>I also saw <a href="https://www.f-ax.de/dev/2022/11/09/how-to-use-vcpkg-with-universal-binaries-on-macos/">this blog post</a>, where the author says that vcpkg doesn&rsquo;t support building libraries as universal binaries, and then he suggests a workaround of building a library using different triplets and &ldquo;merging&rdquo; the results into one universal binary. Well, it might be that in 2022-11-09 there was indeed something different about the process, but as you can see vcpkg can in fact handle this scenario just fine. I reckon, author just didn&rsquo;t think/know about setting &ldquo;global&rdquo; flags/properties via chainloaded toolchains.</p>
+<p>For vcpkg this build probably &ldquo;looks&rdquo; like <code>arm64</code>, because <code>VCPKG_TARGET_ARCHITECTURE</code> is set to <code>arm64</code> in the triplet, but what exactly that entitles I don&rsquo;t know, and according to <code>lipo</code> the binaries are indeed combined/fat/universal ones.</p>
+<h4 id="merging-different-architectures-into-one-universal-binary">Merging different architectures into one universal binary</h4>
+<p>I also saw <a href="https://www.f-ax.de/dev/2022/11/09/how-to-use-vcpkg-with-universal-binaries-on-macos/">this blog post</a>, where the author says that vcpkg doesn&rsquo;t support building libraries as universal binaries, and then he suggests a workaround of building a library using different triplets and &ldquo;merging&rdquo; the results into one universal binary. It might be that in 2022-11-09 there was something different about the process, but as you can see vcpkg can in fact handle the scenario of producing fat binaries.</p>
+<p>If anything, the essence of his post is that you can use the very same <code>lipo</code> utility to create a universal binary out of different single-architecture binaries, for example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ lipo <span style="color:#f92672">-</span>info <span style="color:#f92672">./</span>vcpkg_installed<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>ios<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>libzstd<span style="color:#f92672">.</span>a
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Non</span><span style="color:#f92672">-</span>fat file<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">./vcpkg_installed/arm64-ios/lib/libzstd.a</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">architecture:</span> <span style="color:#66d9ef">arm64</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ lipo <span style="color:#f92672">-</span>info <span style="color:#f92672">./</span>vcpkg_installed<span style="color:#f92672">/</span>x64<span style="color:#f92672">-</span>ios<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>libzstd<span style="color:#f92672">.</span>a
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Non</span><span style="color:#f92672">-</span>fat file<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">./vcpkg_installed/x64-ios/lib/libzstd.a</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">architecture:</span> <span style="color:#66d9ef">x86_64</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ lipo <span style="color:#f92672">-</span>create \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">./</span>vcpkg_installed<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>ios<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>libzstd<span style="color:#f92672">.</span>a \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">./</span>vcpkg_installed<span style="color:#f92672">/</span>x64<span style="color:#f92672">-</span>ios<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>libzstd<span style="color:#f92672">.</span>a \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>output <span style="color:#f92672">./</span>libzstd<span style="color:#f92672">.</span>a
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ lipo <span style="color:#f92672">-</span>info <span style="color:#f92672">./</span>libzstd<span style="color:#f92672">.</span>a
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Architectures</span> in the fat file<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">./libzstd.a</span> <span style="color:#66d9ef">are:</span> <span style="color:#66d9ef">x86_64</span> <span style="color:#66d9ef">arm64</span></span></span></code></pre></div>
+<p>Another thing to note is that author is describing building a universal binary for Mac OS (<em>Intel/ARM</em>), and I am here dealing with iOS (<em>device/simulator</em>), so just to make sure that there is no difference I tried to do the same <a href="#universal-binaries">for Mac OS</a> as well.</p>
 <h4 id="jpeg-turbo-doesnt-support-building-with-more-than-one-architecture">jpeg-turbo doesn&rsquo;t support building with more than one architecture</h4>
-<p>And all our dependencies were building fine as fat binaries, until <a href="https://libjpeg-turbo.org">jpeg-turbo</a> build had failed. Turns out, it <a href="https://github.com/libjpeg-turbo/libjpeg-turbo/issues/617#issuecomment-1246812411">doesn&rsquo;t support</a> building as universal binary, because it contains assembly code, and &ldquo;<em>different architectures require different SIMD extensions</em>&rdquo;.</p>
-<p>And that is a problem, because how does one go about it? All the dependencies need to be built &ldquo;unattended&rdquo;, so they are made ready/available before the main project configuration starts. And then it means that <code>jpeg-turbo</code> would require some special treatment, for example building it twice (<em>for each architecture</em>) and merging into final universal binary, like it is proposed in the blog post linked above.</p>
-<p>Fortunately, before diving into all that, I tried to just <a href="https://github.com/retifrav/vcpkg-registry/commit/5e33f3be94767a152d545f99053c1b2b3c7f238e#diff-feb82cabe52a5c61d1b4e00f58bf6a43dd95c77a49922da3ab52184f68032d3dR24">disable that check</a>, and the build went fine, because apparently this target platform does not use assembly code:</p>
+<p>All our dependencies were building fine as fat binaries, until <a href="https://libjpeg-turbo.org">jpeg-turbo</a> build had failed. Turns out, it <a href="https://github.com/libjpeg-turbo/libjpeg-turbo/issues/617#issuecomment-1246812411">doesn&rsquo;t support</a> building as universal binary, because it contains assembly code, and &ldquo;<em>different architectures require different SIMD extensions</em>&rdquo;.</p>
+<p>And that is a problem, because how does one go about it? All the dependencies need to be built &ldquo;unattended&rdquo;, so they are made ready/available before the main project configuration starts. So it means that <code>jpeg-turbo</code> would require some special treatment, for example building it twice (<em>for each architecture</em>), merging it into one final universal binary using <code>lipo</code> (<em>like it is described <a href="#merging-different-architectures-into-one-universal-binary">above</a></em>), and then some more fucking about to automate the process and make it a part of the normal pre-configuration routine.</p>
+<p>Fortunately, before diving into all that, I just tried to simply <a href="https://github.com/retifrav/vcpkg-registry/commit/5e33f3be94767a152d545f99053c1b2b3c7f238e#diff-feb82cabe52a5c61d1b4e00f58bf6a43dd95c77a49922da3ab52184f68032d3dR24">disable that check</a>, and the build went fine, because apparently this target platform does not use assembly code:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">CMake</span> <span style="color:#a6e22e">Warning</span> at simd<span style="color:#f92672">/</span><span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt<span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">5</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">message</span><span style="color:#f92672">)</span><span style="color:#66d9ef">:</span>
 </span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">SIMD</span> extensions not available <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">this</span> <span style="color:#a6e22e">CPU</span> <span style="color:#f92672">(</span>aarch64<span style="color:#f92672">).</span>  <span style="color:#a6e22e">Performance</span> will
 </span></span><span style="display:flex;"><span>  suffer<span style="color:#f92672">.</span></span></span></code></pre></div>
@@ -2527,6 +2555,65 @@
 </span></span><span style="display:flex;"><span>$ lipo <span style="color:#f92672">-</span>info <span style="color:#f92672">./</span>vcpkg_installed<span style="color:#f92672">/</span>decovar<span style="color:#f92672">-</span>arm64<span style="color:#f92672">-</span>ios<span style="color:#f92672">-</span>fat<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>libturbojpeg<span style="color:#f92672">.</span>a
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">Architectures</span> in the fat file<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">./vcpkg_installed/decovar-arm64-ios-fat/lib/libturbojpeg.a</span> <span style="color:#66d9ef">are:</span> <span style="color:#66d9ef">x86_64</span> <span style="color:#66d9ef">arm64</span></span></span></code></pre></div>
 <p>As you can see, it has successfully built into a combined/fat/universal binary. It may be that it will horribly backfire at some point later at application runtime, but it hasn&rsquo;t so far.</p>
+<h2 id="mac-os">Mac OS</h2>
+<h3 id="universal-binaries">Universal binaries</h3>
+<p>As I mentioned in the section about combined/fat/universal binaries <a href="#combinedfatuniversal-binaries-for-devices-and-simulator">for iOS</a>, I wanted to try building universal binaries of vcpkg-resolved dependencies for Mac OS too (<em>for Intel and Apple silicon (ARM) based Macs</em>).</p>
+<p>Applying the same &ldquo;trick&rdquo; with chainloaded toolchain didn&rsquo;t work:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>set(VCPKG_TARGET_ARCHITECTURE arm64)
+</span></span><span style="display:flex;"><span>set(VCPKG_CRT_LINKAGE dynamic)
+</span></span><span style="display:flex;"><span>set(VCPKG_LIBRARY_LINKAGE <span style="color:#66d9ef">static</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set(VCPKG_CMAKE_SYSTEM_NAME Darwin)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set(VCPKG_ENV_PASSTHROUGH_UNTRACKED VCPKG_ROOT)
+</span></span><span style="display:flex;"><span>set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE <span style="color:#960050;background-color:#1e0010">$</span>{CMAKE_CURRENT_LIST_DIR}<span style="color:#f92672">/</span>..<span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>osx<span style="color:#f92672">-</span>fat.cmake)</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>include(<span style="color:#e6db74">&#34;$ENV{VCPKG_ROOT}/scripts/toolchains/osx.cmake&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># to make an Intel/ARM universal binary, one needs to set both architectures
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(CMAKE_OSX_ARCHITECTURES <span style="color:#e6db74">&#34;arm64;x86_64&#34;</span>)</span></span></code></pre></div>
+<p>as vcpkg still produced non-fat binaries containing only one architecture. Can&rsquo;t say why is that.</p>
+<p>What did work is setting <code>VCPKG_OSX_ARCHITECTURES</code> in the <a href="https://github.com/retifrav/vcpkg-registry/blob/aa217cd20ca4c5f8037aa94274edaa5407c22392/triplets/decovar-arm64-osx-fat.cmake#L6">triplet</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>set(VCPKG_TARGET_ARCHITECTURE arm64)
+</span></span><span style="display:flex;"><span>set(VCPKG_CRT_LINKAGE dynamic)
+</span></span><span style="display:flex;"><span>set(VCPKG_LIBRARY_LINKAGE <span style="color:#66d9ef">static</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set(VCPKG_CMAKE_SYSTEM_NAME Darwin)
+</span></span><span style="display:flex;"><span>set(VCPKG_OSX_ARCHITECTURES <span style="color:#e6db74">&#34;arm64;x86_64&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#set(VCPKG_ENV_PASSTHROUGH_UNTRACKED VCPKG_ROOT)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># unlike fat iOS toolchain, this one has no effect (but `VCPKG_OSX_ARCHITECTURES` does)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/../toolchains/osx-fat.cmake)</span></span></span></code></pre></div>
+<p>and then vcpkg produced universal binaries, which I&rsquo;ve successfully tested on both M2 and Intel machines that I have.</p>
+<p>So I thought, okay, probably chainloaded toolchain isn&rsquo;t needed at all, so I can just set <code>VCPKG_OSX_ARCHITECTURES</code> for the <a href="#combinedfatuniversal-binaries-for-devices-and-simulator">fat iOS</a> build too without chainloading. And yes, that worked, but just in case I <a href="https://github.com/retifrav/vcpkg-registry/commit/dd75fdfa5980336891b612654f59c9788079a76c">kept the toolchain</a> too, because it sets <code>CMAKE_XCODE_ATTRIBUTE_*</code> variables, and I have a feeling that these variables do mater.</p>
+<h4 id="png-fails-to-generate-tf1">PNG fails to generate tf1</h4>
+<p>It was all good until the <a href="https://github.com/retifrav/vcpkg-registry/tree/master/ports/png">PNG</a> build had failed:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>clang<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">error:</span> <span style="color:#66d9ef">no</span> <span style="color:#66d9ef">such</span> <span style="color:#66d9ef">file</span> <span style="color:#66d9ef">or</span> <span style="color:#66d9ef">directory:</span> <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#66d9ef">x86_64</span><span style="color:#960050;background-color:#1e0010">&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">CMake</span> <span style="color:#66d9ef">Error</span> <span style="color:#66d9ef">at</span> <span style="color:#66d9ef">scripts/genout.cmake:</span><span style="color:#960050;background-color:#1e0010">78</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">message</span><span style="color:#f92672">)</span><span style="color:#66d9ef">:</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">Failed</span> to generate
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>vcpkg<span style="color:#f92672">/</span>buildtrees<span style="color:#f92672">/</span>png<span style="color:#f92672">/</span>decovar<span style="color:#f92672">-</span>arm64<span style="color:#f92672">-</span>osx<span style="color:#f92672">-</span>fat<span style="color:#f92672">-</span>dbg<span style="color:#f92672">/</span>scripts<span style="color:#f92672">/</span>symbols<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>tf1</span></span></code></pre></div>
+<p>It originates here:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>execute_process(<span style="color:#e6db74">COMMAND</span> <span style="color:#e6db74">&#34;${CMAKE_C_COMPILER}&#34;</span> <span style="color:#e6db74">&#34;-E&#34;</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">${</span>CMAKE_C_FLAGS<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">${</span>PLATFORM_C_FLAGS<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#e6db74">&#34;-I${SRCDIR}&#34;</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#e6db74">&#34;-I${BINDIR}&#34;</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">${</span>INCLUDES<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#e6db74">&#34;-DPNGLIB_LIBNAME=PNG${PNGLIB_MAJOR}${PNGLIB_MINOR}_0&#34;</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#e6db74">&#34;-DPNGLIB_VERSION=${PNGLIB_VERSION}&#34;</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#e6db74">&#34;-DSYMBOL_PREFIX=${SYMBOL_PREFIX}&#34;</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#e6db74">&#34;-DPNG_NO_USE_READ_MACROS&#34;</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#e6db74">&#34;-DPNG_BUILDING_SYMBOL_TABLE&#34;</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#f92672">${</span>PNG_PREFIX_DEF<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#e6db74">&#34;${INPUT}&#34;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">OUTPUT_FILE</span> <span style="color:#e6db74">&#34;${OUTPUT}.tf1&#34;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#e6db74">&#34;${BINDIR}&#34;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">RESULT_VARIABLE</span> <span style="color:#e6db74">CPP_FAIL</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>if(<span style="color:#e6db74">CPP_FAIL</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>  message(<span style="color:#e6db74">FATAL_ERROR</span> <span style="color:#e6db74">&#34;Failed to generate ${OUTPUT}.tf1&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()</span></span></code></pre></div>
+<p>So apparently it can&rsquo;t handle <code>arm64;x86_64</code> value.</p>
+<p>At the same time, surprisingly, that very same PNG project didn&rsquo;t fail when I was building fat binaries <a href="#combinedfatuniversal-binaries-for-devices-and-simulator">for iOS</a>. I can&rsquo;t think of other reason than different <code>CMAKE_OSX_SYSROOT</code> values: for iOS it was <code>/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS17.0.sdk</code>, and the build succeeded, but for Mac OS it is <code>/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk</code>, and the build fails. If anything, both iOS and Mac OS builds got the same <code>&quot;arm64;x86_64&quot;</code> value for <code>CMAKE_OSX_ARCHITECTURES</code>.</p>
+<p>No idea how to fix it yet, so for now I&rsquo;m just building PNG separately with a single-architecture triplet of interest (<em>and <a href="#merging-different-architectures-into-one-universal-binary">merging the results</a> into a universal binary, when needed</em>).</p>
 <h1 id="dependency-graph">Dependency graph</h1>
 <p>Conan has a convenient out-of-the-box functionality for generating a <a href="/blog/2022/02/06/cpp-dependencies-with-conan/#dependency-graph">dependency graph</a>, both as a plain-text JSON file and as an interactive HTML page.</p>
 <p>The vcpkg&rsquo;s capabilities in that regard are rather modest in comparison. It has a <a href="https://learn.microsoft.com/en-us/vcpkg/commands/depend-info">depend-info</a> command, which can list dependencies either in a somewhat structured plain-text format or in two graph formats: <a href="https://en.wikipedia.org/wiki/DOT_(graph_description_language)">DOT</a> and <a href="https://en.wikipedia.org/wiki/DGML">DGML</a>. Neither of these formats can be customized, and all of them output just port names (<em>no version, license or any other information</em>).</p>
