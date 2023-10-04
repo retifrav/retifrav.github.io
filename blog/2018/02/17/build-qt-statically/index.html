@@ -2613,7 +2613,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 <p>but that&rsquo;s a minor detail.</p>
 <p>So yeah, it is definitely possible to build static Qt with MinGW, but I didn&rsquo;t fucking enjoy it at all.</p>
 <h2 id="2023-10-01--qt-651-mac-os-136-apple-m2-pro">2023-10-01 | Qt 6.5.1, Mac OS 13.6, Apple M2 Pro</h2>
-<p>I got the latest MacBook Pro with Apple M2 Pro processor, and of course I wanted to test how fast can it build Qt, and also to check that it builds at all.</p>
+<p>I got the latest MacBook Pro with Apple M2 Pro processor, and of course I wanted to check how fast it can build Qt and that Qt does build there at all.</p>
 <p>My environment:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-perl" data-lang="perl"><span style="display:flex;"><span>$ sw_vers <span style="color:#f92672">-</span>productVersion
 </span></span><span style="display:flex;"><span><span style="color:#ae81ff">13.6</span>
@@ -3133,7 +3133,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </span></span><span style="display:flex;"><span>struct FormatHasNoFPSRange : std::unary_function<span style="color:#f92672">&lt;</span>AVCaptureDeviceFormat <span style="color:#f92672">*</span>, bool<span style="color:#f92672">&gt;</span>
 </span></span><span style="display:flex;"><span>                             <span style="color:#f92672">~~~~~^~~~~~~~~~~~~~</span>
 </span></span><span style="display:flex;"><span>                                  __unary_function</span></span></code></pre></div>
-<p>Apparently, this function was removed from C++17, which means that Qt 6.5.1 doesn&rsquo;t support C++17? Or at least that is how it is with <a href="https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes">Xcode 15</a>. I found a seemingly relevant <a href="https://github.com/facebook/react-native/issues/37748#issuecomment-1580334650">workaround</a> about setting <code>_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION</code> preprocessor definition. I tried to do that in <code>/Users/vasya/programs/qt/src/6.5.1/qtmultimedia/src/plugins/multimedia/darwin/CMakeLists.txt</code>:</p>
+<p>Apparently, this function was removed from C++17, which means that Qt 6.5.1 doesn&rsquo;t support C++17? Or at least that is how it is with <a href="https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes">Xcode 15</a>. I found a seemingly relevant <a href="https://github.com/facebook/react-native/issues/37748#issuecomment-1580334650">workaround</a> about setting <code>_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION</code> preprocessor definition. I tried to do that in <code>/path/to/qt/qtmultimedia/src/plugins/multimedia/darwin/CMakeLists.txt</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>qt_internal_add_plugin(<span style="color:#e6db74">QDarwinMediaPlugin</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">OUTPUT_NAME</span> <span style="color:#e6db74">darwinmediaplugin</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PLUGIN_TYPE</span> <span style="color:#e6db74">multimedia</span>
@@ -3158,7 +3158,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PRIVATE</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION&#34;</span>
 </span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
-<p>but that didn&rsquo;t help either. Then I just edited <code>/Users/vasya/programs/qt/src/6.5.1/qtmultimedia/src/plugins/multimedia/darwin/camera/avfcamerautility.mm</code>:</p>
+<p>but that didn&rsquo;t help either. Then I just edited <code>/path/to/qt/qtmultimedia/src/plugins/multimedia/darwin/camera/avfcamerautility.mm</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span><span style="color:#f92672">-struct FormatHasNoFPSRange : std::unary_function&lt;AVCaptureDeviceFormat *, bool&gt;
 </span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+struct FormatHasNoFPSRange : std::__unary_function&lt;AVCaptureDeviceFormat *, bool&gt;
 </span></span></span></code></pre></div>
@@ -3284,7 +3284,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
     <img class="image-post" loading="lazy" src="/blog/2018/02/17/build-qt-statically/images/m2-otool-diff.png" alt="Different C&#43;&#43; runtime dependency with and without Qt Creator">
 
 <p>As we can see, basic CMake/Ninja build from CLI is capable of setting the dependencies paths correctly, but Qt Creator build is not. Not to mention Qt Creator&rsquo;s inability to auto-detect default system C/C++ compilers. Hah, by the way, it still requires manually setting <code>CMAKE_MAKE_PROGRAM</code> to Ninja path for every project, despite it being available in system&rsquo;s <code>PATH</code>.</p>
-<p>Yeah, so much progress has happened in Qt Creator from its last <code>4.x</code> version in 2021 till the current <code>11.0.3</code> version in 2023 - fucking <a href="https://wiki.qt.io/Old_Qt_Creator_Releases">seven major versions</a> in just two years. Not every IDE is developed so rapidly with so many new features! Too bad I can&rsquo;t recall a single such feature that would be worth increasing the major version number.</p>
+<p>Yeah, so much progress has happened in Qt Creator from its last <code>4.x</code> version in 2021 till the current <code>11.0.3</code> version in 2023 - fucking <a href="https://wiki.qt.io/Old_Qt_Creator_Releases">seven major versions</a> in just two years. Not every IDE is developed so rapidly and with so many great new features! Too bad I can&rsquo;t recall a single such feature that would be worth increasing the major version number.</p>
       </div>
     </article>
     <div><div id="tags">
