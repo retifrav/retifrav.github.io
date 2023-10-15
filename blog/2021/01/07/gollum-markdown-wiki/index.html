@@ -74,7 +74,7 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
 </svg> 2021-01-07 13:30:42 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 11 min read</div>
+</svg> 16 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -111,7 +111,7 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
         <li><a href="#mac-os">Mac OS</a></li>
       </ul>
     </li>
-    <li><a href="#editing">Editing</a>
+    <li><a href="#editing-and-authentication">Editing and authentication</a>
       <ul>
         <li><a href="#web-ui">Web UI</a></li>
         <li><a href="#local-editing">Local editing</a>
@@ -130,6 +130,11 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
       </ul>
     </li>
     <li><a href="#a-bit-about-features">A bit about features</a></li>
+    <li><a href="#ldap-authentication">LDAP authentication</a>
+      <ul>
+        <li><a href="#setting-up-omniauth-in-gollum">Setting up omniauth in Gollum</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 <p>At first, before discovering Gollum, I actually decided to create my own wiki-engine, as I didn&rsquo;t like any of the wikis I found by that moment, and even started prototyping it with <a href="https://docs.microsoft.com/en-us/aspnet/core/blazor/">.NET Core Blazor</a> (<em>server-side variant</em>). But then I took a closer look at Gollum and abandoned the idea.</p>
@@ -171,7 +176,9 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ mkdir -p /usr/local/share/gollum/templates
 </span></span><span style="display:flex;"><span>$ cp -r /var/lib/gems/2.7.0/gems/gollum-VERSION/lib/gollum/templates/* /usr/local/share/gollum/templates/
 </span></span><span style="display:flex;"><span>$ sudo chown -R gollum:gollum /usr/local/share/gollum</span></span></code></pre></div>
-<p>You&rsquo;ll also need to set this path in the <a href="#config">config</a>.</p>
+<p>You&rsquo;ll also need to set this path in the <a href="#config">config</a> or specify it on launch:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ gollum <span style="color:#f92672">--</span>config config<span style="color:#f92672">.</span>rb <span style="color:#f92672">--</span>host localhost \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>template<span style="color:#f92672">-</span>dir <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>your<span style="color:#f92672">/</span>custom<span style="color:#f92672">/</span>templates</span></span></code></pre></div>
 <h3 id="config">Config</h3>
 <p>Create the wiki config:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ sudo mkdir <span style="color:#f92672">-</span>p <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>gollum
@@ -234,24 +241,24 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
 </span></span><span style="display:flex;"><span>$ sudo rm <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/</span>sites<span style="color:#f92672">-</span>enabled<span style="color:#f92672">/</span>default
 </span></span><span style="display:flex;"><span>$ sudo nano <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/</span>sites<span style="color:#f92672">-</span>available<span style="color:#f92672">/</span>wiki<span style="color:#f92672">.</span>your<span style="color:#f92672">.</span>host</span></span></code></pre></div>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span> <span style="color:#e6db74">default_server</span>;
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span> <span style="color:#e6db74">default_server</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span> <span style="color:#e6db74">default_server</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span> <span style="color:#e6db74">default_server</span>;
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">server_name</span> <span style="color:#e6db74">_</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">_</span>;
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>        <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Host</span> $host;
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-For</span> $proxy_add_x_forwarded_for;
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-Proto</span> $scheme;
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Scheme</span> $scheme;
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">proxy_redirect</span> <span style="color:#66d9ef">off</span>;
-</span></span><span style="display:flex;"><span>                <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://localhost:4567</span>;
-</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Host</span> $host;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-For</span> $proxy_add_x_forwarded_for;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-Proto</span> $scheme;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Scheme</span> $scheme;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_redirect</span> <span style="color:#66d9ef">off</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://localhost:4567</span>;
+</span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ sudo ln <span style="color:#f92672">-</span>s <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/</span>sites<span style="color:#f92672">-</span>available<span style="color:#f92672">/</span>wiki<span style="color:#f92672">.</span>your<span style="color:#f92672">.</span>host <span style="color:#f92672">/</span>etc<span style="color:#f92672">/</span>nginx<span style="color:#f92672">/</span>sites<span style="color:#f92672">-</span>enabled<span style="color:#f92672">/</span>
 </span></span><span style="display:flex;"><span>$ sudo systemctl restart nginx<span style="color:#f92672">.</span>service</span></span></code></pre></div>
 <p>Now your wiki should be available at <a href="http://wiki.your.host">http://wiki.your.host</a>. Obviously, first you&rsquo;d need to add a record for <code>wiki.your.host</code> in your local DNS server or at your hoster control panel (<em>assuming you already have <code>your.host</code> domain registered</em>).</p>
-<p>In our case we host wiki in the internal network only, so it&rsquo;s not exposed to the internet, and there is no real need to restrict access to it. However, in your case you might want to protect it with <a href="https://github.com/retifrav/scraps/blob/master/_Linux/linux.md#basic-authentication">Basic authentication</a>.</p>
+<p>In our case we host wiki in the internal network only, so it&rsquo;s not exposed to the internet, and there is no real need to restrict access to it. However, it might still be a good idea to protect it with at least <a href="https://github.com/retifrav/scraps/blob/master/_linux/index.md#basic-authentication">Basic authentication</a>, unless you plan do add a <a href="#ldap-authentication">proper authentication</a> later.</p>
 <h2 id="mac-os">Mac OS</h2>
 <p>Here the goal is to simply run Gollum locally on demand - to preview your local changes before pushing them to the main repository on server.</p>
 <p>Install required packages:</p>
@@ -330,29 +337,27 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
 </span></span><span style="display:flex;"><span><span style="color:#f92672">==</span> <span style="color:#a6e22e">Sinatra</span> <span style="color:#f92672">(</span>v2<span style="color:#f92672">.</span><span style="color:#ae81ff">1.0</span><span style="color:#f92672">)</span> has taken the stage on <span style="color:#ae81ff">4567</span> <span style="color:#66d9ef">for</span> production <span style="color:#66d9ef">with</span> backup from <span style="color:#a6e22e">WEBrick</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">[</span><span style="color:#960050;background-color:#1e0010">2021</span><span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">01</span><span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">04</span> <span style="color:#960050;background-color:#1e0010">16</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">40</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">58</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">INFO</span>  <span style="color:#a6e22e">WEBrick</span><span style="color:#66d9ef">:</span><span style="color:#66d9ef">:HTTPServer</span><span style="color:#66d9ef">#</span><span style="color:#66d9ef">start:</span> <span style="color:#66d9ef">pid</span><span style="color:#f92672">=</span><span style="color:#ae81ff">38628</span> port<span style="color:#66d9ef">=</span><span style="color:#ae81ff">4567</span></span></span></code></pre></div>
 <p>The wiki is now available on <a href="http://localhost:4567">http://localhost:4567</a>.</p>
-<h1 id="editing">Editing</h1>
+<h1 id="editing-and-authentication">Editing and authentication</h1>
 <h2 id="web-ui">Web UI</h2>
 <p>Gollum has a web UI for editing, and that would be the easiest option in most cases.</p>
-<p>Sadly, there is no authentication out of the box, which is a minor issue in our case, but for others this could be a serious disadvantage. Although, it seems to be possible to <a href="https://github.com/gollum/gollum/wiki/Gollum-via-Rack-and-CAS-SSO">hack it in</a>.</p>
-<p>So, by default all the changes made via web UI will be authored by the default user from <a href="#user-and-repository">Git repository config</a> on server.</p>
+<p>Sadly, there is no authentication out of the box, but it is possible to add it, for example <a href="https://github.com/gollum/gollum/wiki/Gollum-via-Rack-and-CAS-SSO">like this</a> or via <a href="#ldap-authentication">LDAP</a>. At the very least you can set-up <a href="https://github.com/retifrav/scraps/blob/master/_linux/index.md#basic-authentication">Basic authentication</a>.</p>
+<p>Another thing to note due to the lack of authentication is that by default all the changes made via web UI will be authored by the default user from <a href="#user-and-repository">Git repository config</a> on server, which is rather unfortunate in case of a team wiki.</p>
 <h2 id="local-editing">Local editing</h2>
 <p>But why edit wiki in web UI, when its content is just plain-text Markdown files in a Git repository? You can work with it as with any other Git repository!</p>
-<p>So, every team member can have a local copy of the wiki, author (<em>and <a href="https://withblue.ink/2020/05/17/how-and-why-to-sign-git-commits.html#why-to-sign-git-commits">sign</a></em>) their commits and push them to the main repository via SSH. You can even disable editing via web UI, so Git and SSH would be the only way to edit the wiki. How awesome is that.</p>
+<p>So, every team member can have a local copy of the wiki, author and <a href="https://withblue.ink/2020/05/17/how-and-why-to-sign-git-commits.html#why-to-sign-git-commits">sign</a> their commits and push them to the main repository via SSH (<em>so everyone authenticates with their personal SSH keys</em>). You can even disable editing via web UI, so Git and SSH would be the only way to edit the wiki. How awesome is that.</p>
 <h3 id="establish-ssh-connection-to-the-wiki-host">Establish SSH connection to the wiki host</h3>
-<p>Create an SSH key on your machine:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">~/.</span>ssh
-</span></span><span style="display:flex;"><span>$ ssh<span style="color:#f92672">-</span>keygen <span style="color:#f92672">-</span>o <span style="color:#f92672">-</span>t rsa <span style="color:#f92672">-</span>b <span style="color:#ae81ff">4096</span> <span style="color:#f92672">-</span>C <span style="color:#e6db74">&#34;your-name@your.host&#34;</span></span></span></code></pre></div>
-<p>Add the wiki host to your SSH config (<code>~/.ssh/config</code>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">Host</span> wiki<span style="color:#f92672">.</span>your<span style="color:#f92672">.</span>host
-</span></span><span style="display:flex;"><span><span style="color:#a6e22e">HostName</span> wiki<span style="color:#f92672">.</span>your<span style="color:#f92672">.</span>host
-</span></span><span style="display:flex;"><span><span style="color:#a6e22e">User</span> gollum
-</span></span><span style="display:flex;"><span><span style="color:#a6e22e">IdentityFile</span> <span style="color:#f92672">~/.</span>ssh<span style="color:#f92672">/</span><span style="color:#a6e22e">NAME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">OF</span><span style="color:#f92672">-</span><span style="color:#a6e22e">THE</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PRIVATE</span><span style="color:#f92672">-</span><span style="color:#a6e22e">KEY</span><span style="color:#f92672">-</span><span style="color:#a6e22e">FILE</span><span style="color:#f92672">-</span><span style="color:#a6e22e">YOU</span><span style="color:#f92672">-</span><span style="color:#a6e22e">JUST</span><span style="color:#f92672">-</span><span style="color:#a6e22e">CREATED</span></span></span></code></pre></div>
-<p>Go the wiki host and add your public key to <code>/home/gollum/.ssh/authorized_keys</code>.</p>
+<p>As usual, create an <a href="https://github.com/retifrav/scraps/blob/master/_linux/ssh.md#generate-a-new-ssh-key">SSH key</a> on your machine and add the wiki host to your SSH config (<code>~/.ssh/config</code>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Host wiki.your.host
+</span></span><span style="display:flex;"><span>HostName wiki.your.host <span style="color:#75715e"># or its IP address, if you don&#39;t have a domain</span>
+</span></span><span style="display:flex;"><span>User gollum
+</span></span><span style="display:flex;"><span>IdentityFile ~/.ssh/NAME-OF-THE-PRIVATE-KEY-FILE-YOU-JUST-CREATED</span></span></code></pre></div>
+<p>Then go the wiki host and add your public key to <code>/home/gollum/.ssh/authorized_keys</code>.</p>
 <h3 id="clone-the-wiki-repository">Clone the wiki repository</h3>
-<p>Now you should be able to clone the wiki repository via SSH. On your local machine go to some <code>/path/to/your/documents/or/whatever</code> and clone the wiki like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ git clone gollum@wiki.your.host:wiki wiki.your.host</span></span></code></pre></div>
+<p>Now you should be able to clone the wiki repository via SSH. On your local machine clone the wiki repository like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/your/documents/or/whatever
+</span></span><span style="display:flex;"><span>$ git clone gollum@wiki.your.host:wiki wiki.your.host</span></span></code></pre></div>
 <p>Make sure that you have meaningful username and e-mail in your Git config (<em>these values will be used for authoring your changes in the wiki</em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd wiki<span style="color:#f92672">.</span>your<span style="color:#f92672">.</span>host
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">./</span>wiki<span style="color:#f92672">.</span>your<span style="color:#f92672">.</span>host
 </span></span><span style="display:flex;"><span>$ git config user<span style="color:#f92672">.</span>name
 </span></span><span style="display:flex;"><span>$ git config user<span style="color:#f92672">.</span>email</span></span></code></pre></div>
 <p>The rest is as with any other Git repository: you do some changes, commit them and push to remote.</p>
@@ -385,13 +390,13 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
 
     <img class="image-post" loading="lazy" src="/blog/2021/01/07/gollum-markdown-wiki/images/styling-main.png" alt="Gollum wiki, main page" style="border:1px solid black;">
 
-<p>Also, default Gollum styles define some rather ugly margins for ToC, headers, paragraphs and so on, but you can easily customize that into something nicer like this:</p>
+<p>Also, default Gollum styles (<em>at least, in older versions</em>) define some rather ugly margins for ToC, headers, paragraphs and so on, but you can easily customize that into something nicer like this:</p>
 
 
     <img class="image-post" loading="lazy" src="/blog/2021/01/07/gollum-markdown-wiki/images/styling-article.png" alt="Gollum wiki, article" style="border:1px solid black;">
 
 <p>Note that by default both <code>custom.css</code> and <code>custom.js</code> are included in the <code>&lt;head&gt;</code>. If you would like to move your JS code to the end of <code>&lt;body&gt;</code>, you can do it by modifying the following template: <code>/path/to/gems/gollum-VERSION/lib/gollum/templates/layout.mustache</code> (<em>or rather a <a href="#templates">copy of it</a> that you made earlier</em>).</p>
-<p>But before starting to customize the hell out of default styling, make sure that you have the latest Gollum version. In our case we were on the latest version, but since the moment we did our customization for adaptive layout there were a couple of new Gollum versions released, and there default styling was already addressing that very same thing out of the box, so our effort turned out to be a bit of a waste. Perhaps we should&rsquo;ve submitted our changes to the Gollum repository.</p>
+<p>But before starting to customize the hell out of default styling, make sure that you have the latest Gollum version. In our case we were on the latest version, but since the moment we did our customization for adaptive layout there were a couple of new Gollum versions released, and there default styling was already addressing that very same thing out of the box, so our efforts turned out to be a bit of a waste.</p>
 <h2 id="header-footer-sidebar">Header, footer, sidebar</h2>
 <p>There are certain special files (<em>subpages</em>) that get injected into pages - you can guess where exactly on a page by looking at their names:</p>
 <ul>
@@ -427,6 +432,161 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
 </ul>
 </li>
 </ul>
+<h1 id="ldap-authentication">LDAP authentication</h1>
+<p>If the average technical level in your team isn&rsquo;t very high, so not everyone is capable of setting-up an SSH connection and working with a Git repository (<em>let alone <a href="https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work">signing commits</a></em>), then you will likely have to enable editing via <a href="#web-ui">web UI</a>. One other reason for why you might want to do that is to allow people to make changes in the wiki from their mobile devices, where it isn&rsquo;t trivial/possible to work with a Git repository.</p>
+<p>But then you&rsquo;ll face the problem of authoring the changes, because without authentication all the changes will be authored by the default user that is set in <a href="#user-and-repository">Git config</a> on the server, making it impossible to track who changed what.</p>
+<p>One of the authentication options is to use <a href="/blog/2022/06/16/dotnet-ldap-authentication/#whats-the-point-of-using-an-ldap-server">LDAP</a>. Below I&rsquo;ll provide instructions for <a href="https://en.wikipedia.org/wiki/Active_Directory">Active Directory</a>, but as I already mentioned in the <a href="/blog/2022/06/16/dotnet-ldap-authentication/#ldap-servers-specifics">other article</a>, different servers have different specifics, so you&rsquo;ll likely need to change some things, if you are using something else.</p>
+<p>Before doing anything with Gollum, check that your LDAP server <a href="/blog/2022/06/16/dotnet-ldap-authentication/#checking-access-to-ldap-server">is available</a> and you can communicate with it from the host where you are running Gollum.</p>
+<h2 id="setting-up-omniauth-in-gollum">Setting up omniauth in Gollum</h2>
+<p>Thanks a lot to this <a href="https://pub.nethence.com/www/gollum-ad">beautiful person</a> for describing the procedure. Here&rsquo;s also another <a href="https://remyd1.fr/comm/blog/2022/gollum-wiki/#configuring-gollum">good tutorial</a>.</p>
+<p>First you need to install some more packages:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ gem install omniauth
+</span></span><span style="display:flex;"><span>$ gem install omniauth<span style="color:#f92672">-</span>ldap
+</span></span><span style="display:flex;"><span>$ gem install omnigollum
+</span></span><span style="display:flex;"><span>$ gem install gollum<span style="color:#f92672">-</span>rugged_adapter</span></span></code></pre></div>
+<p>Then add the following in your <code>config.rb</code> after the Gollum&rsquo;s initialization:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ruby" data-lang="ruby"><span style="display:flex;"><span><span style="color:#75715e"># Gollum initialization/settings</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">Gollum</span><span style="color:#f92672">::</span><span style="color:#66d9ef">Page</span><span style="color:#f92672">::</span><span style="color:#66d9ef">FORMAT_NAMES</span> <span style="color:#f92672">=</span> { <span style="color:#e6db74">:markdown</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#34;Markdown&#34;</span> }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># seems to be production by default, so no need to set it</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#Precious::App.set(:environment, :production)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>require <span style="color:#e6db74">&#39;omnigollum&#39;</span>
+</span></span><span style="display:flex;"><span>require <span style="color:#e6db74">&#39;omniauth-ldap&#39;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>ldapZone <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;com&#39;</span>
+</span></span><span style="display:flex;"><span>ldapDomain <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;our-company&#39;</span>
+</span></span><span style="display:flex;"><span>ldapSubDomain <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;ad&#39;</span>
+</span></span><span style="display:flex;"><span>ldapHost <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">#{</span>ldapSubDomain<span style="color:#e6db74">}</span><span style="color:#e6db74">.</span><span style="color:#e6db74">#{</span>ldapDomain<span style="color:#e6db74">}</span><span style="color:#e6db74">.</span><span style="color:#e6db74">#{</span>ldapZone<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>ldapQueryBase <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;DC=</span><span style="color:#e6db74">#{</span>ldapDomain<span style="color:#e6db74">}</span><span style="color:#e6db74">,DC=</span><span style="color:#e6db74">#{</span>ldapZone<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>options <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">:providers</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">Proc</span><span style="color:#f92672">.</span>new <span style="color:#66d9ef">do</span>
+</span></span><span style="display:flex;"><span>    provider <span style="color:#e6db74">:ldap</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">:title</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;Your Active Directory credentials for the company domain&#39;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">:host</span> <span style="color:#f92672">=&gt;</span> ldapHost,
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># your LDAP server&#39;s port</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">:port</span> <span style="color:#f92672">=&gt;</span> <span style="color:#ae81ff">3268</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">:method</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">:plain</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">:base</span> <span style="color:#f92672">=&gt;</span> ldapQueryBase,
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># your LDAP server&#39;s attribute for the unique ID</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">:uid</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;sAMAccountName&#39;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># this filter query is for Active Directory, so you might need to adjust it</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># for your particular LDAP server. The `CN=crew` means that user must be</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># a member of the group named `crew`, so in your case it will be something different</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">:filter</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#34;(&amp;(sAMAccountName=%{username})(memberOf=CN=crew,CN=Users,</span><span style="color:#e6db74">#{</span>ldapQueryBase<span style="color:#e6db74">}</span><span style="color:#e6db74">))&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># service user credentials (someone needs to query the server, preferably not a real user)</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">:bind_dn</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;SERVICE-USER-NAME&#39;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">:password</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;SERVICE-USER-PASSWORD&#39;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">end</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">:dummy_auth</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">false</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">:protected_routes</span> <span style="color:#f92672">=&gt;</span> <span style="color:#f92672">[</span><span style="color:#e6db74">&#39;/*&#39;</span><span style="color:#f92672">]</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">:author_format</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">Proc</span><span style="color:#f92672">.</span>new { <span style="color:#f92672">|</span>user<span style="color:#f92672">|</span> user<span style="color:#f92672">.</span>name },
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">:author_email</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">Proc</span><span style="color:#f92672">.</span>new { <span style="color:#f92672">|</span>user<span style="color:#f92672">|</span> user<span style="color:#f92672">.</span>email },
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e"># https://github.com/arr2036/omnigollum/issues/42</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e"># any AD user, who is able to authenticate, will have access</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">:authorized_users</span> <span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e"># otherwise you can further restrict access to an explicit list of your AD users,</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e"># for example via an environment variable (OMNIGOLLUM_AUTHORIZED_USERS=alleria,luna,mirana)</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e">#:authorized_users =&gt; ENV[&#34;OMNIGOLLUM_AUTHORIZED_USERS&#34;].split(&#34;,&#34;)</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">Precious</span><span style="color:#f92672">::</span><span style="color:#66d9ef">App</span><span style="color:#f92672">.</span>set(<span style="color:#e6db74">:omnigollum</span>, options)
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">Precious</span><span style="color:#f92672">::</span><span style="color:#66d9ef">App</span><span style="color:#f92672">.</span>register <span style="color:#66d9ef">Omnigollum</span><span style="color:#f92672">::</span><span style="color:#66d9ef">Sinatra</span></span></span></code></pre></div>
+<p>This is it, nothing else is needed. You can now run Gollum as usual, just add <code>--adapter rugged</code> parameter (<em>not sure if this is actually required, as it seems to be the <a href="https://github.com/gollum/gollum/wiki/Git-adapters#rugged">default one</a> anyway</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ gollum <span style="color:#f92672">--</span>config config<span style="color:#f92672">.</span>rb <span style="color:#f92672">--</span>host localhost <span style="color:#f92672">--</span>adapter rugged</span></span></code></pre></div>
+<p>Trying to run that on Mac OS, I got the following errors:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#f92672">/</span>opt<span style="color:#f92672">/</span>homebrew<span style="color:#f92672">/</span>Cellar<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span><span style="color:#ae81ff">3.2.2</span>_1<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span><span style="color:#ae81ff">3.2.0</span><span style="color:#f92672">/</span>rubygems<span style="color:#f92672">/</span>specification.rb:<span style="color:#ae81ff">2295</span><span style="color:#f92672">:</span>in <span style="color:#960050;background-color:#1e0010">`</span>raise_if_conflicts<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">:</span> Unable to activate omniauth<span style="color:#f92672">-</span>ldap<span style="color:#f92672">-</span><span style="color:#ae81ff">2.0.0</span>, because omniauth<span style="color:#f92672">-</span><span style="color:#ae81ff">2.1.1</span> conflicts with omniauth (<span style="color:#f92672">~&gt;</span> <span style="color:#ae81ff">1.8.1</span>) (Gem<span style="color:#f92672">::</span>ConflictError)
+</span></span><span style="display:flex;"><span>    from <span style="color:#f92672">/</span>opt<span style="color:#f92672">/</span>homebrew<span style="color:#f92672">/</span>Cellar<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span><span style="color:#ae81ff">3.2.2</span>_1<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span><span style="color:#ae81ff">3.2.0</span><span style="color:#f92672">/</span>rubygems<span style="color:#f92672">/</span>specification.rb:<span style="color:#ae81ff">1424</span><span style="color:#f92672">:</span>in <span style="color:#960050;background-color:#1e0010">`</span>activate<span style="color:#960050;background-color:#1e0010">&#39;</span>
+</span></span><span style="display:flex;"><span>    ...
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;</span>internal:<span style="color:#f92672">/</span>opt<span style="color:#f92672">/</span>homebrew<span style="color:#f92672">/</span>Cellar<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span><span style="color:#ae81ff">3.2.2</span>_1<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span><span style="color:#ae81ff">3.2.0</span><span style="color:#f92672">/</span>rubygems<span style="color:#f92672">/</span>core_ext<span style="color:#f92672">/</span>kernel_require.rb<span style="color:#f92672">&gt;:</span><span style="color:#ae81ff">148</span><span style="color:#f92672">:</span>in <span style="color:#960050;background-color:#1e0010">`</span>require<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">:</span> cannot load such file <span style="color:#f92672">--</span> omniauth<span style="color:#f92672">-</span>ldap (LoadError)
+</span></span><span style="display:flex;"><span>    from <span style="color:#f92672">&lt;</span>internal:<span style="color:#f92672">/</span>opt<span style="color:#f92672">/</span>homebrew<span style="color:#f92672">/</span>Cellar<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span><span style="color:#ae81ff">3.2.2</span>_1<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span><span style="color:#ae81ff">3.2.0</span><span style="color:#f92672">/</span>rubygems<span style="color:#f92672">/</span>core_ext<span style="color:#f92672">/</span>kernel_require.rb<span style="color:#f92672">&gt;:</span><span style="color:#ae81ff">148</span><span style="color:#f92672">:</span>in <span style="color:#960050;background-color:#1e0010">`</span>require<span style="color:#960050;background-color:#1e0010">&#39;</span>
+</span></span><span style="display:flex;"><span>    ...</span></span></code></pre></div>
+<p>To resolve this I had to uninstall the newer version of <code>omniauth</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ gem uninstall omniauth
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Select gem to uninstall:
+</span></span><span style="display:flex;"><span> 1. omniauth-1.8.1
+</span></span><span style="display:flex;"><span> 2. omniauth-2.1.1
+</span></span><span style="display:flex;"><span> 3. All versions
+</span></span><span style="display:flex;"><span>&gt; <span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>Successfully uninstalled omniauth-2.1.1</span></span></code></pre></div>
+<p>And then Gollum launched fine. Openning any page of your wiki you should now get the following authentication form:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2021/01/07/gollum-markdown-wiki/images/omnigollum-default-authentication-form.png" alt="omnigollum default authentication form">
+
+<p>Which doesn&rsquo;t look too nice, so I wanted to customize it, and I was hoping this could be done via <a href="#templates">templates</a>, but sadly it looks like the only way to do this is by editing the <code>omniauth</code>/<code>omnigollum</code> gems sources, which means that you&rsquo;ll need to do that again on the next update:</p>
+<ul>
+<li><a href="./customization/ldap-authentication/form.rb">/path/to/gems/omniauth-VERSION/lib/omniauth/form.rb</a></li>
+<li><a href="./customization/ldap-authentication/form.css">/path/to/gems/omniauth-VERSION/lib/omniauth/form.css</a></li>
+<li><a href="./customization/ldap-authentication/omnigollum.rb">/path/to/gems/omnigollum-VERSION/lib/omnigollum.rb</a></li>
+<li><a href="./customization/ldap-authentication/Error.mustache">/path/to/gems/omnigollum-VERSION/templates/Error.mustache</a>
+<ul>
+<li>it is a template, but it has the same file name as the main error template, so it needs to be edited in sources (<em>unless there is a mechanism for nested/scoped templates</em>)</li>
+<li>also, this error page customization capabilities are rather limited, because it is just a <code>div</code> that is getting inserted into the main layout</li>
+</ul>
+</li>
+</ul>
+<p>I&rsquo;ve settled with the following:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2021/01/07/gollum-markdown-wiki/images/omnigollum-custom-authentication-form.png" alt="omnigollum custom authentication form">
+
+<p>Better, innit.</p>
+<p>Another thing you&rsquo;d probably want to do is to <a href="https://github.com/remyd1/gollum/commit/925ebcfe04f294c979b9e088dc0955ca1dfa8c44">show currently signed-in user</a>. For that you&rsquo;d need to create a new template <code>/path/to/your/custom/templates/user.mustache</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span>&lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;user&#34;</span> <span style="color:#a6e22e">style</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;float: right; margin-top: 30px; font-family: Verdana, sans-serif;&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>    &lt;<span style="color:#f92672">p</span>&gt;
+</span></span><span style="display:flex;"><span>    {{#user_authed}}
+</span></span><span style="display:flex;"><span>      [
+</span></span><span style="display:flex;"><span>      Signed in via &lt;<span style="color:#f92672">b</span>&gt;{{user_provider}}&lt;/<span style="color:#f92672">b</span>&gt; as &lt;<span style="color:#f92672">b</span>&gt;{{user_name}}&lt;/<span style="color:#f92672">b</span>&gt;
+</span></span><span style="display:flex;"><span>      |
+</span></span><span style="display:flex;"><span>      &lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/__omnigollum__/logout&#34;</span>&gt;logout&lt;/<span style="color:#f92672">a</span>&gt;
+</span></span><span style="display:flex;"><span>      ]
+</span></span><span style="display:flex;"><span>    {{/user_authed}}
+</span></span><span style="display:flex;"><span>    {{^user_authed}}
+</span></span><span style="display:flex;"><span>      [
+</span></span><span style="display:flex;"><span>      You are not logged in
+</span></span><span style="display:flex;"><span>      |
+</span></span><span style="display:flex;"><span>      &lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/__omnigollum__/login&#34;</span>&gt;login&lt;/<span style="color:#f92672">a</span>&gt;
+</span></span><span style="display:flex;"><span>      ]
+</span></span><span style="display:flex;"><span>    {{/user_authed}}
+</span></span><span style="display:flex;"><span>    &lt;<span style="color:#f92672">p</span>&gt;
+</span></span><span style="display:flex;"><span>&lt;/<span style="color:#f92672">div</span>&gt;</span></span></code></pre></div>
+<p>then customize the <code>/path/to/your/custom/templates/layout.mustache</code> (<em>note the replacement of the <code>&amp;lt;</code> with <code>&lt;</code> - I had to do it this way here in the article because of the Hugo limitation</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span> &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;container-lg clearfix&#34;</span>&gt;
+</span></span><span style="display:flex;"><span> {{{yield}}}
+</span></span><span style="display:flex;"><span> {{&amp;lt; user}} <span style="color:#75715e">&lt;!-- replace `&amp;lt;` with the actual `&lt;` symbol --&gt;</span>
+</span></span><span style="display:flex;"><span> &lt;/<span style="color:#f92672">div</span>&gt;
+</span></span><span style="display:flex;"><span> &lt;/<span style="color:#f92672">body</span>&gt;
+</span></span><span style="display:flex;"><span> &lt;/<span style="color:#f92672">html</span>&gt;</span></span></code></pre></div>
+<p>and finally edit the <code>/path/to/gems/gollum-VERSION/lib/gollum/views/layout.rb</code> source (<em>which means that you&rsquo;ll need to do that again on the next update</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ruby" data-lang="ruby"><span style="display:flex;"><span><span style="color:#75715e"># original sources</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># passthrough additional omniauth parameters for status bar</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">user_authed</span>
+</span></span><span style="display:flex;"><span>        @user_authed
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">end</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">user_provider</span>
+</span></span><span style="display:flex;"><span>        @user<span style="color:#f92672">.</span>provider
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">end</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">user_name</span>
+</span></span><span style="display:flex;"><span>        @user<span style="color:#f92672">.</span>name
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">end</span>
+</span></span><span style="display:flex;"><span>      
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">end</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">end</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">end</span></span></span></code></pre></div>
+<p>Now all the changes made via web UI will be properly authored too. For example, here you can see who edited the page last time and which user is logged in at the moment:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2021/01/07/gollum-markdown-wiki/images/omnigollum-authenticated-users.png" alt="omnigollum authenticated users" style="border:1px solid black;">
+
+<p>And if you trust the <code>omni*</code> packages enough, you can now probably even expose your wiki to the big internet, so your team could use it without office VPN.</p>
       </div>
     </article>
     <div><div id="tags">
