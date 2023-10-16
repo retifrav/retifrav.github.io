@@ -98,7 +98,7 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
   <ul>
     <li><a href="#installation">Installation</a>
       <ul>
-        <li><a href="#linux">Linux</a>
+        <li><a href="#gnulinux">GNU/Linux</a>
           <ul>
             <li><a href="#packages">Packages</a></li>
             <li><a href="#user-and-repository">User and repository</a></li>
@@ -133,6 +133,7 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
     <li><a href="#ldap-authentication">LDAP authentication</a>
       <ul>
         <li><a href="#setting-up-omniauth-in-gollum">Setting up omniauth in Gollum</a></li>
+        <li><a href="#customizing-authentication-views">Customizing authentication views</a></li>
       </ul>
     </li>
   </ul>
@@ -149,8 +150,8 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
 </ul>
 <p>By the way, Gollum is what is running wikis on GitHub and GitLab, so you can actually clone wikis from there and run them locally on your machine.</p>
 <h1 id="installation">Installation</h1>
-<h2 id="linux">Linux</h2>
-<p>The goal is to run Gollum behind NGINX as a reverse proxy, available at <a href="http://wiki.your.host">http://wiki.your.host</a>.</p>
+<h2 id="gnulinux">GNU/Linux</h2>
+<p>The goal is to run Gollum behind <a href="#nginx">NGINX</a> as a reverse proxy, available at <a href="http://wiki.your.host">http://wiki.your.host</a>.</p>
 <h3 id="packages">Packages</h3>
 <p>Install required packages:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ sudo apt install ruby ruby<span style="color:#f92672">-</span>dev make zlib1g<span style="color:#f92672">-</span>dev libicu<span style="color:#f92672">-</span>dev build<span style="color:#f92672">-</span>essential git cmake
@@ -225,7 +226,7 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">[Install]</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">WantedBy</span><span style="color:#f92672">=</span><span style="color:#e6db74">multi-user.target</span></span></span></code></pre></div>
-<p>Why localhost? You guessed it right - because we&rsquo;ll be running it behind a proper reverse-proxy, such as NGINX, so we don&rsquo;t want Gollum to expose its port to the network.</p>
+<p>Why localhost? You guessed it right - because we&rsquo;ll be running it behind a proper reverse proxy, such as <a href="#nginx">NGINX</a>, so we don&rsquo;t want Gollum to expose its port to the network.</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ sudo systemctl enable gollum<span style="color:#f92672">.</span>service
 </span></span><span style="display:flex;"><span>$ sudo systemctl start gollum<span style="color:#f92672">.</span>service</span></span></code></pre></div>
 <p>Verify that it&rsquo;s bound to <code>127.0.0.1</code>:</p>
@@ -494,9 +495,10 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">Precious</span><span style="color:#f92672">::</span><span style="color:#66d9ef">App</span><span style="color:#f92672">.</span>set(<span style="color:#e6db74">:omnigollum</span>, options)
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">Precious</span><span style="color:#f92672">::</span><span style="color:#66d9ef">App</span><span style="color:#f92672">.</span>register <span style="color:#66d9ef">Omnigollum</span><span style="color:#f92672">::</span><span style="color:#66d9ef">Sinatra</span></span></span></code></pre></div>
-<p>This is it, nothing else is needed. You can now run Gollum as usual, just add <code>--adapter rugged</code> parameter (<em>not sure if this is actually required, as it seems to be the <a href="https://github.com/gollum/gollum/wiki/Git-adapters#rugged">default one</a> anyway</em>):</p>
+<p>This is it, nothing else is needed. Well, obviously except for enabling HTTPS in your <a href="#nginx">reverse proxy</a>, so passwords wouldn&rsquo;t be sent in plain-text unencrypted.</p>
+<p>You can now run Gollum as usual, just add <code>--adapter rugged</code> parameter (<em>not sure if this is actually required, as it seems to be the <a href="https://github.com/gollum/gollum/wiki/Git-adapters#rugged">default one</a> anyway</em>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ gollum <span style="color:#f92672">--</span>config config<span style="color:#f92672">.</span>rb <span style="color:#f92672">--</span>host localhost <span style="color:#f92672">--</span>adapter rugged</span></span></code></pre></div>
-<p>Trying to run that on Mac OS, I got the following errors:</p>
+<p>Trying to run that, I got the following errors (<em>first on <a href="#mac-os">Mac OS</a> and then also on <a href="#gnulinux">GNU/Linux</a> server</em>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#f92672">/</span>opt<span style="color:#f92672">/</span>homebrew<span style="color:#f92672">/</span>Cellar<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span><span style="color:#ae81ff">3.2.2</span>_1<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span><span style="color:#ae81ff">3.2.0</span><span style="color:#f92672">/</span>rubygems<span style="color:#f92672">/</span>specification.rb:<span style="color:#ae81ff">2295</span><span style="color:#f92672">:</span>in <span style="color:#960050;background-color:#1e0010">`</span>raise_if_conflicts<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#f92672">:</span> Unable to activate omniauth<span style="color:#f92672">-</span>ldap<span style="color:#f92672">-</span><span style="color:#ae81ff">2.0.0</span>, because omniauth<span style="color:#f92672">-</span><span style="color:#ae81ff">2.1.1</span> conflicts with omniauth (<span style="color:#f92672">~&gt;</span> <span style="color:#ae81ff">1.8.1</span>) (Gem<span style="color:#f92672">::</span>ConflictError)
 </span></span><span style="display:flex;"><span>    from <span style="color:#f92672">/</span>opt<span style="color:#f92672">/</span>homebrew<span style="color:#f92672">/</span>Cellar<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span><span style="color:#ae81ff">3.2.2</span>_1<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>ruby<span style="color:#f92672">/</span><span style="color:#ae81ff">3.2.0</span><span style="color:#f92672">/</span>rubygems<span style="color:#f92672">/</span>specification.rb:<span style="color:#ae81ff">1424</span><span style="color:#f92672">:</span>in <span style="color:#960050;background-color:#1e0010">`</span>activate<span style="color:#960050;background-color:#1e0010">&#39;</span>
 </span></span><span style="display:flex;"><span>    ...
@@ -512,7 +514,9 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
 </span></span><span style="display:flex;"><span> 3. All versions
 </span></span><span style="display:flex;"><span>&gt; <span style="color:#ae81ff">2</span>
 </span></span><span style="display:flex;"><span>Successfully uninstalled omniauth-2.1.1</span></span></code></pre></div>
-<p>And then Gollum launched fine. Openning any page of your wiki you should now get the following authentication form:</p>
+<p>And then Gollum launched fine.</p>
+<h2 id="customizing-authentication-views">Customizing authentication views</h2>
+<p>Trying to open any page in your wiki, you should now get the following authentication form (<em>if you are unauthenticated</em>):</p>
 
 
     <img class="image-post" loading="lazy" src="/blog/2021/01/07/gollum-markdown-wiki/images/omnigollum-default-authentication-form.png" alt="omnigollum default authentication form">
@@ -529,7 +533,7 @@ Even though it has its own installation guide, for me that wasn&rsquo;t enough, 
 </ul>
 </li>
 </ul>
-<p>I&rsquo;ve settled with the following:</p>
+<p>I&rsquo;ve settled with the following (<em>reused login page styling from other portals, so it looked familiar for everyone in the team</em>):</p>
 
 
     <img class="image-post" loading="lazy" src="/blog/2021/01/07/gollum-markdown-wiki/images/omnigollum-custom-authentication-form.png" alt="omnigollum custom authentication form">
