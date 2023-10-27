@@ -64,7 +64,7 @@ On top of that, last month Electronic Frontier Foundation (creators of Certbot) 
 </svg> 2021-04-05 13:08:02 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 19 min read</div>
+</svg> 25 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -93,6 +93,11 @@ On top of that, last month Electronic Frontier Foundation (creators of Certbot) 
       <ul>
         <li><a href="#2021-10-21--zerossl-is-the-default-server">2021-10-21 | ZeroSSL is the default server</a></li>
         <li><a href="#2023-03-18--wildcard-certificate-using-dns-challenge-and-registrar-api">2023-03-18 | Wildcard certificate using DNS challenge and registrar API</a></li>
+        <li><a href="#2023-10-27--using-a-dns-alias">2023-10-27 | Using a DNS alias</a>
+          <ul>
+            <li><a href="#distributing-certificate-files-to-internal-servers">Distributing certificate files to internal servers</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
   </ul>
@@ -350,7 +355,11 @@ On top of that, last month Electronic Frontier Foundation (creators of Certbot) 
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">Le_RealKeyPath</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/home/USERNAME/certs/domain.dev/key.pem&#39;</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">Le_ReloadCmd</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;__ACME_BASE64__START_c3VkbyBzeXN0ZW1jdGwgcmVzdGFydCBuZ2lueC5zZXJ2aWNl__ACME_BASE64__END_&#39;</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">Le_RealFullChainPath</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/home/USERNAME/certs/domain.dev/fullchain.pem&#39;</span></span></span></code></pre></div>
-<p>So it should be all good then, though I am still confused about the fact that reload command is present both in this config and in the <code>cron</code> job. But okay, I guess, I&rsquo;ll see how it is in a couple of months or so.</p>
+<p>So it should be all good then, though I am still confused about the fact that reload command is present both in this config and in the <code>cron</code> job.</p>
+<p>Here&rsquo;s also a useful command for checking the certificate dates, once you have it installed and set-up in NGINX:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ echo | openssl s_client -connect domain.dev:443 2&gt;&amp;<span style="color:#ae81ff">1</span> | openssl x509 -noout -dates
+</span></span><span style="display:flex;"><span>notBefore<span style="color:#f92672">=</span>Oct <span style="color:#ae81ff">24</span> 18:30:24 <span style="color:#ae81ff">2023</span> GMT
+</span></span><span style="display:flex;"><span>notAfter<span style="color:#f92672">=</span>Jan <span style="color:#ae81ff">22</span> 18:30:23 <span style="color:#ae81ff">2024</span> GMT</span></span></code></pre></div>
 <h1 id="open-443-port">Open 443 port</h1>
 <p>If your website is still not available via HTTPS, it could be that your host doesn&rsquo;t accept connections on <code>443</code> port. There could be two reasons why.</p>
 <p>First, if you are using Oracle Cloud, Microsoft Azure or similar cloud provider, then those have a very limited amount of ports open in their virtual networks by default. In fact, you might need to explicitly open even <code>80</code> port. For example, here&rsquo;s how it looks in my Oracle Cloud panel now:</p>
@@ -505,6 +514,151 @@ On top of that, last month Electronic Frontier Foundation (creators of Certbot) 
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}</span></span></code></pre></div>
+<h2 id="2023-10-27--using-a-dns-alias">2023-10-27 | Using a DNS alias</h2>
+<p>We have our own DNS server/service at work, which manages some of our domains, and this server does not have an API for editing DNS records, which quite naturally makes it difficult to pass the <a href="#2023-03-18--wildcard-certificate-using-dns-challenge-and-registrar-api">DNS-01 challenge</a> for those domains. We could theoretically automate editing our BIND <a href="https://en.wikipedia.org/wiki/Zone_file">zone file</a> on the DNS server via SSH or some other way, but that is very much error-prone, so we&rsquo;d prefer not to.</p>
+<p>If you are in a similar situation, or/and if your domain registrar does not have an API, do not despair, as DNS-01 challenge can be passed using a simple <a href="https://en.wikipedia.org/wiki/CNAME_record">CNAME record</a>. The way it works is that you add a CNAME record in the original domain, pointing to an &ldquo;alias domain&rdquo; that is registered and managed by some registrar that does have an API, and then Let&rsquo;s Encrypt will read TXT records from this one instead of the original.</p>
+<p>For example, let&rsquo;s say our original domain of interest is <code>our-company.net</code>, and it is managed by a registrar/service without API. And there is also <code>our-company.com</code> domain, which is managed by a registrar that does have an API. So the first step will be to add a CNAME record (<em>in the original domain zone file</em>) for <code>_acme-challenge.our-company.net</code>, which would point to <code>_acme-challenge.our-company.com</code>.</p>
+<p><a href="https://github.com/acmesh-official/acme.sh/wiki/DNS-alias-mode#1-first-set-domain-cname">This article</a> says to set it in the following format (<em>pay attention to the terminating dot</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>_acme-challenge.our-company.net IN CNAME _acme-challenge.our-company.com.</span></span></code></pre></div>
+<p>And that is the record I added in our BIND zone file at first, but as it turned out, this is a wrong format, or at least it was in our case, because Let&rsquo;s Encrypt wasn&rsquo;t able to discover this record, as it was still trying to read TXT records from <code>our-company.net</code> instead of <code>our-company.com</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;identifier&#34;</span>: {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;dns&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;value&#34;</span>: <span style="color:#e6db74">&#34;our-company.net&#34;</span>
+</span></span><span style="display:flex;"><span>  },
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;status&#34;</span>: <span style="color:#e6db74">&#34;invalid&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;expires&#34;</span>: <span style="color:#e6db74">&#34;2023-10-31T17:10:24Z&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;challenges&#34;</span>: [
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;dns-01&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;status&#34;</span>: <span style="color:#e6db74">&#34;invalid&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;error&#34;</span>: {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;urn:ietf:params:acme:error:dns&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;detail&#34;</span>: <span style="color:#e6db74">&#34;DNS problem: NXDOMAIN looking up TXT for _acme-challenge.our-company.net - check that a DNS record exists for this domain&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;status&#34;</span>: <span style="color:#ae81ff">400</span>
+</span></span><span style="display:flex;"><span>      },
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;https://acme-v02.api.letsencrypt.org/acme/chall-v3/SOME-ID/ANOTHER-ID&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;token&#34;</span>: <span style="color:#e6db74">&#34;SOME-TOKEN&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;validated&#34;</span>: <span style="color:#e6db74">&#34;2023-10-24T17:11:04Z&#34;</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  ]
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>and obviously the verification was failing, because those records were set for <code>_acme-challenge.our-company.com</code>.</p>
+<p>I don&rsquo;t know, if it is our DNS server/zone settings or something else to blame, but the right format turned out to be this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>_acme-challenge IN CNAME _acme-challenge.our-company.com.</span></span></code></pre></div>
+<p>and that worked out fine.</p>
+<p>So the first thing you should do before trying to issue a certificate is to ensure that the CNAME record is added correctly and is successfully discovered by DNS checking tools (<em>and so Let&rsquo;s Encrypt can is able to read it too</em>). You can use some of the online services for that, such as <a href="https://dnschecker.org/all-dns-records-of-domain.php?query=_acme-challenge.your-company.net&amp;rtype=ALL&amp;dns=quad9">this one</a>, or a suitable CLI tool, such as <code>dig</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#a6e22e">$ dig _acme-challenge.our-company.net CNAME</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">; &lt;&lt;&gt;&gt; DiG 9.10.6 &lt;&lt;&gt;&gt; _acme-challenge.our-company.net CNAME</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">;; global options: +cmd</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">;; Got answer:</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 61736</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">;; OPT PSEUDOSECTION:</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">; EDNS: version: 0, flags:; udp: 1232</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">;; QUESTION SECTION:</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">;_acme-challenge.our-company.net.    IN    CNAME</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">;; ANSWER SECTION:</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">_acme-challenge.our-company.net. 3600    IN    CNAME    _acme-challenge.our-company.com.</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">;; Query time: 36 msec</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">;; SERVER: 192.0.2.42#53(192.0.2.42)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">;; WHEN: Tue Oct 24 22:13:13 CEST 2023</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">;; MSG SIZE  rcvd: 93</span></span></span></code></pre></div>
+<p>here&rsquo;s also a short variant:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#a6e22e">$ dig _acme-challenge.our-company.net CNAME +short</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">_acme-challenge.our-company.com.</span></span></span></code></pre></div>
+<p>Just in case, be aware that you (<em>like us</em>) might have different zones for your domains for internal and external network, so to be sure you should run <code>dig</code> from outside your office network.</p>
+<p>Having verified that the record is set, you can now issue a certificate by running <code>acme.sh</code> with <code>--challenge-alias</code> argument pointing to the alias domain (<em>the one that should get TXT records with challenge tokens</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ domainregistrar_token<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;TOKEN-HERE&#34;</span> domainregistrar_secret<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SECRET-HERE&#34;</span> \
+</span></span><span style="display:flex;"><span>    acme<span style="color:#f92672">.</span>sh <span style="color:#f92672">--</span>issue <span style="color:#f92672">-</span>d our<span style="color:#f92672">-</span>company<span style="color:#f92672">.</span>net <span style="color:#f92672">--</span>challenge<span style="color:#f92672">-</span>alias our<span style="color:#f92672">-</span>company<span style="color:#f92672">.</span>com \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>dns dns_domainregistrar \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">-</span>d <span style="color:#f92672">*.</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">.</span>net \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>server letsencrypt \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>debug</span></span></code></pre></div>
+<p>The order of arguments seems to matter, so just in case don&rsquo;t shuffle them around.</p>
+<p>You can certainly drop the <code>--debug</code> argument, but it is useful for finding out what&rsquo;s wrong if something goes wrong, and Let&rsquo;s Encrypt limits issuing a certificate to 5 attempts per hour, so it&rsquo;s nice to get all the output right away already on the first attempt, without wasting another attempt just to get the debugging output.</p>
+<p>For clarity, what will happen (<em>as I understand it</em>) on executing that command above:</p>
+<ol>
+<li>Let&rsquo;s Encrypt will be queried for DNS-01 challenge tokens;</li>
+<li>Two TXT records with the tokens will be added for <code>our-company.com</code> domain in the registrar DNS records via API;</li>
+<li>Let&rsquo;s Encrypt will try to read records for <code>_acme-challenge.our-company.net</code>, but since it&rsquo;s a CNAME, it will read records for <code>_acme-challenge.our-company.com</code> instead;</li>
+<li>As those are set (<em>and hopefully are correct/valid</em>), the challenge will succeed and certificate will be issued.</li>
+</ol>
+<p>The rest is a standard procedure as before, install the certificate:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ acme<span style="color:#f92672">.</span>sh <span style="color:#f92672">--</span>install<span style="color:#f92672">-</span>cert <span style="color:#f92672">-</span>d our<span style="color:#f92672">-</span>company<span style="color:#f92672">.</span>net \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>key<span style="color:#f92672">-</span>file <span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>www<span style="color:#f92672">/</span>certificates<span style="color:#f92672">.</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">.</span>net<span style="color:#f92672">/</span>certs<span style="color:#f92672">/</span>key<span style="color:#f92672">.</span>pem \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>fullchain<span style="color:#f92672">-</span>file <span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>www<span style="color:#f92672">/</span>certificates<span style="color:#f92672">.</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">.</span>net<span style="color:#f92672">/</span>certs<span style="color:#f92672">/</span>fullchain<span style="color:#f92672">.</span>pem \
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>reloadcmd <span style="color:#e6db74">&#34;sudo systemctl restart nginx.service&#34;</span></span></span></code></pre></div>
+<p>and use the installation path in your web-server config.</p>
+<p>The renewal cron job should&rsquo;ve been already added during <code>acme.sh</code> installation, but you might want to customize it a bit (<em>not running it every day, restarting NGINX and logging the output</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#ae81ff">1</span> <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">,</span><span style="color:#ae81ff">20</span> <span style="color:#f92672">*</span> <span style="color:#f92672">*</span> <span style="color:#e6db74">&#34;/path/to/.acme.sh&#34;</span><span style="color:#f92672">/</span>acme<span style="color:#f92672">.</span>sh <span style="color:#f92672">--</span>cron <span style="color:#f92672">--</span>home <span style="color:#e6db74">&#34;/path/to/.acme.sh&#34;</span> <span style="color:#f92672">--</span>reloadcmd <span style="color:#e6db74">&#34;sudo systemctl restart nginx.service&#34;</span> <span style="color:#f92672">&gt;&gt;</span> <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>logs<span style="color:#f92672">/</span>cron<span style="color:#f92672">-</span>acme<span style="color:#f92672">.</span>log <span style="color:#ae81ff">2</span><span style="color:#f92672">&gt;&amp;</span><span style="color:#ae81ff">1</span></span></span></code></pre></div>
+<p>Also, don&rsquo;t delete the CNAME record that points to the alias domain, because it will likely be still needed for renewals.</p>
+<h3 id="distributing-certificate-files-to-internal-servers">Distributing certificate files to internal servers</h3>
+<p>In our case we also needed to distribute the certificate files to other servers in our network, so our other internal websites under <code>*.our-company.net</code> domain could enable HTTPS (<em>yes, even though it is an internal network, it is still better or rather required to have authentication requests going through HTTPS and not HTTP</em>). That was actually the main reason why we wanted to get a wildcard certificate, as internal servers that are hosting our internal websites/services are not exposed to the internet, and it is (<em>close to</em>) impossible to issue certificates directly on those servers. Having a wildcard certificate solves this problem, as we just need to distribute its files, which is a trivial task.</p>
+<p>We decided that the easiest would be to serve the certificate files from the main server (<em>protected with <a href="https://github.com/retifrav/scraps/blob/master/_linux/index.md#basic-authentication">Basic authentication</a></em>). Here&rsquo;s an NGINX config for that (<em>using HTTPS too</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">443</span> <span style="color:#e6db74">ssl</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:443</span> <span style="color:#e6db74">ssl</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">certificates.our-company.net</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># that path is where certificate files were installed to
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e"># and also where they are served from
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#f92672">ssl_certificate</span> <span style="color:#e6db74">/var/www/certificates.our-company.net/certs/fullchain.pem</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">ssl_certificate_key</span> <span style="color:#e6db74">/var/www/certificates.our-company.net/certs/key.pem</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">charset</span> <span style="color:#e6db74">utf-8</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">root</span> <span style="color:#e6db74">/var/www/certificates.our-company.net</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">index</span> <span style="color:#e6db74">index.html</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># and since certificate files shouldn&#39;t be available to anyone,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e"># that route is protected with Basic authentication
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#f92672">location</span> <span style="color:#e6db74">/certs</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">try_files</span> $uri $uri/ =<span style="color:#ae81ff">404</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">auth_basic</span> <span style="color:#e6db74">&#34;You</span> <span style="color:#e6db74">know</span> <span style="color:#e6db74">the</span> <span style="color:#e6db74">rules&#34;</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">auth_basic_user_file</span> <span style="color:#e6db74">/etc/nginx/.htpasswd</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">try_files</span> $uri $uri/ =<span style="color:#ae81ff">404</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">error_page</span> <span style="color:#ae81ff">404</span> <span style="color:#e6db74">/404.html</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span> <span style="color:#e6db74">default_server</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span> <span style="color:#e6db74">default_server</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">certificates.our-company.net</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">return</span> <span style="color:#ae81ff">301</span> <span style="color:#e6db74">https://</span>$server_name$request_uri;
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<p>And then other servers get the certificate files via cron job (<em>the certificate gets renewed, so this needs to be done regularly</em>) script like this one:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>cd /var/www/certificates
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>httpStatus<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>/usr/bin/curl -s --netrc -O https://certificates.our-company.net/certs/fullchain.pem -w <span style="color:#e6db74">&#34;%{http_code}&#34;</span><span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> <span style="color:#f92672">[[</span> $httpStatus !<span style="color:#f92672">=</span> <span style="color:#ae81ff">200</span> <span style="color:#f92672">]]</span>; <span style="color:#66d9ef">then</span>
+</span></span><span style="display:flex;"><span>    echo <span style="color:#e6db74">&#34;[ERROR] Failed to download fullchain.pem&#34;</span> 1&gt;&amp;<span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>    exit <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">fi</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>httpStatus<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>/usr/bin/curl -s --netrc -O https://certificates.our-company.net/certs/key.pem -w <span style="color:#e6db74">&#34;%{http_code}&#34;</span><span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> <span style="color:#f92672">[[</span> $httpStatus !<span style="color:#f92672">=</span> <span style="color:#ae81ff">200</span> <span style="color:#f92672">]]</span>; <span style="color:#66d9ef">then</span>
+</span></span><span style="display:flex;"><span>    echo <span style="color:#e6db74">&#34;[ERROR] Failed to download key.pem&#34;</span> 1&gt;&amp;<span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>    exit <span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">fi</span></span></span></code></pre></div>
+<p>Basic authentication credentials are stored in <a href="https://everything.curl.dev/usingcurl/netrc">.netrc file</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>machine certificates<span style="color:#f92672">.</span>our<span style="color:#f92672">-</span>company<span style="color:#f92672">.</span>net
+</span></span><span style="display:flex;"><span>login <span style="color:#a6e22e">USERNAME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">HERE</span>
+</span></span><span style="display:flex;"><span>password <span style="color:#a6e22e">PASSWORD</span><span style="color:#f92672">-</span><span style="color:#a6e22e">HERE</span></span></span></code></pre></div>
+<p>otherwise these need to be provided inline via <code>-u USERNAME-HERE:PASSWORD-HERE</code> instead of <code>--netrc</code>.</p>
       </div>
     </article>
     <div><div id="tags">

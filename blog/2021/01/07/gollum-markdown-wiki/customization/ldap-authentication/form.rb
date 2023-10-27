@@ -85,11 +85,11 @@ module OmniAuth
           <table class="listing">
             <tr>
                 <th><label for="username">Username:</label></th>
-                <td><input id="username" type="text" name="username" class="cool-input" placeholder="alleria"></td>
+                <td><input id="username" type="text" name="username" autocomplete="username" class="cool-input" placeholder="alleria"></td>
             </tr>
             <tr>
                 <th><label for="password">Password:</label></th>
-                <td><input id="password" type="password" name="password" class="cool-input"></td>
+                <td><input id="password" type="password" name="password" autocomplete="current-password" class="cool-input"></td>
             </tr>
             <tr>
                 <th></th>
