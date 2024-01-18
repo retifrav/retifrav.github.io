@@ -60,7 +60,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 102 min read</div>
+</svg> 104 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -129,6 +129,11 @@
             <li><a href="#making-cmake-configs-discoverable">Making CMake configs discoverable</a></li>
             <li><a href="#partial-components-installation">Partial components installation</a>
               <ul>
+                <li><a href="#internal-dependencies">Internal dependencies</a>
+                  <ul>
+                    <li><a href="#header-only-libraries">Header-only libraries</a></li>
+                  </ul>
+                </li>
                 <li><a href="#sparse-checkout">Sparse checkout</a></li>
               </ul>
             </li>
@@ -1140,14 +1145,14 @@
 </span></span><span style="display:flex;"><span>$ cmake --build . --target SomeLibrary
 </span></span><span style="display:flex;"><span>$ cmake --install ./libraries/SomeLibrary
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># or</span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e"># $ cmake --install . --component SomeLibrary</span></span></span></code></pre></div>
-<p>And then let&rsquo;s say one of your customers/users is asking you to make a vcpkg port only for this one library. He doesn&rsquo;t need your entire project (<em>at the very least because it takes too long to build the whole thing</em>), he only needs this one library. So what do you do?</p>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># $ cmake --install . --component SomeLibrary</span>
+</span></span></code></pre></div><p>And then let&rsquo;s say one of your customers/users is asking you to make a vcpkg port only for this one library. He doesn&rsquo;t need your entire project (<em>at the very least because it takes too long to build the whole thing</em>), he only needs this one library. So what do you do?</p>
 <p>I&rsquo;d say, ideally, it might be a good idea to move them out from your super repository into their own repositories and add them as dependencies to the main repository via vcpkg. But that is not always possible, and it wasn&rsquo;t possible in our case (<em>horrible legacy ways of including internal headers spread around and other stuff like that</em>), so let&rsquo;s see what else can be done here.</p>
 <p>As far as I can tell, vcpkg doesn&rsquo;t not have an out-of-the-box functionality for this scenario. As I mentioned earlier, <a href="#vcpkg_cmake_install">vcpkg_cmake_install</a> simply calls the <a href="https://github.com/microsoft/vcpkg/blob/master/docs/maintainers/vcpkg_cmake_build.md">vcpkg_cmake_build()</a> function with <code>TARGET install</code> parameter, which means that you too can set any build target for <code>vcpkg_cmake_build()</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># vcpkg_cmake_install() # we don&#39;t need the entire project
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"># build only one of the libraries/components
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>vcpkg_cmake_build(<span style="color:#e6db74">TARGET</span> <span style="color:#e6db74">SomeLibrary</span>)</span></span></code></pre></div>
-<p>But there is no CMake helper to run the installation (<em>the <code>vcpkg_cmake_install()</code> function doesn&rsquo;t not have such a parameter</em>), so one just has to fallback to running a bare CMake CLI command:</p>
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>vcpkg_cmake_build(<span style="color:#e6db74">TARGET</span> <span style="color:#e6db74">SomeLibrary</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>But there is no CMake helper to run the installation (<em>the <code>vcpkg_cmake_install()</code> function doesn&rsquo;t not have such a parameter</em>), so one just has to fallback to running a bare CMake CLI command:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>vcpkg_execute_build_process(
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">COMMAND</span> <span style="color:#e6db74">cmake</span> <span style="color:#e6db74">--install</span> <span style="color:#e6db74">./libraries/SomeLibrary</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>CURRENT_BUILDTREES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-dbg</span>
@@ -1162,8 +1167,9 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_cmake_config_fixup(
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PACKAGE_NAME</span> <span style="color:#e6db74">&#34;SomeLibrary&#34;</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CONFIG_PATH</span> <span style="color:#e6db74">&#34;cmake&#34;</span> <span style="color:#75715e"># we install CMake configs here
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>)</span></span></code></pre></div>
-<p>Yes, you need to install both Debug and Release configurations. As you can see, that certainly doesn&rsquo;t look too nice, but it works. It is probably worth creating a CMake helper to wrap this into something nicer.</p>
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>Yes, you need to install both Debug and Release configurations. As you can see, that certainly doesn&rsquo;t look too nice, but it works. It is probably worth creating a CMake helper to wrap this into something nicer.</p>
+<h4 id="internal-dependencies">Internal dependencies</h4>
 <p>As a bonus complexity, some of our libraries/components in the main repository in turn depend on other internal libraries/components within that repository, and those need to be installed too. And the problem here is that the consuming project won&rsquo;t be able to discover that other library, because that library&rsquo;s CMake configs for <code>find_package()</code> will end up in the <code>SomeLibrary</code> folder. A resolution/workaround for that would be to add even more crutches, so the whole thing would look like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># the &#34;main&#34; library
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>vcpkg_cmake_build(<span style="color:#e6db74">TARGET</span> <span style="color:#e6db74">SomeLibrary</span>)<span style="color:#960050;background-color:#1e0010">
@@ -1216,9 +1222,128 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># and the other one&#39;s
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>vcpkg_cmake_config_fixup(
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PACKAGE_NAME</span> <span style="color:#e6db74">&#34;AnotherLibrary&#34;</span>
-</span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
-<p>So now the portfile looks even worse, but it does work fine, so untill a better alternative comes up, that will be the way.</p>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>So now the portfile looks even worse, but it does work fine, so untill a better alternative comes up, that will be the way.</p>
 <p>As I already mentioned, it would probably be better to make <code>AnotherLibrary</code> its own port, which <code>SomeLibrary</code> could depend on, but then they might eventually end up having different <code>REF</code> commit values, causing your users to fetch different snapshots of the same repository (<em>which would be the least of potential problems caused by this</em>).</p>
+<h5 id="header-only-libraries">Header-only libraries</h5>
+<p>In case of a header-only <code>INTERFACE</code> library there is nothing to build, so calling <code>vcpkg_cmake_build(...)</code> is redundant, and so is calling <code>vcpkg_execute_build_process()</code> for Debug configuration, and so there is a &ldquo;shorter&rdquo; way:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># the &#34;main&#34; library</span>
+</span></span><span style="display:flex;"><span>vcpkg_cmake_build<span style="color:#f92672">(</span>TARGET SomeLibrary<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>vcpkg_execute_build_process<span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>    COMMAND cmake --install ./libraries/SomeLibrary
+</span></span><span style="display:flex;"><span>    WORKING_DIRECTORY <span style="color:#e6db74">${</span>CURRENT_BUILDTREES_DIR<span style="color:#e6db74">}</span>/<span style="color:#e6db74">${</span>TARGET_TRIPLET<span style="color:#e6db74">}</span>-dbg
+</span></span><span style="display:flex;"><span>    LOGNAME build-SomeLibrary-<span style="color:#e6db74">${</span>TARGET_TRIPLET<span style="color:#e6db74">}</span>-dbg
+</span></span><span style="display:flex;"><span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>vcpkg_execute_build_process<span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>    COMMAND cmake --install ./libraries/SomeLibrary
+</span></span><span style="display:flex;"><span>    WORKING_DIRECTORY <span style="color:#e6db74">${</span>CURRENT_BUILDTREES_DIR<span style="color:#e6db74">}</span>/<span style="color:#e6db74">${</span>TARGET_TRIPLET<span style="color:#e6db74">}</span>-rel
+</span></span><span style="display:flex;"><span>    LOGNAME build-SomeLibrary-<span style="color:#e6db74">${</span>TARGET_TRIPLET<span style="color:#e6db74">}</span>-rel
+</span></span><span style="display:flex;"><span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>vcpkg_cmake_config_fixup<span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>    PACKAGE_NAME <span style="color:#e6db74">&#34;SomeLibrary&#34;</span>
+</span></span><span style="display:flex;"><span>    CONFIG_PATH <span style="color:#e6db74">&#34;cmake&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># its header-only dependencies within the project</span>
+</span></span><span style="display:flex;"><span>list<span style="color:#f92672">(</span>APPEND internalComponents
+</span></span><span style="display:flex;"><span>    ThatsOneHeaderOnlyLibrary
+</span></span><span style="display:flex;"><span>    ThatsAnotherHeaderOnlyLibrary
+</span></span><span style="display:flex;"><span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>foreach<span style="color:#f92672">(</span>internalComponent <span style="color:#e6db74">${</span>internalComponents<span style="color:#e6db74">}</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># these are header-only INTERFACE libraries, so there is nothing to build</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">#vcpkg_cmake_build(TARGET internalComponent)</span>
+</span></span><span style="display:flex;"><span>    vcpkg_execute_build_process<span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>        COMMAND cmake --install . --component <span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span> <span style="color:#75715e"># if it can be installed as component</span>
+</span></span><span style="display:flex;"><span>        WORKING_DIRECTORY <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CURRENT_BUILDTREES_DIR<span style="color:#e6db74">}</span><span style="color:#e6db74">/</span><span style="color:#e6db74">${</span>TARGET_TRIPLET<span style="color:#e6db74">}</span><span style="color:#e6db74">-rel&#34;</span>
+</span></span><span style="display:flex;"><span>        LOGNAME <span style="color:#e6db74">&#34;build-</span><span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span><span style="color:#e6db74">-</span><span style="color:#e6db74">${</span>TARGET_TRIPLET<span style="color:#e6db74">}</span><span style="color:#e6db74">-rel&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    file<span style="color:#f92672">(</span>GLOB internalComponentFiles <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CURRENT_PACKAGES_DIR<span style="color:#e6db74">}</span><span style="color:#e6db74">/cmake/</span><span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span><span style="color:#e6db74">*.cmake&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    file<span style="color:#f92672">(</span>MAKE_DIRECTORY
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CURRENT_PACKAGES_DIR<span style="color:#e6db74">}</span><span style="color:#e6db74">/share/</span><span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    foreach<span style="color:#f92672">(</span>internalComponentFile <span style="color:#e6db74">${</span>internalComponentFiles<span style="color:#e6db74">}</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        get_filename_component<span style="color:#f92672">(</span>internalComponentFileName <span style="color:#e6db74">${</span>internalComponentFile<span style="color:#e6db74">}</span> NAME<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        file<span style="color:#f92672">(</span>RENAME <span style="color:#e6db74">${</span>internalComponentFile<span style="color:#e6db74">}</span> <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CURRENT_PACKAGES_DIR<span style="color:#e6db74">}</span><span style="color:#e6db74">/share/</span><span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span><span style="color:#e6db74">/</span><span style="color:#e6db74">${</span>internalComponentFileName<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    endforeach<span style="color:#f92672">()</span>
+</span></span><span style="display:flex;"><span>    foreach<span style="color:#f92672">(</span>cmakeConfigSuffix <span style="color:#e6db74">&#34;Config&#34;</span> <span style="color:#e6db74">&#34;Targets&#34;</span><span style="color:#f92672">)</span> <span style="color:#75715e"># in case some of those don&#39;t have proper configs</span>
+</span></span><span style="display:flex;"><span>        set<span style="color:#f92672">(</span>cmakeConfig <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CURRENT_PACKAGES_DIR<span style="color:#e6db74">}</span><span style="color:#e6db74">/share/</span><span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span><span style="color:#e6db74">/</span><span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}${</span>cmakeConfigSuffix<span style="color:#e6db74">}</span><span style="color:#e6db74">.cmake&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span><span style="color:#f92672">(</span>EXISTS <span style="color:#e6db74">${</span>cmakeConfig<span style="color:#e6db74">}</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e"># basically, that replaces vcpkg_cmake_config_fixup(), which will actually fail to execute</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e"># in this case due to missing debug/share/${internalComponent}</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">#</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e"># this is also the first time I ever used this &#34;bracket argument&#34; thing: [=[ ... ]=]</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e"># and turns out it is very convenient for such cases with lots of quotes and special symbols</span>
+</span></span><span style="display:flex;"><span>            vcpkg_replace_string<span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>cmakeConfig<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">[=[</span>get_filename_component<span style="color:#f92672">(</span>_IMPORT_PREFIX <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CMAKE_CURRENT_LIST_FILE<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span> PATH<span style="color:#f92672">)]=]</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">[=[</span>get_filename_component<span style="color:#f92672">(</span>_IMPORT_PREFIX <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CMAKE_CURRENT_LIST_FILE<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span> PATH<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>cmake_path<span style="color:#f92672">(</span>GET _IMPORT_PREFIX PARENT_PATH _IMPORT_PREFIX<span style="color:#f92672">)]=]</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        endif<span style="color:#f92672">()</span>
+</span></span><span style="display:flex;"><span>    endforeach<span style="color:#f92672">()</span>
+</span></span><span style="display:flex;"><span>endforeach<span style="color:#f92672">()</span>
+</span></span></code></pre></div><p>So here we don&rsquo;t build those header-only internal dependencies, as there is nothing to build, and we install only <code>-rel</code>, as <code>-dbg</code> would redundantly install the same things.</p>
+<p>If you don&rsquo;t do that <code>vcpkg_replace_string()</code> fixup of paths, then trying to use this port in a project will result in the following error:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">Imported</span> target <span style="color:#e6db74">&#34;ThatsOneHeaderOnlyLibrary&#34;</span> includes non<span style="color:#f92672">-</span>existent path
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>vcpkg_installed<span style="color:#f92672">/</span>x64<span style="color:#f92672">-</span>linux<span style="color:#f92672">/</span>share<span style="color:#f92672">/</span>include<span style="color:#f92672">/</span><span style="color:#a6e22e">ThatsOneHeaderOnlyLibrary</span>
+</span></span><span style="display:flex;"><span>in its <span style="color:#a6e22e">INTERFACE_INCLUDE_DIRECTORIES</span>
+</span></span></code></pre></div><p>Now, while this &ldquo;shorter&rdquo; way works, it actually isn&rsquo;t that short, and also this self-made paths fixup doesn&rsquo;t look all that reliable, so it&rsquo;s probably better to do this the usual &ldquo;longer&rdquo; way and with using <code>vcpkg_cmake_config_fixup()</code> instead:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># the &#34;main&#34; library</span>
+</span></span><span style="display:flex;"><span>vcpkg_cmake_build<span style="color:#f92672">(</span>TARGET SomeLibrary<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>vcpkg_execute_build_process<span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>    COMMAND cmake --install ./libraries/SomeLibrary
+</span></span><span style="display:flex;"><span>    WORKING_DIRECTORY <span style="color:#e6db74">${</span>CURRENT_BUILDTREES_DIR<span style="color:#e6db74">}</span>/<span style="color:#e6db74">${</span>TARGET_TRIPLET<span style="color:#e6db74">}</span>-dbg
+</span></span><span style="display:flex;"><span>    LOGNAME build-SomeLibrary-<span style="color:#e6db74">${</span>TARGET_TRIPLET<span style="color:#e6db74">}</span>-dbg
+</span></span><span style="display:flex;"><span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>vcpkg_execute_build_process<span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>    COMMAND cmake --install ./libraries/SomeLibrary
+</span></span><span style="display:flex;"><span>    WORKING_DIRECTORY <span style="color:#e6db74">${</span>CURRENT_BUILDTREES_DIR<span style="color:#e6db74">}</span>/<span style="color:#e6db74">${</span>TARGET_TRIPLET<span style="color:#e6db74">}</span>-rel
+</span></span><span style="display:flex;"><span>    LOGNAME build-SomeLibrary-<span style="color:#e6db74">${</span>TARGET_TRIPLET<span style="color:#e6db74">}</span>-rel
+</span></span><span style="display:flex;"><span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>vcpkg_cmake_config_fixup<span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>    PACKAGE_NAME <span style="color:#e6db74">&#34;SomeLibrary&#34;</span>
+</span></span><span style="display:flex;"><span>    CONFIG_PATH <span style="color:#e6db74">&#34;cmake&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># its header-only dependencies within the project</span>
+</span></span><span style="display:flex;"><span>list<span style="color:#f92672">(</span>APPEND internalComponents
+</span></span><span style="display:flex;"><span>    ThatsOneHeaderOnlyLibrary
+</span></span><span style="display:flex;"><span>    ThatsAnotherHeaderOnlyLibrary
+</span></span><span style="display:flex;"><span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>foreach<span style="color:#f92672">(</span>internalComponent <span style="color:#e6db74">${</span>internalComponents<span style="color:#e6db74">}</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># these are header-only INTERFACE libraries, so there is nothing to build</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">#vcpkg_cmake_build(TARGET internalComponent)</span>
+</span></span><span style="display:flex;"><span>    vcpkg_execute_build_process<span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>        COMMAND cmake --install . --component <span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span> <span style="color:#75715e"># if it can be installed as component</span>
+</span></span><span style="display:flex;"><span>        WORKING_DIRECTORY <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CURRENT_BUILDTREES_DIR<span style="color:#e6db74">}</span><span style="color:#e6db74">/</span><span style="color:#e6db74">${</span>TARGET_TRIPLET<span style="color:#e6db74">}</span><span style="color:#e6db74">-rel&#34;</span>
+</span></span><span style="display:flex;"><span>        LOGNAME <span style="color:#e6db74">&#34;build-</span><span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span><span style="color:#e6db74">-</span><span style="color:#e6db74">${</span>TARGET_TRIPLET<span style="color:#e6db74">}</span><span style="color:#e6db74">-rel&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># even though installing Debug configuration is redundant here,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># without it you won&#39;t be able to use vcpkg_cmake_config_fixup()</span>
+</span></span><span style="display:flex;"><span>    vcpkg_execute_build_process<span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>        COMMAND cmake --install . --component <span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span> <span style="color:#75715e"># if it can be installed as component</span>
+</span></span><span style="display:flex;"><span>        WORKING_DIRECTORY <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CURRENT_BUILDTREES_DIR<span style="color:#e6db74">}</span><span style="color:#e6db74">/</span><span style="color:#e6db74">${</span>TARGET_TRIPLET<span style="color:#e6db74">}</span><span style="color:#e6db74">-dbg&#34;</span>
+</span></span><span style="display:flex;"><span>        LOGNAME <span style="color:#e6db74">&#34;build-</span><span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span><span style="color:#e6db74">-</span><span style="color:#e6db74">${</span>TARGET_TRIPLET<span style="color:#e6db74">}</span><span style="color:#e6db74">-dbg&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    file<span style="color:#f92672">(</span>GLOB internalComponentFiles <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CURRENT_PACKAGES_DIR<span style="color:#e6db74">}</span><span style="color:#e6db74">/cmake/</span><span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span><span style="color:#e6db74">*.cmake&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    file<span style="color:#f92672">(</span>MAKE_DIRECTORY
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CURRENT_PACKAGES_DIR<span style="color:#e6db74">}</span><span style="color:#e6db74">/share/</span><span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CURRENT_PACKAGES_DIR<span style="color:#e6db74">}</span><span style="color:#e6db74">/debug/share/</span><span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    foreach<span style="color:#f92672">(</span>internalComponentFile <span style="color:#e6db74">${</span>internalComponentFiles<span style="color:#e6db74">}</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        get_filename_component<span style="color:#f92672">(</span>internalComponentFileName <span style="color:#e6db74">${</span>internalComponentFile<span style="color:#e6db74">}</span> NAME<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        file<span style="color:#f92672">(</span>RENAME <span style="color:#e6db74">${</span>internalComponentFile<span style="color:#e6db74">}</span> <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CURRENT_PACKAGES_DIR<span style="color:#e6db74">}</span><span style="color:#e6db74">/share/</span><span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span><span style="color:#e6db74">/</span><span style="color:#e6db74">${</span>internalComponentFileName<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        file<span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>            COPY <span style="color:#e6db74">${</span>CURRENT_PACKAGES_DIR<span style="color:#e6db74">}</span>/share/<span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span>/<span style="color:#e6db74">${</span>internalComponentFileName<span style="color:#e6db74">}</span>
+</span></span><span style="display:flex;"><span>            DESTINATION <span style="color:#e6db74">${</span>CURRENT_PACKAGES_DIR<span style="color:#e6db74">}</span>/debug/share/<span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span>/
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    endforeach<span style="color:#f92672">()</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># that will adjust the paths for INTERFACE_INCLUDE_DIRECTORIES</span>
+</span></span><span style="display:flex;"><span>    vcpkg_cmake_config_fixup<span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>        PACKAGE_NAME <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>internalComponent<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>endforeach<span style="color:#f92672">()</span>
+</span></span></code></pre></div><p>So basically we came back to all the same steps as with &ldquo;regular&rdquo; <a href="#internal-dependencies">internal dependencies</a> with the only difference that for header-only libraries you don&rsquo;t execute <code>vcpkg_cmake_build()</code>.</p>
 <h4 id="sparse-checkout">Sparse checkout</h4>
 <p>While we are here, when you only need to build just some targets of your big project, it might be an overkill to make your users download your entire repository, especially if it&rsquo;s rather big (<em>even as a snapshot</em>).</p>
 <p>Partial repository cloning can be done with <a href="https://git-scm.com/docs/git-sparse-checkout">sparse checkout</a>. For example, if I only want to get the <code>SomeLibrary</code> component/target from one of my projects:</p>
