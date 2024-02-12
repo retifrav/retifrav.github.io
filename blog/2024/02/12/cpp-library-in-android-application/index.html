@@ -1,0 +1,1068 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>C&#43;&#43; library in an Android application | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2024/02/12/cpp-library-in-android-application/" />
+
+    <meta name="generator" content="Hugo 0.121.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="While it isn&#39;t news that a pre-build C&#43;&#43; library can be loaded in an Android application, I&#39;ve never done it before, so for me the topic was quite new. As it turned out, the Android&#39;s build tool Gradle can work with CMake projects, so the task ended up being easier than I expected." />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:title" content="C&#43;&#43; library in an Android application" />
+<meta property="og:description" content="While it isn&#39;t news that a pre-build C&#43;&#43; library can be loaded in an Android application, I&#39;ve never done it before, so for me the topic was quite new. As it turned out, the Android&#39;s build tool Gradle can work with CMake projects, so the task ended up being easier than I expected." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://retifrav.github.io/blog/2024/02/12/cpp-library-in-android-application/" /><meta property="article:section" content="blog" />
+<meta property="article:published_time" content="2024-02-12T13:45:43+01:00" />
+<meta property="article:modified_time" content="2024-02-12T13:45:43+01:00" />
+
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.2a28493e0b91076cde9fb52cb7fec81f63f685a6965e6a9df1179ec846b9141f.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2024/02/12/cpp-library-in-android-application/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">C&#43;&#43; library in an Android application</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2024-02-12 13:45:43 &#43;0100</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 22 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>We have a C++ library, which our customers are using on a variety of platforms. Mainly in desktop applications on Windows, Mac OS and GNU/Linux, but there are also web-applications (<em>for which we compile it into WebAssembly <a href="/blog/2023/11/20/webassembly-with-pthreads/">with Emscripten</a></em>), and now we got a request to make it work in Android applications too (<em>or rather provide a binding/wrapper</em>).</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/loading-cpp-library-in-android.png" alt="Android Studio, loading C&#43;&#43; library">
+
+<p>This particular example will be about a Kotlin-based application. I don&rsquo;t know what would be different in case of a Java-based application, but I suppose that principal things should be more or less the same in both.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#environment-and-versions">Environment and versions</a>
+      <ul>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+    </li>
+    <li><a href="#project">Project</a>
+      <ul>
+        <li><a href="#application">Application</a></li>
+        <li><a href="#c-library">C++ library</a></li>
+      </ul>
+    </li>
+    <li><a href="#loading-a-pre-built-c-library-in-an-android-application">Loading a pre-built C++ library in an Android application</a>
+      <ul>
+        <li><a href="#directly">Directly</a></li>
+        <li><a href="#via-wrapper">Via wrapper</a>
+          <ul>
+            <li><a href="#transitive-dependencies">Transitive dependencies</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<p>Some years ago I&rsquo;ve briefly touched the topic of building applications for Android, but there <a href="/blog/2017/12/28/qt-for-android/">it was done with Qt</a>, and most of the complexity was graciously hidden from me by Qt Creator, which was auto-magically compiling my C++/QML application sources into the final APK without me knowing anything about the actual process.</p>
+<h1 id="environment-and-versions">Environment and versions</h1>
+<p>This is what I had when I was working on the example project:</p>
+<ul>
+<li>Mac OS <code>13.6.3</code>
+<ul>
+<li>on MacBook Pro with Apple M2 Pro</li>
+</ul>
+</li>
+<li>Android Studio <code>2023.1.1</code> Patch 1
+<ul>
+<li>runtime <code>17.0.7</code> aarch64</li>
+</ul>
+</li>
+<li>Android SDK <code>14.0</code>
+<ul>
+<li>API <code>34</code></li>
+</ul>
+</li>
+<li>NDK <code>25.1.8937393</code></li>
+<li>CMake <code>3.28.1</code></li>
+</ul>
+<h2 id="installation">Installation</h2>
+<p>Most of the required components come together with <a href="https://developer.android.com/studio">Android Studio</a>, so download and install it. When you launch it for the first time, it will choose some default SDK/API versions to be downloaded:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/android-studio-setup-wizard-components.png" alt="Android Studio, Setup Wizard, components">
+
+<p>and it should install the emulator too:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/android-studio-setup-wizard-components-verification.png" alt="Android Studio, Setup Wizard, components verification">
+
+<p>When it&rsquo;s all done, open the SDK Manager:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/android-studio-sdk-manager.png" alt="Android Studio, SDK manager">
+
+<p>and install/download an Android system image, which is needed for creating a virtual device for the emulator. I chose <code>Google Play ARM 64 v8a</code>:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/android-studio-sdk-platforms-package-details.png" alt="Android Studio, SDK platforms, package details">
+
+<p>After that open Virtual Device Manager:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/android-studio-virtual-device-manager.png" alt="Android Studio, Virtual Device Manager">
+
+<p>and create a new virtual device:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/android-studio-virtual-device-manager-hardware.png" alt="Android Studio, Virtual Device Manager, creating new device">
+
+<p>The image you&rsquo;ve downloaded just now should be available there:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/android-studio-virtual-device-manager-system-image.png" alt="Android Studio, Virtual Device Manager, choosing system image">
+
+<p>Once the device is created, it will be listed in Device Manager:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/android-studio-device-manager-list.png" alt="Android Studio, Device Manager, list of devices">
+
+<p>and you should be able to run it in emulator:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/android-studio-running-emulator.png" alt="Android Studio, running emulator">
+
+<h1 id="project">Project</h1>
+<h2 id="application">Application</h2>
+<p>I know almost nothing about creating applications for Android, so I just followed <a href="https://developer.android.com/jetpack/compose/tutorial">Jetpack Compose tutorial</a>.</p>
+<p>To create an application in Android Studio go to <code>New project</code> → <code>Phone and Tablet</code> → <code>Empty Activity</code>, and then you&rsquo;ll need to set the minimum SDK version:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/android-studio-new-project.png" alt="Android Studio, new project">
+
+<p>This is up to you, but probably don&rsquo;t set the SDK/API version to the absolutely latest, as Android users are known to be mostly bums and drug addicts, so the majority of them is likely to have some ancient phones running a long time deprecated Android version. I&rsquo;ve set it to <code>30</code> in my project (<em>although even that one is probably &ldquo;too high&rdquo;, for aforementioned reasons</em>).</p>
+<p>The application itself is a silly gallery of some grils:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/android-application-in-emulator-dark.png" alt="Android application in emulator">
+
+<p>It doesn&rsquo;t do anything exciting, it&rsquo;s literally just a series of images in a column layout with a button. There is no interaction whatsoever, except for scrolling the view and clicking on the button. The <a href="https://github.com/retifrav/android-cpp-example/blob/0997203e07910eb3ab8b07d31c44f1dc827e85ad/android/app/src/main/java/com/example/some/MainActivity.kt">implementation</a> is nothing special either - it&rsquo;s a standard <a href="https://developer.android.com/jetpack/compose/components/scaffold">Scaffold</a> component:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-kotlin" data-lang="kotlin"><span style="display:flex;"><span><span style="color:#a6e22e">@OptIn</span>(ExperimentalMaterial3Api<span style="color:#f92672">::</span><span style="color:#66d9ef">class</span>) <span style="color:#75715e">// is there a fucking stable alternative?
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#a6e22e">@Composable</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">fun</span> <span style="color:#a6e22e">GrilsGallery</span>(grils: List&lt;Gril&gt;) {
+</span></span><span style="display:flex;"><span>    Scaffold(
+</span></span><span style="display:flex;"><span>        topBar = {
+</span></span><span style="display:flex;"><span>            TopAppBar(
+</span></span><span style="display:flex;"><span>                title = {
+</span></span><span style="display:flex;"><span>                    Text(
+</span></span><span style="display:flex;"><span>                        <span style="color:#e6db74">&#34;Total number of grils: </span><span style="color:#e6db74">${Grils.grilsData.count()}</span><span style="color:#e6db74">&#34;</span>,
+</span></span><span style="display:flex;"><span>                        fontWeight = <span style="color:#a6e22e">FontWeight</span>.Bold,
+</span></span><span style="display:flex;"><span>                        fontSize = TextUnit(<span style="color:#ae81ff">24.0F</span>, <span style="color:#a6e22e">TextUnitType</span>.Sp),
+</span></span><span style="display:flex;"><span>                        maxLines = <span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>                        overflow = <span style="color:#a6e22e">TextOverflow</span>.Ellipsis,
+</span></span><span style="display:flex;"><span>                        color = White
+</span></span><span style="display:flex;"><span>                    )
+</span></span><span style="display:flex;"><span>                },
+</span></span><span style="display:flex;"><span>                colors = topAppBarColors(
+</span></span><span style="display:flex;"><span>                    containerColor = <span style="color:#a6e22e">MaterialTheme</span>.colorScheme.primary
+</span></span><span style="display:flex;"><span>                )
+</span></span><span style="display:flex;"><span>            )
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        floatingActionButtonPosition = <span style="color:#a6e22e">FabPosition</span>.End,
+</span></span><span style="display:flex;"><span>        floatingActionButton = {
+</span></span><span style="display:flex;"><span>            ExtendedFloatingActionButton(
+</span></span><span style="display:flex;"><span>                content = { Text(<span style="color:#e6db74">&#34;Do something&#34;</span>) },
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e">// that&#39;s where we&#39;ll be calling a function from C++ library later
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>                onClick = { <span style="color:#a6e22e">Log</span>.i(<span style="color:#e6db74">&#34;log&#34;</span>, <span style="color:#e6db74">&#34;ololo&#34;</span>) }
+</span></span><span style="display:flex;"><span>            )
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        content = { padding <span style="color:#f92672">-&gt;</span>
+</span></span><span style="display:flex;"><span>            Column(modifier = <span style="color:#a6e22e">Modifier</span>.padding(all = <span style="color:#a6e22e">Layout</span>.padding))
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                Spacer(modifier = <span style="color:#a6e22e">Modifier</span>.height(padding.calculateTopPadding()))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                LazyColumn {
+</span></span><span style="display:flex;"><span>                    items(grils) { gril <span style="color:#f92672">-&gt;</span> GrilCard(gril) }
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    )
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>One thing to note here is that I find it hilarious how using <a href="https://developer.android.com/jetpack/compose/components/app-bars">TopAppBar</a> requires you to do <code>@OptIn(ExperimentalMaterial3Api::class)</code>, implying that there is no a stable alternative (<em>still, in 2024?</em>). So to be able to use such basic UI controls one just has to enable experimental/unstable stuff in one&rsquo;s completely new application right from the day one.</p>
+<p>Other than that, this <a href="https://developer.android.com/jetpack">Jetpack/Kotlin</a> thing looks rather good, I could probably even like it. It looks very similar to <a href="https://developer.apple.com/xcode/swiftui/">SwiftUI</a> (<em>not sure which one came first</em>), but somewhat simpler / cleaner. And both of them seem to look up to <a href="https://doc.qt.io/qt-6/qtquick-index.html">Qt Quick / QML</a>, which is the simplest of them all (<em>although, perhaps, not as capable, given its cross-platform nature</em>).</p>
+<p>As for building the application, there is probably a way to do it from command line without Android Studio, and usually I do prefer building things from bare CLI, but here it&rsquo;s just too convenient to build and launch the application in emulator right from the IDE - you only need to click Run.</p>
+<h2 id="c-library">C++ library</h2>
+<p>To build a C++ library targetting Android platform, you need to have <a href="https://developer.android.com/ndk">NDK</a> installed. As I understand it, NDK is a set of build tools/compiler(s) for (<em>cross-</em>)compiling C++ sources into an Android binary. In other words, you won&rsquo;t be able to compile your C++ library for Android using your &ldquo;standard&rdquo; host platform compiler/toolchain.</p>
+<p>The NDK should be pre-installed/pre-downloaded together with Android Studio:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/android-studio-sdk-ndk.png" alt="Android Studio, SDK, NDK">
+
+<p>The library that I&rsquo;ll be using is <a href="https://github.com/retifrav/android-cpp-example/tree/0997203e07910eb3ab8b07d31c44f1dc827e85ad/cpp">very simple</a>. The only thing it does is printing a string of text to stdout (<em>later it will be returning that string instead of printing it</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;iostream&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;Thingy/thingy.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;stuff.h&#34;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> dpndnc
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">doThingy</span>()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        std<span style="color:#f92672">::</span>cout <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;a string from C++: &#34;</span> <span style="color:#f92672">&lt;&lt;</span> thingyString <span style="color:#f92672">&lt;&lt;</span> std<span style="color:#f92672">::</span>endl;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>To build a C++ library for Android you need to use the Android toolchain from NDK:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ export ANDROID_NDK_VERSION<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;25.1.8937393&#39;</span>
+</span></span><span style="display:flex;"><span>$ export ANDROID_NDK_HOME<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span>$HOME<span style="color:#e6db74">/Library/Android/sdk/ndk/</span>$ANDROID_NDK_VERSION<span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ cmake -G Ninja -DCMAKE_BUILD_TYPE<span style="color:#f92672">=</span>Release -DCMAKE_INSTALL_PREFIX<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../install&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -DCMAKE_TOOLCHAIN_FILE<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>ANDROID_NDK_HOME<span style="color:#e6db74">}</span><span style="color:#e6db74">/build/cmake/android.toolchain.cmake&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -DBUILD_SHARED_LIBS<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    ..
+</span></span><span style="display:flex;"><span>$ cmake --build . --target install
+</span></span></code></pre></div><p>And since we need to get an <code>.so</code> variant, the library needs to build as dynamic/SHARED (<em><code>BUILD_SHARED_LIBS=1</code></em>). I am actually not sure if it&rsquo;s exactly dynamic variant that is required, but I read somewhere that while later versions of Java are able to load static C++ libraries, for Android applications that might still not be the case.</p>
+<p>Inspecting the resulting <code>.so</code> with <a href="https://github.com/horsicq/Detect-It-Easy">Detect It Easy</a> shows that it is indeed an Android library, although it is 32-bit:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/detect-it-easy-arm-32-bit-api-19.png" alt="Detect It Easy, Android ARM, 32-bit, API 19">
+
+<p>But we want to target <code>arm64-v8a</code> devices, so re-configure the project with <code>-DANDROID_ABI=arm64-v8a</code>, build it again, and then the resulting binary will be this:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/detect-it-easy-aarch64-64-bit-api-21.png" alt="Detect It Easy, Android AARCH64, 64-bit, API 21">
+
+<p>Interesting that even though the NDK version is the same, the API level got raised from <code>19</code> to <code>21</code>. That is probably because there were no <code>arm64-v8a</code> devices before Android <code>5.0</code>. And actually, since our Android application is already limited to API version/level <code>30</code>, perhaps it makes sense to limit that here too with <code>-DANDROID_PLATFORM=30</code>, and then the resulting binary will be this:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/detect-it-easy-aarch64-64-bit-api-30.png" alt="Detect It Easy, Android AARCH64, 64-bit, API 30">
+
+<h1 id="loading-a-pre-built-c-library-in-an-android-application">Loading a pre-built C++ library in an Android application</h1>
+<p>Okay, so we have an <a href="#application">Android application</a> and we have a pre-build <a href="#c-library">C++ library</a>. Now we need to somehow load this library from the application and call its functions.</p>
+<p>Such a thing is at all possible thanks to <a href="https://en.wikipedia.org/wiki/Java_Native_Interface">Java Native Interface</a> (<em>JNI</em>), and that is what I will be using. Aside from that, there is also <a href="https://en.wikipedia.org/wiki/Java_Native_Access">Java Native Access</a> (JNA), which apparently is supposed to be an easier thing to use, but from what I see on the internet, JNA is slower than JNI, and since I haven&rsquo;t experienced any particular difficulties using JNI, I guess I&rsquo;ll stick to that one.</p>
+<h2 id="directly">Directly</h2>
+<p>Having started googling for how does one load a pre-build C++ library in an Android application, I was overwhelmed by the amount of articles and forum threads on the subject, and what was especially amazing is that none of them were actually useful. They would tell you how to build C++ library as a part of your project in Android Studio, but not a single fucking soul would tell you how to simply load an existing already pre-built binary.</p>
+<p>As I understand now, it doesn&rsquo;t make a lot of sense to load a pre-built C++ library directly, because a more common way is to <a href="#via-wrapper">use a wrapper</a>. But still, I wanted to know how can I just take my pre-built library, and just load it, and just call its functions, so can I fucking do that or not.</p>
+<p>I barely found <a href="https://stackoverflow.com/a/46824969/1688203">this answer</a>, which covers almost everything, and the rest I was able to figure out on my own. So first you create a folder <code>jni</code> inside the <code>app</code> folder, and given that we are targetting <code>arm64-v8a</code>, the folder structure and contents would be this then:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>./app/jni/
+</span></span><span style="display:flex;"><span>├── Android.mk
+</span></span><span style="display:flex;"><span>└── libs
+</span></span><span style="display:flex;"><span>    └── arm64-v8a
+</span></span><span style="display:flex;"><span>        └── libThingy.so
+</span></span></code></pre></div><p>Here&rsquo;s what&rsquo;s inside the <a href="https://github.com/retifrav/android-cpp-example/blob/0997203e07910eb3ab8b07d31c44f1dc827e85ad/android/app/jni/Android.mk">Android.mk</a> file:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">LOCAL_PATH</span> <span style="color:#66d9ef">:</span><span style="color:#f92672">=</span> $<span style="color:#f92672">(</span>call my<span style="color:#f92672">-</span>dir<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>include $<span style="color:#f92672">(</span><span style="color:#a6e22e">CLEAR_VARS</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">LOCAL_MODULE</span> <span style="color:#66d9ef">:</span><span style="color:#f92672">=</span> thingy
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">LOCAL_SRC_FILES</span> <span style="color:#66d9ef">:</span><span style="color:#f92672">=</span> libs<span style="color:#f92672">/</span>$<span style="color:#f92672">(</span><span style="color:#a6e22e">TARGET_ARCH_ABI</span><span style="color:#f92672">)/</span>libThingy<span style="color:#f92672">.</span>so
+</span></span><span style="display:flex;"><span>include $<span style="color:#f92672">(</span><span style="color:#a6e22e">PREBUILT_SHARED_LIBRARY</span><span style="color:#f92672">)</span>
+</span></span></code></pre></div><p>If the path in <code>LOCAL_SRC_FILES</code> is not correct, for example if you forget to add <code>libs/</code> part of the path or if you confuse Debug/Release variants (<em>so you would try to load <code>libThingyd.so</code></em>), then the application build will fail like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#f92672">[</span>CXX1429<span style="color:#f92672">]</span> error when building with ndkBuild using /path/to/app/jni/Android.mk: Android NDK: ERROR:/path/to/app/jni/Android.mk:thingy: LOCAL_SRC_FILES points to a missing file    
+</span></span></code></pre></div><p>If the path is correct, then add the following to the <a href="https://github.com/retifrav/android-cpp-example/blob/0997203e07910eb3ab8b07d31c44f1dc827e85ad/android/app/build.gradle.kts#L52-L56">build.gradle.kts</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-gradle" data-lang="gradle"><span style="display:flex;"><span><span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>android <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    defaultConfig <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        ndk <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>            abiFilters<span style="color:#f92672">.</span><span style="color:#a6e22e">clear</span><span style="color:#f92672">()</span> <span style="color:#75715e">// is this required?
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            abiFilters<span style="color:#f92672">.</span><span style="color:#a6e22e">add</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;arm64-v8a&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    externalNativeBuild <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>        ndkBuild <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>            path <span style="color:#f92672">=</span> file<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;./jni/Android.mk&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">...</span>
+</span></span></code></pre></div><p>Don&rsquo;t forget to click on <code>Sync Now</code> in Android Studio after you edit something in those files.</p>
+<p>Finally, in <a href="https://github.com/retifrav/android-cpp-example/blob/0997203e07910eb3ab8b07d31c44f1dc827e85ad/android/app/src/main/java/com/example/some/MainActivity.kt#L70-L81">MainActivity.kt</a> source file add the following to your <code>MainActivity</code> class:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-kotlin" data-lang="kotlin"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MainActivity</span> : ComponentActivity()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">external</span> <span style="color:#66d9ef">fun</span> <span style="color:#a6e22e">doThingy</span>(): String
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">companion</span> <span style="color:#66d9ef">object</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">init</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// why the fuck does it need to be a part of the file name, what&#39;s the point then
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#75715e">// of declaring LOCAL_MODULE in Android.mk?
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#75715e">// and by the way, if you&#39;ll need to load a Debug variant (libThingyd.so),
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#75715e">// then the name here would need to be Thingyd
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#a6e22e">System</span>.loadLibrary(<span style="color:#e6db74">&#34;Thingy&#34;</span>)
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>If you&rsquo;ll try to build the application now, it will succeed, but trying to launch it will fail, and to see the error message you&rsquo;ll need to open Logcat:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>FATAL EXCEPTION: main
+</span></span><span style="display:flex;"><span>Process: com.example.some, PID: <span style="color:#ae81ff">7806</span>
+</span></span><span style="display:flex;"><span>java.lang.UnsatisfiedLinkError: dlopen failed: library <span style="color:#e6db74">&#34;libThingy.so&#34;</span> not found
+</span></span><span style="display:flex;"><span>    at java.lang.Runtime.loadLibrary0<span style="color:#f92672">(</span>Runtime.java:1082<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    at java.lang.Runtime.loadLibrary0<span style="color:#f92672">(</span>Runtime.java:1003<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    at java.lang.System.loadLibrary<span style="color:#f92672">(</span>System.java:1661<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    at com.example.some.MainActivity.&lt;clinit&gt;<span style="color:#f92672">(</span>MainActivity.kt:75<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    ...
+</span></span></code></pre></div><p>That is because the <code>libThingy.so</code> file needs to be deployed/bundled into the resulting APK, which makes sense, as it is a dynamic/SHARED library. If you&rsquo;ll build the APK, then go to <code>Build</code> → <code>Analyze APK...</code> and choose your <code>./app/build/outputs/apk/debug/app-debug.apk</code>, you&rsquo;ll see that there is indeed no <code>.so</code> files inside that bundle:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/analyze-apk-without-bundled-library.png" alt="Android Studio, Analyze APK">
+
+<p>To tell Gradle that you want to deploy/bundle libraries too, add <code>sourceSets</code> block into the <a href="https://github.com/retifrav/android-cpp-example/blob/0997203e07910eb3ab8b07d31c44f1dc827e85ad/android/app/build.gradle.kts#L58-L62">build.gradle.kts</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-gradle" data-lang="gradle"><span style="display:flex;"><span><span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>android <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    sourceSets <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">this</span><span style="color:#f92672">.</span><span style="color:#a6e22e">getByName</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;main&#34;</span><span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>            jniLibs<span style="color:#f92672">.</span><span style="color:#a6e22e">srcDirs</span><span style="color:#f92672">(</span><span style="color:#e6db74">&#34;./jni/libs&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">...</span>
+</span></span></code></pre></div><p>If you re-build the application and analyze the resulting APK again, you&rsquo;ll see that now it contains the <code>.so</code> file:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/analyze-apk-with-bundled-library.png" alt="Android Studio, Analyze APK">
+
+<p>Here&rsquo;s also a comparison of the APKs with and without bundled library:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/analyze-apk-comparison.png" alt="Android Studio, APKs comparison">
+
+<p>Okay, so the library will be loaded just fine. But trying to call the <code>doThingy()</code> function will result in the following error:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">No</span> implementation found <span style="color:#66d9ef">for</span> java<span style="color:#f92672">.</span>lang<span style="color:#f92672">.</span><span style="color:#a6e22e">String</span> com<span style="color:#f92672">.</span>example<span style="color:#f92672">.</span>some<span style="color:#f92672">.</span><span style="color:#a6e22e">MainActivity</span><span style="color:#f92672">.</span>doThingy<span style="color:#f92672">()</span> <span style="color:#f92672">(</span>tried <span style="color:#a6e22e">Java_com_example_some_MainActivity_doThingy</span> and <span style="color:#a6e22e">Java_com_example_some_MainActivity_doThingy__</span><span style="color:#f92672">)</span> <span style="color:#f92672">-</span> is the library loaded<span style="color:#f92672">,</span> e<span style="color:#f92672">.</span>g<span style="color:#f92672">.</span> <span style="color:#a6e22e">System</span><span style="color:#f92672">.</span>loadLibrary<span style="color:#f92672">?</span>
+</span></span></code></pre></div><p>As you can see, it expects this function name to have a <code>Java_com_example_some_MainActivity_</code> prefix. Just how is one supposed to guess that (<em>aside from reading <a href="https://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/design.html#wp615">JNI documentation</a>, of course</em>). Furthermore, you also need to add some other things in your <a href="https://github.com/retifrav/android-cpp-example/blob/0997203e07910eb3ab8b07d31c44f1dc827e85ad/cpp/src/thingy.cpp">library sources</a>, so the resulting code will look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;sstream&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;jni.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;Thingy/thingy.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;stuff.h&#34;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> dpndnc
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">extern</span> <span style="color:#e6db74">&#34;C&#34;</span> JNIEXPORT jstring JNICALL
+</span></span><span style="display:flex;"><span>    Java_com_example_some_MainActivity_doThingy(JNIEnv <span style="color:#f92672">*</span>env, jobject)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// now instead of printing to stdout it returns the resulting string
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        std<span style="color:#f92672">::</span>stringstream someThing;
+</span></span><span style="display:flex;"><span>        someThing <span style="color:#f92672">&lt;&lt;</span> <span style="color:#e6db74">&#34;a string from C++: &#34;</span> <span style="color:#f92672">&lt;&lt;</span> thingyString;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> env<span style="color:#f92672">-&gt;</span>NewStringUTF(someThing.str().c_str());
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Surprisingly, nothing needs to be done in <code>thingy.h</code>, not even changing the function return value type. But then again this header is never needed in the Android project, only resulting binary <code>libThingy.so</code> is.</p>
+<p>To use that function in a <code>@Composable</code>, you&rsquo;ll need to declare it as an argument:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-kotlin" data-lang="kotlin"><span style="display:flex;"><span><span style="color:#66d9ef">fun</span> <span style="color:#a6e22e">GrilsGallery</span>(
+</span></span><span style="display:flex;"><span>    grils: List&lt;Gril&gt;,
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    doSomething: () <span style="color:#f92672">-&gt;</span> String
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>    floatingActionButton = {
+</span></span><span style="display:flex;"><span>        ExtendedFloatingActionButton(
+</span></span><span style="display:flex;"><span>            content = { Text(<span style="color:#e6db74">&#34;Do something&#34;</span>) },
+</span></span><span style="display:flex;"><span>            onClick = {
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">Log</span>.i(<span style="color:#e6db74">&#34;log&#34;</span>, <span style="color:#e6db74">&#34;ololo&#34;</span>);
+</span></span><span style="display:flex; background-color:#3c3d38"><span>                <span style="color:#a6e22e">Log</span>.i(<span style="color:#e6db74">&#34;log&#34;</span>, doSomething());
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        )
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span></code></pre></div><p>and here&rsquo;s how you pass it from the <code>MainActivity</code> class:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-kotlin" data-lang="kotlin"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MainActivity</span> : ComponentActivity()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">fun</span> <span style="color:#a6e22e">onCreate</span>(savedInstanceState: Bundle?)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">super</span>.onCreate(savedInstanceState)
+</span></span><span style="display:flex;"><span>        setContent {
+</span></span><span style="display:flex;"><span>            SomeTheme {
+</span></span><span style="display:flex;"><span>                Surface(
+</span></span><span style="display:flex;"><span>                    modifier = <span style="color:#a6e22e">Modifier</span>.fillMaxSize(),
+</span></span><span style="display:flex;"><span>                    color = <span style="color:#a6e22e">MaterialTheme</span>.colorScheme.background
+</span></span><span style="display:flex;"><span>                )
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    GrilsGallery(
+</span></span><span style="display:flex;"><span>                        <span style="color:#a6e22e">Grils</span>.grilsData,
+</span></span><span style="display:flex; background-color:#3c3d38"><span>                        <span style="color:#66d9ef">this</span><span style="color:#f92672">::</span>doThingy
+</span></span><span style="display:flex;"><span>                    )
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">external</span> <span style="color:#66d9ef">fun</span> <span style="color:#a6e22e">doThingy</span>(): String
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">companion</span> <span style="color:#66d9ef">object</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">init</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">System</span>.loadLibrary(<span style="color:#e6db74">&#34;Thingy&#34;</span>)
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Since our function doesn&rsquo;t actually do anything useful, and we just write its return value to Logcat, here&rsquo;s how it will look like in action:</p>
+
+
+
+
+
+
+
+    <video  controls="yes" loop="yes"  style="border:1px solid black;" class="video">
+        <source src="/blog/2024/02/12/cpp-library-in-android-application/video/button-click-cpp-function.mp4" type="video/mp4">
+    </video>
+    
+    <p class="video-fallback">If video doesn’t play in your browser, you can download it <a href="/blog/2024/02/12/cpp-library-in-android-application/video/button-click-cpp-function.mp4">here</a>.</p>
+    
+
+
+<p>The current project repository state for this example is in <a href="https://github.com/retifrav/android-cpp-example/tree/0997203e07910eb3ab8b07d31c44f1dc827e85ad">here</a>. In later commits the project will be using a <a href="#via-wrapper">wrapper</a>, so don&rsquo;t get confused.</p>
+<p>A bit later I have also discovered <a href="https://erev0s.com/blog/add-jnicc-your-existing-android-app/">this article</a>, from which I learned that there is actually no need in having <code>Android.mk</code> file and <code>ndkBuild</code> block. I am not quite sure if it really is so, but if anything, here&rsquo;s a patch with these changes:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-patch" data-lang="patch"><span style="display:flex;"><span>diff --git a/android/app/build.gradle.kts b/android/app/build.gradle.kts
+</span></span><span style="display:flex;"><span>index 3eb4e56..fcd3f5b 100644
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--- a/android/app/build.gradle.kts
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+++ b/android/app/build.gradle.kts
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span><span style="color:#75715e">@@ -49,12 +49,6 @@ android {
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>         }
+</span></span><span style="display:flex;"><span>     }
+</span></span><span style="display:flex;"><span> 
+</span></span><span style="display:flex;"><span><span style="color:#f92672">-    externalNativeBuild {
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-        ndkBuild {
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-            path = file(&#34;./jni/Android.mk&#34;)
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-        }
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-    }
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span>     sourceSets {
+</span></span><span style="display:flex;"><span>         this.getByName(&#34;main&#34;) {
+</span></span><span style="display:flex;"><span>             jniLibs.srcDirs(&#34;./jni/libs&#34;)
+</span></span><span style="display:flex;"><span>diff --git a/android/app/jni/Android.mk b/android/app/jni/Android.mk
+</span></span><span style="display:flex;"><span>deleted file mode 100644
+</span></span><span style="display:flex;"><span>index 1904d26..0000000
+</span></span><span style="display:flex;"><span><span style="color:#f92672">--- a/android/app/jni/Android.mk
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+++ /dev/null
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span><span style="color:#75715e">@@ -1,6 +0,0 @@
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#f92672">-LOCAL_PATH := $(call my-dir)
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-include $(CLEAR_VARS)
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-LOCAL_MODULE := thingy
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-LOCAL_SRC_FILES := libs/$(TARGET_ARCH_ABI)/libThingy.so
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-include $(PREBUILT_SHARED_LIBRARY)
+</span></span></span></code></pre></div><p>I tried it myself, and project still built just fine, and application could load the library and call its functions.</p>
+<h2 id="via-wrapper">Via wrapper</h2>
+<p>But, obviously, we don&rsquo;t want to mutilate our library functions with those <code>Java_com_example_some_MainActivity_*</code> prefixes, as we want it to be re-usable in other projects too, and on other platforms as well, so we can&rsquo;t have these Android-specific headers and signatures in the our library sources.</p>
+<p>And that is how I arrived to an understanding of a wrapper. So in order to keep the original C++ library sources clean from the Android-specific filth, one needs to create yet another C++ library, which would link to the original library and quite literally &ldquo;wrap&rdquo; its functions into those ugly prefixed functions, which in turn would be callable from the Android application.</p>
+<p>Such a wrapper can be created as a separate external project too, and then there will be no changes in our Android project, except for changing the <code>.so</code> file name that is passed to <code>System.loadLibrary()</code>, of course. But it can also be created as a part of the Android project, which is actually more convenient. There is an <a href="https://developer.android.com/studio/projects/add-native-code">official documentation</a> on the matter, and while I can see now that it does provide required guidance, back when I read it for the first time it wasn&rsquo;t particularly helpful/clear for me. There is even an example for that in the standard galery of project templates in Android Studio, and that one was in fact quite useful.</p>
+<p>Instead of creating a new project we can simply &ldquo;upgrade&rdquo; our current project by replacing the <a href="#directly">directly</a> loaded C++ library with an internal project of a C++ library (<em>which will be our wrapper</em>). To do that you only need to delete the <code>./app/jni</code> folder with all its contents and add a new folder <code>./app/src/main/cpp</code>. In that folder there will be a small CMake project:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ tree <span style="color:#f92672">./</span>app<span style="color:#f92672">/</span>src<span style="color:#f92672">/</span>main<span style="color:#f92672">/</span>cpp<span style="color:#f92672">/</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> <span style="color:#a6e22e">CMakeLists</span><span style="color:#f92672">.</span>txt
+</span></span><span style="display:flex;"><span><span style="color:#f92672">└──</span> wrapper<span style="color:#f92672">.</span>cpp
+</span></span></code></pre></div><p>In <code>build.gradle.kts</code> you will also need to delete <code>sourceSets</code> block and add a <code>cmake</code> block inside <code>externalNativeBuild</code> instead of <code>ndkBuild</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-gradle" data-lang="gradle"><span style="display:flex;"><span>externalNativeBuild <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>    cmake <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>        path <span style="color:#f92672">=</span> file<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;./src/main/cpp/CMakeLists.txt&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        version <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;3.22.1&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>If you lost track of what&rsquo;s going on, here&rsquo;s a <a href="https://github.com/retifrav/android-cpp-example/commit/6579271439676c6b8f3a3abd978351ef91c1c947">commit</a> with all these changes.</p>
+<p>Given that the wrapper&rsquo;s <a href="https://github.com/retifrav/android-cpp-example/blob/6579271439676c6b8f3a3abd978351ef91c1c947/android/app/src/main/cpp/CMakeLists.txt#L3">CMake project</a> (<em>and library target</em>) is named <code>cpp-wrapper</code>, set this value in <code>System.loadLibrary()</code>. But yet again, it works in mysterious ways, because if I am to set a debug postfix for the wrapper&rsquo;s target, then the resulting binary file name will be <code>libcpp-wrapperd.so</code>, but having <code>System.loadLibrary(&quot;cpp-wrapper&quot;)</code>, Gradle(?) will be looking for <code>libcpp-wrapper.so</code> (<em>without <code>d</code> postfix</em>), and that will fail. So it means that one needs to change that value depending on the current build configuration - adding <code>d</code> when building Debug and removing <code>d</code> when building Release.</p>
+<p>I mean, cannot it fucking figure out things like this on its own? It already does transform <code>cpp-wrapper</code> into <code>libcpp-wrapper.so</code> somehow, doesn&rsquo;t it? I didn&rsquo;t find how does one go about it, so I just don&rsquo;t set the debug postfix, which makes the binary file to have the same name in both Debug and Release variants.</p>
+<p>If you now clean and <a name="wrapper-so-files" style="text-decoration:none; color:inherit;">build/make</a> the project, you&rsquo;ll see that the <code>.so</code> binary(<em>ies</em>) will be built too:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>project
+</span></span><span style="display:flex;"><span>$ find <span style="color:#f92672">.</span> <span style="color:#f92672">-</span>iname <span style="color:#e6db74">&#34;*.so&#34;</span> <span style="color:#f92672">|</span> xargs du <span style="color:#f92672">-</span>hs
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">1.8</span>M    <span style="color:#f92672">./</span>app<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>intermediates<span style="color:#f92672">/</span>cxx<span style="color:#f92672">/</span><span style="color:#a6e22e">Debug</span><span style="color:#f92672">/</span><span style="color:#ae81ff">6</span>g2o6m6f<span style="color:#f92672">/</span>obj<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>v8a<span style="color:#f92672">/</span>libcpp<span style="color:#f92672">-</span>wrapper<span style="color:#f92672">.</span>so
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">1.8</span>M    <span style="color:#f92672">./</span>app<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>intermediates<span style="color:#f92672">/</span>merged_native_libs<span style="color:#f92672">/</span>debug<span style="color:#f92672">/</span>out<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>v8a<span style="color:#f92672">/</span>libcpp<span style="color:#f92672">-</span>wrapper<span style="color:#f92672">.</span>so
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">284</span>K    <span style="color:#f92672">./</span>app<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>intermediates<span style="color:#f92672">/</span>stripped_native_libs<span style="color:#f92672">/</span>debug<span style="color:#f92672">/</span>out<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>v8a<span style="color:#f92672">/</span>libcpp<span style="color:#f92672">-</span>wrapper<span style="color:#f92672">.</span>so
+</span></span></code></pre></div><p>Moreover, it will be automatically deployed/bundled into the resulting APK:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/analyze-apk-with-bundled-library-wrapper.png" alt="Android Studio, Analyze APK">
+
+<p>Okay then, now let&rsquo;s actually make a wrapper out of it. For that we need to find the CMake package of our external library, link to its imported target in the <a href="https://github.com/retifrav/android-cpp-example/blob/66843b4a9e6c677a3c9ed838c39cba364b206038/android/app/src/main/cpp/CMakeLists.txt#L21-L26">wrapper&rsquo;s project</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>find_package(<span style="color:#e6db74">Thingy</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>target_link_libraries(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PRIVATE</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">some::Thingy</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>and provide the path to the library&rsquo;s installation in <a href="https://github.com/retifrav/android-cpp-example/blob/66843b4a9e6c677a3c9ed838c39cba364b206038/android/app/build.gradle.kts#L24">build.gradle.kts</a>, so CMake would know where to look for it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-gradle" data-lang="gradle"><span style="display:flex;"><span><span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>android <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>    defaultConfig <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>        externalNativeBuild <span style="color:#f92672">{</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>            cmake <span style="color:#f92672">{</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>                arguments <span style="color:#f92672">+=</span> <span style="color:#e6db74">&#34;-DCMAKE_PREFIX_PATH=/path/to/external/cpp/project/install&#34;</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>            <span style="color:#f92672">}</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>        <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>    externalNativeBuild <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>        cmake <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>            path <span style="color:#f92672">=</span> file<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;./src/main/cpp/CMakeLists.txt&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>            version <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;3.22.1&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// ...
+</span></span></span></code></pre></div><p>Note that this is a different <code>externalNativeBuild</code> block, not the one where we previously enabled CMake build, as that one does not allow manipulating <code>arguments</code> for some reason. Alternatively, you could&rsquo;ve set <code>CMAKE_PREFIX_PATH</code> right in the wrapper&rsquo;s <code>CMakeLists.txt</code>, but usually that is not recommended.</p>
+<p>Anyway, in a &ldquo;normal&rdquo; C++ project setup these steps would be enough, but not this time, as CMake will fail to find the package:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>CMake Error at CMakeLists.txt:20 <span style="color:#f92672">(</span>find_package<span style="color:#f92672">)</span>:
+</span></span><span style="display:flex;"><span>  Could not find a package configuration file provided by <span style="color:#e6db74">&#34;Thingy&#34;</span> with any
+</span></span><span style="display:flex;"><span>  of the following names:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>    thingy-config.cmake
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Add the installation prefix of <span style="color:#e6db74">&#34;Thingy&#34;</span> to CMAKE_PREFIX_PATH or set
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;Thingy_DIR&#34;</span> to a directory containing one of the above files.  If <span style="color:#e6db74">&#34;Thingy&#34;</span>
+</span></span><span style="display:flex;"><span>  provides a separate development package or SDK, be sure it has been
+</span></span><span style="display:flex;"><span>  installed.
+</span></span></code></pre></div><p>Which, as I understand it, is because of the Android toolchain (<em><code>${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake</code></em>), specifically because it sets this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">CMAKE_SYSROOT</span> <span style="color:#e6db74">&#34;${ANDROID_TOOLCHAIN_ROOT}/sysroot&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>To test that theory and see where CMake was trying to find the package, set <code>CMAKE_FIND_DEBUG_MODE</code> around <code>find_package()</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">CMAKE_FIND_DEBUG_MODE</span> <span style="color:#e6db74">1</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>find_package(<span style="color:#e6db74">Thingy</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CMAKE_FIND_DEBUG_MODE</span> <span style="color:#e6db74">0</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>Clean and re-make the project and check the output in <code>/path/to/project/app/build/intermediates/cxx/Debug/SOME-RANDOM-ID/logs/arm64-v8a/configure_stderr.txt</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>find_package considered the following locations <span style="color:#66d9ef">for</span> the Config module:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>thingy<span style="color:#f92672">-</span>config.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>thingy<span style="color:#f92672">-</span>config.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>thingy<span style="color:#f92672">-</span>config.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>thingy<span style="color:#f92672">-</span>config.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>thingy<span style="color:#f92672">-</span>config.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>aarch64<span style="color:#f92672">-</span>linux<span style="color:#f92672">-</span>android<span style="color:#f92672">/</span><span style="color:#ae81ff">30</span><span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>aarch64<span style="color:#f92672">-</span>linux<span style="color:#f92672">-</span>android<span style="color:#f92672">/</span><span style="color:#ae81ff">30</span><span style="color:#f92672">/</span>thingy<span style="color:#f92672">-</span>config.cmake
+</span></span></code></pre></div><p>So yes, that is the reason - it didn&rsquo;t even consider the path we gave it in <code>CMAKE_PREFIX_PATH</code>. To make it consider that path too, add <code>CMAKE_FIND_ROOT_PATH_MODE_PACKAGE=&quot;BOTH&quot;</code> to the list of CMake arguments:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-gradle" data-lang="gradle"><span style="display:flex;"><span>externalNativeBuild <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>    cmake <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>        arguments <span style="color:#f92672">+=</span> <span style="color:#e6db74">&#34;-DCMAKE_PREFIX_PATH=/path/to/external/cpp/project/install&#34;</span>
+</span></span><span style="display:flex;"><span>        arguments <span style="color:#f92672">+=</span> <span style="color:#e6db74">&#34;-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=\&#34;BOTH\&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>Then the project configuration will succeed, as the package should be discovered now:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>find_package considered the following locations <span style="color:#66d9ef">for</span> the Config module:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>thingy<span style="color:#f92672">-</span>config.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>thingy<span style="color:#f92672">-</span>config.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>thingy<span style="color:#f92672">-</span>config.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>thingy<span style="color:#f92672">-</span>config.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>thingy<span style="color:#f92672">-</span>config.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>aarch64<span style="color:#f92672">-</span>linux<span style="color:#f92672">-</span>android<span style="color:#f92672">/</span><span style="color:#ae81ff">30</span><span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>Library<span style="color:#f92672">/</span>Android<span style="color:#f92672">/</span>sdk<span style="color:#f92672">/</span>ndk<span style="color:#f92672">/</span><span style="color:#ae81ff">25.1.8937393</span><span style="color:#f92672">/</span>toolchains<span style="color:#f92672">/</span>llvm<span style="color:#f92672">/</span>prebuilt<span style="color:#f92672">/</span>darwin<span style="color:#f92672">-</span>x86_64<span style="color:#f92672">/</span>sysroot<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>aarch64<span style="color:#f92672">-</span>linux<span style="color:#f92672">-</span>android<span style="color:#f92672">/</span><span style="color:#ae81ff">30</span><span style="color:#f92672">/</span>thingy<span style="color:#f92672">-</span>config.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>external<span style="color:#f92672">/</span>cpp<span style="color:#f92672">/</span>project<span style="color:#f92672">/</span>install<span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>external<span style="color:#f92672">/</span>cpp<span style="color:#f92672">/</span>project<span style="color:#f92672">/</span>install<span style="color:#f92672">/</span>thingy<span style="color:#f92672">-</span>config.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>external<span style="color:#f92672">/</span>cpp<span style="color:#f92672">/</span>project<span style="color:#f92672">/</span>install<span style="color:#f92672">/</span>share<span style="color:#f92672">/</span>Thingy<span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>The file was found at
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>external<span style="color:#f92672">/</span>cpp<span style="color:#f92672">/</span>project<span style="color:#f92672">/</span>install<span style="color:#f92672">/</span>share<span style="color:#f92672">/</span>Thingy<span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span></code></pre></div><p>It would have also worked if you provided <code>CMAKE_FIND_ROOT_PATH</code> instead:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-gradle" data-lang="gradle"><span style="display:flex;"><span>externalNativeBuild <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>    cmake <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>        arguments <span style="color:#f92672">+=</span> <span style="color:#e6db74">&#34;-DCMAKE_FIND_ROOT_PATH=/path/to/external/cpp/project/install&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>but that might break things, as in that case the path you provided there will be the only path for packages discovery:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>find_package considered the following locations <span style="color:#66d9ef">for</span> the Config module:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>external<span style="color:#f92672">/</span>cpp<span style="color:#f92672">/</span>project<span style="color:#f92672">/</span>install<span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>external<span style="color:#f92672">/</span>cpp<span style="color:#f92672">/</span>project<span style="color:#f92672">/</span>install<span style="color:#f92672">/</span>thingy<span style="color:#f92672">-</span>config.cmake
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>external<span style="color:#f92672">/</span>cpp<span style="color:#f92672">/</span>project<span style="color:#f92672">/</span>install<span style="color:#f92672">/</span>share<span style="color:#f92672">/</span>Thingy<span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>The file was found at
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>external<span style="color:#f92672">/</span>cpp<span style="color:#f92672">/</span>project<span style="color:#f92672">/</span>install<span style="color:#f92672">/</span>share<span style="color:#f92672">/</span>Thingy<span style="color:#f92672">/</span>ThingyConfig.cmake
+</span></span></code></pre></div><p>so probably don&rsquo;t do that, use <code>CMAKE_FIND_ROOT_PATH_MODE_PACKAGE=&quot;BOTH&quot;</code> instead.</p>
+<p>Now, when the library package is discovered, we can wrap a call to its function in the wrapper sources:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;jni.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;string&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#75715e">// include the external library public header
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#75715e"></span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;Thingy/thingy.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// this is a wrapper&#39;s &#34;own&#34; function
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">extern</span> <span style="color:#e6db74">&#34;C&#34;</span> JNIEXPORT jstring JNICALL
+</span></span><span style="display:flex;"><span>Java_com_example_some_MainActivity_wrapperMessage(
+</span></span><span style="display:flex;"><span>    JNIEnv <span style="color:#f92672">*</span>env,
+</span></span><span style="display:flex;"><span>    jobject
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    std<span style="color:#f92672">::</span>string msg <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;some message directly from wrapper&#34;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> env<span style="color:#f92672">-&gt;</span>NewStringUTF(msg.c_str());
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#75715e">// and this one is a wrapped call to an external library function
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#75715e"></span><span style="color:#66d9ef">extern</span> <span style="color:#e6db74">&#34;C&#34;</span> JNIEXPORT jstring JNICALL
+</span></span><span style="display:flex; background-color:#3c3d38"><span>Java_com_example_some_MainActivity_doThingy(
+</span></span><span style="display:flex; background-color:#3c3d38"><span>        JNIEnv <span style="color:#f92672">*</span>env,
+</span></span><span style="display:flex; background-color:#3c3d38"><span>        jobject
+</span></span><span style="display:flex; background-color:#3c3d38"><span>)
+</span></span><span style="display:flex; background-color:#3c3d38"><span>{
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    std<span style="color:#f92672">::</span>string msg <span style="color:#f92672">=</span> dpndnc<span style="color:#f92672">::</span>doThingy();
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#66d9ef">return</span> env<span style="color:#f92672">-&gt;</span>NewStringUTF(msg.c_str());
+</span></span><span style="display:flex; background-color:#3c3d38"><span>}
+</span></span></code></pre></div><p>Modified <code>MainActivity</code> class for calling the wrapper functions will be this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-kotlin" data-lang="kotlin"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MainActivity</span> : ComponentActivity()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">fun</span> <span style="color:#a6e22e">onCreate</span>(savedInstanceState: Bundle?)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">super</span>.onCreate(savedInstanceState)
+</span></span><span style="display:flex;"><span>        setContent {
+</span></span><span style="display:flex;"><span>            SomeTheme {
+</span></span><span style="display:flex;"><span>                Surface(
+</span></span><span style="display:flex;"><span>                    modifier = <span style="color:#a6e22e">Modifier</span>.fillMaxSize(),
+</span></span><span style="display:flex;"><span>                    color = <span style="color:#a6e22e">MaterialTheme</span>.colorScheme.background
+</span></span><span style="display:flex;"><span>                )
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    GrilsGallery(
+</span></span><span style="display:flex;"><span>                        isSystemInDarkTheme(),
+</span></span><span style="display:flex;"><span>                        <span style="color:#a6e22e">Grils</span>.grilsData,
+</span></span><span style="display:flex; background-color:#3c3d38"><span>                        <span style="color:#66d9ef">this</span><span style="color:#f92672">::</span>doSomething
+</span></span><span style="display:flex;"><span>                    )
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">external</span> <span style="color:#66d9ef">fun</span> <span style="color:#a6e22e">wrapperMessage</span>(): String
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">external</span> <span style="color:#66d9ef">fun</span> <span style="color:#a6e22e">doThingy</span>(): String
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">fun</span> <span style="color:#a6e22e">doSomething</span>()
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    {
+</span></span><span style="display:flex; background-color:#3c3d38"><span>        <span style="color:#a6e22e">Log</span>.i(<span style="color:#e6db74">&#34;log&#34;</span>, wrapperMessage()); <span style="color:#75715e">// calling wrapper&#39;s own function
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#75715e"></span>        <span style="color:#a6e22e">Log</span>.i(<span style="color:#e6db74">&#34;log&#34;</span>, doThingy()); <span style="color:#75715e">// calling a wrapped function of the external library
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#75715e"></span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">companion</span> <span style="color:#66d9ef">object</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">init</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">System</span>.loadLibrary(<span style="color:#e6db74">&#34;cpp-wrapper&#34;</span>)
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>The button&rsquo;s <code>onClick</code> handler will also change a bit:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-kotlin" data-lang="kotlin"><span style="display:flex;"><span>floatingActionButton = {
+</span></span><span style="display:flex;"><span>    ExtendedFloatingActionButton(
+</span></span><span style="display:flex;"><span>        content = { Text(<span style="color:#e6db74">&#34;Do something&#34;</span>) },
+</span></span><span style="display:flex;"><span>        onClick = {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">Log</span>.i(<span style="color:#e6db74">&#34;log&#34;</span>, <span style="color:#e6db74">&#34;ololo&#34;</span>);
+</span></span><span style="display:flex; background-color:#3c3d38"><span>            doSomething();
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    )
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Clicking that button will now write the following to Logcat:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>2024-02-10 12:11:23.942  4095-4095  log  com.example.some  I  ololo
+</span></span><span style="display:flex;"><span>2024-02-10 12:11:23.942  4095-4095  log  com.example.some  I  some message directly from wrapper
+</span></span><span style="display:flex;"><span>2024-02-10 12:11:23.942  4095-4095  log  com.example.some  I  a string from C++: some thingy
+</span></span></code></pre></div><p>Searching for <code>.so</code> files in the project folder will now find both the wrapper and the external library binaries, even though I haven&rsquo;t copied the external library files into the project, so that was handled behind the scenes:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ find <span style="color:#f92672">.</span> <span style="color:#f92672">-</span>iname <span style="color:#e6db74">&#34;*.so&#34;</span> <span style="color:#f92672">|</span> xargs du <span style="color:#f92672">-</span>hs
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">4.9</span>M    <span style="color:#f92672">./</span>app<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>intermediates<span style="color:#f92672">/</span>cxx<span style="color:#f92672">/</span><span style="color:#a6e22e">Debug</span><span style="color:#f92672">/</span><span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">RANDOM</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span><span style="color:#f92672">/</span>obj<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>v8a<span style="color:#f92672">/</span>libThingy<span style="color:#f92672">.</span>so
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">132</span>K    <span style="color:#f92672">./</span>app<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>intermediates<span style="color:#f92672">/</span>cxx<span style="color:#f92672">/</span><span style="color:#a6e22e">Debug</span><span style="color:#f92672">/</span><span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">RANDOM</span><span style="color:#f92672">-</span><span style="color:#a6e22e">ID</span><span style="color:#f92672">/</span>obj<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>v8a<span style="color:#f92672">/</span>libcpp<span style="color:#f92672">-</span>wrapper<span style="color:#f92672">.</span>so
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">4.9</span>M    <span style="color:#f92672">./</span>app<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>intermediates<span style="color:#f92672">/</span>merged_native_libs<span style="color:#f92672">/</span>debug<span style="color:#f92672">/</span>out<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>v8a<span style="color:#f92672">/</span>libThingy<span style="color:#f92672">.</span>so
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">132</span>K    <span style="color:#f92672">./</span>app<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>intermediates<span style="color:#f92672">/</span>merged_native_libs<span style="color:#f92672">/</span>debug<span style="color:#f92672">/</span>out<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>v8a<span style="color:#f92672">/</span>libcpp<span style="color:#f92672">-</span>wrapper<span style="color:#f92672">.</span>so
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">812</span>K    <span style="color:#f92672">./</span>app<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>intermediates<span style="color:#f92672">/</span>stripped_native_libs<span style="color:#f92672">/</span>debug<span style="color:#f92672">/</span>out<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>v8a<span style="color:#f92672">/</span>libThingy<span style="color:#f92672">.</span>so
+</span></span><span style="display:flex;"><span> <span style="color:#ae81ff">32</span>K    <span style="color:#f92672">./</span>app<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>intermediates<span style="color:#f92672">/</span>stripped_native_libs<span style="color:#f92672">/</span>debug<span style="color:#f92672">/</span>out<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>v8a<span style="color:#f92672">/</span>libcpp<span style="color:#f92672">-</span>wrapper<span style="color:#f92672">.</span>so
+</span></span></code></pre></div><p>And having analyzed the resulting APK, you&rsquo;ll see that it bundles both of them too:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/analyze-apk-with-bundled-library-wrapper-and-dependency.png" alt="Android Studio, Analyze APK">
+
+<p>But we actually don&rsquo;t need the external library to be built as dynamic/SHARED anymore, as its symbols can be &ldquo;incorporated&rdquo; into the wrapper binary. So it can be re-built with <code>-DBUILD_SHARED_LIBS=0</code>, an then after cleaning and re-making the Android project there will be just the <code>libcpp-wrapper.so</code> files, although 3 times bigger in size than <a href="#wrapper-so-files">before</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ find <span style="color:#f92672">.</span> <span style="color:#f92672">-</span>iname <span style="color:#e6db74">&#34;*.so&#34;</span> <span style="color:#f92672">|</span> xargs du <span style="color:#f92672">-</span>hs
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">4.9</span>M    <span style="color:#f92672">./</span>app<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>intermediates<span style="color:#f92672">/</span>cxx<span style="color:#f92672">/</span><span style="color:#a6e22e">Debug</span><span style="color:#f92672">/</span>v1z2r5v1<span style="color:#f92672">/</span>obj<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>v8a<span style="color:#f92672">/</span>libcpp<span style="color:#f92672">-</span>wrapper<span style="color:#f92672">.</span>so
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">4.9</span>M    <span style="color:#f92672">./</span>app<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>intermediates<span style="color:#f92672">/</span>merged_native_libs<span style="color:#f92672">/</span>debug<span style="color:#f92672">/</span>out<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>v8a<span style="color:#f92672">/</span>libcpp<span style="color:#f92672">-</span>wrapper<span style="color:#f92672">.</span>so
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">816</span>K    <span style="color:#f92672">./</span>app<span style="color:#f92672">/</span>build<span style="color:#f92672">/</span>intermediates<span style="color:#f92672">/</span>stripped_native_libs<span style="color:#f92672">/</span>debug<span style="color:#f92672">/</span>out<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>arm64<span style="color:#f92672">-</span>v8a<span style="color:#f92672">/</span>libcpp<span style="color:#f92672">-</span>wrapper<span style="color:#f92672">.</span>so
+</span></span></code></pre></div><p>And analyzing the APK will show that now it contains just the wrapper binary:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/analyze-apk-with-bundled-library-wrapper-no-dependency.png" alt="Android Studio, Analyze APK">
+
+<p>Here&rsquo;s a <a href="https://github.com/retifrav/android-cpp-example/commit/66843b4a9e6c677a3c9ed838c39cba364b206038">commit</a> with all these changes, and the current state of the project repository is <a href="https://github.com/retifrav/android-cpp-example/tree/66843b4a9e6c677a3c9ed838c39cba364b206038">here</a>. After that commit the project will be further enhanced with parsing JSON on C++ side through a <a href="#transitive-dependencies">transitive dependency</a> on a 3rd-party library.</p>
+<h3 id="transitive-dependencies">Transitive dependencies</h3>
+<p>Of course, there is not much of a point to involve an external C++ library just for getting static text strings. At the same time, our goal was just to research how does one do that at all, and now it will be easier to bring-in an actually useful library that does something meaningful. It also should be no worries to resolve that library&rsquo;s own 3rd-party dependencies, should it have some, as it will be all the same as with any other regular CMake project.</p>
+<p>Say, we&rsquo;d like to parse some JSON, and let&rsquo;s imagine that there is nothing for working with JSON on Android side, so we just have to pass JSON string to C++ side and parse it there.</p>
+<p>For working with JSON in C++ I usually prefer <a href="https://github.com/nlohmann/json">json-nlohmann</a>, but it&rsquo;s a header-only library, so it won&rsquo;t be as exciting, and so let&rsquo;s take <a href="https://github.com/open-source-parsers/jsoncpp">JsonCpp</a> instead. A function for parsing JSON with JsonCpp would be something like <a href="https://github.com/retifrav/android-cpp-example/blob/05b30fe2ae48e5522a344435b2404eac273eba2e/cpp/src/thingy.cpp#L17">this</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;json/json.h&gt;</span><span style="color:#75715e">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> dpndnc
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>    std<span style="color:#f92672">::</span>string parseJSON(std<span style="color:#f92672">::</span>string jsonString)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        Json<span style="color:#f92672">::</span>Value root;
+</span></span><span style="display:flex;"><span>        Json<span style="color:#f92672">::</span>Reader reader;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>reader.parse(jsonString, root))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// lazy-ass errors reporting
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;[ERROR] Couldn&#39;t parse this JSON&#34;</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        std<span style="color:#f92672">::</span>string rez <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Some result&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// some processing of the parsed object, writing results to the `rez` variable
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> rez;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>To make things even less boring, let&rsquo;s resolve JsonCpp dependency via <a href="/blog/2022/10/30/cpp-dependencies-with-vcpkg/">vcpkg</a>. It would have probably worked fine with the standard <code>arm64-android</code> triplet too, but still I created a <a href="https://github.com/retifrav/android-cpp-example/blob/05b30fe2ae48e5522a344435b2404eac273eba2e/cpp/misc/vcpkg/triplets/arm64-android-v8a-v30.cmake#L8">custom one</a> (<em>to specify the Android API version</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">VCPKG_TARGET_ARCHITECTURE</span> <span style="color:#e6db74">arm64</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_CRT_LINKAGE</span> <span style="color:#e6db74">static</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_LIBRARY_LINKAGE</span> <span style="color:#e6db74">static</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_CMAKE_SYSTEM_NAME</span> <span style="color:#e6db74">Android</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_MAKE_BUILD_TRIPLET</span> <span style="color:#e6db74">&#34;--host=aarch64-linux-android&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">VCPKG_CMAKE_CONFIGURE_OPTIONS</span> <span style="color:#e6db74">-DANDROID_ABI=arm64-v8a</span> <span style="color:#e6db74">-DANDROID_PLATFORM=30</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>The configuration and building of our external C++ library project will be the following:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cmake -G Ninja -DCMAKE_BUILD_TYPE<span style="color:#f92672">=</span>Release -DCMAKE_INSTALL_PREFIX<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../install&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -DCMAKE_TOOLCHAIN_FILE<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span>$VCPKG_ROOT<span style="color:#e6db74">/scripts/buildsystems/vcpkg.cmake&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -DVCPKG_TARGET_TRIPLET<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;arm64-android-v8a-v30&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -DVCPKG_OVERLAY_TRIPLETS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/path/to/external/cpp/project/misc/vcpkg/triplets&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>ANDROID_NDK_HOME<span style="color:#e6db74">}</span><span style="color:#e6db74">/build/cmake/android.toolchain.cmake&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -DANDROID_ABI<span style="color:#f92672">=</span>arm64-v8a -DANDROID_PLATFORM<span style="color:#f92672">=</span><span style="color:#ae81ff">30</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    ..
+</span></span><span style="display:flex;"><span>$ cmake --build . --target install
+</span></span></code></pre></div><p>It is mostly the same as <a href="#c-library">before</a>, but with added vcpkg stuff:</p>
+<ul>
+<li><code>CMAKE_TOOLCHAIN_FILE</code> - now points to the vcpkg toolchain, as that one will be used for building dependencies resolved with vcpkg (<em>JsonCpp in this case</em>);</li>
+<li><code>VCPKG_CHAINLOAD_TOOLCHAIN_FILE</code> - points to Android toolchain, as that one will be used for building the project itself after vcpkg is done building dependencies using its own toolchain. If you won&rsquo;t chainload the Android toolchain here, the project will be configured to target your host OS and will most likely fail to link with dependencies because of the mismatching architectures (<em>not to mention non-Android resulting binary, should you manage to build it somehow</em>);</li>
+<li><code>VCPKG_TARGET_TRIPLET</code> - my custom triplet;
+<ul>
+<li><code>VCPKG_OVERLAY_TRIPLETS</code> - where vcpkg can find it;</li>
+</ul>
+</li>
+<li><code>ANDROID_ABI</code> and <code>ANDROID_PLATFORM</code> are still there, because these are the ones that apply to building the project itself, while the same values that are set in my custom triplet apply only to building vcpkg-resolved dependencies.</li>
+</ul>
+<p>After the project is configured, built and installed, you might want to &ldquo;merge&rdquo; the vcpkg installation prefix into the project installation prefix (<em>so you could set <code>CMAKE_PREFIX_PATH</code> to one path instead of two in <a href="https://github.com/retifrav/android-cpp-example/blob/05b30fe2ae48e5522a344435b2404eac273eba2e/android/app/build.gradle.kts#L24">build.gradle.kts</a></em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cp -an ./vcpkg_installed/arm64-android-v8a-v30/* ../install/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ tree ../install/
+</span></span><span style="display:flex;"><span>├── debug
+</span></span><span style="display:flex;"><span>│   └── lib
+</span></span><span style="display:flex;"><span>│       └── libjsoncpp.a
+</span></span><span style="display:flex;"><span>├── include
+</span></span><span style="display:flex;"><span>│   ├── Thingy
+</span></span><span style="display:flex;"><span>│   │   └── thingy.h
+</span></span><span style="display:flex;"><span>│   └── json
+</span></span><span style="display:flex;"><span>│       ├── allocator.h
+</span></span><span style="display:flex;"><span>│       ├── assertions.h
+</span></span><span style="display:flex;"><span>│       ├── config.h
+</span></span><span style="display:flex;"><span>│       ├── forwards.h
+</span></span><span style="display:flex;"><span>│       ├── json.h
+</span></span><span style="display:flex;"><span>│       ├── json_features.h
+</span></span><span style="display:flex;"><span>│       ├── reader.h
+</span></span><span style="display:flex;"><span>│       ├── value.h
+</span></span><span style="display:flex;"><span>│       ├── version.h
+</span></span><span style="display:flex;"><span>│       └── writer.h
+</span></span><span style="display:flex;"><span>├── lib
+</span></span><span style="display:flex;"><span>│   ├── libThingy.a
+</span></span><span style="display:flex;"><span>│   └── libjsoncpp.a
+</span></span><span style="display:flex;"><span>└── share
+</span></span><span style="display:flex;"><span>    ├── Thingy
+</span></span><span style="display:flex;"><span>    │   ├── ThingyConfig.cmake
+</span></span><span style="display:flex;"><span>    │   ├── ThingyConfigVersion.cmake
+</span></span><span style="display:flex;"><span>    │   ├── ThingyTargets-release.cmake
+</span></span><span style="display:flex;"><span>    │   └── ThingyTargets.cmake
+</span></span><span style="display:flex;"><span>    └── jsoncpp
+</span></span><span style="display:flex;"><span>        ├── copyright
+</span></span><span style="display:flex;"><span>        ├── jsoncpp-namespaced-targets.cmake
+</span></span><span style="display:flex;"><span>        ├── jsoncpp-targets-debug.cmake
+</span></span><span style="display:flex;"><span>        ├── jsoncpp-targets-release.cmake
+</span></span><span style="display:flex;"><span>        ├── jsoncpp-targets.cmake
+</span></span><span style="display:flex;"><span>        ├── jsoncppConfig.cmake
+</span></span><span style="display:flex;"><span>        ├── jsoncppConfigVersion.cmake
+</span></span><span style="display:flex;"><span>        ├── vcpkg.spdx.json
+</span></span><span style="display:flex;"><span>        └── vcpkg_abi_info.txt
+</span></span></code></pre></div><p>To be able to link to this new version of the external library, the wrapper&rsquo;s <code>CMakeLists.txt</code> should actually do <code>find_package(jsoncpp CONFIG REQUIRED)</code>, because JsonCpp binary will be required for linking, but instead we can do it via <code>find_dependency()</code> in the library&rsquo;s <a href="https://github.com/retifrav/android-cpp-example/blob/05b30fe2ae48e5522a344435b2404eac273eba2e/cpp/Config.cmake.in#L5">CMake config</a>, so wrapper&rsquo;s project file can remain <a href="https://github.com/retifrav/android-cpp-example/blob/05b30fe2ae48e5522a344435b2404eac273eba2e/android/app/src/main/cpp/CMakeLists.txt">the same</a>.</p>
+<p>In the wrapper sources we need to wrap the external library&rsquo;s function that will be parsing a JSON string, which will be passed to it as an argument. And if you thought that passing a string of text from Android side to C++ side is a trivial thing, then you thought wrong, because <a href="https://github.com/retifrav/android-cpp-example/blob/05b30fe2ae48e5522a344435b2404eac273eba2e/android/app/src/main/cpp/wrapper.cpp#L37-L48">that is how</a> it is supposedly done:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">extern</span> <span style="color:#e6db74">&#34;C&#34;</span> JNIEXPORT jstring JNICALL
+</span></span><span style="display:flex;"><span>Java_com_example_some_MainActivity_parseJSON(
+</span></span><span style="display:flex;"><span>    JNIEnv <span style="color:#f92672">*</span>env,
+</span></span><span style="display:flex;"><span>    jobject,
+</span></span><span style="display:flex;"><span>    jstring stringToParse
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// apparently, that becomes true (JNI_TRUE) at some point
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    jboolean isCopy;
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// pointer to an array of bytes representing the string in modified UTF-8 encoding
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// https://docs.oracle.com/javase/8/docs/technotes/guides/jni/spec/functions.html#GetStringUTFChars
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>utf <span style="color:#f92672">=</span> (env)<span style="color:#f92672">-&gt;</span>GetStringUTFChars(stringToParse, <span style="color:#f92672">&amp;</span>isCopy);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// only now we can pass the string to C++ side
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    std<span style="color:#f92672">::</span>string rez <span style="color:#f92672">=</span> dpndnc<span style="color:#f92672">::</span>parseJSON(utf);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// after the string is done being used, it needs to be &#34;released&#34; (to prevent memory leak?)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// https://docs.oracle.com/javase/8/docs/technotes/guides/jni/spec/functions.html#ReleaseStringUTFChars
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (isCopy <span style="color:#f92672">==</span> JNI_TRUE) { env<span style="color:#f92672">-&gt;</span>ReleaseStringUTFChars(stringToParse, utf); }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> env<span style="color:#f92672">-&gt;</span>NewStringUTF(rez.c_str());
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>So we can pass a JSON string from our Android application to an external C++ library for parsing/processing and get back a result. Certainly, that purpose is far from being glorious too, but once again this is just an example, and you should now be able to wrap something more sophisticated yourself.</p>
+<p>If you haven&rsquo;t got enough links to the example project repository, here&rsquo;s <a href="https://github.com/retifrav/android-cpp-example">one more</a>.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/android/">android</a><a class="tag" href="https://retifrav.github.io/tags/cpp/">cpp</a><a class="tag" href="https://retifrav.github.io/tags/cmake/">cmake</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div style="border:2px orange solid; background-color: floralwhite; border-radius:0.5rem; padding: 10px 14px; font-style:italic; font-size:0.9em;">
+              If you'd like to comment the article, you can do it on the
+              <a href="https://decovar.dev/blog/2024/02/12/cpp-library-in-android-application/#remark42" style="font-weight:bold;">
+                  original website</a>. This one is just a mirror without comments.
+          </div>
+      
+      </div>
+    </div>
+  </div>
+
+        <div id="footer">
+          <div>
+              2014 - 2024,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <div style="margin:0 0 20px;">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+            <iframe src="https://github.com/sponsors/retifrav/button"
+                height="35" style="border:0;"
+                title="You can sponsor me">
+            </iframe>
+            
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div id="telegramWidgetBlock" class="sidebar-section"></div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (67)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (40)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (36)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (35)</a></li>
+                  
+                  <li><a href="/tags/review">review (28)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (27)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (23)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (19)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (17)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (15)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (14)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (12)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (11)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (11)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (7)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (7)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (6)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (5)</a></li>
+                  
+                  <li><a href="/tags/android">android (4)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/azure">azure (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (2)</a></li>
+                  
+                  <li><a href="/tags/steam-deck">steam-deck (2)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/ldap">ldap (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/science">science (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    <script>
+        const telegramBlock = document.getElementById("telegramWidgetBlock");
+        window.onload = () =>
+        {
+            const pinnedTelegramPosts = [306,319,323]
+            const randomedPostID = pinnedTelegramPosts[
+                Math.floor(Math.random() * pinnedTelegramPosts.length)
+            ];
+            const telegramWidgetScript = document.createElement("script");
+            telegramWidgetScript.src = "https://telegram.org/js/telegram-widget.js?21";
+            telegramWidgetScript.dataset["telegramPost"] = `decovar/${randomedPostID}`;
+            telegramWidgetScript.dataset["color"] = "1E8448";
+            telegramWidgetScript.dataset["width"] = "100%";
+            telegramWidgetScript.dataset["userpic"] = "false";
+            telegramBlock.appendChild(telegramWidgetScript);
+        }
+    </script>
+
+    
+    
+  </body>
+</html>
