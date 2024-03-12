@@ -60,7 +60,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 104 min read</div>
+</svg> 106 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -179,7 +179,11 @@
                 <li><a href="#cmake_prefix_path-isnt-used">CMAKE_PREFIX_PATH isn&rsquo;t used</a></li>
               </ul>
             </li>
-            <li><a href="#enabling-pthreads-support">Enabling pthreads support</a></li>
+            <li><a href="#enabling-pthreads-support">Enabling pthreads support</a>
+              <ul>
+                <li><a href="#side-effect-of-chainloading-a-custom-toolchain">Side-effect of chainloading a custom toolchain</a></li>
+              </ul>
+            </li>
           </ul>
         </li>
         <li><a href="#windows">Windows</a>
@@ -2255,9 +2259,30 @@
 </ul>
 </li>
 <li><code>-DVCPKG_OVERLAY_TRIPLETS=&quot;...&quot;</code> is how you tell vcpkg where to look for additional/custom triplets;</li>
-<li><code>-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=&quot;...&quot;</code> still points to the default Emscripten toolchain because I am already setting <code>-pthread</code> compiler flags (<em>plus some linker flags</em>) inside my main project&rsquo;s <code>CMakeLists.txt</code>, so I don&rsquo;t need a custom toolchain that does that. But I probably should use the same custom toolchain (<em>the one that is chainloaded inside <code>my-wasm32-emscripten-pthreads</code> triplet for building ports</em>) here too, I will see about that.</li>
+<li><code>-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=&quot;...&quot;</code> still points to the default Emscripten toolchain because I am already setting <code>-pthread</code> compiler flags (<em>plus some linker flags</em>) inside my main project&rsquo;s <code>CMakeLists.txt</code>, so I don&rsquo;t need a custom toolchain that does that. Although I probably should use the same custom toolchain (<em>the one that is chainloaded inside <code>my-wasm32-emscripten-pthreads</code> triplet for building ports</em>) here too;
+<ul>
+<li>either way, one of those toolchains has to be chainloaded here, as it is required for building the project itself with Emscripten.</li>
+</ul>
+</li>
 </ul>
 <p>Now everything finally builds and links into WASM with pthreads enabled.</p>
+<h4 id="side-effect-of-chainloading-a-custom-toolchain">Side-effect of chainloading a custom toolchain</h4>
+<p>There is one (<em>but probably more</em>) side-effect of chainloading a custom toolchain and that is detecting the compiler hash: it will remain the same even if you switch to a different Emscripten version (<em>as long as your custom toolchain doesn&rsquo;t change</em>), because apparently it&rsquo;s exactly the chainloaded toolchain that is taking part in the hash calculation.</p>
+<p>Compiler hash remaining the same means that vcpkg-resolved dependencies won&rsquo;t get rebuilt, so you&rsquo;ll end up linking your project that was built using one Emscripten version with dependencies that were built using a different Emscripten version.</p>
+<p>Obviously, if you are chainloading the standard/default Emscripten toolchain from its original location in <code>$EMSDK/upstream/emscripten/cmake/Modules/Platform/</code>, then it&rsquo;s all good, vcpkg will notice the change and the compiler hash will be different, which will trigger rebuilding the dependencies; but here we are talking about your custom toolchain, which most likely never changes (<em>as there is no need for that</em>).</p>
+<p>To make vcpkg re-build the dependencies when you switch to a different Emscripten version, you&rsquo;ll need to change something in your custom toolchain file too, so vcpkg would notice that it has changed. For example, you can just add some comment:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>include(<span style="color:#f92672">$ENV{</span>EMSDK<span style="color:#f92672">}</span><span style="color:#e6db74">/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># pthreads (https://emscripten.org/docs/porting/pthreads.html)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">EMSCRIPTEN_PTHREADS_FLAGS</span> <span style="color:#e6db74">&#34;-pthread&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>string(<span style="color:#e6db74">APPEND</span> <span style="color:#e6db74">CMAKE_C_FLAGS_INIT</span>   <span style="color:#e6db74">&#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>string(<span style="color:#e6db74">APPEND</span> <span style="color:#e6db74">CMAKE_CXX_FLAGS_INIT</span> <span style="color:#e6db74">&#34; ${EMSCRIPTEN_PTHREADS_FLAGS}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># this is a comment for marking this custom toolchain as modified
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#75715e"># change the Emscripten version value every time you switch to a different one
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#75715e"># Emscripten version 3.1.54
+</span></span></span></code></pre></div><p>This probably concerns other platforms/compilers too, and I reckon the workaround would be the same for those as well (<em>adding/modifying a comment every time</em>).</p>
 <h2 id="windows">Windows</h2>
 <h3 id="msvc-toolset">MSVC toolset</h3>
 <p>In one case I needed to build my project with MSVC 141 toolset, which I did by setting <code>-G &quot;Visual Studio 15 2017&quot; -A &quot;x64&quot;</code>, but apparently that only applied to the project itself, and looks like vcpkg built the dependencies with a different toolset (<em>likely with MSVC 143, as that&rsquo;s the latest I have installed</em>), because I got the following errors on linking:</p>
