@@ -67,7 +67,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </svg> 2018-02-17 20:52:06 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 93 min read</div>
+</svg> 95 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -77,7 +77,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 
     <img class="image-post" loading="lazy" src="/blog/2018/02/17/build-qt-statically/images/qt-configure.png" alt="Qt configure">
 
-<p>Although the article is about making a static build, it also covers the task of building Qt from sources in general.</p>
+<p>Although the article is (<em>mostly</em>) about making a static build, it also covers building Qt from sources in general and other related activities (<em>such as linking with the resulting build, deploying applications and so on</em>).</p>
 <nav id="TableOfContents">
   <ul>
     <li><a href="#tldr">TLDR</a></li>
@@ -173,6 +173,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
             <li><a href="#no-member-named-move-in-namespace-std">No member named move in namespace std</a></li>
           </ul>
         </li>
+        <li><a href="#2024-06-11--even-more-unknown-runtime-dependencies-with-dynamic-qt-671">2024-06-11 | Even more unknown runtime dependencies with dynamic Qt 6.7.1</a></li>
       </ul>
     </li>
   </ul>
@@ -3431,6 +3432,68 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </span></span><span style="display:flex;"><span><span style="color:#ae81ff">8</span> errors generated<span style="color:#f92672">.</span>
 </span></span></code></pre></div><p>From these I can only guess that there is still something wrong with C++ runtime detection/discovery, and the way I fixed this particular error is by adding <code>#include &lt;utility&gt;</code> to <code>/path/to/qt/src/5.15.12/qtlocation/src/3rdparty/mapbox-gl-native/include/mbgl/util/unique_any.hpp</code>.</p>
 <p>After that the build succeeded. And by the way, it succeeded with Xcode 15.1 too, so I didn&rsquo;t need to have <code>-Wl,-ld_classic</code> appended to the <code>LDFLAGS</code> environment variable anymore.</p>
+<h2 id="2024-06-11--even-more-unknown-runtime-dependencies-with-dynamic-qt-671">2024-06-11 | Even more unknown runtime dependencies with dynamic Qt 6.7.1</h2>
+<p>With Qt 6.7.1 dynamic build on Windows I noticed that <a href="#mingw">this set</a> of runtime dependencies is no longer(?) correct, and it could have been so for quite some time now.</p>
+<p>First of all, since we are all using CMake, right, here&rsquo;s how one can try to use CMake for collecting all the application&rsquo;s runtime dependencies:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e">#get_target_property(QT_TARGET_TYPE Qt${QT_VERSION_MAJOR}::Core TYPE)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>if(<span style="color:#e6db74">&#34;${CMAKE_SYSTEM_NAME}&#34;</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;Windows&#34;</span>) <span style="color:#75715e"># `AND NOT ${QT_TARGET_TYPE} STREQUAL &#34;STATIC_LIBRARY&#34;` or `AND ${QT_TARGET_TYPE} STREQUAL &#34;INTERFACE_LIBRARY&#34;`?
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">#file(GENERATE OUTPUT debug/dlls.txt CONTENT $&lt;TARGET_RUNTIME_DLLS:${CMAKE_PROJECT_NAME}&gt;)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    if(<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">EXISTS</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_PREFIX<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>EXECUTABLE_INSTALLATION_PATH<span style="color:#f92672">}</span>) <span style="color:#75715e"># it doesn&#39;t exist before the very first installation yet
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">#install(DIRECTORY DESTINATION ${CMAKE_INSTALL_PREFIX}/${EXECUTABLE_INSTALLATION_PATH}) # still too late, because add_custom_command() will execute before that
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        file(<span style="color:#e6db74">MAKE_DIRECTORY</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_PREFIX<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>EXECUTABLE_INSTALLATION_PATH<span style="color:#f92672">}</span>) <span style="color:#75715e"># but at least this one will execute before add_custom_command()
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    add_custom_command(
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">TARGET</span> <span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">POST_BUILD</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">COMMAND</span> <span style="color:#f92672">${</span>CMAKE_COMMAND<span style="color:#f92672">}</span> <span style="color:#e6db74">-E</span> <span style="color:#e6db74">copy_if_different</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">$&lt;</span>TARGET_RUNTIME_DLLS:${CMAKE_PROJECT_NAME}<span style="color:#f92672">&gt;</span> <span style="color:#75715e"># locate DLLs (might discover some redundant ones too)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#f92672">${</span>CMAKE_INSTALL_PREFIX<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>EXECUTABLE_INSTALLATION_PATH<span style="color:#f92672">}</span> <span style="color:#75715e"># where to copy them
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#e6db74">COMMAND_EXPAND_LISTS</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">COMMENT</span> <span style="color:#e6db74">&#34;Copying runtime dependencies (DLLs)&#34;</span>
+</span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>Sadly, it doesn&rsquo;t always find all the dependencies, and in case of Qt for one of my applications it only copied the following set:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>├─Qt6Core.dll
+</span></span><span style="display:flex;"><span>├─Qt6Gui.dll
+</span></span><span style="display:flex;"><span>├─Qt6Network.dll
+</span></span><span style="display:flex;"><span>├─Qt6OpenGL.dll
+</span></span><span style="display:flex;"><span>├─Qt6Qml.dll
+</span></span><span style="display:flex;"><span>├─Qt6QmlModels.dll
+</span></span><span style="display:flex;"><span>├─Qt6Quick.dll
+</span></span><span style="display:flex;"><span>└─some-qt-quick.exe
+</span></span></code></pre></div><p>And when I tried to launch the application, I got an error about missing platform plugin:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>The application failed to start because no qt platform plugin could be initialized
+</span></span></code></pre></div><p>Here&rsquo;s also a screenshot, just in case:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2018/02/17/build-qt-statically/images/dynamic-qt-missing-platform-platform.png" alt="Qt error, missing platform plugin">
+
+<p>To resolve that I needed to copy <code>/path/to/qt/plugins/platforms/qwindows.dll</code> to my application installation folder, keeping the folder structure. And then the application launched but with an &ldquo;empty&rdquo; application window:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2018/02/17/build-qt-statically/images/dynamic-qt-missing-unknown-dlls.png" alt="Qt application missing some unknown DLLs">
+
+<p>When you see this with a Qt-based application, that&rsquo;s a symptom of some more DLLs missing, which aren&rsquo;t required at launch (<em>so you can&rsquo;t track them with Dependency Walker, DIE or a similar tool?</em>), but apparently are attempted to be loaded a bit later at runtime (<em>and produce no error on failure?</em>). After quite some trial and error I discovered that it&rsquo;s also <code>Qt6QmlWorkerScript.dll</code> that was missing, which I then deployed too.</p>
+<p>But even after that something was still missing, because I was still getting an &ldquo;empty&rdquo; application window. When you find yourself in a situation like this, the last resort is to just drop your executable into <code>/path/to/qt/bin/</code> and launch it from there, and if it launches fine, then you can copy the entiry Qt prefix and start throwing things out of it. That is how I discovered that my application also needs <code>/path/to/qt/qml/QtQml/WorkerScript/{qmldir,workerscriptplugin.dll}</code> files.</p>
+<p>So here&rsquo;s the final deployment folder structure:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>├── Qt6Core.dll
+</span></span><span style="display:flex;"><span>├── Qt6Gui.dll
+</span></span><span style="display:flex;"><span>├── Qt6Network.dll
+</span></span><span style="display:flex;"><span>├── Qt6OpenGL.dll
+</span></span><span style="display:flex;"><span>├── Qt6Qml.dll
+</span></span><span style="display:flex;"><span>├── Qt6QmlModels.dll
+</span></span><span style="display:flex;"><span>├── Qt6QmlWorkerScript.dll
+</span></span><span style="display:flex;"><span>├── Qt6Quick.dll
+</span></span><span style="display:flex;"><span>├── some-qt-quick.exe
+</span></span><span style="display:flex;"><span>├── plugins
+</span></span><span style="display:flex;"><span>│   └── platforms
+</span></span><span style="display:flex;"><span>│       └── qwindows.dll
+</span></span><span style="display:flex;"><span>└── qml
+</span></span><span style="display:flex;"><span>    └── QtQml
+</span></span><span style="display:flex;"><span>        └── WorkerScript
+</span></span><span style="display:flex;"><span>            ├── qmldir
+</span></span><span style="display:flex;"><span>            └── workerscriptplugin.dll
+</span></span></code></pre></div><p>Naturally, for your application this set might be different, as your application might be using different parts of Qt functionality and so depending on different Qt modules.</p>
       </div>
     </article>
     <div><div id="tags">
