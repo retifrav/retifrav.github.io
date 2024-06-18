@@ -64,7 +64,7 @@
 </svg> 2021-08-29 13:30:33 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 12 min read</div>
+</svg> 13 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -126,11 +126,27 @@
 </span></span><span style="display:flex;"><span>$ ./emsdk list
 </span></span><span style="display:flex;"><span>$ ./emsdk install 1.39.8
 </span></span><span style="display:flex;"><span>$ ./emsdk activate 1.39.8
-</span></span><span style="display:flex;"><span>$ ./emsdk construct_env</span></span></code></pre></div>
-<p>As a result, among other things, you should get <code>emsdk_env.sh</code> script. It will set-up the build environment:</p>
+</span></span><span style="display:flex;"><span>$ ./emsdk construct_env
+</span></span></code></pre></div><p>If trying to run <code>emsdk</code> you get an error like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>Fatal Python error: init_sys_streams: can&#39;t initialize sys standard streams
+</span></span><span style="display:flex;"><span>Python runtime state: core initialized
+</span></span><span style="display:flex;"><span>Traceback (most recent call last):
+</span></span><span style="display:flex;"><span>  File <span style="color:#e6db74">&#34;/path/to/python/Lib/io.py&#34;</span>, line 54, in &lt;module&gt;
+</span></span><span style="display:flex;"><span>ImportError: cannot import name &#39;text_encoding&#39; from &#39;io&#39; (unknown location)
+</span></span></code></pre></div><p>or no output in stdout/stderr, but still an error exit code, then it might be that something is wrong with the Emscripten&rsquo;s bundled Python, and so try to use your system Python instead, like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ which python
+</span></span><span style="display:flex;"><span>/path/to/python
+</span></span><span style="display:flex;"><span>$ python --version
+</span></span><span style="display:flex;"><span>Python 3.9.6
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ EMSDK_PYTHON<span style="color:#f92672">=</span>python ./emsdk list
+</span></span></code></pre></div><p>or like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ export EMSDK_PYTHON<span style="color:#f92672">=</span>python
+</span></span><span style="display:flex;"><span>$ ./emsdk list
+</span></span></code></pre></div><p>Anyway, as a result, among other things, you should get <code>emsdk_env.sh</code> script for setting-up the build environment:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ source ./emsdk_env.sh
-</span></span><span style="display:flex;"><span>$ em++ --version</span></span></code></pre></div>
-<p>Don&rsquo;t forget that this environment will apply only to the current shell session, so even if you just open a new tab in your terminal, this script needs to be sourced again.</p>
+</span></span><span style="display:flex;"><span>$ em++ --version
+</span></span></code></pre></div><p>Don&rsquo;t forget that this environment will apply only to the current shell session, so even if you just open a new tab in your terminal, this script needs to be sourced again.</p>
 <h2 id="test-a-simple-c-program">Test a simple C++ program</h2>
 <p>To check that Emscripten works, make a simple C++ program (<code>some.cpp</code>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;iostream&gt;</span><span style="color:#75715e">
