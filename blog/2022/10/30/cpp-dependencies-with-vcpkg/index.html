@@ -64,7 +64,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 106 min read</div>
+</svg> 113 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -245,6 +245,7 @@
     <li><a href="#updates">Updates</a>
       <ul>
         <li><a href="#2023-09-01--build-time-improvements">2023-09-01 | Build time improvements</a></li>
+        <li><a href="#2024-07-24--tools-as-host-dependencies">2024-07-24 | Tools as host dependencies</a></li>
       </ul>
     </li>
   </ul>
@@ -3185,6 +3186,183 @@
 <p>If you are curious why the total build time is 15/14 minutes on buildbot and only 10/8 minutes on my machine, that is because buildbots also run certain preparation steps and then do packing and publishing after the build, and all that adds up to the total time.</p>
 <p>And then the build without tools/samples/demos got 41% improvement! So that would confirm my theory about &ldquo;degraded&rdquo; linking times, but I am still not sure if it really is the actual reason.</p>
 <p>Either way, while it&rsquo;s nice to get faster builds, for us that was not the main goal of using a package manager. We are mostly happy about the fact that we can finally stop bundling/vendoring 3rd-party sources in our repository and resolve the project dependencies like adults.</p>
+<h2 id="2024-07-24--tools-as-host-dependencies">2024-07-24 | Tools as host dependencies</h2>
+<p>Sometimes your build needs to have a certain tool like cURL, SQLite or some other custom executable to perform various tasks before compiling the project sources. For example, you might need to serialize some binary into C++ sources, such as <a href="https://proj.org/en/latest/resource_files.html#proj-db">proj.db</a>, so it could be &ldquo;compiled in&rdquo; and used from <a href="https://github.com/retifrav/vcpkg-registry/commit/e4c4ce170133eb29f4aaca44cb4668f448fcf587">in-memory VFS</a>.</p>
+<p>Often you would just install such tools on your machines / buildbots beforehand, but sometimes, and especially that concerns custom in-house tools, you would want to build those together with your project dependencies, and vcpkg can do that too - this is what <a href="https://learn.microsoft.com/en-us/vcpkg/users/host-dependencies">host dependencies</a> are for.</p>
+<p>And it&rsquo;s all good as long as you need to use those tools in ports, because portfiles have <a href="https://learn.microsoft.com/en-us/vcpkg/maintainers/variables#current_host_installed_dir">CURRENT_HOST_INSTALLED_DIR</a> variable, so when you need to pass the path of a tool into the CMake project handled by that portfile, you can simply do something like <a href="https://github.com/retifrav/vcpkg-registry/blob/e9b34ffb119269cbb34e8523ccc3e8df16194245/ports/proj/portfile.cmake#L16-L33">this</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>find_program(<span style="color:#e6db74">SQLITE_TOOL</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">NAMES</span> <span style="color:#e6db74">&#34;sqlite3&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PATHS</span> <span style="color:#e6db74">&#34;${CURRENT_HOST_INSTALLED_DIR}/tools/sqlite&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">NO_DEFAULT_PATH</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">REQUIRED</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_cmake_configure(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">SOURCE_PATH</span> <span style="color:#e6db74">&#34;${SOURCE_PATH}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">OPTIONS</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">-DEXE_SQLITE3=</span><span style="color:#f92672">${</span>SQLITE_TOOL<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e"># ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>But! What if you need to know the paths to those tools in an actual final project that isn&rsquo;t a port? Sure, the project dependencies are resolved with vcpkg, and it does fetch, build and install the tools too, but how do you get the paths to the tools executables in your project&rsquo;s <code>CMakeLists.txt</code>? As you might have guessed, <code>CURRENT_HOST_INSTALLED_DIR</code> variable isn&rsquo;t available there, as it is only set in portfiles.</p>
+<p>If those tools weren&rsquo;t host dependencies, then of course you could&rsquo;ve composed the path to a tool as <code>${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/tools/some/</code>, because <a href="https://learn.microsoft.com/en-us/vcpkg/users/buildsystems/cmake-integration#vcpkg_target_triplet">VCPKG_TARGET_TRIPLET</a> variable is set and available in CMake projects. But the problem is that, being host dependencies, those tools aren&rsquo;t installed into the target triplet prefix, they are installed into the host prefix.</p>
+<p>Here&rsquo;s an illustration. Having this vcpkg manifest:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;vcpkg-test&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;0.0.0&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;dependencies&#34;</span>:
+</span></span><span style="display:flex;"><span>    [
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;some-cppgenerator&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;host&#34;</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;glslang&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;zlib&#34;</span>
+</span></span><span style="display:flex;"><span>    ]
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>we get the following installation:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>├── arm64-osx
+</span></span><span style="display:flex;"><span>│   ├── share
+</span></span><span style="display:flex;"><span>│   │   ├── ...
+</span></span><span style="display:flex;"><span>│   └── tools
+</span></span><span style="display:flex;"><span>│       └── some-cppgenerator
+</span></span><span style="display:flex;"><span>│           └── cppGenerator
+</span></span><span style="display:flex;"><span>├── some-arm64-osx
+</span></span><span style="display:flex;"><span>│   ├── debug
+</span></span><span style="display:flex;"><span>│   │   └── lib
+</span></span><span style="display:flex;"><span>│   │       ├── ...
+</span></span><span style="display:flex;"><span>│   ├── include
+</span></span><span style="display:flex;"><span>│   │   ├── glslang
+</span></span><span style="display:flex;"><span>│   │   │   ├── ...
+</span></span><span style="display:flex;"><span>│   │   ├── zlib
+</span></span><span style="display:flex;"><span>│   │   │   ├── ...
+</span></span><span style="display:flex;"><span>│   ├── lib
+</span></span><span style="display:flex;"><span>│   │   ├── ...
+</span></span><span style="display:flex;"><span>│   ├── share
+</span></span><span style="display:flex;"><span>│   │   ├── glslang
+</span></span><span style="display:flex;"><span>│   │   │   ├── ...
+</span></span><span style="display:flex;"><span>│   │   └── zlib
+</span></span><span style="display:flex;"><span>│   │       ├── ...
+</span></span><span style="display:flex;"><span>│   └── tools
+</span></span><span style="display:flex;"><span>│       └── glslang
+</span></span><span style="display:flex;"><span>│           ├── glslangValidator
+</span></span><span style="display:flex;"><span>│           └── spirv-remap
+</span></span><span style="display:flex;"><span>└── vcpkg
+</span></span><span style="display:flex;"><span>    ├── ...
+</span></span></code></pre></div><p>The <code>some-arm64-osx</code> is my custom triplet, which conveniently also serves the purpose of demonstrating different paths/prefixes for the host and target triplets.</p>
+<p>So the path to <code>glslangValidator</code> can be obtained with:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>find_program(<span style="color:#e6db74">GLSLANG_VALIDATOR</span> <span style="color:#e6db74">glslangValidator</span> <span style="color:#e6db74">&#34;${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/tools/glslang&#34;</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># or just
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#set(GLSLANG_VALIDATOR &#34;${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/tools/glslang/glslangValidator&#34;) 
+</span></span></span></code></pre></div><p>But how to get the path to <code>cppGenerator</code>? Specifically, how to get this <code>arm64-osx</code> value of the host triplet name? It should also be something simple, right? Well&hellip;</p>
+
+
+
+
+<figure class="with-original">
+    <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/one-does-not-simply.jpg" alt="One does not simply">
+    <footer>
+        <small>
+            <i><a href="https://www.reddit.com/r/lotr/comments/v7tga0/one_does_not_simply_something_something/">original picture</a></i>
+        </small>
+    </footer>
+</figure>
+
+<p>&hellip;it is not.</p>
+<p>But wait, you&rsquo;ll say, isn&rsquo;t there a <a href="https://learn.microsoft.com/en-us/vcpkg/users/buildsystems/cmake-integration#vcpkg_host_triplet">VCPKG_HOST_TRIPLET</a> variable on that same documentation page where <code>VCPKG_TARGET_TRIPLET</code> was? Aye, there is, but you&rsquo;ll be surprised to learn that this variable isn&rsquo;t fucking set by default. Apparently, it is only meant to be set by you (<em>in CLI with <code>-D</code>, or in a preset, or as an environment variable</em>), should you ever need that, otherwise it will remain empty, so you won&rsquo;t be able to get the default host triplet name from it.</p>
+<p>Okay, you&rsquo;ll say, but there is <a href="https://learn.microsoft.com/en-us/vcpkg/users/host-dependencies#vcpkg_use_host_tools">VCPKG_USE_HOST_TOOLS</a>, which should add the paths to the tools from the host prefix into the <a href="https://cmake.org/cmake/help/latest/variable/CMAKE_PROGRAM_PATH.html">CMAKE_PROGRAM_PATH</a>, and then <code>find_program()</code> will find them? Yes, that much is true, but the problem here is that it still relies on the <code>VCPKG_HOST_TRIPLET</code>, which isn&rsquo;t fucking set by default, so what you&rsquo;ll get in <code>CMAKE_PROGRAM_PATH</code> is the target triplet prefix still - the same what you get if you don&rsquo;t set the <code>VCPKG_USE_HOST_TOOLS</code>.</p>
+<p>And actually there is another problem with <code>VCPKG_USE_HOST_TOOLS</code>. If we imagine for a second that <code>VCPKG_HOST_TRIPLET</code> is set to something meaningful, and if you set <code>VCPKG_USE_HOST_TOOLS</code>, then it will add the host triplet prefix tools paths to the <code>CMAKE_PROGRAM_PATH</code>, which is good, but at the same time it will not add the target triplet prefix tools paths, which were there before! To illustrate that with the previous illustration, without <code>VCPKG_USE_HOST_TOOLS</code> being set here are the paths that I get in the <code>CMAKE_PROGRAM_PATH</code> (<em>if I check its contents somewhere after the <code>project()</code> call</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>/path/to/vcpkg-test/build/macos-arm64/vcpkg_installed/some-arm64-osx/tools
+</span></span><span style="display:flex;"><span>/path/to/vcpkg-test/build/macos-arm64/vcpkg_installed/some-arm64-osx/tools/glslang
+</span></span></code></pre></div><p>and here are the paths that I get in <code>CMAKE_PROGRAM_PATH</code> when <code>VCPKG_USE_HOST_TOOLS</code> is set (<em>for example, with <code>-DVCPKG_USE_HOST_TOOLS=1</code></em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>/path/to/vcpkg-test/build/macos-arm64/vcpkg_installed/arm64-osx/tools
+</span></span><span style="display:flex;"><span>/path/to/vcpkg-test/build/macos-arm64/vcpkg_installed/arm64-osx/tools/some-cppgenerator
+</span></span></code></pre></div><p>Here&rsquo;s also a <a href="https://github.com/microsoft/vcpkg/issues/30220">bugreport</a> from <a href="https://crascit.com">Craig Scott</a>, which, you guessed it right, first got auto-staled and then auto-closed as &ldquo;<em>not planned</em>&rdquo;.</p>
+<p>So even if <code>VCPKG_HOST_TRIPLET</code> had a default value (<em>remember, we are only imagining that it has one</em>), you would have not had both the host and triplet tools paths added to <code>CMAKE_PROGRAM_PATH</code>. Well, unless you would have hacked them into there yourself with <code>list(APPEND CMAKE_PROGRAM_PATH ...)</code>, but that you could&rsquo;ve done regardless, so what&rsquo;s the point. And anyway, since <code>VCPKG_HOST_TRIPLET</code> isn&rsquo;t set by default, these mental exercises are purely hypothetical.</p>
+<p>Coming back to reality, surely there must be a way to obtain the value of that auto-detected/default host triplet name, because vcpkg itself does get it from somewhere, doesn&rsquo;t it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>-- Running vcpkg install
+</span></span><span style="display:flex;"><span>Fetching registry information from git@some.git.repository:some/registry.git <span style="color:#f92672">(</span>HEAD<span style="color:#f92672">)</span>...
+</span></span><span style="display:flex;"><span>Detecting compiler hash <span style="color:#66d9ef">for</span> triplet arm64-osx...
+</span></span></code></pre></div><p>Here - the <code>arm64-osx</code> value. That is what we want to get, so how does one get it, for fucks sake.</p>
+<p style="font-style:italic; color:gray; text-align:center; font-weight:bold;">
+    [ here goes that picture with Boromir again ]
+<p>
+<p>Yeah, there is no way.</p>
+<p>&hellip;Except for parsing the output(<em>!</em>) of the undocumented(<em>!!</em>) command <code>z-print-config</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ vcpkg z-print-config
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;buildtrees&#34;</span>: <span style="color:#e6db74">&#34;/path/to/vcpkg/buildtrees&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;default-triplet&#34;</span>: <span style="color:#e6db74">&#34;arm64-osx&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;downloads&#34;</span>: <span style="color:#e6db74">&#34;/path/to/vcpkg/downloads&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;host-triplet&#34;</span>: <span style="color:#e6db74">&#34;arm64-osx&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;installed&#34;</span>: <span style="color:#e6db74">&#34;/path/to/vcpkg/installed&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;manifest-mode-enabled&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;packages&#34;</span>: <span style="color:#e6db74">&#34;/path/to/vcpkg/packages&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;tools&#34;</span>: <span style="color:#e6db74">&#34;/path/to/vcpkg/downloads/tools&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;vcpkg-root&#34;</span>: <span style="color:#e6db74">&#34;/path/to/vcpkg&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;versions-output&#34;</span>: <span style="color:#e6db74">&#34;/path/to/vcpkg/buildtrees/versioning_/versions&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>There it fucking is! The <code>host-triplet</code> value, hallelujah. And don&rsquo;t let <code>default-triplet</code> confuse you - that&rsquo;s the target triplet, you can check yourself what value it will get if you&rsquo;ll add <code>--triplet arm64-osx-dynamic</code>.</p>
+<p>So one more time, just to underline it for the absolute clarity: to get the target triplet prefix path you have <code>${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}</code> ready to be used right away, and to get the host triplet prefix path you apparently are supposed to do something similar to this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>if(<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">DEFINED</span> <span style="color:#e6db74">VCPKG_HOST_TRIPLET</span> <span style="color:#e6db74">OR</span> <span style="color:#e6db74">&#34;${VCPKG_HOST_TRIPLET}&#34;</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#75715e"># https://learn.microsoft.com/en-us/vcpkg/users/config-environment#vcpkg_default_host_triplet
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    set(<span style="color:#e6db74">VCPKG_DEFAULT_HOST_TRIPLET</span> <span style="color:#e6db74">&#34;&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    if(<span style="color:#e6db74">DEFINED</span> <span style="color:#e6db74">ENV{VCPKG_DEFAULT_HOST_TRIPLET}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        set(<span style="color:#e6db74">VCPKG_DEFAULT_HOST_TRIPLET</span> <span style="color:#f92672">$ENV{</span>VCPKG_DEFAULT_HOST_TRIPLET<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    if(<span style="color:#e6db74">&#34;${VCPKG_DEFAULT_HOST_TRIPLET}&#34;</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        message(<span style="color:#e6db74">DEBUG</span> <span style="color:#e6db74">&#34;VCPKG_DEFAULT_HOST_TRIPLET is empty, getting host triplet from vcpkg CLI tool directly...&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        <span style="color:#75715e"># right now this seems to be the only (and undocumented?) way to obtain the auto-detected/default host triplet name
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        execute_process(
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">COMMAND</span> <span style="color:#e6db74">vcpkg</span> <span style="color:#e6db74">z-print-config</span> <span style="color:#75715e"># might want to prepend `vcpkg` with `$ENV{VCPKG_ROOT}/`
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#e6db74">OUTPUT_VARIABLE</span> <span style="color:#e6db74">VCPKG_PRINTED_CONFIG</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">OUTPUT_STRIP_TRAILING_WHITESPACE</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">COMMAND_ERROR_IS_FATAL</span> <span style="color:#e6db74">ANY</span>
+</span></span><span style="display:flex;"><span>        )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        <span style="color:#75715e">#message(DEBUG &#34;VCPKG_PRINTED_CONFIG: ${VCPKG_PRINTED_CONFIG}&#34;)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        string(<span style="color:#e6db74">JSON</span> <span style="color:#e6db74">VCPKG_DEFAULT_HOST_TRIPLET</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">ERROR_VARIABLE</span> <span style="color:#e6db74">VCPKG_DEFAULT_HOST_TRIPLET_ERROR</span> <span style="color:#75715e"># to prevent it from failing right away
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#e6db74">GET</span> <span style="color:#f92672">${</span>VCPKG_PRINTED_CONFIG<span style="color:#f92672">}</span> <span style="color:#e6db74">&#34;host-triplet&#34;</span>
+</span></span><span style="display:flex;"><span>        )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        if(<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">&#34;${VCPKG_DEFAULT_HOST_TRIPLET_ERROR}&#34;</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;NOTFOUND&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>            <span style="color:#75715e"># older versions of vcpkg use underscore symbol instead of dash (ну блять),
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#75715e"># so you need to check for that variant too, and this time it should
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#75715e"># abort on error, so no ERROR_VARIABLE
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            string(<span style="color:#e6db74">JSON</span> <span style="color:#e6db74">VCPKG_DEFAULT_HOST_TRIPLET</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">GET</span> <span style="color:#f92672">${</span>VCPKG_PRINTED_CONFIG<span style="color:#f92672">}</span> <span style="color:#e6db74">&#34;host_triplet&#34;</span>
+</span></span><span style="display:flex;"><span>            )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        message(<span style="color:#e6db74">DEBUG</span> <span style="color:#e6db74">&#34;Got the following default host triplet from vcpkg CLI tool output: ${VCPKG_DEFAULT_HOST_TRIPLET}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    else()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        message(<span style="color:#e6db74">DEBUG</span> <span style="color:#e6db74">&#34;Got the following default host triplet from environment variable: ${VCPKG_DEFAULT_HOST_TRIPLET}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    set(<span style="color:#e6db74">VCPKG_HOST_TRIPLET</span> <span style="color:#f92672">${</span>VCPKG_DEFAULT_HOST_TRIPLET<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>The motherfucking 34 lines just to get one value. Christ almighty. And let&rsquo;s not forget that <code>z-print-config</code> is undocumented, and being a seemingly internal thing (<em>bacause it is prefixed with <code>z-</code>?</em>), it might change its output format or even completely disappear at some point in future versions. Заебись!</p>
+<p>On the bright side though, now that you have the host triplet name value, you can finally compose paths to the host tools:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>if(<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">DEFINED</span> <span style="color:#e6db74">VCPKG_HOST_TRIPLET</span> <span style="color:#e6db74">OR</span> <span style="color:#e6db74">&#34;${VCPKG_HOST_TRIPLET}&#34;</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">FATAL_ERROR</span> <span style="color:#e6db74">&#34;The host vcpkg triplet is not set (or this host is not supported)&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CPP_GENERATOR</span> <span style="color:#e6db74">&#34;${VCPKG_INSTALLED_DIR}/${VCPKG_HOST_TRIPLET}/tools/some-cppgenerator/cppGenerator&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># or
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#find_program(CPP_GENERATOR cppGenerator &#34;${VCPKG_INSTALLED_DIR}/${VCPKG_HOST_TRIPLET}/tools/some-cppgenerator&#34; REQUIRED)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>message(<span style="color:#e6db74">DEBUG</span> <span style="color:#e6db74">&#34;Path to cppGenerator: ${CPP_GENERATOR}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>But that&rsquo;s not the end of it, hehe. Well, it is, but there exists a (<em>not very unlikely</em>) scenario, in which your project might be added as a sub-project into another project, which won&rsquo;t be using vcpkg. And as you project (<em>being a sub-project</em>) will be built from sources, it will need a different way to obtain the path to that <code>cppGenerator</code> tool, as there will be no vcpkg stuff around. And of course, let&rsquo;s imagine that all the other dependencies that your project has are somehow already resolved. Who knows, maybe those people resolved your project dependencies on their own or maybe took your project <a href="#distributing-your-project">distribution</a>, kept only the dependencies and are now building your sources as a sub-project in their project. Either way, to account for this scenario, the following condition should do:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>if(<span style="color:#e6db74">PROJECT_IS_TOP_LEVEL</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    if(<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">DEFINED</span> <span style="color:#e6db74">VCPKG_HOST_TRIPLET</span> <span style="color:#e6db74">OR</span> <span style="color:#e6db74">&#34;${VCPKG_HOST_TRIPLET}&#34;</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        message(<span style="color:#e6db74">FATAL_ERROR</span> <span style="color:#e6db74">&#34;The host vcpkg triplet is not set (or this host is not supported)&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    set(<span style="color:#e6db74">CPP_GENERATOR</span> <span style="color:#e6db74">&#34;${VCPKG_INSTALLED_DIR}/${VCPKG_HOST_TRIPLET}/tools/some-cppgenerator/cppGenerator&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">DEBUG</span> <span style="color:#e6db74">&#34;Path to cppGenerator: ${CPP_GENERATOR}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>else() <span style="color:#75715e"># so we are in a sub-project and we assume that vcpkg isn&#39;t used
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    find_program(<span style="color:#e6db74">CPP_GENERATOR</span> <span style="color:#e6db74">cppGenerator</span> <span style="color:#f92672">${</span>CPP_GENERATOR_PATH<span style="color:#f92672">}</span>) <span style="color:#75715e"># REQUIRED
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    if(<span style="color:#e6db74">&#34;${CPP_GENERATOR}&#34;</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;CPP_GENERATOR-NOTFOUND&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        message(<span style="color:#e6db74">FATAL_ERROR</span> <span style="color:#e6db74">&#34;Couldn&#39;t find cppGenerator, did you provide -DCPP_GENERATOR_PATH?&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    else()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        message(<span style="color:#e6db74">DEBUG</span> <span style="color:#e6db74">&#34;Found cppGenerator: ${CPP_GENERATOR}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>which, naturally, will require the parent/main project configuration to have one new configuration argument: <code>-DCPP_GENERATOR_PATH=&quot;/path/to/some-cppgenerator&quot;</code>.</p>
       </div>
     </article>
     <div><div id="tags">
