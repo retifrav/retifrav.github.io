@@ -94,18 +94,18 @@
             <li><a href="#https">HTTPS</a></li>
           </ul>
         </li>
-        <li><a href="#zigbee">Zigbee</a>
+      </ul>
+    </li>
+    <li><a href="#zigbee">Zigbee</a>
+      <ul>
+        <li><a href="#eclipse-mosquitto">Eclipse Mosquitto</a></li>
+        <li><a href="#zigbee2mqtt">Zigbee2MQTT</a>
           <ul>
-            <li><a href="#eclipse-mosquitto">Eclipse Mosquitto</a></li>
-            <li><a href="#zigbee2mqtt">Zigbee2MQTT</a>
-              <ul>
-                <li><a href="#philips-hue-smart-plug">Philips Hue Smart Plug</a></li>
-                <li><a href="#frient-smart-plug-mini-2">Frient Smart Plug Mini 2</a></li>
-                <li><a href="#ikea-tradfri-e27">IKEA Tradfri E27</a></li>
-                <li><a href="#nimly-connect-module">nimly Connect Module</a></li>
-                <li><a href="#aqara-cube-t1-pro">Aqara Cube T1 Pro</a></li>
-              </ul>
-            </li>
+            <li><a href="#philips-hue-smart-plug">Philips Hue Smart Plug</a></li>
+            <li><a href="#frient-smart-plug-mini-2">Frient Smart Plug Mini 2</a></li>
+            <li><a href="#ikea-tradfri-e27">IKEA Tradfri E27</a></li>
+            <li><a href="#nimly-connect-module">nimly Connect Module</a></li>
+            <li><a href="#aqara-cube-t1-pro">Aqara Cube T1 Pro</a></li>
           </ul>
         </li>
       </ul>
@@ -162,6 +162,7 @@
 <li>Zigbee2MQTT: <code>1.39.0</code>, commit <code>0326926</code></li>
 </ul>
 <h1 id="installation">Installation</h1>
+<p>On the first <a href="https://osmc.tv/wiki/general/accessing-the-command-line/">connect</a>, before anything else, change the default <code>osmc</code> password to a proper one with <code>passwd</code>, <a href="https://github.com/retifrav/scraps/blob/master/_linux/ssh.md#generate-a-new-ssh-key">deploy an SSH key</a> and <a href="https://github.com/retifrav/scraps/blob/master/_linux/ssh.md#disable-ssh-passwords">disable passwords authentication</a>.</p>
 <h2 id="docker">Docker</h2>
 <p>Out of all the <a href="https://home-assistant.io/installation/#advanced-installation-methods">possible ways</a> of installing Home Assistant I chose <a href="https://docker.com">Docker</a>. Mainly because I have never used Docker for anything (<em>aside from doing some tutorials</em>), so this seemed like a good opportunity to finally try it out for something actually useful. Secondly, from the little I knew about Docker, one of its distinguishing features is the ability to run stuff in an isolated environment, which was just the thing I needed, as I didn&rsquo;t want to disrupt the default Vero/OSMC environment too much, especially given that some of the Home Assistant components are run with godawful things like <a href="https://nodejs.org/">Node.js</a>.</p>
 <p>One thing you should be aware of is that going with Docker way of installing Home Assistant you will lose certain features such as <a href="https://home-assistant.io/addons">addons</a> out of the box. That would be a major disadvantage or even a show-stopper, but actually it&rsquo;s no worries, because addons turned out to be&hellip; Docker containers too, which in other types of Home Assistant installation are just managed by the Home Assistant itself, so you absolutely can do the same on your own (<em>and probably better too</em>).</p>
@@ -542,7 +543,7 @@
 
 </div>
 <p>which simply means that you need to refresh the page with clearing cache, so clients would get the new certificate.</p>
-<h2 id="zigbee">Zigbee</h2>
+<h1 id="zigbee">Zigbee</h1>
 <p>To communicate with Zigbee devices you need to have a Zigbee radio adapter/module with a <a href="https://zigbee2mqtt.io/advanced/zigbee/01_zigbee_network.html#coordinator">coordinator</a> firmware. Many adapters are supposed to be connected via USB, so they are plugged into the hub/server where Home Assistant is running, and preferably not into USB 3.0 port (<em>fortunately, Vero V has both USB 3.0 and USB 2.0 ports</em>) because of the interference. Some adapters (<em>here&rsquo;s <a href="https://tubeszb.com">one example</a></em>) connect via RJ45 port, which might be a better option.</p>
 <p>There are <a href="https://home-assistant.io/integrations/zha/#recommended-zigbee-radio-adapters-and-modules">several</a> such adaptors/modules available, and I chose <a href="https://sonoff.tech/product/gateway-and-sensors/sonoff-zigbee-3-0-usb-dongle-plus-e/">SONOFF Zigbee 3.0 USB Dongle Plus-E</a>. I didn&rsquo;t know how to compare them, I just took the one that is mentioned the most.</p>
 <p>You will also need an appropriate software, which will use this adaptor to communicate with your Zigbee devices and organize the network. The most popular options seem to be these two:</p>
@@ -551,7 +552,7 @@
 <li><a href="https://zigbee2mqtt.io">Zigbee2MQTT</a> - an &ldquo;unofficial&rdquo; integration, which is not that easy to set-up, especially when Home Assistant is installed in a Docker container, because you&rsquo;ll need to run some more Docker containers with various required components and make them all talk to each other. On the bright side though, it has a wider range of supported devices/sensors.</li>
 </ul>
 <p>ZHA looks like the way to go, but where is the fun in that, if it just works out of the box, so of course I went the Zigbee2MQTT way.</p>
-<h3 id="eclipse-mosquitto">Eclipse Mosquitto</h3>
+<h2 id="eclipse-mosquitto">Eclipse Mosquitto</h2>
 <p>Zigbee coordinator manages Zigbee traffic from/to devices, but it also needs to be able to talk to Home Assistant and the other way around. For that type of communication it uses <a href="https://en.wikipedia.org/wiki/MQTT">MQTT</a> protocol, so we will need an MQTT broker.</p>
 <p>One such broker is <a href="https://mosquitto.org">Eclipse Mosquitto</a>. It can be installed as a Docker container too, and the image is <a href="https://hub.docker.com/_/eclipse-mosquitto/">here</a>. Setting up a container:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
@@ -764,7 +765,7 @@
 
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/mqtt-testing.png" alt="Home Assistant, testing MQTT">
 
-<h3 id="zigbee2mqtt">Zigbee2MQTT</h3>
+<h2 id="zigbee2mqtt">Zigbee2MQTT</h2>
 <p>Now when <a href="#eclipse-mosquitto">MQTT broker</a> is running, it&rsquo;s time to launch Zigbee2MQTT. Create a config:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo mkdir -p /root/zigbee2mqtt/<span style="color:#f92672">{</span>data,logs<span style="color:#f92672">}</span>
 </span></span><span style="display:flex;"><span>$ sudo nano /root/zigbee2mqtt/data/configuration.yaml
@@ -994,7 +995,7 @@
 
 <p>Once the device is paired, Zigbee adapter/coordinator hardware will be communicating with it over Zigbee and will be forwarding its data to Home Assistant via MQTT; and the other way around, commands from Home Assistant well be going through MQTT broker to Zigbee2MQTT, which will be transmitting them to devices over Zigbee by coordinator.</p>
 <p>Below there will be examples for some of the devices that I have.</p>
-<h4 id="philips-hue-smart-plug">Philips Hue Smart Plug</h4>
+<h3 id="philips-hue-smart-plug">Philips Hue Smart Plug</h3>
 <p>Philips has a whole family of smart home devices, which is called <a href="https://philips-hue.com/">Philips Hue</a>, and out of those I only have a <a href="https://philips-hue.com/no-no/p/hue-smart-plug/8719514342309">Philips Hue Smart Plug</a> for now:</p>
 <p>
 
@@ -1031,7 +1032,7 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/philips-hue-smart-plug-device.png" alt="Philips Hue Smart Plug as a Home Assistant device" style="border:1px solid black;">
 
 <p>But that is actually fine, because it costs less than the alternatives with energy meter - 300 NOK versus 400+ NOK - which builds up to a significant difference if you need to buy several of those.</p>
-<h4 id="frient-smart-plug-mini-2">Frient Smart Plug Mini 2</h4>
+<h3 id="frient-smart-plug-mini-2">Frient Smart Plug Mini 2</h3>
 <p>There is another smart plug - <a href="https://frient.com/products/smart-plug-mini-2/">Frient Smart Plug Mini 2</a>:</p>
 <p>
 
@@ -1058,7 +1059,7 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/frient-smart-plug-voltage-chart.png" alt="Home Assistant, Frient Smart Plug Mini 2 voltage chart" style="border:1px solid black;">
 
 <p>So that&rsquo;s already quite a lot to play with, as you can create scripts and automations to perform various actions based on any of those metrics.</p>
-<h4 id="ikea-tradfri-e27">IKEA Tradfri E27</h4>
+<h3 id="ikea-tradfri-e27">IKEA Tradfri E27</h3>
 <p>As it turned out, <a href="https://ikea.com/no/no/p/tradfri-startsett-smart-kan-dimmes-tradlost-varmhvit-til-kaldhvit-80547567/">IKEA bulbs</a> with a remote control, which I have already been using for a couple of years, are also Zigbee-enabled, so they can be connected to a Zigbee network without their remote control:</p>
 
 
@@ -1100,7 +1101,7 @@
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">label_id</span>: <span style="color:#ae81ff">lights</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">mode</span>: <span style="color:#ae81ff">single</span>
 </span></span></code></pre></div><p>And it will be trivial to create a similar automation for turning the lights off.</p>
-<h4 id="nimly-connect-module">nimly Connect Module</h4>
+<h3 id="nimly-connect-module">nimly Connect Module</h3>
 <p>I&rsquo;ve got a <a href="https://nimly.io/product/touch-pro-en/">nimly Touch</a> Pro lock with a <a href="https://nimly.io/product/connect-module-2/">nimly Connect Module</a>. The module allows you to control the lock remotely, so you can lock/unlock it, change some settings, get information about what method was last used to unlock it (<em>fingerprint, token, pin-code</em>) and which user did it.</p>
 <p>The lock itself is great, but I&rsquo;ve had some problems with the module. It is actually my 3rd module already, as the first two had certain defects (<em>first one was loosing connection and second one was draining the batteries</em>), and nimly people are graciously sending me replacements. The current module that I got has firmware build date <code>20240625</code> with version <code>4.7.79</code>, and finally everything seems to be good with this one.</p>
 <p>Initially I&rsquo;ve been using the modules with Homely, but I wasn&rsquo;t entirely satisfied with the functionality exposed in Homely application, so I decided to connect it to Home Assistant instead. The pairing with Zigbee2MQTT went fine, the module got interviewed and marked as supported:</p>
@@ -1125,7 +1126,7 @@
 
 </div>
 <p>Now that there is a possibility to remotely control such a critical piece of hardware as main door lock, you can quite literally be hacked - just like in the movies. How exciting is that!</p>
-<h4 id="aqara-cube-t1-pro">Aqara Cube T1 Pro</h4>
+<h3 id="aqara-cube-t1-pro">Aqara Cube T1 Pro</h3>
 <p>That <a href="https://aqara.com/eu/product/cube-t1-pro/">little thing</a> is fantastic:</p>
 
 
