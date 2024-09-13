@@ -65,7 +65,7 @@
 </svg> 2024-08-16 16:49:19 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 48 min read</div>
+</svg> 49 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -123,6 +123,7 @@
     </li>
     <li><a href="#organizing-dashboards">Organizing dashboards</a></li>
     <li><a href="#backups">Backups</a></li>
+    <li><a href="#updates">Updates</a></li>
     <li><a href="#performance-monitoring-with-btop">Performance monitoring with btop</a></li>
   </ul>
 </nav>
@@ -199,7 +200,7 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/homeassistant:/config <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    ghcr.io/home-assistant/home-assistant:stable
-</span></span></code></pre></div><p>The <code>-v</code> argument here tells the container that host paths (<em>what&rsquo;s on the left from <code>:</code></em>) will be mapped to container paths (<em>what&rsquo;s on the right from <code>:</code></em>). Here Home Assistant settings (<em><code>/config/</code> path inside container</em>) will be stored in <code>/root/homeassistant/</code> path in the host filesystem. So when container will be deleted/re-created, the data will be preserved between container reincarnations. In addition to that, we can edit the configs in the host filesystem without logging-in to the container.</p>
+</span></span></code></pre></div><p>The <code>-v</code> argument here tells the container that host paths (<em>what&rsquo;s on the left from <code>:</code></em>) will be mapped to container paths (<em>what&rsquo;s on the right from <code>:</code></em>). Here Home Assistant settings (<em><code>/config/</code> path inside container</em>) will be stored in <code>/root/homeassistant/</code> path in the host filesystem. So when container will be deleted/re-created (<em>during an <a href="#updates">update</a>, for example</em>), the data (<em><a href="https://docs.docker.com/engine/storage/volumes/">volume</a></em>) will be preserved between container reincarnations. In addition to that, we can edit the configs in the host filesystem without logging-in to the container.</p>
 <p>In <a href="https://home-assistant.io/installation/linux#platform-installation">their manual</a> they also set <code>--privileged</code> and <code>--network=host</code>, but there is no need for that, as well as there is probably no need for <code>-v /run/dbus:/run/dbus:ro</code> (<em>if you don&rsquo;t intend to use Bluetooth</em>). The Home Assistant team probably added those options to reduce the number of users complaining that &ldquo;<em>nothing works</em>&rdquo;, but in general these parameters certainly aren&rsquo;t great for something that is supposed to be running isolated from the main/host environment.</p>
 <h3 id="ip-address-of-the-running-container">IP address of the running container</h3>
 <p>In order to interact with Home Assistant, you will need to know the local IP address of its container. One of the ways to get it is to inspect the container:</p>
@@ -1544,6 +1545,35 @@
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># or with Healthchecks reporting: https://github.com/retifrav/scraps/blob/master/_linux/installing-healthchecks/index.md</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#1 1 */20 * * /root/_backups/backup.sh &gt; /dev/null 2&gt;&amp;1 &amp;&amp; /usr/bin/curl -X POST -fsS -m 10 --retry 5 -o /dev/null https://healthchecks.YOUR.DOMAIN/ping/ID/vero-backup</span>
 </span></span></code></pre></div><p>It would also be a good idea to upload/download the backups from the device to some reliable external storage.</p>
+<p>Before making a backup, you might want to stop the containers, so files wouldn&rsquo;t change during the backup procedure:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker stop <span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span>$ sudo /root/_backups/backup.sh
+</span></span><span style="display:flex;"><span>$ sudo docker start <span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span>
+</span></span></code></pre></div><h1 id="updates">Updates</h1>
+<p>In general, the procedure of updating something (<em>that is run in a Docker container</em>) is to get the latest Docker image and re-create the container. So with Home Assistant as an example in my particular network setup (<em>note the <code>--network</code> and <code>--ip</code> arguments</em>), the steps would be:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Stop all the containers for making a backup&#34;</span>
+</span></span><span style="display:flex;"><span>$ sudo docker stop <span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span>$ sudo /root/_backups/backup.sh
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Remove the existing Home Assistant container&#34;</span>
+</span></span><span style="display:flex;"><span>$ sudo docker rm homeassistant
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Get the latest image&#34;</span>
+</span></span><span style="display:flex;"><span>$ sudo docker pull ghcr.io/home-assistant/home-assistant:stable
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Re-create the container&#34;</span>
+</span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --name homeassistant <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --network hub <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --ip 172.18.0.100 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/homeassistant:/config <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    ghcr.io/home-assistant/home-assistant:stable
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Start other containers back&#34;</span>
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Should be able to use this instead: `sudo docker start </span><span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span><span style="color:#e6db74">`&#34;</span>
+</span></span><span style="display:flex;"><span>$ sudo docker start mosquitto
+</span></span><span style="display:flex;"><span>$ sudo docker start zigbee2mqtt
+</span></span></code></pre></div><p>As you already know, thanks to Home Assistant data being stored in a mapped volume location, it is totally fine to destroy and re-create its container literally whenever, which makes updating Home Assistant a very simple procedure.</p>
 <h1 id="performance-monitoring-with-btop">Performance monitoring with btop</h1>
 <p>As a bonus part, I wanted to install <a href="https://github.com/aristocratos/btop">btop</a> tool for watching the system CPU load.</p>
 <p>There is no(?) pre-built package for btop on Debian, so I had to build it from sources, and for that it needs some tools and dependencies to be installed first, out of which CMake I also had to build from sources, because packaged version <code>3.18.4</code> is a bit old, and btop requires at least <code>3.24</code>:</p>
