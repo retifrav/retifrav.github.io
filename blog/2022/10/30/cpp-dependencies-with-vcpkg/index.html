@@ -64,7 +64,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 114 min read</div>
+</svg> 119 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -247,6 +247,12 @@
       <ul>
         <li><a href="#2023-09-01--build-time-improvements">2023-09-01 | Build time improvements</a></li>
         <li><a href="#2024-07-24--tools-as-host-dependencies">2024-07-24 | Tools as host dependencies</a></li>
+        <li><a href="#2024-10-11--caching-in-jfrog-artifactory">2024-10-11 | Caching in JFrog Artifactory</a>
+          <ul>
+            <li><a href="#binary-caching">Binary caching</a></li>
+            <li><a href="#asset-caching">Asset caching</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
   </ul>
@@ -273,7 +279,7 @@
     <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/vcpkg-schema.png" alt="vcpkg functionality schema">
 
 <p>There will be more details about what&rsquo;s going on here later, but in short it shows <a href="#in-a-project">a project</a> that depends on 3 libraries (<em>and 3 CMake helpers</em>), and vcpkg handles fetching and building dependencies before building the main project. If dependencies have been already built before, then they are just restored from cache.</p>
-<p>For us local cache on CI/CD buildbots will be absolutely enough, but later we&rsquo;ll probably also consider optionally storing pre-built dependencies packages in a centralized remote (<em>in-house</em>) storage, perhaps in a form of NuGet packages. In terms of the schema above the only change in that case would be that the cache will be stored not on the same machine but on some other server.</p>
+<p>For us local cache on CI/CD buildbots was absolutely enough, but later we also added a <a href="#2024-10-11--caching-in-jfrog-artifactory">remote</a> (<em>but still in-house</em>) storage. In terms of the schema above, the only change in this case is that cache is stored not on the same build machine but on another server.</p>
 <h2 id="installation">Installation</h2>
 <p>You need to have one of the latest CMake versions in the system, otherwise vcpkg installer script will download it for you and put it somewhere in the system, so you&rsquo;ll have more than one CMake on your computer. In my case it required CMake 3.24 as a minimum.</p>
 <p>Regarding system environment, I have Windows, Mac OS and GNU/Linux hosts, and while here in the article it is assumed that one uses Mac OS environment, all the steps will be 99% the same on any other platform. And on Windows, as usual, I recommend to use Git BASH.</p>
@@ -3373,6 +3379,64 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    endif()<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
 </span></span></span></code></pre></div><p>which, naturally, will require the parent/main project configuration to have one new configuration argument: <code>-DCPP_GENERATOR_PATH=&quot;/path/to/some-cppgenerator&quot;</code>.</p>
+<h2 id="2024-10-11--caching-in-jfrog-artifactory">2024-10-11 | Caching in JFrog Artifactory</h2>
+<p>Eventually we came to realization that we could benefit from a common binary cache for our buildbots (<em>and developers machines</em>). The main reason was that instead of wasting space on the same binaries in the local cache on every buildbot we could populate a remote cache on some common in-house server and fetch the cached binaries over the network. For sure, that introduces a network delay, but for a 10 gigabit local network it isn&rsquo;t that bad.</p>
+<p>Aside from more efficient disk space usage on buildbots and developers machines, there are some other benefits of using a binary cache on a common local server:</p>
+<ol>
+<li>People who have no cache at all on their machines (<em>such as first-time users, though it&rsquo;s a rather rare scenario in our case</em>) can save a significant amount of time by fetching pre-built dependencies from a remote cache instead of building them from sources. For me this a very tiny benefit really, but for others it might be important;</li>
+<li>In the process of preparing for the build and during the build, vcpkg might fetch various required tools, such as CMake, Ninja, PowerShell, <a href="https://github.com/retifrav/vcpkg-registry/blob/b0dbab2b35493a150b1614065b69539a32de72c6/ports/dawn/portfile.cmake#L16">Python</a>, <a href="https://github.com/retifrav/vcpkg-registry/blob/b0dbab2b35493a150b1614065b69539a32de72c6/ports/openssl/windows/portfile.cmake#L5">Perl</a>, <a href="https://github.com/retifrav/vcpkg-registry/blob/b0dbab2b35493a150b1614065b69539a32de72c6/ports/openssl/unix/portfile.cmake#L12">MSYS</a>, <a href="https://github.com/retifrav/vcpkg-registry/blob/b0dbab2b35493a150b1614065b69539a32de72c6/ports/jpeg-turbo/portfile.cmake#L34">NASM</a> and so on, and it is scary to see how many important components of your build system are hosted somewhere else on the internet, so outside of your IT infrastructure. That quite naturally can lead to very real problems when some of those hosting websites go down, such as how it <a href="https://github.com/microsoft/vcpkg/issues/32600">already happened</a> several times with NASM. And so having all the tools needed for the build hosted on an in-house server will allow you to isolate your build environment from the internet (<em>which is how it should be from the day one</em>).</li>
+</ol>
+<p>Here I should probably clarify that vcpkg cache consists of two things:</p>
+<ul>
+<li><a href="https://learn.microsoft.com/en-us/vcpkg/users/binarycaching">binary caching</a> - build artifacts (<em>actual packages that are built from sources</em>);</li>
+<li><a href="https://learn.microsoft.com/en-us/vcpkg/concepts/asset-caching">asset caching</a> - required build tools (<em>CMake, PowerShell, Python, etc</em>).</li>
+</ul>
+<p>There are several options available for the remote storage provider/backend, and we chose <a href="https://learn.microsoft.com/en-us/vcpkg/reference/binarycaching#http">HTTP</a>, as it works well with JFrog Artifactory generic repository. Sure, that means bringing one more service into the equation, but we have already been using Artifactory for other package formats/managers, so we already had to deal with maintaining it anyway. Besides, I imagine, one could just as well (<em>relatively</em>) easily implement one&rsquo;s own backend of that HTTP type, especially if JFrog&rsquo;s pricing doesn&rsquo;t quite fit into one&rsquo;s budget (<em>as it&rsquo;s basically a robbery</em>).</p>
+<p>The procedure of using JFrog Artifactory as a HTTP backend for vcpkg caching is already described <a href="https://github.com/microsoft/vcpkg/discussions/39901">here</a>, and I will just add some more details below.</p>
+<p>So first you create a generic repository. Only need to choose a name, the rest of the parameters can be left with default values:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/jfrog-artifactory-new-generic-repository.png" alt="JFrog Artifactory, new generic repository" style="border:1px solid black;">
+
+<h3 id="binary-caching">Binary caching</h3>
+<p>And then the only thing you need to do to enable binary caching is set this environment variable:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>export VCPKG_BINARY_SOURCES<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;clear;http,https://artifactory.YOUR.HOST/artifactory/vcpkg-binary-caching/{name}/{version}/{triplet}/{sha},readwrite,Authorization: Bearer YOUR-ARTIFACTORY-API-ACCESS-TOKEN&#34;</span>
+</span></span></code></pre></div><p>Do note the <code>readwrite</code> parameter in the configuration string: while you would want to have <code>readwrite</code> for your buildbots (<em>and your team</em>), your users should probably have <code>read</code> there, as you most likely (<em>should</em>) have different group permissions in your Artifactory instance.</p>
+<p>Other than that, this is it, nothing else needs to be done. Now the next vcpkg build will populate the cache in Artifactory, and for that it will build everything from sources again, despite the fact that you already have those packages in your local cache. The &ldquo;caching&rdquo; process will look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Successfully stored zlib_decovar-arm64-linux.zip to https://artifactory.YOUR.HOST/artifactory/vcpkg-binary-caching/zlib/1.3.1/decovar-arm64-linux/1f6b71726126b26de458527f1c5f24ff51b963229e4268a437bfcd8a7f139cfc.
+</span></span><span style="display:flex;"><span>Stored binaries in <span style="color:#ae81ff">1</span> destinations in <span style="color:#ae81ff">698</span> ms.
+</span></span></code></pre></div><p>After that is done for the first time, the next builds will be restoring the packages from this remote cache. And when your local environment changes, resulting in a different hash, the cache will be updated with this new package variant. So eventually it will look something like this:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/jfrog-artifactory-vcpkg-binary-caching-zlib.png" alt="JFrog Artifactory, zlib variants in vcpkg binary cache" style="border:1px solid black;">
+
+<h3 id="asset-caching">Asset caching</h3>
+<p>The procedure for enabling asset caching is a bit more involved, as it requires (<em>at least at the moment</em>) having a <a href="https://learn.microsoft.com/en-us/vcpkg/users/assetcaching#x-script">script</a> that would do the actual downloading/uploading. From what I see, the script itself can be written in any language, and here&rsquo;s what it should do:</p>
+<ol>
+<li>Accept the following CLI arguments:
+<ul>
+<li>original download URL of the asset;</li>
+<li>expected SHA512 hash/checksum of the asset;</li>
+<li>local path, where the asset should be downloaded to (<em>that includes the asset file name</em>);</li>
+</ul>
+</li>
+<li>Try to download the asset from the specified remote cache (<em>base URL and credentials can be hardcoded in the script or taken from environment variables</em>);</li>
+<li>If specified cache doesn&rsquo;t contain this asset yet, fallback to downloading from the original download URL, verify the checksum of the downloaded file and upload it to the cache.</li>
+</ol>
+<p>Here&rsquo;s an <a href="https://github.com/retifrav/vcpkg-registry/blob/fbaa71af5accac438143aa2f652dea8e0efb38b4/scripts/vcpkg-assets-caching.ps1">example of such a script</a> in PowerShell.</p>
+<p>Once you have the script, to enable asset caching you only need to set this environment variable:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>export X_VCPKG_ASSET_SOURCES<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;clear;x-script,pwsh /path/to/your/vcpkg-assets-caching.ps1 {url} {sha512} {dst};x-block-origin&#34;</span>
+</span></span></code></pre></div><p>Then try to delete some assets from <code>/path/to/vcpkg/downloads/tools/</code> (<em>and their archives from <code>/path/to/vcpkg/downloads/</code></em>) and run some build which would require those. It should try to fetch the tools from Artifactory, and since they are not there (<em>yet</em>), it will fallback to downloading them from their original URLs and will then upload them to Artifactory. Here&rsquo;s how the uploaded assets will look like in there:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/jfrog-artifactory-vcpkg-asset-caching.png" alt="JFrog Artifactory, asset caching" style="border:1px solid black;">
+
+<p>And now the next time one of these assets will be missing in the local <code>/path/to/vcpkg/downloads/</code>, vcpkg should fetch them from Artifactory instead of their original URLs.</p>
+<p>For me it didn&rsquo;t go all that well on the first attempt, as I was getting this error:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>A suitable version of 7zip was not found <span style="color:#f92672">(</span>required v24.8.0<span style="color:#f92672">)</span>.
+</span></span><span style="display:flex;"><span>error: Missing 7z2408-extra.7z and downloads are blocked by x-block-origin.
+</span></span></code></pre></div><p>and that error text turned out to be <a href="https://learn.microsoft.com/en-us/vcpkg/users/assetcaching#x-block-origin">misleading</a>, because the actual reason was that in my environment (<em>Windows, believe it or not</em>) there was no <code>pwsh</code> available in the <code>PATH</code>. Took me some time to figure that out, but then I just replaced <code>pwsh</code> with <code>PowerShell</code> (<em>or, I guess, I could&rsquo;ve made a symlink instead</em>), and everything went fine after that.</p>
+<p>You might say, what good is a PowerShell script, if you are unable to run it anywhere but Windows, but actually PowerShell has been <a href="https://devblogs.microsoft.com/dotnet/powershell-is-now-open-source-and-cross-platform/">cross-platform</a> for quite some time now, so you can in fact use this script on all the major platforms. Although, as usual with GNU/Linux, <a href="https://learn.microsoft.com/en-us/powershell/scripting/install/install-ubuntu">official instructions</a> for installing PowerShell didn&rsquo;t work for me (<em>neither with ARM-based distribution nor with x64-based</em>), but fortunately one can simply <a href="https://github.com/PowerShell/PowerShell/releases/latest">download binaries directly</a>, and those work just fine.</p>
       </div>
     </article>
     <div><div id="tags">
