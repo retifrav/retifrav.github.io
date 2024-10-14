@@ -65,7 +65,7 @@
 </svg> 2024-08-16 16:49:19 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 49 min read</div>
+</svg> 55 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -110,7 +110,8 @@
         </li>
       </ul>
     </li>
-    <li><a href="#home-assistant-community-store">Home Assistant Community Store</a>
+    <li><a href="#home-assistant-community-store">Home Assistant Community Store</a></li>
+    <li><a href="#integrations">Integrations</a>
       <ul>
         <li><a href="#dyson-hp09">Dyson HP09</a>
           <ul>
@@ -119,11 +120,16 @@
         </li>
         <li><a href="#zaptec">Zaptec</a></li>
         <li><a href="#nord-pool-electricity-prices">Nord Pool electricity prices</a></li>
+        <li><a href="#lg-webos-smart-tv-and-wake-on-lan">LG webOS Smart TV and Wake-on-LAN</a></li>
       </ul>
     </li>
     <li><a href="#organizing-dashboards-layout">Organizing dashboards layout</a></li>
-    <li><a href="#backups">Backups</a></li>
-    <li><a href="#updates">Updates</a></li>
+    <li><a href="#maintenance">Maintenance</a>
+      <ul>
+        <li><a href="#backups">Backups</a></li>
+        <li><a href="#updates">Updates</a></li>
+      </ul>
+    </li>
     <li><a href="#performance-monitoring-with-btop">Performance monitoring with btop</a></li>
   </ul>
 </nav>
@@ -1227,6 +1233,8 @@
 </div>
 <p>&hellip;although without icon at first, but after reloading the page with clearing cache it did appear. This &ldquo;<em>reloading with clearing the cache</em>&rdquo; you will very often see being mentioned in Home Assistant documentation and forum.</p>
 <p>With HACS being integrated in your Home Assistant, you can add even more devices and sensors to it.</p>
+<h1 id="integrations">Integrations</h1>
+<p>Combined the default catalogue and <a href="#home-assistant-community-store">HACS</a> offer a great number of integrations available. I&rsquo;ll describe the ones I&rsquo;ve got to use so far.</p>
 <h2 id="dyson-hp09">Dyson HP09</h2>
 <p>I have a <a href="https://dyson.com/air-treatment/air-purifier-heaters/purifier-hot-cool-formaldehyde-hp09">Dyson HP09</a> purifier/fan/heater:</p>
 <div class="vertical-image-centered-scaled">
@@ -1487,6 +1495,186 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      **{{timemapper[timehighest.hr]}}** (*в среднем по
 </span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      **{{&#34;%.2f&#34;|format(highestiter.kr/num_hours)}}** NOK/kWh*).</span>      
 </span></span></code></pre></div><p>Sorry for the russian parts (<em>if it is of any comfort, the original code was in finnish language</em>) and especially for the ugly formatting, but Home Assistant keeps reformatting the code on saving the card, so there is no point in trying to make it look nice.</p>
+<h2 id="lg-webos-smart-tv-and-wake-on-lan">LG webOS Smart TV and Wake-on-LAN</h2>
+<p>One of the (<em>very few</em>) good things about modern TVs being &ldquo;smart&rdquo; is that they expose certain APIs, and for LG TVs in particular (<em>I have one of those</em>) Home Assistant offers <a href="https://www.home-assistant.io/integrations/webostv">LG webOS Smart TV</a> integration.</p>
+<p>But to be able to send commands to your TV, you need to make sure that it is on (<em>and turn it on, if it isn&rsquo;t</em>). Good news is that LG TVs support <a href="https://en.wikipedia.org/wiki/Wake-on-LAN">Wake-on-LAN</a>, and from what I could find in the TV settings, it is enabled in two places, and you need to enable it in both. The first place is this explicitly named setting inside <code>Support</code> → <code>IP Control Settings</code>:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/lg-webos-ip-control-wol.jpg" alt="LG webOS, Wake-on-LAN">
+
+<p>And the second place is in <code>General</code> → <code>External Devices</code> → <code>TV On With Mobile</code> (<em>note the excellent job LG&rsquo;s QA is doing on GUI testing, and people are paying 4500 USD to see this absence of a whitespace before openning brackets</em>):</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/lg-webos-tv-on-mobile-wol.jpg" alt="LG webOS, TV On With Mobile">
+
+<p>Don&rsquo;t let &ldquo;Wi-Fi&rdquo; here confuse you - this setting applies to the Ethernet connection too, because without this setting being enabled my cable-connected TV did not react to Wake-on-LAN requests.</p>
+<p>To verify that it works at all, execute the following (<em>replace <code>AA:BB:CC:DD:EE:FF</code> with your actual TV&rsquo;s MAC address</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt install wakeonlan
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ wakeonlan -i 192.168.1.255 AA:BB:CC:DD:EE:FF
+</span></span><span style="display:flex;"><span>Sending magic packet to 192.168.1.255:9 with AA:BB:CC:DD:EE:FF
+</span></span></code></pre></div><p>The <code>-i 192.168.1.255</code> is optional, because it will manage to find the broadcast address on its own.</p>
+<p>If your TV did turn on after that, then you can proceed, but if not, then first you&rsquo;ll have to figure out why it didn&rsquo;t work. Perhaps you ran <code>wakeonlan</code> on a host that belongs to a different network, or maybe you haven&rsquo;t enabled all the Wake-on-LAN-related settings on your TV.</p>
+<p>Speaking about host not belonging to the same network where your TV is - that is exactly the case with Home Assistant running in a Docker container, as Docker containers network is isolated from the host network, so they cannot reach hosts in your home network. This is quite obvious and very much expected, but I totally forgot about it and have spent a lot of time trying to figure out why none of my Wake-on-LAN scripts/automations worked, until I realized that this was the reason.</p>
+<p>And <a href="https://community.home-assistant.io/t/wake-on-lan-for-those-running-home-assistant-in-docker/189376/14">one of the solutions</a> here is to create a <a href="https://en.wikipedia.org/wiki/Named_pipe">named pipe</a>, which will allow to send data from Home Assistant container to the host environment, where it will be then passed to <code>wakeonlan</code> call. Hopefully, exposing a named pipe like that doesn&rsquo;t also introduce any security issues.</p>
+<p>At first I created the pipe in <code>/root/homeassistant/</code> (<em>because I reckoned that in this case I would not need to map this location with <code>-v</code></em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo mkfifo /root/homeassistant/wolpipe
+</span></span></code></pre></div><p>Check the access rights for it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo stat -c %a /root/homeassistant/wolpipe
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">644</span>
+</span></span></code></pre></div><p>If it isn&rsquo;t <code>644</code>, then make it so:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo chmod <span style="color:#ae81ff">644</span> /root/homeassistant/wolpipe
+</span></span></code></pre></div><p>Next create a systemd service to listen for Wake-on-LAN requests from that pipe:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /etc/systemd/system/docker-wol.service
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#66d9ef">[Unit]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Description</span><span style="color:#f92672">=</span><span style="color:#e6db74">Listen for Wake-On-LAN from Docker via pipe</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">[Service]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Restart</span><span style="color:#f92672">=</span><span style="color:#e6db74">always</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">User</span><span style="color:#f92672">=</span><span style="color:#e6db74">nobody</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Group</span><span style="color:#f92672">=</span><span style="color:#e6db74">nogroup</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">ExecStart</span><span style="color:#f92672">=</span><span style="color:#e6db74">/usr/bin/wakeonlan -f /root/homeassistant/wolpipe</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">[Install]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">WantedBy</span><span style="color:#f92672">=</span><span style="color:#e6db74">multi-user.target</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo systemctl enable docker-wol
+</span></span><span style="display:flex;"><span>Created symlink /etc/systemd/system/multi-user.target.wants/docker-wol.service → /etc/systemd/system/docker-wol.service.
+</span></span><span style="display:flex;"><span>$ sudo systemctl start docker-wol
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ sudo systemctl status docker-wol
+</span></span><span style="display:flex;"><span>● docker-wol.service - Listen <span style="color:#66d9ef">for</span> Wake-On-LAN from Docker via pipe
+</span></span><span style="display:flex;"><span>     Loaded: loaded <span style="color:#f92672">(</span>/etc/systemd/system/docker-wol.service; enabled; vendor preset: enabled<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>     Active: failed <span style="color:#f92672">(</span>Result: exit-code<span style="color:#f92672">)</span> since Sat 2024-10-12 16:48:27 CEST; 36s ago
+</span></span><span style="display:flex;"><span>    Process: <span style="color:#ae81ff">16159</span> ExecStart<span style="color:#f92672">=</span>/usr/bin/wakeonlan -f /root/homeassistant/wolpipe <span style="color:#f92672">(</span>code<span style="color:#f92672">=</span>exited, status<span style="color:#f92672">=</span>13<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>   Main PID: <span style="color:#ae81ff">16159</span> <span style="color:#f92672">(</span>code<span style="color:#f92672">=</span>exited, status<span style="color:#f92672">=</span>13<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 16:48:27 vero systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: docker-wol.service: Scheduled restart job, restart counter is at 5.
+</span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 16:48:27 vero systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: Stopped Listen <span style="color:#66d9ef">for</span> Wake-On-LAN from Docker via pipe.
+</span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 16:48:27 vero systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: docker-wol.service: Start request repeated too quickly.
+</span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 16:48:27 vero systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: docker-wol.service: Failed with result <span style="color:#e6db74">&#39;exit-code&#39;</span>.
+</span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 16:48:27 vero systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: Failed to start Listen <span style="color:#66d9ef">for</span> Wake-On-LAN from Docker via pipe.
+</span></span></code></pre></div><p>So the service failed to start. Checking the logs:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ journalctl -u docker-wol.service
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 16:48:26 vero wakeonlan<span style="color:#f92672">[</span>16150<span style="color:#f92672">]</span>: open : Permission denied at /usr/bin/wakeonlan line 138.
+</span></span></code></pre></div><p>shows that there are some access problems, which is very likely because <code>/root/homeassistant/wolpipe</code> is inside <code>root</code> folder, and <code>nobody</code> does not have access there. Don&rsquo;t know what I expected.</p>
+<p>So I re-created the pipe in a different location and granted <code>nobody</code> access to it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo rm /root/homeassistant/wolpipe
+</span></span><span style="display:flex;"><span>$ sudo mkfifo /opt/wolpipe
+</span></span><span style="display:flex;"><span>$ sudo chown nobody:root /opt/wolpipe
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ sudo nano /etc/systemd/system/docker-wol.service
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">ExecStart</span><span style="color:#f92672">=</span><span style="color:#e6db74">/usr/bin/wakeonlan -f /opt/wolpipe</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span></code></pre></div><p>And that worked out fine:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo systemctl daemon-reload
+</span></span><span style="display:flex;"><span>$ sudo systemctl restart docker-wol.service
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ sudo systemctl status docker-wol.service
+</span></span><span style="display:flex;"><span>● docker-wol.service - Listen <span style="color:#66d9ef">for</span> Wake-On-LAN from Docker via pipe
+</span></span><span style="display:flex;"><span>     Loaded: loaded <span style="color:#f92672">(</span>/etc/systemd/system/docker-wol.service; enabled; vendor preset: enabled<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>     Active: active <span style="color:#f92672">(</span>running<span style="color:#f92672">)</span> since Sat 2024-10-12 19:51:22 CEST; 3s ago
+</span></span><span style="display:flex;"><span>   Main PID: <span style="color:#ae81ff">16451</span> <span style="color:#f92672">(</span>wakeonlan<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>      Tasks: <span style="color:#ae81ff">1</span> <span style="color:#f92672">(</span>limit: 3659<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>     Memory: 1.4M
+</span></span><span style="display:flex;"><span>     CGroup: /system.slice/docker-wol.service
+</span></span><span style="display:flex;"><span>             └─16451 /usr/bin/perl -w /usr/bin/wakeonlan -f /opt/wolpipe
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 19:51:22 vero systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: Started Listen <span style="color:#66d9ef">for</span> Wake-On-LAN from Docker via pipe.
+</span></span></code></pre></div><p>However, in the logs there was this warning:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ journalctl -u docker-wol.service | tail -2
+</span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 19:51:21 vero systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: /etc/systemd/system/docker-wol.service:6: Special user nobody configured, this is not safe!
+</span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 19:51:22 vero systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: Started Listen <span style="color:#66d9ef">for</span> Wake-On-LAN from Docker via pipe.
+</span></span></code></pre></div><p>As a remedy to that, I replaced <code>User=nodoby</code> with <code>DynamicUser=yes</code> in <code>/etc/systemd/system/docker-wol.service</code> and also returned the pipe file back to root, just in case:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo chown root:root /opt/wolpipe
+</span></span></code></pre></div><p>And since <code>/opt/wolpipe</code> is not inside <code>/root/homeassistant/</code>, it needs to be mapped with <code>-v</code>, so I had to re-create the container:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker stop homeassistant
+</span></span><span style="display:flex;"><span>$ sudo docker rm homeassistant
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --name homeassistant <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --network hub <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --ip 172.18.0.100 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/homeassistant:/config <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#ae81ff"></span>    -v /opt/wolpipe:/config/wolpipe <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    ghcr.io/home-assistant/home-assistant:stable
+</span></span></code></pre></div><p>Check what you have in the <code>/config/</code> now:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker exec -it homeassistant bash
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># pwd</span>
+</span></span><span style="display:flex;"><span>/config
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># ls -L1</span>
+</span></span><span style="display:flex;"><span>automations.yaml
+</span></span><span style="display:flex;"><span>blueprints
+</span></span><span style="display:flex;"><span>configuration.yaml
+</span></span><span style="display:flex;"><span>custom_components
+</span></span><span style="display:flex;"><span>deps
+</span></span><span style="display:flex;"><span>home-assistant.log
+</span></span><span style="display:flex;"><span>home-assistant.log.1
+</span></span><span style="display:flex;"><span>home-assistant.log.fault
+</span></span><span style="display:flex;"><span>home-assistant_v2.db
+</span></span><span style="display:flex;"><span>home-assistant_v2.db-shm
+</span></span><span style="display:flex;"><span>home-assistant_v2.db-wal
+</span></span><span style="display:flex;"><span>image
+</span></span><span style="display:flex;"><span>scenes.yaml
+</span></span><span style="display:flex;"><span>scripts.yaml
+</span></span><span style="display:flex;"><span>secrets.yaml
+</span></span><span style="display:flex;"><span>templates.yaml
+</span></span><span style="display:flex;"><span>tts
+</span></span><span style="display:flex; background-color:#3c3d38"><span>wolpipe
+</span></span><span style="display:flex;"><span>www
+</span></span></code></pre></div><p>Here it is! Now try to send the command:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span># echo &#39;AA:BB:CC:DD:EE:FF&#39; &gt; /config/wolpipe
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># exit
+</span></span></code></pre></div><p>And the TV should turn on. Hallelujah.</p>
+<p>In order to control it with utmost convenience from Home Assistant dashboards, add a custom <a href="https://home-assistant.io/integrations/switch/">switch</a> entity to your <code>configuration.yaml</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">wake_on_lan</span>: <span style="color:#75715e"># enable waking devices by sending a magic network packet</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">shell_command</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">wol_lg_oled_g3</span>: <span style="color:#e6db74">&#34;/bin/echo &#39;AA:BB:CC:DD:EE:FF&#39; &gt; /config/wolpipe&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">switch</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">platform</span>: <span style="color:#ae81ff">template</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">switches</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">lg_oled_g3</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">friendly_name</span>: <span style="color:#e6db74">&#34;LG OLED G3&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">value_template</span>: <span style="color:#e6db74">&#34;{{ is_state(&#39;media_player.lg_oled_g3&#39;, &#39;on&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">turn_on</span>:
+</span></span><span style="display:flex;"><span>          - <span style="color:#f92672">action</span>: <span style="color:#ae81ff">shell_command.wol_lg_oled_g3</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">turn_off</span>:
+</span></span><span style="display:flex;"><span>          - <span style="color:#f92672">service</span>: <span style="color:#ae81ff">media_player.turn_off</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">data</span>:
+</span></span><span style="display:flex;"><span>              <span style="color:#f92672">entity_id</span>: <span style="color:#ae81ff">media_player.lg_oled_g3</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">icon_template</span>: &gt;-<span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          {% if is_state(&#39;media_player.lg_oled_g3&#39;, &#39;on&#39;) %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            mdi:television
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          {% else %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            mdi:television-off
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          {% endif %}</span>          
+</span></span></code></pre></div><p>And then you will be able to add it to your dashboards as a button:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">button</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">entity</span>: <span style="color:#ae81ff">switch.lg_oled_g3</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">tap_action</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">action</span>: <span style="color:#ae81ff">toggle</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">name</span>: <span style="color:#ae81ff">LG OLED G3</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">show_name</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">show_icon</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">show_state</span>: <span style="color:#66d9ef">true</span>
+</span></span></code></pre></div><p>Here&rsquo;s how it looks when TV is off:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/lg-webos-switch-tv-off.png" alt="Home Assistant, TV switch as a button on a dashboard, TV is off">
+
+<p>and when TV is on:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/lg-webos-switch-tv-on.png" alt="Home Assistant, TV switch as a button on a dashboard, TV is on">
+
 <h1 id="organizing-dashboards-layout">Organizing dashboards layout</h1>
 <p>Eventually you&rsquo;ll probably want to change the dashboards layout, in particular almost immediately I wanted to have a 2-column layout with the second column being wider. And surprisingly, that <del>isn&rsquo;t</del> wasn&rsquo;t possible/trivial to do out of the box.</p>
 <p>Until there was a way, one could use the <a href="https://github.com/thomasloven/lovelace-layout-card">layout-card</a> frontend plugin, which can be installed via <a href="#home-assistant-community-store">HACS</a>. It probably offers more than what I am using it for, but for me the <a href="https://github.com/thomasloven/lovelace-layout-card?tab=readme-ov-file#grid-layout">grid layout</a> was enough, so now I can organize my cards like this:</p>
@@ -1526,7 +1714,8 @@
 
 <p>It also rearranges into 1 column on even narrower screens, but that would be a one kilometer long screenshot, so I won&rsquo;t put it here.</p>
 <p>So I switched to sections and deleted the <code>layout-card</code> plugin.</p>
-<h1 id="backups">Backups</h1>
+<h1 id="maintenance">Maintenance</h1>
+<h2 id="backups">Backups</h2>
 <p>Having configured so many things, you should definitely think about backups.</p>
 <p>I&rsquo;ve come up with the following script:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkdir /root/_backups
@@ -1568,7 +1757,7 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker stop <span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span>
 </span></span><span style="display:flex;"><span>$ sudo /root/_backups/backup.sh
 </span></span><span style="display:flex;"><span>$ sudo docker start <span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span>
-</span></span></code></pre></div><h1 id="updates">Updates</h1>
+</span></span></code></pre></div><h2 id="updates">Updates</h2>
 <p>In general, the procedure of updating something (<em>that is run in a Docker container</em>) is to get the latest Docker image and re-create the container. So with Home Assistant as an example in my particular network setup (<em>note the <code>--network</code> and <code>--ip</code> arguments</em>), the steps would be:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Stop all the containers for making a backup&#34;</span>
 </span></span><span style="display:flex;"><span>$ sudo docker stop <span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span>
