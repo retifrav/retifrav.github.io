@@ -65,7 +65,7 @@
 </svg> 2022-02-26 18:34:15 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 28 min read</div>
+</svg> 35 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -87,34 +87,42 @@
     <li><a href="#tap-services-with-astronomical-data">TAP services with astronomical data</a>
       <ul>
         <li><a href="#about-access-and-not-abusing-the-service">About access and (not) abusing the service</a></li>
-        <li><a href="#problems-and-challenges">Problems and challenges</a>
+      </ul>
+    </li>
+    <li><a href="#problems-and-challenges">Problems and challenges</a>
+      <ul>
+        <li><a href="#nasa-exoplanet-archive">NASA Exoplanet Archive</a>
           <ul>
-            <li><a href="#nasa-exoplanet-archive">NASA Exoplanet Archive</a>
+            <li><a href="#ps-vs-pscomppars">PS vs PSCompPars</a>
               <ul>
-                <li><a href="#ps-vs-pscomppars">PS vs PSCompPars</a>
-                  <ul>
-                    <li><a href="#no-simple-mass-values">No simple mass values</a></li>
-                    <li><a href="#calculated-values">Calculated values</a></li>
-                    <li><a href="#missing-values">Missing values</a></li>
-                  </ul>
-                </li>
-                <li><a href="#planetary-data-is-organized-by-publications">Planetary data is organized by publications</a></li>
-                <li><a href="#planets-from-the-same-system-have-different-stellar-data">Planets from the same system have different stellar data</a></li>
-                <li><a href="#no-way-to-get-the-latest-data">No way to get the latest data</a></li>
-                <li><a href="#top-clause-is-broken">TOP clause is broken</a></li>
-                <li><a href="#missing-uncertainties-columns">Missing uncertainties columns</a></li>
+                <li><a href="#no-simple-mass-values">No simple mass values</a></li>
+                <li><a href="#calculated-values">Calculated values</a></li>
+                <li><a href="#missing-values">Missing values</a></li>
               </ul>
             </li>
-            <li><a href="#paris-astronomical-data-centre">Paris Astronomical Data Centre</a>
-              <ul>
-                <li><a href="#obsolete-data">Obsolete data</a></li>
-                <li><a href="#untrustworthy-data">Untrustworthy data</a></li>
-                <li><a href="#different-names-for-star-and-planets">Different names for star and planets</a></li>
-              </ul>
-            </li>
-            <li><a href="#overall">Overall</a></li>
+            <li><a href="#planetary-data-is-organized-by-publications">Planetary data is organized by publications</a></li>
+            <li><a href="#planets-from-the-same-system-have-different-stellar-data">Planets from the same system have different stellar data</a></li>
+            <li><a href="#no-way-to-get-the-latest-data">No way to get the latest data</a></li>
+            <li><a href="#top-clause-is-broken">TOP clause is broken</a></li>
+            <li><a href="#missing-uncertainties-columns">Missing uncertainties columns</a></li>
+            <li><a href="#inconsistent-date-format">Inconsistent date format</a></li>
+            <li><a href="#float-values-are-rounded-on-select-but-compared-to-originals-in-where">Float values are rounded on SELECT but compared to originals in WHERE</a></li>
+            <li><a href="#casting-float-values-to-varchar-drops-the-leading-zero">Casting float values to VARCHAR drops the leading zero</a></li>
           </ul>
         </li>
+        <li><a href="#paris-astronomical-data-centre">Paris Astronomical Data Centre</a>
+          <ul>
+            <li><a href="#obsolete-data">Obsolete data</a></li>
+            <li><a href="#untrustworthy-data">Untrustworthy data</a></li>
+            <li><a href="#different-names-for-star-and-planets">Different names for star and planets</a></li>
+          </ul>
+        </li>
+        <li><a href="#simbad">SIMBAD</a>
+          <ul>
+            <li><a href="#does-not-support-cast">Does not support CAST</a></li>
+          </ul>
+        </li>
+        <li><a href="#overall">Overall</a></li>
       </ul>
     </li>
   </ul>
@@ -328,10 +336,12 @@
 </span></span><span style="display:flex;"><span>$ tap<span style="color:#f92672">-</span>adql<span style="color:#f92672">-</span>sandbox <span style="color:#f92672">--</span>help</span></span></code></pre></div>
 <p>And here&rsquo;s the project <a href="https://github.com/retifrav/tap-adql-sandbox">source code</a>.</p>
 <h1 id="tap-services-with-astronomical-data">TAP services with astronomical data</h1>
-<p>There are several astronomical databases that expose their data via TAP interface. So far I&rsquo;ve been working with these two:</p>
+<p>There are several astronomical databases that expose their data via TAP interface. So far I&rsquo;ve been working with these ones:</p>
 <ul>
 <li><a href="https://exoplanetarchive.ipac.caltech.edu/">NASA Exoplanet Archive</a>: <code>https://exoplanetarchive.ipac.caltech.edu/TAP</code></li>
 <li><a href="https://padc.obspm.fr/">Paris Astronomical Data Centre</a>: <code>http://voparis-tap-planeto.obspm.fr/tap</code></li>
+<li><a href="https://cosmos.esa.int/web/gaia-users/archive/programmatic-access">Gaia</a>: <code>https://gea.esac.esa.int/tap-server/tap</code> (<em>also some <a href="https://cosmos.esa.int/web/gaia-users/archive/writing-queries">ADQL examples</a></em>)</li>
+<li><a href="https://simbad.u-strasbg.fr/simbad/">SIMBAD</a>: <code>http://simbad.cds.unistra.fr/simbad/sim-tap/sync</code></li>
 </ul>
 <p>All of the TAP-services (<em>should</em>) support a certain set of standard functions. For instance, you can query the service availability:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span>$ curl http://voparis-tap-planeto.obspm.fr/tap/availability
@@ -357,15 +367,14 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> TOP <span style="color:#ae81ff">11</span>
 </span></span><span style="display:flex;"><span>    star_name, granule_uid, mass, radius
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> exoplanet.epn_core</span></span></code></pre></div>
-<h2 id="problems-and-challenges">Problems and challenges</h2>
+<h1 id="problems-and-challenges">Problems and challenges</h1>
 <p>Working with the data, I did stumble upon various differences and peculiarities among TAP services.</p>
-<h3 id="nasa-exoplanet-archive">NASA Exoplanet Archive</h3>
+<h2 id="nasa-exoplanet-archive">NASA Exoplanet Archive</h2>
 <p>Almost all the problems I had were with NASA Exoplanet Archive database. At the same time, the data from NASA seems to be the most updated and trustworthy, so I have mixed feelings about this source.</p>
-<h4 id="ps-vs-pscomppars">PS vs PSCompPars</h4>
+<h3 id="ps-vs-pscomppars">PS vs PSCompPars</h3>
 <p>There are two main tables in the database that you are likely to use: <code>PS</code> and <code>PSCompPars</code>. The difference between them is described in the <a href="https://exoplanetarchive.ipac.caltech.edu/docs/API_PS_columns.html">Choosing the Right Table For Your Needs</a> section. In short, the <code>PS</code> table is organized in a way that there is a row for every publication and the set of parameters described in that publication, so there can be several rows per planet (<em>and star?</em>); while <code>PSCompPars</code> has exactly one row per planet, and every parameter should have a value from the latest publication, and the publication is provided in the <code>PARAMETER-NAME_reflink</code> field/column.</p>
-<p>So it&rsquo;s obvious that one should use <code>PSCompPars</code>, right? Well, for me it was not so obvious, and I actually went with <code>PS</code>.</p>
-<p>Below I described specific details.</p>
-<h5 id="no-simple-mass-values">No simple mass values</h5>
+<p>So it&rsquo;s obvious that one should use <code>PSCompPars</code>, right? Well, for me it was not so obvious, and I actually went with <code>PS</code> (<em>details below</em>).</p>
+<h4 id="no-simple-mass-values">No simple mass values</h4>
 <p>Unlike <code>ps</code> table, <code>pscomppars</code> doesn&rsquo;t have &ldquo;simple&rdquo; mass (<em>and probably other</em>) values, for instance <code>pl_massj</code> and <code>pl_msinij</code>. Instead, the mass-related parameters are stored like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">column_name</span>, datatype, description
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> tap_schema.columns
@@ -403,7 +412,7 @@
 </span></span><span style="display:flex;"><span>+------------+------------------+</span></span></code></pre></div>
 <p>So okay, apparently you&rsquo;d need to add some more complexity to your queries and additionally check whether the value in <code>pl_bmassj</code> is of type <code>Mass</code> (<em>for <code>pl_massj</code> in <code>ps</code></em>) or <code>Msini</code> (<em>for <code>pl_msinij</code> in <code>ps</code></em>)? And what are the <code>Msin(i)/sin(i)</code> and <code>M-R relationship</code> types? By the way, there is <a href="#missing-values">another issue</a> related to that.</p>
 <p>Finally, as you can see, the <code>pl_bmassprov</code> field/column is not a dictionary value but a mere string! Needless to say how that adds to unreliability of querying the data.</p>
-<h5 id="calculated-values">Calculated values</h5>
+<h4 id="calculated-values">Calculated values</h4>
 <p>If we query <code>pl_radj</code> for <code>HD 95872 b</code> planet from <code>ps</code> table, then we&rsquo;ll see that out of all publications there is no known value for it:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_radj, pl_pubdate
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
@@ -427,7 +436,7 @@
 </span></span><span style="display:flex;"><span>| HD <span style="color:#ae81ff">95872</span>   | HD <span style="color:#ae81ff">95872</span> b |      1.16 | &lt;a refstr<span style="color:#f92672">=</span>CALCULATED_VALUE href<span style="color:#f92672">=</span>/docs/composite_calc.html target<span style="color:#f92672">=</span>_blank&gt;Calculated Value&lt;/a&gt; |
 </span></span><span style="display:flex;"><span>+------------+------------+-----------+----------------------------------------------------------------------------------------------+</span></span></code></pre></div>
 <p>which, according to <code>reflink</code>, is a &ldquo;<a href="https://exoplanetarchive.ipac.caltech.edu/docs/composite_calc.html">calculated value</a>&rdquo;, so it is questionable whether one can rely on it or not. And if you&rsquo;d like to exclude &ldquo;calculated values&rdquo; from your results, then apparently you&rsquo;d need to add a (<em>reliable enough</em>) condition for <code>*_reflink</code> fields, which are strings, of course. Oh joy.</p>
-<h5 id="missing-values">Missing values</h5>
+<h4 id="missing-values">Missing values</h4>
 <p>If we query <code>pl_msinij</code> for <code>HD 10180 d</code> planet from <code>ps</code> table, then we&rsquo;ll get values from two publications:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_massj, pl_msinij, pl_pubdate
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
@@ -452,7 +461,7 @@
 </span></span><span style="display:flex;"><span>+------------+------------+----------------+-------------+--------------------------------------------------------------------------------------------------------------------------------------+</span></span></code></pre></div>
 <p>On top of that, the <code>pl_bmassprov</code> says that <code>pl_bmassj</code> is of <code>Msin(i)/sin(i)</code> type, and so if we were looking for the <code>Msini</code> type, then we&rsquo;d miss it. And by the way, if according to <code>pscomppars</code> that is <code>Msin(i)/sin(i)</code> type, then how can one know that this value in <code>ps</code> table is of that type and not of <code>pl_msinij</code>/<code>Msini</code>? Or are <code>Msini</code> and <code>Msin(i)/sin(i)</code> actually the same type? Why then it&rsquo;s two different types in <code>pscomppars</code> table? Argh&hellip;</p>
 <p>Okay, now back to general issues with the NASA database.</p>
-<h4 id="planetary-data-is-organized-by-publications">Planetary data is organized by publications</h4>
+<h3 id="planetary-data-is-organized-by-publications">Planetary data is organized by publications</h3>
 <p>Say you&rsquo;d like to get mass and radius of the <code>Kepler-107 b</code> planet. With PADC service the query will be this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> star_name, granule_uid, mass, radius
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> exoplanet.epn_core
@@ -549,7 +558,7 @@
 </span></span><span style="display:flex;"><span>| HR <span style="color:#ae81ff">8799</span>    | HR <span style="color:#ae81ff">8799</span> b |          <span style="color:#ae81ff">7</span> |       1.2 | 2008-11      |              <span style="color:#ae81ff">1</span> |
 </span></span><span style="display:flex;"><span>+------------+-----------+------------+-----------+--------------+----------------+</span></span></code></pre></div>
 <p>So if you trusted blindly the <code>default_flag</code> and took the values from <code>2008-11</code> publication, then you&rsquo;d miss the newer <code>pl_radj</code> value from <code>2016-03</code> publication.</p>
-<h4 id="planets-from-the-same-system-have-different-stellar-data">Planets from the same system have different stellar data</h4>
+<h3 id="planets-from-the-same-system-have-different-stellar-data">Planets from the same system have different stellar data</h3>
 <p>If we take <code>HR 8799</code> system as an example, then its planet <code>HR 8799 b</code> has <code>st_teff</code> value of <code>7204.58</code> from the publication on <code>2016-08</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span>
 </span></span><span style="display:flex;"><span>(<span style="color:#66d9ef">WITH</span> latestEntries <span style="color:#66d9ef">AS</span>
@@ -570,7 +579,7 @@
 </span></span><span style="display:flex;"><span>+------------+-----------+-----------+--------------+</span></span></code></pre></div>
 <p>As this is a stellar parameter, one would expect it to be the same for every planet in the system, but as you can see other planets in that system, such as <code>HR 8799 e</code>, have different values (<em>there also might be no value at all</em>). How to know which one is the right one? Because <code>pl_pubdate</code> filed name implies that it applies to planetary parameters, and there are no <code>host_pubdate</code> or <code>star_pubdate</code> fields in the table.</p>
 <p>So we can only assume that <code>pl_pubdate</code> applies to stellar parameters too, and that means that if you are working with just <code>HR 8799 b</code>, and you are not interested in other planets, still you cannot just take <code>7204.58</code> value, you&rsquo;ll need to execute an additional query to get the first not null <code>st_teff</code> value ordered by publication date (<em>yes, also with CTE and ranking, because <a href="#top-clause-is-broken">TOP is broken</a></em>) from all the planets in the system.</p>
-<h4 id="no-way-to-get-the-latest-data">No way to get the latest data</h4>
+<h3 id="no-way-to-get-the-latest-data">No way to get the latest data</h3>
 <p>Following the previous issue, there actually seems to be no way to get data from the latest available publication. For instance, on <a href="https://exoplanetarchive.ipac.caltech.edu/overview/HR%208799">this page</a> we can see that this very same <code>HR 8799</code> star has even newer publication from <a href="https://iopscience.iop.org/article/10.3847/1538-3881/abd802/pdf">Swastik et al. 2021</a>, which states <code>st_teff</code> value of <code>7339</code>:</p>
 
 
@@ -598,7 +607,7 @@
 </span></span><span style="display:flex;"><span>+------------+--------------+-----------+---------------+---------------+--------------+</span></span></code></pre></div>
 <p>So, again, it does not return values from <code>Yoffe et al. 2021</code>, and in fact the latest that it does return is some publication from <code>2020-11</code>, which is not shown via the web-interface and simply is nowhere to find! On top of that, <code>pl_radjerr2</code>/<code>pl_radjerr1</code> have the values of <code>0</code>, like there is no error at all. And it is like that for <code>Kepler-450 c</code> and <code>Kepler-450 d</code> planets too.</p>
 <p>So not only you cannot get the latest data (<em>which is available via web-interface</em>), it even may return incorrect values from some unknown publications, messing up your data. A-fucking-mazing, innit.</p>
-<h4 id="top-clause-is-broken">TOP clause is broken</h4>
+<h3 id="top-clause-is-broken">TOP clause is broken</h3>
 <p>So yeah, here are the radius values for the <code>Kepler-107 b</code> planet by publication date:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> pl_radj, pl_pubdate
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
@@ -652,7 +661,7 @@
 </span></span><span style="display:flex;"><span>|     0.137 | 2019-02      |
 </span></span><span style="display:flex;"><span>+-----------+--------------+</span></span></code></pre></div>
 <p>Yes, it is overcomplicated, but it works.</p>
-<h4 id="missing-uncertainties-columns">Missing uncertainties columns</h4>
+<h3 id="missing-uncertainties-columns">Missing uncertainties columns</h3>
 <p>Documentation <a href="https://exoplanetarchive.ipac.caltech.edu/docs/API_PS_columns.html">claims</a> that there are uncertainties values for parameters like <code>ra</code>, <code>dec</code>, <code>glat</code>, <code>glon</code> and others:</p>
 
 
@@ -684,9 +693,173 @@
 </span></span><span style="display:flex;"><span>| ra            | double     | RA <span style="color:#f92672">[</span>decimal<span style="color:#f92672">]</span>             |
 </span></span><span style="display:flex;"><span>+---------------+------------+--------------------------+</span></span></code></pre></div>
 <p>Why then they are listed in the documentation?</p>
-<h3 id="paris-astronomical-data-centre">Paris Astronomical Data Centre</h3>
+<h3 id="inconsistent-date-format">Inconsistent date format</h3>
+<p>In particular, within <code>pl_pubdate</code> column:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">DISTINCT</span>(pl_pubdate)
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">length</span>(pl_pubdate) <span style="color:#66d9ef">DESC</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">289</span>
+</span></span><span style="display:flex;"><span>+------------------+
+</span></span><span style="display:flex;"><span>| pl_pubdate       |
+</span></span><span style="display:flex;"><span>|------------------|
+</span></span><span style="display:flex;"><span>| 2017-08-31 00:00 |
+</span></span><span style="display:flex;"><span>| 2014-12-04       |
+</span></span><span style="display:flex;"><span>| 2018-08-16       |
+</span></span><span style="display:flex;"><span>| 2014-01-08       |
+</span></span><span style="display:flex;"><span>| 2015-09-24       |
+</span></span><span style="display:flex;"><span>| 2014-12-18       |
+</span></span><span style="display:flex;"><span>| 2016-03          |
+</span></span><span style="display:flex;"><span>| 2016-05          |
+</span></span><span style="display:flex;"><span>| 2019-09          |
+</span></span><span style="display:flex;"><span>| 2017-07          |
+</span></span><span style="display:flex;"><span>| 2015-11          |
+</span></span><span style="display:flex;"><span>| 2024-07          |
+</span></span><span style="display:flex;"><span>...
+</span></span></code></pre></div><p>Fucking hell.</p>
+<h3 id="float-values-are-rounded-on-select-but-compared-to-originals-in-where">Float values are rounded on SELECT but compared to originals in WHERE</h3>
+<p>This was such a shocking discovery when I noticed it <em>more than 2 years</em> after I started fetching data from these services. As it turns out (<em>and the first part applies not only to NASA, but also to PADC and probably to other services too</em>), float values are returned rounded on <code>SELECT</code>! That would be half of the problem, but in case of NASA they are used at their full original values in <code>WHERE</code> clauses!</p>
+<p>Here&rsquo;s a demonstration. Let&rsquo;s say we&rsquo;d like to get <code>pl_massj</code> value for the <code>KOI-4777.01</code> planet from the NASA database:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_massj, pl_pubdate
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;KOI-4777.01&#39;</span> <span style="color:#66d9ef">AND</span> pl_massj <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>+------------+-------------+------------+--------------+
+</span></span><span style="display:flex;"><span>| hostname   | pl_name     |   pl_massj | pl_pubdate   |
+</span></span><span style="display:flex;"><span>|------------+-------------+------------+--------------|
+</span></span><span style="display:flex;"><span>| KOI-4777   | KOI-4777.01 |    0.31212 | 2022-01      |
+</span></span><span style="display:flex;"><span>+------------+-------------+------------+--------------+
+</span></span></code></pre></div><p>Okay, the value is <code>0.31212</code>. And then some time later we&rsquo;d like to get the publication reference for this value:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> pl_refname
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;KOI-4777.01&#39;</span> <span style="color:#66d9ef">AND</span> pl_massj <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">31212</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">0</span>
+</span></span></code></pre></div><p>So the query returned no results! But how is it possible? I have gotten this <code>0.31212</code> value just now!</p>
+<p>And so as I learned, the reason here is that the actual value that is stored in this particular <code>pl_massj</code> field is actually much longer, so what we got on <code>SELECT</code> is just a rounded value, but at the same time the comparison in <code>WHERE</code> fails, because there it uses the actual non-rounded value. Пиздец!</p>
+<p>But then what is the actual value, how does one get it? I had no idea, so I just tried to cast it to <code>REAL</code> type on <code>SELECT</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_massj, <span style="color:#66d9ef">CAST</span>(pl_massj <span style="color:#66d9ef">AS</span> REAL) <span style="color:#66d9ef">as</span> pl_massj_real, pl_pubdate
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;KOI-4777.01&#39;</span> <span style="color:#66d9ef">AND</span> pl_massj <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>+------------+-------------+------------+--------------------------+--------------+
+</span></span><span style="display:flex;"><span>| hostname   | pl_name     |   pl_massj |            pl_massj_real | pl_pubdate   |
+</span></span><span style="display:flex;"><span>|------------+-------------+------------+--------------------------+--------------|
+</span></span><span style="display:flex;"><span>| KOI-4777   | KOI-4777.01 |    0.31212 |        0.312118104660166 | 2022-01      |
+</span></span><span style="display:flex;"><span>+------------+-------------+------------+--------------------------+--------------+
+</span></span></code></pre></div><p>And here it is - <code>0.312118104660166</code>! But how the hell was one supposed to know that?</p>
+<p>Just to make sure, let&rsquo;s now try to get the publication reference again with this &ldquo;new&rdquo; value:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> pl_refname
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;KOI-4777.01&#39;</span> <span style="color:#66d9ef">AND</span> pl_massj <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">312118104660166</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>+------------------------------------------------------------------------------------------------------------------------------------------------+
+</span></span><span style="display:flex;"><span>| pl_refname                                                                                                                                     |
+</span></span><span style="display:flex;"><span>|------------------------------------------------------------------------------------------------------------------------------------------------|
+</span></span><span style="display:flex;"><span>| &lt;a refstr<span style="color:#f92672">=</span>CA_NTILDE_AS_ET_AL__2022 href<span style="color:#f92672">=</span>https://ui.adsabs.harvard.edu/abs/2022AJ....163....3C/abstract target<span style="color:#f92672">=</span>ref&gt;Ca&amp;ntilde;as et al. 2022&lt;/a&gt; |
+</span></span><span style="display:flex;"><span>+------------------------------------------------------------------------------------------------------------------------------------------------+
+</span></span></code></pre></div><p>And now we did get a result. Jesus Christ.</p>
+<p>You might say, but this can&rsquo;t be right, maybe it&rsquo;s the library&rsquo;s fault, so it&rsquo;s <a href="#pyvo">PyVO</a> who does the rounding. I certainly agree that this can&rsquo;t be right, but it is not the PyVO&rsquo;s fault, because here&rsquo;s a bare cURL request:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X <span style="color:#e6db74">&#34;POST&#34;</span> <span style="color:#e6db74">&#34;https://exoplanetarchive.ipac.caltech.edu/TAP/sync?REQUEST=doQuery&amp;LANG=ADQL&amp;FORMAT=JSON&amp;QUERY=SELECT%20hostname,%20pl_name,%20pl_massj,%20pl_pubdate%20FROM%20ps%20WHERE%20pl_name%20=%20&#39;KOI-4777.01&#39;%20AND%20pl_massj%20IS%20NOT%20NULL%20ORDER%20BY%20pl_pubdate%20DESC&#34;</span>
+</span></span></code></pre></div><p>and here&rsquo;s what it returns:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>[
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;hostname&#34;</span>: <span style="color:#e6db74">&#34;KOI-4777&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;pl_name&#34;</span>: <span style="color:#e6db74">&#34;KOI-4777.01&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;pl_massj&#34;</span>: <span style="color:#ae81ff">0.31212</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;pl_pubdate&#34;</span>: <span style="color:#e6db74">&#34;2022-01&#34;</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>]
+</span></span></code></pre></div><p>So it really is the NASA&rsquo;s ADQL backend who returns the rounded <code>0.31212</code> instead of the actual <code>0.312118104660166</code>.</p>
+<p>To be entirely fair, NASA does somewhat warns about this, because if you check the data type for this column:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">column_name</span>, datatype, format
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> tap_schema.columns
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> <span style="color:#66d9ef">table_name</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;ps&#39;</span> <span style="color:#66d9ef">AND</span> <span style="color:#66d9ef">column_name</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;pl_massj&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">column_name</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>+---------------+------------+----------+
+</span></span><span style="display:flex;"><span>| column_name   | datatype   | format   |
+</span></span><span style="display:flex;"><span>|---------------+------------+----------|
+</span></span><span style="display:flex;"><span>| pl_massj      | double     | 8.5f     |
+</span></span><span style="display:flex;"><span>| pl_massj      | double     | 8.5f     |
+</span></span><span style="display:flex;"><span>+---------------+------------+----------+
+</span></span></code></pre></div><p>then you&rsquo;ll see that it is of <code>double</code> type and has the <code>8.5f</code> format, which apparently means that it is rounded to the 5 digits after the comma/dot. So there is that, but firstly, one is supposed to somehow know that one needs to consult with this table first, and secondly, <strong>why the fuck</strong> there are two records here for the same <code>pl_massj</code> column?! If you do <code>SELECT *</code> here, then you&rsquo;ll see that all other columns in the <code>pl_massj</code> records hold the same values, so there is absolutely no reason to have two identical records for it.</p>
+<p>&hellip;Anyway, like I said in the beginning, the &ldquo;problem&rdquo; of rounded floats is present in PADC database too:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> star_name, granule_uid, mass, <span style="color:#66d9ef">CAST</span>(mass <span style="color:#66d9ef">AS</span> REAL) <span style="color:#66d9ef">AS</span> mass_real, radius, <span style="color:#66d9ef">CAST</span>(radius <span style="color:#66d9ef">AS</span> REAL) <span style="color:#66d9ef">AS</span> radius_real
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> exoplanet.epn_core
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> granule_uid <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;HD 219134 b&#39;</span> <span style="color:#66d9ef">AND</span> mass <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">AND</span> radius <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> granule_uid
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>+-------------+---------------+---------+---------------------+--------+--------------------+
+</span></span><span style="display:flex;"><span>| star_name   | granule_uid   |    mass |           mass_real | radius |        radius_real |
+</span></span><span style="display:flex;"><span>|-------------+---------------+---------+---------------------+--------+--------------------|
+</span></span><span style="display:flex;"><span>| HD <span style="color:#ae81ff">219134</span>   | HD <span style="color:#ae81ff">219134</span> b   | 0.01343 | 0.01343000028282404 |  0.134 | 0.1340000033378601 |
+</span></span><span style="display:flex;"><span>+-------------+---------------+---------+---------------------+--------+--------------------+
+</span></span></code></pre></div><p>&hellip;however, unlike NASA they do compare with the same rounded value! Look:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> star_name, granule_uid
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> exoplanet.epn_core
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> star_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;HD 219134&#39;</span> <span style="color:#66d9ef">AND</span> mass <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">01343000028282404</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> granule_uid
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">0</span>
+</span></span></code></pre></div><p>so no results when comparing with the actual non-rounded value, because:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> star_name, granule_uid
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> exoplanet.epn_core
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> star_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;HD 219134&#39;</span> <span style="color:#66d9ef">AND</span> mass <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">01343</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> granule_uid
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>+-------------+---------------+
+</span></span><span style="display:flex;"><span>| star_name   | granule_uid   |
+</span></span><span style="display:flex;"><span>|-------------+---------------|
+</span></span><span style="display:flex;"><span>| HD <span style="color:#ae81ff">219134</span>   | HD <span style="color:#ae81ff">219134</span> b   |
+</span></span><span style="display:flex;"><span>+-------------+---------------+
+</span></span></code></pre></div><p>it compares with the same rounded value that is returned on <code>SELECT</code>. As one would expect!</p>
+<p>Moreover, Gaia database even returns the actual non-rounded values right away:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> mass_flame, <span style="color:#66d9ef">CAST</span>(mass_flame <span style="color:#66d9ef">AS</span> REAL) <span style="color:#66d9ef">as</span> mass_flame_real, radius_flame, <span style="color:#66d9ef">CAST</span>(radius_flame <span style="color:#66d9ef">AS</span> REAL) <span style="color:#66d9ef">AS</span> radius_flame_real
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> gaiadr3.astrophysical_parameters
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> source_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">3145754895088191744</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>+--------------------+--------------------+--------------------+--------------------+
+</span></span><span style="display:flex;"><span>|         mass_flame |    mass_flame_real |       radius_flame |  radius_flame_real |
+</span></span><span style="display:flex;"><span>|--------------------+--------------------+--------------------+--------------------|
+</span></span><span style="display:flex;"><span>| 0.8714732527732849 | 0.8714732527732849 | 0.9770743250846863 | 0.9770743250846863 |
+</span></span><span style="display:flex;"><span>+--------------------+--------------------+--------------------+--------------------+
+</span></span></code></pre></div><p>And so what a fucking retarded piece of shit is this NASA database.</p>
+<p>I would submit a bugreport to them, but from my experience it is pointless, because I already tried that with one <a href="#top-clause-is-broken">other problem</a> before, and it was never fixed (<em>neither did I get any response</em>).</p>
+<h3 id="casting-float-values-to-varchar-drops-the-leading-zero">Casting float values to VARCHAR drops the leading zero</h3>
+<p>Yet another thing where NASA&rsquo;s database dropped the ball is how they cast floats to strings. The numbers not less than <code>1</code> are casted fine:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CAST</span>(<span style="color:#ae81ff">1</span>.<span style="color:#ae81ff">2345</span> <span style="color:#66d9ef">AS</span> VARCHAR(<span style="color:#ae81ff">10</span>))
+</span></span><span style="display:flex;"><span><span style="color:#75715e">-- result: 1.2345
+</span></span></span></code></pre></div><p>but numbers that are less than <code>0</code> are casted with dropping the leading <code>0</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CAST</span>(<span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">2345</span> <span style="color:#66d9ef">AS</span> VARCHAR(<span style="color:#ae81ff">10</span>))
+</span></span><span style="display:flex;"><span><span style="color:#75715e">-- result: .2345
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">CAST</span>(<span style="color:#f92672">-</span><span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">2345</span> <span style="color:#66d9ef">AS</span> VARCHAR(<span style="color:#ae81ff">10</span>))
+</span></span><span style="display:flex;"><span><span style="color:#75715e">-- result: -.2345
+</span></span></span></code></pre></div><p>So if you are to cast the floats to <code>VARCHAR</code> instead of <code>REAL</code> to work around <a href="#float-values-are-rounded-on-select-but-compared-to-originals-in-where">that problem</a> with inconsistent values in <code>SELECT</code>/<code>WHERE</code>, then you&rsquo;d be getting different values:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_massj, <span style="color:#66d9ef">CAST</span>(pl_massj <span style="color:#66d9ef">AS</span> REAL) <span style="color:#66d9ef">as</span> pl_massj_real, <span style="color:#66d9ef">CAST</span>(pl_massj <span style="color:#66d9ef">AS</span> VARCHAR(<span style="color:#ae81ff">30</span>)) <span style="color:#66d9ef">as</span> pl_massj_string, pl_pubdate
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;KOI-4777.01&#39;</span> <span style="color:#66d9ef">AND</span> pl_massj <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>+------------+-------------+----------+-------------------+------------------+--------------+
+</span></span><span style="display:flex;"><span>| hostname   | pl_name     | pl_massj |     pl_massj_real |  pl_massj_string | pl_pubdate   |
+</span></span><span style="display:flex;"><span>|------------+-------------+----------+-------------------+------------------+--------------|
+</span></span><span style="display:flex;"><span>| KOI-4777   | KOI-4777.01 |  0.31212 | 0.312118104660166 | .312118104660166 | 2022-01      |
+</span></span><span style="display:flex;"><span>+------------+-------------+----------+-------------------+------------------+--------------+
+</span></span></code></pre></div><p>The motherfucking piece of shit. Как говорится, я и бал.</p>
+<p>Other databases don&rsquo;t have this issue, for instance here is what you&rsquo;ll get in PADC and Gaia:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CAST</span>(<span style="color:#ae81ff">1</span>.<span style="color:#ae81ff">2345</span> <span style="color:#66d9ef">AS</span> VARCHAR(<span style="color:#ae81ff">10</span>))
+</span></span><span style="display:flex;"><span><span style="color:#75715e">-- result: 1.2345
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">CAST</span>(<span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">2345</span> <span style="color:#66d9ef">AS</span> VARCHAR(<span style="color:#ae81ff">10</span>))
+</span></span><span style="display:flex;"><span><span style="color:#75715e">-- result: 0.2345
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">CAST</span>(<span style="color:#f92672">-</span><span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">2345</span> <span style="color:#66d9ef">AS</span> VARCHAR(<span style="color:#ae81ff">10</span>))
+</span></span><span style="display:flex;"><span><span style="color:#75715e">-- result: -0.2345
+</span></span></span></code></pre></div><h2 id="paris-astronomical-data-centre">Paris Astronomical Data Centre</h2>
 <p>The PADC database has issues too.</p>
-<h4 id="obsolete-data">Obsolete data</h4>
+<h3 id="obsolete-data">Obsolete data</h3>
 <p>Quite often the data is just obsolete. If you compare mass, radius and other parameters for the same planets in PADC and then in NASA, you&rsquo;ll see that PADC data lags behind (<em>with years of delay</em>).</p>
 <p>Let&rsquo;s take <code>Kepler-11 d</code> planet as an example. Here are its mass and radius from PADC:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> granule_uid, mass, radius
@@ -753,7 +926,7 @@
 </span></span><span style="display:flex;"><span>| Kepler-10 b   | 0.0145 |    0.132 |           | 2021-02-05T07:00:00 |
 </span></span><span style="display:flex;"><span>+---------------+--------+----------+-----------+---------------------+</span></span></code></pre></div>
 <p>So <code>updated</code> is just empty, and <code>modification_date</code> states a date that is later than the latest <code>pl_pubdate</code> from NASA, but still PADC stores values that have been obsolete for several years, so you cannot rely on this field either.</p>
-<h4 id="untrustworthy-data">Untrustworthy data</h4>
+<h3 id="untrustworthy-data">Untrustworthy data</h3>
 <p>With <a href="http://exoplanet.eu/catalog/k2-266_b/">K2-266 b</a> planet as an example, there is mass value of <code>0.0355</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> granule_uid, mass
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> exoplanet.epn_core
@@ -801,7 +974,7 @@
 </span></span><span style="display:flex;"><span>| Kepler-167 e |        nan |            nan |            nan | 2014-01-08       |
 </span></span><span style="display:flex;"><span>+--------------+------------+----------------+----------------+------------------+</span></span></code></pre></div>
 <p>null/nan values for mass and errors, as it should be, because neither of the publications states these values.</p>
-<h4 id="different-names-for-star-and-planets">Different names for star and planets</h4>
+<h3 id="different-names-for-star-and-planets">Different names for star and planets</h3>
 <p>In NASA database there is a system <a href="https://exoplanetarchive.ipac.caltech.edu/overview/Kepler-89">Kepler-89</a>. It&rsquo;s a binary system, meaning that it has 2 stars, <code>Kepler-89 B</code> and <code>KOI-94</code>:</p>
 
 
@@ -836,7 +1009,12 @@
 </span></span><span style="display:flex;"><span>+---------------+</span></span></code></pre></div>
 <p>then all of the sudden the planets names are different. Wut.</p>
 <p>And so if you&rsquo;ll want to cross-check or enrich the data you got from one database with the data from another, you&rsquo;ll need to keep in mind that that the planets might have different names there. For automated processing that means that you&rsquo;ll need to keep a list of such mismatches to map names between databases (<em>as if you didn&rsquo;t have enough things to worry about already</em>).</p>
-<h3 id="overall">Overall</h3>
+<h2 id="simbad">SIMBAD</h2>
+<h3 id="does-not-support-cast">Does not support CAST</h3>
+<p>Yeah, you cannot use <code>CAST</code> in SIMBAD ADQL queries:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span>Incorrect ADQL query:  Encountered <span style="color:#e6db74">&#34;CAST&#34;</span>. Was expecting one <span style="color:#66d9ef">of</span>: <span style="color:#e6db74">&#34;(&#34;</span> <span style="color:#e6db74">&#34;+&#34;</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;*&#34;</span> <span style="color:#f92672">&lt;</span>QUANTIFIER<span style="color:#f92672">&gt;</span> <span style="color:#e6db74">&#34;TOP&#34;</span> <span style="color:#e6db74">&#34;AVG&#34;</span> <span style="color:#e6db74">&#34;MAX&#34;</span> <span style="color:#e6db74">&#34;MIN&#34;</span> <span style="color:#e6db74">&#34;SUM&#34;</span> <span style="color:#e6db74">&#34;COUNT&#34;</span> <span style="color:#e6db74">&#34;BOX&#34;</span> <span style="color:#e6db74">&#34;CENTROID&#34;</span> <span style="color:#e6db74">&#34;CIRCLE&#34;</span> <span style="color:#e6db74">&#34;POINT&#34;</span> <span style="color:#e6db74">&#34;POLYGON&#34;</span> <span style="color:#e6db74">&#34;REGION&#34;</span> <span style="color:#e6db74">&#34;CONTAINS&#34;</span> <span style="color:#e6db74">&#34;INTERSECTS&#34;</span> <span style="color:#e6db74">&#34;AREA&#34;</span> <span style="color:#e6db74">&#34;COORD1&#34;</span> <span style="color:#e6db74">&#34;COORD2&#34;</span> <span style="color:#e6db74">&#34;COORDSYS&#34;</span> <span style="color:#e6db74">&#34;DISTANCE&#34;</span> <span style="color:#e6db74">&#34;ABS&#34;</span> <span style="color:#e6db74">&#34;CEILING&#34;</span> <span style="color:#e6db74">&#34;DEGREES&#34;</span> <span style="color:#e6db74">&#34;EXP&#34;</span> <span style="color:#e6db74">&#34;FLOOR&#34;</span> <span style="color:#e6db74">&#34;LOG&#34;</span> <span style="color:#e6db74">&#34;LOG10&#34;</span> <span style="color:#e6db74">&#34;MOD&#34;</span> <span style="color:#e6db74">&#34;PI&#34;</span> <span style="color:#e6db74">&#34;POWER&#34;</span> <span style="color:#e6db74">&#34;RADIANS&#34;</span> <span style="color:#e6db74">&#34;RAND&#34;</span> <span style="color:#e6db74">&#34;ROUND&#34;</span> <span style="color:#e6db74">&#34;SQRT&#34;</span> <span style="color:#e6db74">&#34;TRUNCATE&#34;</span> <span style="color:#e6db74">&#34;ACOS&#34;</span> <span style="color:#e6db74">&#34;ASIN&#34;</span> <span style="color:#e6db74">&#34;ATAN&#34;</span> <span style="color:#e6db74">&#34;ATAN2&#34;</span> <span style="color:#e6db74">&#34;COS&#34;</span> <span style="color:#e6db74">&#34;COT&#34;</span> <span style="color:#e6db74">&#34;SIN&#34;</span> <span style="color:#e6db74">&#34;TAN&#34;</span> <span style="color:#e6db74">&#34;\&#39;&#34;</span> <span style="color:#f92672">&lt;</span>SCIENTIFIC_NUMBER<span style="color:#f92672">&gt;</span> <span style="color:#f92672">&lt;</span>UNSIGNED_FLOAT<span style="color:#f92672">&gt;</span> <span style="color:#f92672">&lt;</span>UNSIGNED_INTEGER<span style="color:#f92672">&gt;</span> <span style="color:#e6db74">&#34;\&#34;&#34; &lt;REGULAR_IDENTIFIER_CANDIDATE&gt; &lt;REGULAR_IDENTIFIER_CANDIDATE&gt; &#34;</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>(HINT: <span style="color:#e6db74">&#34;CAST&#34;</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">not</span> supported <span style="color:#66d9ef">in</span> ADQL, but <span style="color:#66d9ef">is</span> however a reserved word. <span style="color:#66d9ef">To</span> use it <span style="color:#66d9ef">as</span> a <span style="color:#66d9ef">column</span><span style="color:#f92672">/</span><span style="color:#66d9ef">table</span><span style="color:#f92672">/</span><span style="color:#66d9ef">schema</span> name<span style="color:#f92672">/</span><span style="color:#66d9ef">alias</span>, <span style="color:#66d9ef">write</span> it <span style="color:#66d9ef">between</span> double quotes.)
+</span></span></code></pre></div><h2 id="overall">Overall</h2>
 <p>Pretty concerning, right, that being a astronomer / planetary scientist you don&rsquo;t have a reliable source of data about stars and planets.</p>
 <p>Why there is more than one database about space objects, each containing intersecting/overlapping data? Why it is not one common database instead?</p>
 <p>Why these databases first of all have different numbers of stars and planets, and secondly have different data about the same stars and planets? How can researcher know which one to use, which one has the most recent / trustworthy data? Why there is no even an agreement about naming, as different databases have different names for the same stars and planets?</p>
