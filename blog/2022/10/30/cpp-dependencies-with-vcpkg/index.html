@@ -64,7 +64,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 119 min read</div>
+</svg> 126 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -143,9 +143,14 @@
             </li>
           </ul>
         </li>
-        <li><a href="#updating-a-port">Updating a port</a></li>
+        <li><a href="#git-submodules">Git submodules</a>
+          <ul>
+            <li><a href="#mirroring-a-repository-with-submodules">Mirroring a repository with submodules</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
+    <li><a href="#updating-a-port">Updating a port</a></li>
     <li><a href="#installing-ports-from-a-registry">Installing ports from a registry</a>
       <ul>
         <li><a href="#without-a-project">Without a project</a>
@@ -1299,7 +1304,7 @@
 </span></span><span style="display:flex;"><span>    endforeach<span style="color:#f92672">()</span>
 </span></span><span style="display:flex;"><span>endforeach<span style="color:#f92672">()</span>
 </span></span></code></pre></div><p>So here we don&rsquo;t build those header-only internal dependencies, as there is nothing to build, and we install only <code>-rel</code>, as <code>-dbg</code> would redundantly install the same things.</p>
-<p>If you don&rsquo;t do that <code>vcpkg_replace_string()</code> fixup of paths, then trying to use this port in a project will result in the following error:</p>
+<p>If you don&rsquo;t do that <a href="https://learn.microsoft.com/en-us/vcpkg/maintainers/functions/vcpkg_replace_string">vcpkg_replace_string()</a> fixup of paths, then trying to use this port in a project will result in the following error:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">Imported</span> target <span style="color:#e6db74">&#34;ThatsOneHeaderOnlyLibrary&#34;</span> includes non<span style="color:#f92672">-</span>existent path
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>vcpkg_installed<span style="color:#f92672">/</span>x64<span style="color:#f92672">-</span>linux<span style="color:#f92672">/</span>share<span style="color:#f92672">/</span>include<span style="color:#f92672">/</span><span style="color:#a6e22e">ThatsOneHeaderOnlyLibrary</span>
 </span></span><span style="display:flex;"><span>in its <span style="color:#a6e22e">INTERFACE_INCLUDE_DIRECTORIES</span>
@@ -1367,8 +1372,184 @@
 </span></span><span style="display:flex;"><span>$ cd <span style="color:#f92672">./</span>cmake<span style="color:#f92672">-</span>library<span style="color:#f92672">-</span>example
 </span></span><span style="display:flex;"><span>$ git sparse<span style="color:#f92672">-</span>checkout set <span style="color:#f92672">--</span>no<span style="color:#f92672">-</span>cone internal<span style="color:#f92672">-</span>project<span style="color:#f92672">/</span>libraries<span style="color:#f92672">/</span><span style="color:#a6e22e">SomeLibrary</span></span></span></code></pre></div>
 <p>But default vcpkg CMake functions such as <a href="https://github.com/microsoft/vcpkg/blob/master/scripts/cmake/vcpkg_from_git.cmake">vcpkg_from_git</a> unfortunately do not have an option for sparse cloning and checkout, so I&rsquo;ll probably implement my own custom function/helper for that (<em>or at least register a feature request for it</em>).</p>
-<h2 id="updating-a-port">Updating a port</h2>
-<p>Not once and not twice you&rsquo;ll need to change something in your existing port, especially when you are working on the very first version of it.</p>
+<h2 id="git-submodules">Git submodules</h2>
+<p>A project repository might have <a href="https://git-scm.com/book/en/v2/Git-Tools-Submodules">Git submodules</a>, which complicates things. If those submodules are used for resolving 3rd-party dependencies, then I would disable them and make vcpkg ports for those dependencies to resolve them in a civilized manner. However, if project uses submodules to resolve its own components, then I would say that this is an okay scenario (<em>although a rather inconvenient one</em>), and so one might probably prefer not move those into their own ports (<em>but that of course depends on a particulal project</em>).</p>
+<p>Here&rsquo;s an example of one such project - <a href="https://github.com/aws/aws-sdk-cpp">AWS SDK</a>. It has <a href="https://github.com/aws/aws-sdk-cpp/blob/ef4ea97447c665ce6681ce110feaa9de6aa4ba00/.gitmodules">one direct submodule</a>, which in turn has <a href="https://github.com/awslabs/aws-crt-cpp/blob/83aacf7ae3a79c1cd1d2e1fe901a8ac9c427a199/.gitmodules">several recursive submodules</a>.</p>
+<p>Having recursive submodules makes it rather difficult to create a port for such a project, because vcpkg does not have an out-of-the-box function for cloning repositories with submodules, so we would need to resort to running &ldquo;bare&rdquo; Git commands with CMake, and it would be something like:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># on some Windows hosts trying to execute Git commands might fail with a bare `git`,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># so you have to explicitly `find_program()` it first
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>find_program(<span style="color:#e6db74">GIT</span> <span style="color:#e6db74">git</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># if you work with more than one Git service, you might need to distinguish
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># the sources directories, hence the `src-github`
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">SOURCE_PATH</span> <span style="color:#f92672">${</span>CURRENT_BUILDTREES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/src-github/v</span><span style="color:#f92672">${</span>VERSION<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># thanks to Git being able to use tags in `--branch`, we don&#39;t need to clone
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># the entire repository (which in case of AWS SDK is huge), so we are cloning
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># just this particular commit behind the version tag
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>vcpkg_execute_required_process(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">COMMAND</span> <span style="color:#f92672">${</span>GIT<span style="color:#f92672">}</span> <span style="color:#e6db74">clone</span> <span style="color:#e6db74">--depth=1</span> <span style="color:#e6db74">--branch</span> <span style="color:#f92672">${</span>VERSION<span style="color:#f92672">}</span> <span style="color:#e6db74">--recurse-submodules</span> <span style="color:#e6db74">git@github.com:aws/aws-sdk-cpp.git</span> <span style="color:#f92672">${</span>SOURCE_PATH<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>CURRENT_BUILDTREES_DIR<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">git-</span><span style="color:#f92672">${</span>PORT<span style="color:#f92672">}</span><span style="color:#e6db74">-cloning</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>Since we are not using &ldquo;standard&rdquo; vcpkg functions, we are missing several very nice and convenient things which vcpkg does behind the scenes, such as &ldquo;caching&rdquo; a repository snapshot archive and cleaning the source directory, so we will need to implements all that ourselves.</p>
+<p>One way to go about not cloning the same repository over and over and also cleaning the source directory is to reset and clean the repository, which includes resetting and cleaning the submodules too, so here comes an updated procedure:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># if there is no Git repository in the source directory, then do the cloning
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>if(<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">EXISTS</span> <span style="color:#f92672">${</span>SOURCE_PATH<span style="color:#f92672">}</span><span style="color:#e6db74">/.git</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;Cloning the repository with recursive submodules&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    vcpkg_execute_required_process(
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">COMMAND</span> <span style="color:#f92672">${</span>GIT<span style="color:#f92672">}</span> <span style="color:#e6db74">clone</span> <span style="color:#e6db74">--depth=1</span> <span style="color:#e6db74">--branch</span> <span style="color:#f92672">${</span>VERSION<span style="color:#f92672">}</span> <span style="color:#e6db74">--recurse-submodules</span> <span style="color:#e6db74">git@github.com:aws/aws-sdk-cpp.git</span> <span style="color:#f92672">${</span>SOURCE_PATH<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>CURRENT_BUILDTREES_DIR<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">git-</span><span style="color:#f92672">${</span>PORT<span style="color:#f92672">}</span><span style="color:#e6db74">-cloning</span>
+</span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>else() <span style="color:#75715e"># otherwise just reset and clean the repository and its submodules
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;Resetting and cleaning up the repository&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#75715e">#
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;+ resetting the main repository&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    vcpkg_execute_required_process(
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">COMMAND</span> <span style="color:#f92672">${</span>GIT<span style="color:#f92672">}</span> <span style="color:#e6db74">reset</span> <span style="color:#e6db74">--hard</span> <span style="color:#f92672">${</span>VERSION<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>SOURCE_PATH<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">git-</span><span style="color:#f92672">${</span>PORT<span style="color:#f92672">}</span><span style="color:#e6db74">-main-resetting</span>
+</span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;+ cleaning up the main repository&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    vcpkg_execute_required_process(
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">COMMAND</span> <span style="color:#f92672">${</span>GIT<span style="color:#f92672">}</span> <span style="color:#e6db74">clean</span> <span style="color:#e6db74">-x</span> <span style="color:#e6db74">-f</span> <span style="color:#e6db74">-d</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>SOURCE_PATH<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">git-</span><span style="color:#f92672">${</span>PORT<span style="color:#f92672">}</span><span style="color:#e6db74">-main-cleaning</span>
+</span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;+ resetting the submodules&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    vcpkg_execute_required_process(
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">COMMAND</span> <span style="color:#f92672">${</span>GIT<span style="color:#f92672">}</span> <span style="color:#e6db74">submodule</span> <span style="color:#e6db74">foreach</span> <span style="color:#e6db74">--recursive</span> <span style="color:#e6db74">git</span> <span style="color:#e6db74">reset</span> <span style="color:#e6db74">--hard</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>SOURCE_PATH<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">git-</span><span style="color:#f92672">${</span>PORT<span style="color:#f92672">}</span><span style="color:#e6db74">-submodules-resetting</span>
+</span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;+ cleaning up the submodules&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    vcpkg_execute_required_process(
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">COMMAND</span> <span style="color:#f92672">${</span>GIT<span style="color:#f92672">}</span> <span style="color:#e6db74">submodule</span> <span style="color:#e6db74">foreach</span> <span style="color:#e6db74">--recursive</span> <span style="color:#e6db74">git</span> <span style="color:#e6db74">clean</span> <span style="color:#e6db74">-x</span> <span style="color:#e6db74">-f</span> <span style="color:#e6db74">-d</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>SOURCE_PATH<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">git-</span><span style="color:#f92672">${</span>PORT<span style="color:#f92672">}</span><span style="color:#e6db74">-submodules-cleaning</span>
+</span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>That was the procedure for obtaining the sources of the project and its submodularized components. Now we need to patch some stuff in the original sources, and again, since we did not use &ldquo;standard&rdquo; <code>vcpkg_from_git()</code> function, <a href="#patches">patching</a> will have to be done with bare Git commands too:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">PATCH_NAME</span> <span style="color:#e6db74">&#34;001-not-hardcoding-shared-libraries-and-crt.patch&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;Applying patch ${PATCH_NAME}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_execute_required_process(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">COMMAND</span> <span style="color:#f92672">${</span>GIT<span style="color:#f92672">}</span> <span style="color:#e6db74">apply</span> <span style="color:#e6db74">&#34;${CMAKE_CURRENT_LIST_DIR}/${PATCH_NAME}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>SOURCE_PATH<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">git-</span><span style="color:#f92672">${</span>PORT<span style="color:#f92672">}</span><span style="color:#e6db74">-patching-</span><span style="color:#f92672">${</span>PATCH_NAME<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>And that is quite alright as long as we need to patch stuff in the main project. But if we&rsquo;ll need to patch something in one of the submodules, then we&rsquo;ll need to go deeper into the abyss and &ldquo;downgrade&rdquo; to the crude strings replacement, such as:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># can&#39;t patch that, because this is inside a submodule</span>
+</span></span><span style="display:flex;"><span>vcpkg_replace_string<span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>SOURCE_PATH<span style="color:#e6db74">}</span><span style="color:#e6db74">/crt/aws-crt-cpp/CMakeLists.txt&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">[=[</span><span style="color:#75715e"># set runtime library</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span><span style="color:#f92672">(</span>MSVC<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span><span style="color:#f92672">(</span>AWS_STATIC_MSVC_RUNTIME_LIBRARY OR STATIC_CRT<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        target_compile_options<span style="color:#f92672">(</span><span style="color:#e6db74">${</span>PROJECT_NAME<span style="color:#e6db74">}</span> PRIVATE <span style="color:#e6db74">&#34;/MT</span>$<span style="color:#e6db74">&lt;</span>$<span style="color:#e6db74">&lt;CONFIG:Debug&gt;:d&gt;&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">else</span><span style="color:#f92672">()</span>
+</span></span><span style="display:flex;"><span>        target_compile_options<span style="color:#f92672">(</span><span style="color:#e6db74">${</span>PROJECT_NAME<span style="color:#e6db74">}</span> PRIVATE <span style="color:#e6db74">&#34;/MD</span>$<span style="color:#e6db74">&lt;</span>$<span style="color:#e6db74">&lt;CONFIG:Debug&gt;:d&gt;&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    endif<span style="color:#f92672">()</span>
+</span></span><span style="display:flex;"><span>endif<span style="color:#f92672">()]=]</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">[=[</span><span style="color:#75715e"># these things should be handled with CMAKE_MSVC_RUNTIME_LIBRARY]=]</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># can&#39;t patch that, because this is inside a submodule</span>
+</span></span><span style="display:flex;"><span>vcpkg_replace_string<span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>SOURCE_PATH<span style="color:#e6db74">}</span><span style="color:#e6db74">/crt/aws-crt-cpp/crt/aws-c-common/CMakeLists.txt&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">[=[</span>DESTINATION <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>LIBRARY_DIRECTORY<span style="color:#e6db74">}</span><span style="color:#e6db74">/cmake&#34;</span><span style="color:#f92672">]=]</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">[=[</span>DESTINATION <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>CMAKE_INSTALL_DATAROOTDIR<span style="color:#e6db74">}</span><span style="color:#e6db74">/</span><span style="color:#e6db74">${</span>PROJECT_NAME<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">]=]</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">)</span>
+</span></span></code></pre></div><p>And here the CMake&rsquo;s <a href="https://cmake.org/cmake/help/latest/manual/cmake-language.7.html#bracket-argument">bracket argument</a> helps tremendously.</p>
+<p>Actually, you could still do Git patches, but in my opinion this would be more complicated in terms of the port maintenance. You can try that for yourself and make up your own opinion, though.</p>
+<p>Then comes the project configuration, but that is nothing special - just the usual <code>vcpkg_cmake_configure()</code>. But then comes the building and installation, and if you&rsquo;ll need to build not the entire project but just some of its components, then it means executing bare CMake commands again - same way it is described in the section about <a href="#multiple-targetscomponents-in-one-project">multiple targets/components</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># the `REQUESTED_AWS_COMPONENTS` list is composed based on enabled features
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>foreach(<span style="color:#e6db74">AWS_COMPONENT_NAME</span> <span style="color:#f92672">${</span>REQUESTED_AWS_COMPONENTS<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;+ ${AWS_COMPONENT_NAME}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#75715e"># build
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    vcpkg_cmake_build(<span style="color:#e6db74">TARGET</span> <span style="color:#f92672">${</span>AWS_COMPONENT_NAME<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#75715e"># install Debug
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    vcpkg_execute_build_process(
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">COMMAND</span> <span style="color:#f92672">${</span>CMAKE_COMMAND<span style="color:#f92672">}</span> <span style="color:#e6db74">--install</span> <span style="color:#e6db74">./generated/src/</span><span style="color:#f92672">${</span>AWS_COMPONENT_NAME<span style="color:#f92672">}</span> <span style="color:#e6db74">--config</span> <span style="color:#e6db74">Debug</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>CURRENT_BUILDTREES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-dbg</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">install-</span><span style="color:#f92672">${</span>AWS_COMPONENT_NAME<span style="color:#f92672">}</span><span style="color:#e6db74">-</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-dbg</span>
+</span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#75715e"># install Release
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    vcpkg_execute_build_process(
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">COMMAND</span> <span style="color:#f92672">${</span>CMAKE_COMMAND<span style="color:#f92672">}</span> <span style="color:#e6db74">--install</span> <span style="color:#e6db74">./generated/src/</span><span style="color:#f92672">${</span>AWS_COMPONENT_NAME<span style="color:#f92672">}</span> <span style="color:#e6db74">--config</span> <span style="color:#e6db74">Release</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>CURRENT_BUILDTREES_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-rel</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">install-</span><span style="color:#f92672">${</span>AWS_COMPONENT_NAME<span style="color:#f92672">}</span><span style="color:#e6db74">-</span><span style="color:#f92672">${</span>TARGET_TRIPLET<span style="color:#f92672">}</span><span style="color:#e6db74">-rel</span>
+</span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endforeach()<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>Note the <code>${CMAKE_COMMAND}</code> - I didn&rsquo;t talk about this in the <a href="#multiple-targetscomponents-in-one-project">previous section</a>, but in some environments (<em>GNU/Linux, for example</em>) trying to use a bare <code>cmake</code> might fail with an error like:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Failed to execute command <span style="color:#e6db74">&#34;cmake --install TARGET-NAME --config Debug&#34;</span> in working directory <span style="color:#e6db74">&#34;/path/to/build/folder&#34;</span>: no such file or directory
+</span></span></code></pre></div><p>and this <code>no such file or directory</code> is actually about missing <code>cmake</code> somehow. But unlike Git, you don&rsquo;t need to <code>find_program()</code> it, just use the <a href="https://cmake.org/cmake/help/latest/variable/CMAKE_COMMAND.html">CMAKE_COMMAND</a>.</p>
+<p>In general, this is it, the rest of the portfile should be pretty standard, but in the particular case of AWS SDK there are some additional nasty details, and if you are interested in those, you can inspect the complete port <a href="https://github.com/retifrav/vcpkg-registry/tree/f7e127565e38287cc661e964a5321ddd1206498c/ports/aws-sdk-cpp">here</a>.</p>
+<h3 id="mirroring-a-repository-with-submodules">Mirroring a repository with submodules</h3>
+<p>I wouldn&rsquo;t be surprised if you wanted to mirror this project&rsquo;s repository in your own in-house Git service. But how does one do that for a GitHub-hosted repository that contains Git submodules, which are hosted on that same GitHub (<em>or some other 3rd-party Git service</em>)?</p>
+<p>The only way I found so far is to:</p>
+<ol>
+<li>Create empty repositories for the project repository and its submodules in your own Git service;</li>
+<li>Clone the main repository and its recursive submodules locally on your machine;</li>
+<li>Modify the original project&rsquo;s <code>.gitmodules</code> file and the recursive <code>.gitmodules</code> files in its submodules by replacing original repositories GitHub URLs with your own Git service URLs;
+<ul>
+<li>that inevitably results in different Git commit hashes, which won&rsquo;t match the original hashes for the same version, which is rather unfortunate;</li>
+</ul>
+</li>
+<li>Commit the changes and push every repository to your own Git service;
+<ul>
+<li>you might want to commit and push those modified repositories as &ldquo;snapshots&rdquo;, which means that they would have to be synced with the original sources manually every time you&rsquo;d like to add a new version to your mirror.</li>
+</ul>
+</li>
+</ol>
+<p>With AWS SDK project as an example, the submodules hierarchy is the following:</p>
+<ul>
+<li><code>aws-sdk-cpp</code> (<em>snapshot with overridden submodules URLs</em>)
+<ul>
+<li><code>aws-crt-cpp</code> (<em>snapshot with overridden submodules URLs</em>)
+<ul>
+<li><code>aws-c-auth</code></li>
+<li><code>aws-c-cal</code></li>
+<li><code>aws-c-common</code></li>
+<li><code>aws-c-compression</code></li>
+<li><code>aws-c-event-stream</code></li>
+<li><code>aws-c-http</code></li>
+<li><code>aws-c-io</code></li>
+<li><code>aws-c-mqtt</code></li>
+<li><code>aws-c-s3</code></li>
+<li><code>aws-c-sdkutils</code></li>
+<li><code>aws-checksums</code></li>
+<li><code>aws-lc</code></li>
+<li><code>s2n-tls</code> (<em>snapshot with overridden submodules URLs</em>)
+<ul>
+<li><code>aws-verification-model-for-libcrypto</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>In order to commit those &ldquo;snapshots&rdquo;, you will need to add the submodules hashes into their repositories on you local machine. To find the Git hashes of the submodules in a particular version of the parent repository(<em>ies</em>), you will need to initialize those submodules and list the hashes, so for example like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/aws-sdk-cpp
+</span></span><span style="display:flex;"><span>$ git submodule update --init --recursive
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># here 349b806d491366d30b78531ee9d00b677427c834 is already our modified hash, so you won&#39;t find it in the original AWS repository</span>
+</span></span><span style="display:flex;"><span>$ git ls-tree master ./crt/aws-crt-cpp
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">160000</span> commit 349b806d491366d30b78531ee9d00b677427c834  crt/aws-crt-cpp
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ cd ./crt
+</span></span><span style="display:flex;"><span>/aws-crt-cpp
+</span></span><span style="display:flex;"><span>$ git ls-tree master ./crt/aws-c-auth
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">160000</span> commit 877c029fc4e93d205f9c6855188c3c51f6b497b4  crt/aws-c-auth
+</span></span></code></pre></div><p>And then those hashes need to be added to parent repository(<em>ies</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># needs to be cloned to somewhere else separately</span>
+</span></span><span style="display:flex;"><span>$ cd /path/to/aws-crt-cpp
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ export MODULE_NAME<span style="color:#f92672">=</span>aws-c-auth
+</span></span><span style="display:flex;"><span>$ git submodule add -- git@YOUR.GIT.HOST:3rd-party/$MODULE_NAME.git crt/$MODULE_NAME <span style="color:#f92672">&amp;&amp;</span> cd ./crt/$MODULE_NAME <span style="color:#f92672">&amp;&amp;</span> git checkout 877c029fc4e93d205f9c6855188c3c51f6b497b4 <span style="color:#f92672">&amp;&amp;</span> cd -
+</span></span></code></pre></div><p>And so on and so on for every submodule. Quite a tiresome procedure, especially knowing that you&rsquo;ll need to keep updating all of those to newer versions.</p>
+<h1 id="updating-a-port">Updating a port</h1>
+<p>Not once and not twice you&rsquo;ll need to change something in your existing port, especially when you are working on the very first version of it (<em>as you&rsquo;ll be making mistakes and overlooking things</em>).</p>
 <p>As a concrete example, I forgot to add <code>include_guard(GLOBAL)</code> in my <code>ports/decovar-vcpkg-cmake</code> helper package. Here&rsquo;s what I needed to do in order to fix that:</p>
 <ol>
 <li>Edit <code>./ports/decovar-vcpkg-cmake/vcpkg-port-config.cmake</code> and commit this change, but not push yet;</li>
