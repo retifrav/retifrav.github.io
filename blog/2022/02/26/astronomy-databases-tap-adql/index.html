@@ -697,7 +697,7 @@
 <p>In particular, within <code>pl_pubdate</code> column:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">DISTINCT</span>(pl_pubdate)
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">length</span>(pl_pubdate) <span style="color:#66d9ef">DESC</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">LENGTH</span>(pl_pubdate) <span style="color:#66d9ef">DESC</span>
 </span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">289</span>
 </span></span><span style="display:flex;"><span>+------------------+
 </span></span><span style="display:flex;"><span>| pl_pubdate       |
@@ -717,7 +717,7 @@
 </span></span><span style="display:flex;"><span>...
 </span></span></code></pre></div><p>Fucking hell.</p>
 <h3 id="float-values-are-rounded-on-select-but-compared-to-originals-in-where">Float values are rounded on SELECT but compared to originals in WHERE</h3>
-<p>This was such a shocking discovery when I noticed it <em>more than 2 years</em> after I started fetching data from these services. As it turns out (<em>and the first part applies not only to NASA, but also to PADC and probably to other services too</em>), float values are returned rounded on <code>SELECT</code>! That would be half of the problem, but in case of NASA they are used at their full original values in <code>WHERE</code> clauses!</p>
+<p>This was such a shocking discovery when I noticed it <em>more than 2 years</em> after I started fetching data from these services. As it turns out (<em>and this applies not only to NASA, but also to PADC and probably to other services too</em>), float values are returned rounded on <code>SELECT</code>. That would be half of the problem, but NASA went an extra mile here too, and in their database these values are actually used with their full original values in <code>WHERE</code> clauses!</p>
 <p>Here&rsquo;s a demonstration. Let&rsquo;s say we&rsquo;d like to get <code>pl_massj</code> value for the <code>KOI-4777.01</code> planet from the NASA database:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_massj, pl_pubdate
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
@@ -735,9 +735,9 @@
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;KOI-4777.01&#39;</span> <span style="color:#66d9ef">AND</span> pl_massj <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">31212</span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> pl_pubdate <span style="color:#66d9ef">DESC</span>
 </span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Results found: <span style="color:#ae81ff">0</span>
-</span></span></code></pre></div><p>So the query returned no results! But how is it possible? I have gotten this <code>0.31212</code> value just now!</p>
-<p>And so as I learned, the reason here is that the actual value that is stored in this particular <code>pl_massj</code> field is actually much longer, so what we got on <code>SELECT</code> is just a rounded value, but at the same time the comparison in <code>WHERE</code> fails, because there it uses the actual non-rounded value. Пиздец!</p>
-<p>But then what is the actual value, how does one get it? I had no idea, so I just tried to cast it to <code>REAL</code> type on <code>SELECT</code>:</p>
+</span></span></code></pre></div><p>And that query returns no results! But how is it possible? I have gotten this <code>0.31212</code> value just now, why the comparison in <code>WHERE</code> clause did not succeed?</p>
+<p>I&rsquo;ll tell you why: this is because the actual value that is stored in this particular <code>pl_massj</code> field is actually much longer, and what we got on <code>SELECT</code> was just a rounded value, but the comparison in <code>WHERE</code> uses the original non-rounded value, so the query quite naturally fails to find matching results. Ну разве не пиздец?</p>
+<p>But okay, then what is the actual value, how does one get it? I had no idea, so I just tried to cast it to <code>REAL</code> type on <code>SELECT</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> hostname, pl_name, pl_massj, <span style="color:#66d9ef">CAST</span>(pl_massj <span style="color:#66d9ef">AS</span> REAL) <span style="color:#66d9ef">as</span> pl_massj_real, pl_pubdate
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> pl_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;KOI-4777.01&#39;</span> <span style="color:#66d9ef">AND</span> pl_massj <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
@@ -748,7 +748,7 @@
 </span></span><span style="display:flex;"><span>|------------+-------------+------------+--------------------------+--------------|
 </span></span><span style="display:flex;"><span>| KOI-4777   | KOI-4777.01 |    0.31212 |        0.312118104660166 | 2022-01      |
 </span></span><span style="display:flex;"><span>+------------+-------------+------------+--------------------------+--------------+
-</span></span></code></pre></div><p>And here it is - <code>0.312118104660166</code>! But how the hell was one supposed to know that?</p>
+</span></span></code></pre></div><p>And here it is - <code>0.312118104660166</code>! How the hell was one supposed to know that?</p>
 <p>Just to make sure, let&rsquo;s now try to get the publication reference again with this &ldquo;new&rdquo; value:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> pl_refname
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> ps
@@ -760,7 +760,7 @@
 </span></span><span style="display:flex;"><span>|------------------------------------------------------------------------------------------------------------------------------------------------|
 </span></span><span style="display:flex;"><span>| &lt;a refstr<span style="color:#f92672">=</span>CA_NTILDE_AS_ET_AL__2022 href<span style="color:#f92672">=</span>https://ui.adsabs.harvard.edu/abs/2022AJ....163....3C/abstract target<span style="color:#f92672">=</span>ref&gt;Ca&amp;ntilde;as et al. 2022&lt;/a&gt; |
 </span></span><span style="display:flex;"><span>+------------------------------------------------------------------------------------------------------------------------------------------------+
-</span></span></code></pre></div><p>And now we did get a result. Jesus Christ.</p>
+</span></span></code></pre></div><p>Yes, now it did find a matching record.</p>
 <p>You might say, but this can&rsquo;t be right, maybe it&rsquo;s the library&rsquo;s fault, so it&rsquo;s <a href="#pyvo">PyVO</a> who does the rounding. I certainly agree that this can&rsquo;t be right, but it is not the PyVO&rsquo;s fault, because here&rsquo;s a bare cURL request:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X <span style="color:#e6db74">&#34;POST&#34;</span> <span style="color:#e6db74">&#34;https://exoplanetarchive.ipac.caltech.edu/TAP/sync?REQUEST=doQuery&amp;LANG=ADQL&amp;FORMAT=JSON&amp;QUERY=SELECT%20hostname,%20pl_name,%20pl_massj,%20pl_pubdate%20FROM%20ps%20WHERE%20pl_name%20=%20&#39;KOI-4777.01&#39;%20AND%20pl_massj%20IS%20NOT%20NULL%20ORDER%20BY%20pl_pubdate%20DESC&#34;</span>
 </span></span></code></pre></div><p>and here&rsquo;s what it returns:</p>
@@ -773,7 +773,7 @@
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>]
 </span></span></code></pre></div><p>So it really is the NASA&rsquo;s ADQL backend who returns the rounded <code>0.31212</code> instead of the actual <code>0.312118104660166</code>.</p>
-<p>To be entirely fair, NASA does somewhat warns about this, because if you check the data type for this column:</p>
+<p>To be entirely fair, NASA does somewhat warn about this, because if you check the data type for this column:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">column_name</span>, datatype, format
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> tap_schema.columns
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> <span style="color:#66d9ef">table_name</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;ps&#39;</span> <span style="color:#66d9ef">AND</span> <span style="color:#66d9ef">column_name</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;pl_massj&#39;</span>
@@ -785,8 +785,8 @@
 </span></span><span style="display:flex;"><span>| pl_massj      | double     | 8.5f     |
 </span></span><span style="display:flex;"><span>| pl_massj      | double     | 8.5f     |
 </span></span><span style="display:flex;"><span>+---------------+------------+----------+
-</span></span></code></pre></div><p>then you&rsquo;ll see that it is of <code>double</code> type and has the <code>8.5f</code> format, which apparently means that it is rounded to the 5 digits after the comma/dot. So there is that, but firstly, one is supposed to somehow know that one needs to consult with this table first, and secondly, <strong>why the fuck</strong> there are two records here for the same <code>pl_massj</code> column?! If you do <code>SELECT *</code> here, then you&rsquo;ll see that all other columns in the <code>pl_massj</code> records hold the same values, so there is absolutely no reason to have two identical records for it.</p>
-<p>&hellip;Anyway, like I said in the beginning, the &ldquo;problem&rdquo; of rounded floats is present in PADC database too:</p>
+</span></span></code></pre></div><p>then you&rsquo;ll see that it is of <code>double</code> type and has the <code>8.5f</code> format, which apparently means that it is rounded to the 5 digits after the comma/dot. So there is that, but firstly, one is supposed to somehow know that one needs to consult with this table first, and secondly, <strong>why the fuck</strong> there are two records here for the same <code>pl_massj</code> column in here?! If you do <code>SELECT *</code>, then you&rsquo;ll see that all other columns in both of these <code>pl_massj</code> records hold the same values, so then why there are two identical records for it?</p>
+<p>&hellip;Anyway, like I said in the beginning, the &ldquo;problem&rdquo; of rounded floats is present in PADC database too (<em>although they do not have a <code>format</code> column in their <code>tap_schema.columns</code>, so there is no way to know the rounding precision</em>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> star_name, granule_uid, mass, <span style="color:#66d9ef">CAST</span>(mass <span style="color:#66d9ef">AS</span> REAL) <span style="color:#66d9ef">AS</span> mass_real, radius, <span style="color:#66d9ef">CAST</span>(radius <span style="color:#66d9ef">AS</span> REAL) <span style="color:#66d9ef">AS</span> radius_real
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> exoplanet.epn_core
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> granule_uid <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;HD 219134 b&#39;</span> <span style="color:#66d9ef">AND</span> mass <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">AND</span> radius <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
@@ -797,7 +797,7 @@
 </span></span><span style="display:flex;"><span>|-------------+---------------+---------+---------------------+--------+--------------------|
 </span></span><span style="display:flex;"><span>| HD <span style="color:#ae81ff">219134</span>   | HD <span style="color:#ae81ff">219134</span> b   | 0.01343 | 0.01343000028282404 |  0.134 | 0.1340000033378601 |
 </span></span><span style="display:flex;"><span>+-------------+---------------+---------+---------------------+--------+--------------------+
-</span></span></code></pre></div><p>&hellip;however, unlike NASA they do compare with the same rounded value! Look:</p>
+</span></span></code></pre></div><p>&hellip;however, this is fine, because unlike NASA they do compare with the same rounded value. Look:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> star_name, granule_uid
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> exoplanet.epn_core
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> star_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;HD 219134&#39;</span> <span style="color:#66d9ef">AND</span> mass <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">01343000028282404</span>
@@ -813,8 +813,8 @@
 </span></span><span style="display:flex;"><span>|-------------+---------------|
 </span></span><span style="display:flex;"><span>| HD <span style="color:#ae81ff">219134</span>   | HD <span style="color:#ae81ff">219134</span> b   |
 </span></span><span style="display:flex;"><span>+-------------+---------------+
-</span></span></code></pre></div><p>it compares with the same rounded value that is returned on <code>SELECT</code>. As one would expect!</p>
-<p>Moreover, Gaia database even returns the actual non-rounded values right away:</p>
+</span></span></code></pre></div><p>it compares with the same rounded value that is returned on <code>SELECT</code>. As one would expect! So why isn&rsquo;t it so in NASA database?</p>
+<p>Moreover, Gaia database even returns the actual non-rounded values right away, so there is no problem there in the first place:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> mass_flame, <span style="color:#66d9ef">CAST</span>(mass_flame <span style="color:#66d9ef">AS</span> REAL) <span style="color:#66d9ef">as</span> mass_flame_real, radius_flame, <span style="color:#66d9ef">CAST</span>(radius_flame <span style="color:#66d9ef">AS</span> REAL) <span style="color:#66d9ef">AS</span> radius_flame_real
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> gaiadr3.astrophysical_parameters
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> source_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">3145754895088191744</span>
