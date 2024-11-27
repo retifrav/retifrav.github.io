@@ -64,7 +64,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 126 min read</div>
+</svg> 129 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -150,7 +150,6 @@
         </li>
       </ul>
     </li>
-    <li><a href="#updating-a-port">Updating a port</a></li>
     <li><a href="#installing-ports-from-a-registry">Installing ports from a registry</a>
       <ul>
         <li><a href="#without-a-project">Without a project</a>
@@ -177,6 +176,13 @@
             <li><a href="#mapping-of-release-binaries-in-relwithdebinfo">Mapping of Release binaries in RelWithDebInfo</a></li>
           </ul>
         </li>
+      </ul>
+    </li>
+    <li><a href="#updating-a-port">Updating a port</a></li>
+    <li><a href="#testing-your-ports-before-publishing">Testing your ports before publishing</a>
+      <ul>
+        <li><a href="#overlay-ports">Overlay ports</a></li>
+        <li><a href="#registry-branches">Registry branches</a></li>
       </ul>
     </li>
     <li><a href="#per-platform-specifics">Per-platform specifics</a>
@@ -1548,23 +1554,6 @@
 </span></span><span style="display:flex;"><span>$ export MODULE_NAME<span style="color:#f92672">=</span>aws-c-auth
 </span></span><span style="display:flex;"><span>$ git submodule add -- git@YOUR.GIT.HOST:3rd-party/$MODULE_NAME.git crt/$MODULE_NAME <span style="color:#f92672">&amp;&amp;</span> cd ./crt/$MODULE_NAME <span style="color:#f92672">&amp;&amp;</span> git checkout 877c029fc4e93d205f9c6855188c3c51f6b497b4 <span style="color:#f92672">&amp;&amp;</span> cd -
 </span></span></code></pre></div><p>And so on and so on for every submodule. Quite a tiresome procedure, especially knowing that you&rsquo;ll need to keep updating all of those to newer versions.</p>
-<h1 id="updating-a-port">Updating a port</h1>
-<p>Not once and not twice you&rsquo;ll need to change something in your existing port, especially when you are working on the very first version of it (<em>as you&rsquo;ll be making mistakes and overlooking things</em>).</p>
-<p>As a concrete example, I forgot to add <code>include_guard(GLOBAL)</code> in my <code>ports/decovar-vcpkg-cmake</code> helper package. Here&rsquo;s what I needed to do in order to fix that:</p>
-<ol>
-<li>Edit <code>./ports/decovar-vcpkg-cmake/vcpkg-port-config.cmake</code> and commit this change, but not push yet;</li>
-<li>Run <code>git rev-parse HEAD:./ports/decovar-vcpkg-cmake</code> and set the new value to <code>git-tree</code> in <code>./versions/d-/decovar-vcpkg-cmake.json</code>;</li>
-<li>Stage that change and amend the commit from the step 1 by running <code>git commit --amend --no-edit</code>;</li>
-<li>Push.</li>
-</ol>
-<p>You can inspect <a href="https://github.com/retifrav/vcpkg-registry/commit/3332ca16e36cf806256e963bfbe9ab2fef7460e0">that commit</a> in my example registry. As you can see, it&rsquo;s almost the same steps as with <a href="#several-versions-of-a-port">adding a new version</a> of a port, except that here the version stays the same.</p>
-<p>Also don&rsquo;t forget to update Git hash value (<em>current <code>HEAD</code> of the entire registry repository, not just this dependency</em>) for <code>baseline</code> property in <a href="https://github.com/retifrav/glfw-imgui-example/blob/master/vcpkg-configuration.json#L6">vcpkg-configuration.json</a> of the &ldquo;consuming&rdquo; project, otherwise it will not &ldquo;know&rdquo; about the updated version in the registry. Moreover, if you force-pushed that fix, then vcpkg will simply fail to resolve dependencies, as that commit would no longer exist.</p>
-<p>But actually that last bit about changing <code>baseline</code> property in the project&rsquo;s <code>vcpkg-configuration.json</code> when updating the same version of a port in the registry (<em>when the same port v1.2.3 has different configuration/patches/etc in different registry commits/states</em>) is something I am not very confident about, because I am not really sure how exactly the <code>baseline</code> value is used for resolving the port version/state:</p>
-<ol>
-<li>Does vcpkg look for a version with <code>git-tree</code> value that was available no later than that commit?</li>
-<li>Or does vcpkg use that commit hash value only for getting <code>versions/baseline.json</code> from that exact commit (<em>to establish a minimum port version</em>), and then it will still find the latest version&rsquo;s <code>git-tree</code> value that might be pointing to a later repository state and take that one? So one cannot rely on <code>baseline</code> property to &ldquo;prevent&rdquo; vcpkg from getting updated port versions available in the registry?</li>
-</ol>
-<p>I was hoping it&rsquo;s the former, but looks like it&rsquo;s actually the latter. In that case I now better understand the point of <a href="https://learn.microsoft.com/en-us/vcpkg/users/versioning#port-version">port-version</a>.</p>
 <h1 id="installing-ports-from-a-registry">Installing ports from a registry</h1>
 <h2 id="without-a-project">Without a project</h2>
 <p>You can try to install the <a href="#port-structure">GLFW port</a> even without having a project that would depend on it. It is a convenient ability to have when you want to quickly test your new port:</p>
@@ -1666,8 +1655,8 @@
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;baseline&#34;</span>: <span style="color:#e6db74">&#34;4b4ae3fea063fc04c2d5a6089c8aa7c2d0129879&#34;</span>
 </span></span><span style="display:flex;"><span>    },
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;registries&#34;</span>: []
-</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
-<p>and <code>vcpkg.json</code>:</p>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>and <code>vcpkg.json</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;some&#34;</span>,
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;0&#34;</span>,
@@ -1676,8 +1665,8 @@
 </span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;glad&#34;</span>,
 </span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;glfw&#34;</span>
 </span></span><span style="display:flex;"><span>    ]
-</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
-<p>Here it will go with default versions and features, but you can of course specify anything you&rsquo;d need just like you would do it in an actual project.</p>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Here it will go with default versions and features, but you can of course specify anything you&rsquo;d need just like you would do it in an actual project.</p>
 <p>And now you can install these ports:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>dummy
 </span></span><span style="display:flex;"><span>$ tree <span style="color:#f92672">.</span>
@@ -2249,6 +2238,82 @@
 <p>In that case you&rsquo;ll need to set the following <a href="https://github.com/Microsoft/vcpkg/issues/5621#issuecomment-471444498">explicit mapping</a> in your project:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL</span> <span style="color:#e6db74">Release</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO</span> <span style="color:#e6db74">Release</span>)</span></span></code></pre></div>
+<h1 id="updating-a-port">Updating a port</h1>
+<p>Not once and not twice you&rsquo;ll need to change something in your existing port, especially when you are working on the very first version of it (<em>as you&rsquo;ll be making mistakes and overlooking things</em>).</p>
+<p>As a concrete example, I forgot to add <code>include_guard(GLOBAL)</code> in my <code>ports/decovar-vcpkg-cmake</code> helper package. Here&rsquo;s what I needed to do in order to fix that:</p>
+<ol>
+<li>Edit <code>./ports/decovar-vcpkg-cmake/vcpkg-port-config.cmake</code> and commit this change, but not push yet;</li>
+<li>Run <code>git rev-parse HEAD:./ports/decovar-vcpkg-cmake</code> and set the new value to <code>git-tree</code> in <code>./versions/d-/decovar-vcpkg-cmake.json</code>;</li>
+<li>Stage that change and amend the commit from the step 1 by running <code>git commit --amend --no-edit</code>;</li>
+<li>Push.</li>
+</ol>
+<p>You can inspect <a href="https://github.com/retifrav/vcpkg-registry/commit/3332ca16e36cf806256e963bfbe9ab2fef7460e0">that commit</a> in my example registry. As you can see, it&rsquo;s almost the same steps as with <a href="#several-versions-of-a-port">adding a new version</a> of a port, except that here the version stays the same.</p>
+<p>Also don&rsquo;t forget to update Git hash value (<em>current <code>HEAD</code> of the entire registry repository, not just this dependency</em>) for <code>baseline</code> property in <a href="https://github.com/retifrav/glfw-imgui-example/blob/master/vcpkg-configuration.json#L6">vcpkg-configuration.json</a> of the &ldquo;consuming&rdquo; project, otherwise it will not &ldquo;know&rdquo; about the updated version in the registry. Moreover, if you force-pushed that fix, then vcpkg will simply fail to resolve dependencies, as that commit would no longer exist.</p>
+<p>But actually that last bit about changing <code>baseline</code> property in the project&rsquo;s <code>vcpkg-configuration.json</code> when updating the same version of a port in the registry (<em>when the same port v1.2.3 has different configuration/patches/etc in different registry commits/states</em>) is something I am not very confident about, because I am not really sure how exactly the <code>baseline</code> value is used for resolving the port version/state:</p>
+<ol>
+<li>Does vcpkg look for a version with <code>git-tree</code> value that was available no later than that commit?</li>
+<li>Or does vcpkg use that commit hash value only for getting <code>versions/baseline.json</code> from that exact commit (<em>to establish a minimum port version</em>), and then it will still find the latest version&rsquo;s <code>git-tree</code> value that might be pointing to a later repository state and take that one? So one cannot rely on <code>baseline</code> property to &ldquo;prevent&rdquo; vcpkg from getting updated port versions available in the registry?</li>
+</ol>
+<p>I was hoping it&rsquo;s the former, but looks like it&rsquo;s actually the latter. In that case I now better understand the point of <a href="https://learn.microsoft.com/en-us/vcpkg/users/versioning#port-version">port-version</a>.</p>
+<h1 id="testing-your-ports-before-publishing">Testing your ports before publishing</h1>
+<p>While working on a port, would it be <a href="#creating-your-own-ports">creating</a> a new port or <a href="#updating-a-port">updating</a> an existing one, you will want to test it before publishing/pushing it to the registry. The reason is that all too often you will be finding a yet another error/typo/imperfection some minutes after your last push, which you&rsquo;ll want to amend in your last commit and force-push it to the registry, trying not to &ldquo;overwhelm&rdquo; the history with lots (and lots) of these &ldquo;correction&rdquo; commits.</p>
+<p>It might be fine if you are using that registry alone, but if you are working in a team, then it should absolutely not be allowed to force-push, so testing the ports before pushing your changes to the registry becomes especially important. There are several ways how you can do that, and here are some.</p>
+<h2 id="overlay-ports">Overlay ports</h2>
+<p>The <a href="https://learn.microsoft.com/en-us/vcpkg/concepts/overlay-ports">overlay ports</a> is probably the easiest way to test your changes locally. You just copy the port(s) folder with your pending changes to some other path:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /tmp <span style="color:#f92672">&amp;&amp;</span> mkdir ./vcpkg-test-registry <span style="color:#f92672">&amp;&amp;</span> cd $_
+</span></span><span style="display:flex;"><span>$ cp -r /path/to/your/vcpkg-registry/ports/glfw .
+</span></span><span style="display:flex;"><span>$ ls -L1 .
+</span></span><span style="display:flex;"><span>glfw/
+</span></span></code></pre></div><p>and then point to that path with <a href="https://learn.microsoft.com/en-us/vcpkg/commands/common-options#overlay-ports">--overlay-ports</a> for bare <code>vcpkg</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/some/project
+</span></span><span style="display:flex;"><span>$ ls -L1 ./vcpkg*
+</span></span><span style="display:flex;"><span>./vcpkg-configuration.json
+</span></span><span style="display:flex;"><span>./vcpkg.json
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>$ vcpkg install --overlay-ports /tmp/vcpkg-test-registry
+</span></span></code></pre></div><p>or with <a href="https://learn.microsoft.com/en-us/vcpkg/users/config-environment#vcpkg_overlay_ports">VCPKG_OVERLAY_PORTS</a> for CMake:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/some/project
+</span></span><span style="display:flex;"><span>$ ls -L1 ./vcpkg* ./CMake*
+</span></span><span style="display:flex;"><span>./CMakeLists.txt
+</span></span><span style="display:flex;"><span>./vcpkg-configuration.json
+</span></span><span style="display:flex;"><span>./vcpkg.json
+</span></span><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd $_
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ cmake -G Ninja -DCMAKE_BUILD_TYPE<span style="color:#f92672">=</span>Release <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#ae81ff"></span>    -DCMAKE_TOOLCHAIN_FILE<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span>$VCPKG_ROOT<span style="color:#e6db74">/scripts/buildsystems/vcpkg.cmake&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -DVCPKG_OVERLAY_PORTS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/tmp/vcpkg-test-registry&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    ..
+</span></span></code></pre></div><p>Either of those will &ldquo;ignore&rdquo; the <code>glfw</code> port from the registry and instead will use the one overlayed at <code>/tmp/vcpkg-test-registry/</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>The following packages will be built and installed:
+</span></span><span style="display:flex;"><span>    glad:arm64-osx@0.1.36 -- /path/to/vcpkg/.cache/vcpkg/registries/git-trees/e5e10ddd4da92e43fb8d0824bbdcdd900f4eca8d
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    glfw:arm64-osx@3.4.0 -- /tmp/vcpkg-test-registry/glfw
+</span></span><span style="display:flex;"><span>    json-nlohmann:arm64-osx@3.11.3 -- /path/to/vcpkg/.cache/vcpkg/registries/git-trees/8bd1dccc545d928171f343d3b59822b1df0bebf1
+</span></span><span style="display:flex;"><span>    ...
+</span></span></code></pre></div><p>Conveniently, there is no need to care about the port version, as no matter what your <code>baseline</code> or <code>overrides</code> say, it will go with whatever version is in that overlayed port:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ gsed -i <span style="color:#e6db74">&#39;s/&#34;version&#34;: &#34;3\.4\.0&#34;,/&#34;version&#34;: &#34;3.444.9000&#34;,/&#39;</span> /tmp/vcpkg-test-registry/glfw/vcpkg.json
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ vcpkg install --overlay-ports /tmp/vcpkg-test-registry
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>The following packages will be built and installed:
+</span></span><span style="display:flex;"><span>    glad:arm64-osx@0.1.36 -- /path/to/vcpkg/.cache/vcpkg/registries/git-trees/e5e10ddd4da92e43fb8d0824bbdcdd900f4eca8d
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    glfw:arm64-osx@3.444.9000 -- /tmp/vcpkg-test-registry/glfw
+</span></span><span style="display:flex;"><span>    json-nlohmann:arm64-osx@3.11.3 -- /path/to/vcpkg/.cache/vcpkg/registries/git-trees/8bd1dccc545d928171f343d3b59822b1df0bebf1
+</span></span></code></pre></div><h2 id="registry-branches">Registry branches</h2>
+<p>When it comes to testing ports on several machines, such as building on your CI/CD buildbots or when sharing it with a colleague, overlay ports method is not that convenient, because you will need to deploy your port to every machine and modify the build commands.</p>
+<p>A more convenient way would be to create a separate testing/playground registry, and add it as an <a href="#multiple-registries">additional registry</a> in your project, but an even better way would be to just create a new branch in your registry - vcpkg supports that too, what a marvel.</p>
+<p>The way it works is that after you commit and push your modified port to that new branch, you can tell vcpkg to fetch ports from that branch instead of the default one by specifying the <a href="https://learn.microsoft.com/en-us/vcpkg/reference/vcpkg-configuration-json#registry-reference">reference</a> property (<em>in <code>vcpkg-configuration.json</code></em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;default-registry&#34;</span>:
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;kind&#34;</span>: <span style="color:#e6db74">&#34;git&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;repository&#34;</span>: <span style="color:#e6db74">&#34;git@github.com:retifrav/vcpkg-registry.git&#34;</span>,
+</span></span><span style="display:flex; background-color:#3c3d38"><span>        <span style="color:#f92672">&#34;reference&#34;</span>: <span style="color:#e6db74">&#34;updating-glfw&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;baseline&#34;</span>: <span style="color:#e6db74">&#34;4b4ae3fea063fc04c2d5a6089c8aa7c2d0129879&#34;</span>
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;registries&#34;</span>: []
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>In case of buildbots, if your CI/CD supports &ldquo;personal&rdquo; builds with patches (<em>like <a href="https://www.jetbrains.com/help/teamcity/personal-build.html#Direct+Patch+Upload">TeamCity does</a></em>), then running the build with your modified port becomes rather trivial (<em>modify <code>vcpkg-configuration.json</code>, make a patch, trigger the building pipeline with that patch</em>).</p>
+<p>Obviously, since it is your branch, you can force-push to it all you want without causing troubles for others. And when you are happy with your port, you can simply rebase your branch onto <code>master</code> and delete it.</p>
 <h1 id="per-platform-specifics">Per-platform specifics</h1>
 <h2 id="webassembly">WebAssembly</h2>
 <h3 id="chainloading-emscripten-toolchain">Chainloading Emscripten toolchain</h3>
