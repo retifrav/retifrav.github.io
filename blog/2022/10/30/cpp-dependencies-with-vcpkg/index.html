@@ -127,7 +127,12 @@
           </ul>
         </li>
         <li><a href="#cmake-helpers">CMake helpers</a></li>
-        <li><a href="#cmake-wrapper">CMake wrapper</a></li>
+        <li><a href="#cmake-wrapper">CMake wrapper</a>
+          <ul>
+            <li><a href="#example-wrapper-for-xerces-c-port">Example wrapper for Xerces-C++ port</a></li>
+            <li><a href="#example-wrapper-for-oculus-sdk-port">Example wrapper for Oculus SDK port</a></li>
+          </ul>
+        </li>
         <li><a href="#multiple-targetscomponents-in-one-project">Multiple targets/components in one project</a>
           <ul>
             <li><a href="#making-cmake-configs-discoverable">Making CMake configs discoverable</a></li>
@@ -1036,8 +1041,9 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>include(<span style="color:#e6db74">&#34;${CMAKE_CURRENT_SOURCE_DIR}/Installing.cmake&#34;</span>)</span></span></code></pre></div>
 <p>You can take a look at how <a href="https://github.com/retifrav/vcpkg-registry/tree/300646731e809c0a217cf3c133f856be82add3ad/ports/dearimgui">Dear ImGui port</a> does it.</p>
 <h2 id="cmake-wrapper">CMake wrapper</h2>
-<p>I couldn&rsquo;t find documentation about this functionality, but it&rsquo;s not very complex to figure out on your own. Basically, adding a CMake wrapper into your port allows you to &ldquo;inject&rdquo; CMake statements before or after <code>find_package()</code> call.</p>
-<p>For example, let&rsquo;s take <a href="https://github.com/retifrav/vcpkg-registry/tree/master/ports/xerces-c">Xerces-C++</a> port. It builds fine, but when you&rsquo;ll try to actually use it in some project on Mac OS (<em>using <code>x64-osx</code> or <code>arm64-osx</code> triplets</em>), then you will get the following linking errors:</p>
+<p>I couldn&rsquo;t find documentation about this functionality, but it&rsquo;s not very complex to figure out on your own. Basically, adding a CMake wrapper into your port allows you to &ldquo;inject&rdquo; CMake statements before or/and after <code>find_package()</code> call.</p>
+<h3 id="example-wrapper-for-xerces-c-port">Example wrapper for Xerces-C++ port</h3>
+<p>For instance, let&rsquo;s take <a href="https://github.com/retifrav/vcpkg-registry/tree/bc4c173cc8d0763f636ff201b2e28f4bf00453f1/ports/xerces-c">Xerces-C++</a> port. It builds fine, but when you&rsquo;ll try to actually use it in some project on Mac OS (<em>using <code>x64-osx</code> or <code>arm64-osx</code> triplets</em>), then you will get the following linking errors:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Undefined symbols <span style="color:#66d9ef">for</span> architecture arm64: 
 </span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;_CFRelease&#34;</span>, referenced from:
 </span></span><span style="display:flex;"><span>      xercesc_3_2::MacOSUnicodeConverter::upperCase<span style="color:#f92672">(</span>char16_t*<span style="color:#f92672">)</span> in libxerces-c.a<span style="color:#f92672">(</span>MacOSUnicodeConverter.cpp.o<span style="color:#f92672">)</span>
@@ -1058,8 +1064,9 @@
 </span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;-framework CoreServices&#34;</span>
 </span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()</span></span></code></pre></div>
-<p>But then you would need to add that to all your projects that depend on Xerces-C++. And a better option would be to do it once in the <a href="https://github.com/retifrav/vcpkg-registry/blob/master/ports/xerces-c/vcpkg-cmake-wrapper.cmake">CMake wrapper</a> that comes from the port.</p>
-<p>As I understand it, the way it works is that you add a file named <code>vcpkg-cmake-wrapper.cmake</code> to your port, and it will &ldquo;replace&rdquo; (<em>or actually wrap</em>) the <code>find_package()</code> call. Here&rsquo;s how it looks for Xerces-C++:</p>
+<p>But then you would need to add that to all your projects that depend on Xerces-C++.</p>
+<p>A better option would be to do it once in the <a href="https://github.com/retifrav/vcpkg-registry/tree/bc4c173cc8d0763f636ff201b2e28f4bf00453f1/ports/xerces-c/vcpkg-cmake-wrapper.cmake">CMake wrapper</a> that comes from the port.</p>
+<p>As I understand it, the way it works is that you add a file named <code>vcpkg-cmake-wrapper.cmake</code> to your port, and it will &ldquo;replace&rdquo; (<em>or actually wrap</em>) the <code>find_package()</code> call. Here&rsquo;s how that wrapper looks for Xerces-C++:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># do some stuff before the package will be attempted to be found
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"># [stuff]
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"># ...
@@ -1080,13 +1087,34 @@
 </span></span><span style="display:flex;"><span>        )<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    endif()<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()</span></span></code></pre></div>
-<p>In this particular case it might be that linking to CoreServices could have been done in a better way, but it does work like this.</p>
-<p>And then you install this wrapper into <code>${CURRENT_PACKAGES_DIR}/share/${PORT}</code> path. But be careful to check that port name and actual package name are the same. If they are different, then it is important that you install the wrapper exacty into the package folder and not into the port folder, otherwise it won&rsquo;t be used. For instance, in my registry Xerces-C++ port name is <code>xerces-c</code> and its package name is <code>XercesC</code>, and so here&rsquo;s how I install the wrapper:</p>
+<p>In this particular case it might be that linking to CoreServices could have been done in a better way, but for me it works fine like this.</p>
+<p>And then you need to install this wrapper into <code>${CURRENT_PACKAGES_DIR}/share/${PORT}</code> path. But be careful to check that port name and actual package name are the same. If they are different, then it is important that you install the wrapper exactly into the package folder and not into the port folder, otherwise it won&rsquo;t be used. For instance, in my registry Xerces-C++ port name is <code>xerces-c</code> and its package name is <code>XercesC</code>, so here&rsquo;s how I install the wrapper:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>file(
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">INSTALL</span> <span style="color:#e6db74">&#34;${CURRENT_PORT_DIR}/vcpkg-cmake-wrapper.cmake&#34;</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">&#34;${CURRENT_PACKAGES_DIR}/share/XercesC&#34;</span>
 </span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
-<h2 id="multiple-targetscomponents-in-one-project">Multiple targets/components in one project</h2>
+<h3 id="example-wrapper-for-oculus-sdk-port">Example wrapper for Oculus SDK port</h3>
+<p>Another example would be <a href="https://github.com/retifrav/vcpkg-registry/tree/43bed051c2b6c024218ad25460596045e341facf/ports/oculus-sdk">Oculus SDK port</a>. This one is a pre-built binary package, and to make it discoverable with <code>find_package()</code> I wrote a <a href="https://github.com/retifrav/vcpkg-registry/blob/43bed051c2b6c024218ad25460596045e341facf/ports/oculus-sdk/FindOculusSDK.cmake">Find module</a> for it.</p>
+<p>Normally, projects would need to include that module into their repositories or wherever it could be used from, but with <a href="https://github.com/retifrav/vcpkg-registry/blob/43bed051c2b6c024218ad25460596045e341facf/ports/oculus-sdk/vcpkg-cmake-wrapper.cmake">vcpkg-cmake-wrapper.cmake</a> you can just install it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">OculusSDK_PACKAGE_NAME</span> <span style="color:#e6db74">&#34;OculusSDK&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>file(<span style="color:#e6db74">INSTALL</span> <span style="color:#e6db74">&#34;${CMAKE_CURRENT_LIST_DIR}/vcpkg-cmake-wrapper.cmake&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">&#34;${CURRENT_PACKAGES_DIR}/share/${OculusSDK_PACKAGE_NAME}&#34;</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>file(<span style="color:#e6db74">INSTALL</span> <span style="color:#e6db74">&#34;${CMAKE_CURRENT_LIST_DIR}/FindOculusSDK.cmake&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">DESTINATION</span> <span style="color:#e6db74">&#34;${CURRENT_PACKAGES_DIR}/share/${OculusSDK_PACKAGE_NAME}&#34;</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>and temporary add its path to <code>CMAKE_MODULE_PATH</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">OculusSDK_PREV_MODULE_PATH</span> <span style="color:#f92672">${</span>CMAKE_MODULE_PATH<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>list(<span style="color:#e6db74">APPEND</span> <span style="color:#e6db74">CMAKE_MODULE_PATH</span> <span style="color:#f92672">${</span>CMAKE_CURRENT_LIST_DIR<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>_find_package(<span style="color:#f92672">${</span>ARGS<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CMAKE_MODULE_PATH</span> <span style="color:#f92672">${</span>OculusSDK_PREV_MODULE_PATH<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>Then you will be able to <a href="https://github.com/retifrav/vcpkg-registry/blob/43bed051c2b6c024218ad25460596045e341facf/ports/oculus-sdk/usage">use it</a> in your projects as you would expect:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>find_package(<span style="color:#e6db74">OculusSDK</span> <span style="color:#e6db74">REQUIRED</span>) <span style="color:#75715e"># no CONFIG, since it&#39;s a Find module
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>target_include_directories(<span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#e6db74">PRIVATE</span> <span style="color:#f92672">${</span>OculusSDK_INCLUDE_DIR<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>target_link_libraries(<span style="color:#f92672">${</span>PROJECT_NAME<span style="color:#f92672">}</span> <span style="color:#e6db74">PRIVATE</span> <span style="color:#e6db74">OculusSDK::OVR</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><h2 id="multiple-targetscomponents-in-one-project">Multiple targets/components in one project</h2>
 <p>I should warn you first that the stuff described in this section is my own understanding of the listed scenarios and how one is supposed to solve them. My understanding might be wrong, and there might be better ways of dealing with this, so perhaps you shouldn&rsquo;t blindly follow these instructions.</p>
 <h3 id="making-cmake-configs-discoverable">Making CMake configs discoverable</h3>
 <p>Say, your project has several targets/components and the &ldquo;main&rdquo; target depends on some/all of them. For example, here&rsquo;s <code>Config.cmake.in</code> template for the main target <code>SomeLibrary</code>:</p>
