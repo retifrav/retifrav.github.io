@@ -64,7 +64,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 130 min read</div>
+</svg> 131 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -245,6 +245,7 @@
                 <li><a href="#png-fails-to-generate-tf1">PNG fails to generate tf1</a></li>
               </ul>
             </li>
+            <li><a href="#finding-opengl-framework">Finding OpenGL framework</a></li>
           </ul>
         </li>
       </ul>
@@ -3066,6 +3067,30 @@
 <p>So apparently it can&rsquo;t handle <code>arm64;x86_64</code> value.</p>
 <p>At the same time, surprisingly, that very same PNG project didn&rsquo;t fail when I was building fat binaries <a href="#combinedfatuniversal-binaries-for-devices-and-simulator">for iOS</a>. I can&rsquo;t think of other reason than different <code>CMAKE_OSX_SYSROOT</code> values: for iOS it was <code>/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS17.0.sdk</code>, and the build succeeded, but for Mac OS it is <code>/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk</code>, and the build fails. If anything, both iOS and Mac OS builds got the same <code>&quot;arm64;x86_64&quot;</code> value for <code>CMAKE_OSX_ARCHITECTURES</code>.</p>
 <p>No idea how to fix it yet, so for now I&rsquo;m just building PNG separately with a single-architecture triplet of interest (<em>and <a href="#merging-different-architectures-into-one-universal-binary">merging the results</a> into a universal binary, when needed</em>).</p>
+<h3 id="finding-opengl-framework">Finding OpenGL framework</h3>
+<p>A peculiar problem I encountered making a <a href="https://github.com/retifrav/vcpkg-registry/tree/dd6279eeed3831f3e04781a640cbc21875571d2c/ports/logstalgia">port</a> for <a href="https://logstalgia.io">Logstalgia</a> application. It was building and running fine on Windows and GNU/Linux, but on Mac OS after a successful build the application was crashing with segmentation fault.</p>
+<p>At the same time, building the same project without vcpkg toolchain (<em>but obviously with vcpkg-resolved dependencies</em>) was resulting in the application running without any problems, so clearly vcpkg was doing something with the build that was causing the segmentation fault problem.</p>
+<p>So I compared the <code>build.ninja</code> files to see what was different in those, and soon enough I noticed that the one from my non-vcpkg build contained these <code>-F</code> flags in <code>INCLUDES</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>INCLUDES <span style="color:#f92672">=</span> <span style="color:#f92672">[</span>...<span style="color:#f92672">]</span> -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk/System/Library/Frameworks <span style="color:#f92672">[</span>...<span style="color:#f92672">]</span>
+</span></span></code></pre></div><p>while the one from vcpkg-managed build did not.</p>
+<p>Another difference was that in CMake configuration output my non-vcpkg build was finding OpenGL here:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>-- Found OpenGL: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk/System/Library/Frameworks/OpenGL.framework
+</span></span></code></pre></div><p>but vcpkg-managed build was reporting a different result:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>-- Found OpenGL: /opt/homebrew/lib/libGL.dylib
+</span></span></code></pre></div><p>From that I got an idea to check how does CMake <a href="https://cmake.org/cmake/help/latest/module/FindOpenGL.html#macos-specific">find OpenGL</a> at all, and in there I finally got to the <a href="https://cmake.org/cmake/help/latest/variable/CMAKE_FIND_FRAMEWORK.html">CMAKE_FIND_FRAMEWORK</a> variable. So by default on Mac OS this variable has the value <code>FIRST</code>, which is why my non-vcpkg build was finding the system OpenGL framework. And so since the vcpkg-managed build was finding a &ldquo;different&rdquo; OpenGL (<em>the one from Homebrew</em>), then apparently something inside vcpkg is modifying the <code>CMAKE_FIND_FRAMEWORK</code>.</p>
+<p>And yes, that is exactly <a href="https://github.com/microsoft/vcpkg/blob/5a7640f6a2c7758438bde59be0681036907d2956/scripts/buildsystems/vcpkg.cmake#L408">what&rsquo;s happening</a> - vcpkg toolchain sets <code>CMAKE_FIND_FRAMEWORK</code> value to <code>LAST</code>. So then the <a href="https://github.com/retifrav/vcpkg-registry/commit/c4d3886755fbe2afa25632641204040ccd960b94">workaround</a> that I did was this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">CMAKE_FIND_FRAMEWORK_BACKUP</span> <span style="color:#f92672">${</span>CMAKE_FIND_FRAMEWORK<span style="color:#f92672">}</span>) <span style="color:#75715e"># backing-up `LAST`
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>if(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">DEFINED</span> <span style="color:#e6db74">VCPKG_INSTALLED_DIR</span> <span style="color:#75715e"># if we are building with vcpkg toolchain
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#e6db74">AND</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CMAKE_SYSTEM_NAME</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;Darwin&#34;</span> <span style="color:#75715e"># and on Mac OS
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    set(<span style="color:#e6db74">CMAKE_FIND_FRAMEWORK</span> <span style="color:#e6db74">&#34;FIRST&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>find_package(<span style="color:#e6db74">OpenGL</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CMAKE_FIND_FRAMEWORK</span> <span style="color:#f92672">${</span>CMAKE_FIND_FRAMEWORK_BACKUP<span style="color:#f92672">}</span>) <span style="color:#75715e"># restoring `LAST`
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># or I probably could&#39;ve used `unset(CMAKE_FIND_FRAMEWORK)` instead of backing-up and restoring
+</span></span></span></code></pre></div><p>After that the vcpkg-managed build also found OpenGL in <code>/Applications/Xcode.app/.../OpenGL.framework</code>, and the newly built Logstalgia launched and ran fine without segfaulting.</p>
 <h1 id="dependency-graph">Dependency graph</h1>
 <p>Conan has a convenient out-of-the-box functionality for generating a <a href="/blog/2022/02/06/cpp-dependencies-with-conan/#dependency-graph">dependency graph</a>, both as a plain-text JSON file and as an interactive HTML page.</p>
 <p>The vcpkg&rsquo;s capabilities in that regard are rather modest in comparison. It has a <a href="https://learn.microsoft.com/en-us/vcpkg/commands/depend-info">depend-info</a> command, which can list dependencies either in a somewhat structured plain-text format or in two graph formats: <a href="https://en.wikipedia.org/wiki/DOT_(graph_description_language)">DOT</a> and <a href="https://en.wikipedia.org/wiki/DGML">DGML</a>. Neither of these formats can be customized, and all of them output just port names (<em>no version, license or any other information</em>).</p>
