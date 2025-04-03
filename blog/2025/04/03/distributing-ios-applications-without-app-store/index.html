@@ -139,7 +139,7 @@
 <li>applications can have users;</li>
 <li>but there are also distribution groups, which also can have users;</li>
 <li>at the same time, every version of the same application can have different distribution groups;</li>
-<li>and it is quite difficult to keep track of all that and have an overview who has access to what.</li>
+<li>it is quite difficult to keep track of all that and have an overview of who has access to what.</li>
 </ul>
 </li>
 </ul>
@@ -189,7 +189,7 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;string&gt;</span>SOME-ID-HERE<span style="color:#f92672">&lt;/string&gt;</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/dict&gt;</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/plist&gt;</span>
-</span></span></code></pre></div><p>As a result you will have a <code>SomeApplication.ipa</code> file, which you will need to upload to your server. Nothing special about that procedure, just a regular file upload. Although you most likely will want to protect it with authentication/authorization, but more on that <a href="#authenticationauthorization">later</a>.</p>
+</span></span></code></pre></div><p>As a result you will have a <code>SomeApplication.ipa</code> file, which you will need to upload to your server. Nothing special about that procedure, just a regular file upload via SFTP or whatever you use for that. Although you will probably also want to protect that file with authentication/authorization, but more on that <a href="#authenticationauthorization">later</a>.</p>
 <h2 id="the-manifestplist">The manifest.plist</h2>
 <p>Next thing you need is a special <code>manifest.plist</code> file. For example, if the application name is <code>LidarScanner</code>, then <code>manifest.plist</code> will have the following contents:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#75715e">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
@@ -237,7 +237,7 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;/array&gt;</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/dict&gt;</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/plist&gt;</span>
-</span></span></code></pre></div><p>For this to work you will need to upload the <code>lidar-scanner.ipa</code> binary and this <code>manifest.plist</code> file to <code>/downloads/</code> path in your website root path on the server. Actually, <code>manifest.plist</code> can be placed anywhere (<em>and it doesn&rsquo;t even have to be a &ldquo;physical&rdquo; file</em>), but the location of <code>lidar-scanner.ipa</code> should match the one specified in the <code>&lt;string&gt;</code> value for that <code>software-package</code> section in the manifest.</p>
+</span></span></code></pre></div><p>For this to work you will need to upload the <code>lidar-scanner.ipa</code> binary and this <code>manifest.plist</code> file to <code>/downloads/</code> path in your website root directory on the server. Actually, <code>manifest.plist</code> can be placed anywhere (<em>and it doesn&rsquo;t even have to be a &ldquo;physical&rdquo; file</em>), but the location of <code>lidar-scanner.ipa</code> should match the one specified in the <code>&lt;string&gt;</code> value for that <code>software-package</code> section in the manifest.</p>
 <p>One more requirement is that the <code>*.ipa</code> URL must be with HTTPS, and the certificate needs to be trusted on the installing device (<em>so you might have some troubles if your SSL/TLS certificate is self-signed</em>).</p>
 <h2 id="the-itms-services-uri">The itms-services URI</h2>
 <p>The last thing to do is adding this link anywhere on your website:</p>
@@ -246,7 +246,7 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span>&lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;itms-services://?action=download-manifest&amp;url=https://your.company.com/downloads/manifest.plist&#34;</span>&gt;
 </span></span><span style="display:flex;"><span>    Install iOS application
 </span></span><span style="display:flex;"><span>&lt;/<span style="color:#f92672">a</span>&gt;
-</span></span></code></pre></div><p>Here it assumes that the <code>manifest.plist</code> file is available at the <code>/downloads/</code> path in your website root path on the server. If you placed it elsewhere, then obviously you&rsquo;ll need to adjust that link. And similar to the <code>.ipa</code> URL, it most likely also needs to be with HTTPS (<em>and trusted SSL/TLS certificate</em>).</p>
+</span></span></code></pre></div><p>Here it assumes that the <code>manifest.plist</code> file is located at the <code>/downloads/</code> path in your website root directory on the server. If you placed it elsewhere, then obviously you&rsquo;ll need to adjust that link. And similar to the <code>.ipa</code> URL, it most likely also needs to be with HTTPS (<em>and trusted SSL/TLS certificate</em>).</p>
 <p>Now, once you click on that link in Safari web-browser on one of your iOS devices, the following modal dialog should appear:</p>
 
 
@@ -375,9 +375,9 @@
 <blockquote>The enterprise signing certificate that you use to sign apps typically lasts for three years. However, the provisioning profile expires after a year. While the certificate is still valid, Intune gives you the tools to proactively assign a new provisioning profile to devices that have apps that are nearing expiry. After the certificate expires, you must sign the app again with a new certificate and embed a new provisioning profile with the key of the new certificate.</blockquote>
 <p>So there is one more surprise: in addition to provisioning profile expiring after 1 year, your signing certificate will also be expiring every 3 years.</p>
 <h1 id="hosting-ios-applications-on-a-netmvc-website">Hosting iOS applications on a .NET/MVC website</h1>
-<p>As I already said, now that you know what it takes to distribute an (<em>&ldquo;Enterprise&rdquo;</em>) iOS application, it should be rather trivial for you to implement this on your own website, no matter what web-development framework you are using there. In a simplest case even a single static HTML page would do. Or maybe even a bare <code>itms-services://</code> link sent via e-mail should be enough.</p>
+<p>As I already said in the beginning, now when you know <a href="#how-is-it-even-possible-to-distribute-ios-applications-without-app-store">what it takes</a> to distribute an (<em>&ldquo;Enterprise&rdquo;</em>) iOS application, it should be rather trivial for you to implement this on your own website, no matter what web-development framework you are using there. In a simplest case even a single static HTML page would do. Or maybe even a bare <code>itms-services://</code> link sent via e-mail should be enough.</p>
 <p>In our case we have a .NET/MVC-based website, so I&rsquo;ll share the related code fragments. Note that I removed some parts from that code for simplicity/confidentiality, so there might be missing variables or other errors in there. This is just a general example after all, so don&rsquo;t expect it to work &ldquo;out of the box&rdquo;.</p>
-<p>To <a href="#authenticationauthorization">reiterate</a> the key point of having some backend code instead of just a &ldquo;plain&rdquo; HTML page: the goal is to auto-generate short-lived download URLs in order not to expose static <code>*.ipa</code> files without authentication.</p>
+<p>To reiterate the <a href="#authenticationauthorization">key point</a> of having some backend code instead of just a &ldquo;plain&rdquo; HTML page: the goal here is to auto-generate short-lived download URLs in order not to expose static <code>*.ipa</code> files without authentication.</p>
 <h2 id="template-string-for-manifestplist">Template string for manifest.plist</h2>
 <p>As you&rsquo;ll probably have more than one application to distribute, and given that every application will likely have more than one version, it quickly becomes impractical to compose static <code>manifest.plist</code> manually. You could probably auto-generate them with a script every time a new application/version is published, but instead we decided to generate them &ldquo;on the fly&rdquo; using a template string:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span>private const string _manifestPlist = &#34;&#34;&#34;
@@ -681,13 +681,14 @@
 </span></span><span style="display:flex;"><span>    );
 </span></span><span style="display:flex;"><span>}
 </span></span></code></pre></div><p>It should be obvious and already known by now, but probably won&rsquo;t hurt to explicitly state this one more time anyway: at no point the direct static URL to the &ldquo;physical&rdquo; <code>/files/applications/{applicationSlug}/v{applicationVersion}/some-application.ipa</code> file should be exposed in your website routes without authentication/authorization. That is the entire point of having those temporary GUID-based URLs in the unprotected/anonymous <code>ApplicationDownloadIpa()</code> route/action, which is meant to be serving the actual files via <a href="https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.controllerbase.physicalfile#microsoft-aspnetcore-mvc-controllerbase-physicalfile(system-string-system-string-system-string)">PhysicalFile</a>.</p>
-<p>Now, if it&rsquo;s all good, your users/employees will be able to download and install iOS applications from your company website (<em>that is an admin view with additional controls, regular users will see a simplified variant</em>):</p>
+<p>Now, if it&rsquo;s all good, your users/employees will be able to download and install iOS applications from your company website:</p>
 <p>
 
 
     <img class="image-post" loading="lazy" src="/blog/2025/04/03/distributing-ios-applications-without-app-store/images/installing-ios-application-from-website.png" alt="Installing an iOS application from a website">
 
 </p>
+<p>If anything, the screenshot above shows an admin view with additional controls. Regular users will see a simplified &ldquo;less capable&rdquo; variant.</p>
       </div>
     </article>
     <div><div id="tags">
