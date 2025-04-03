@@ -1,0 +1,896 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Distributing iOS applications within a company from a website without App Store | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2025/04/03/distributing-ios-applications-without-app-store/" />
+
+    <meta name="generator" content="Hugo" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="It is possible (always has been) to distribute iOS applications within a company via one&#39;s own website (so without App Store). The only two things (aside from Apple (Enterprise?) Developer account) you need is a special manifest.plist file and a URI with itms-services:// scheme." />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:url" content="https://retifrav.github.io/blog/2025/04/03/distributing-ios-applications-without-app-store/">
+  <meta property="og:site_name" content="Declaration of VAR">
+  <meta property="og:title" content="Distributing iOS applications within a company from a website without App Store">
+  <meta property="og:description" content="It is possible (always has been) to distribute iOS applications within a company via one&#39;s own website (so without App Store). The only two things (aside from Apple (Enterprise?) Developer account) you need is a special manifest.plist file and a URI with itms-services:// scheme.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2025-04-03T13:52:24+02:00">
+    <meta property="article:modified_time" content="2025-04-03T13:52:24+02:00">
+    <meta property="article:tag" content="Apple">
+    <meta property="article:tag" content="Ios">
+    <meta property="article:tag" content="Web">
+    <meta property="article:tag" content="Dotnet">
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.2a28493e0b91076cde9fb52cb7fec81f63f685a6965e6a9df1179ec846b9141f.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        On 19.05.2021 the website was moved to
+        <a href="https://decovar.dev/blog/2025/04/03/distributing-ios-applications-without-app-store/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>. This is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Distributing iOS applications within a company from a website without App Store</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2025-04-03 13:52:24 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 24 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>We&rsquo;ve been using <a href="https://appcenter.ms">App Center</a> (<em>former HockeyApp, which got <a href="https://devblogs.microsoft.com/appcenter/hockeyapp-is-being-retired/">retired</a> and replaced by App Center</em>) for distributing our iOS applications within the company. And when we learned about a year ago that App Center also is going to be <a href="https://learn.microsoft.com/en-us/appcenter/retirement">retired</a> on 2025-03-31, we started looking at alternatives. Having found none that would be good enough, we decided to implement our own.</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2025/04/03/distributing-ios-applications-without-app-store/images/installing-ios-application-from-website-blurred.png" alt="Installing an iOS application from a website">
+
+<p>Since we already had a .NET/MVC-based website for distribution-related stuff, we added this functionality there, and that turned out to be a rather trivial task. The .NET/MVC has nothing to do with it really - that&rsquo;s just what we had, and you&rsquo;ll see for yourself that this can be done with any other framework or even with a bare static website.</p>
+<p>I should have published this article much earlier before the App Center retirement date, and I was intending too, but I just never found time, sorry about that.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#why-would-one-need-app-center-or-a-similar-service">Why would one need App Center or a similar service</a>
+      <ul>
+        <li><a href="#alternatives">Alternatives</a></li>
+        <li><a href="#app-center-itself-wasnt-great-either">App Center itself wasn&rsquo;t great either</a></li>
+      </ul>
+    </li>
+    <li><a href="#how-is-it-even-possible-to-distribute-ios-applications-without-app-store">How is it even possible to distribute iOS applications without App Store</a>
+      <ul>
+        <li><a href="#building-the-application">Building the application</a></li>
+        <li><a href="#the-manifestplist">The manifest.plist</a></li>
+        <li><a href="#the-itms-services-uri">The itms-services URI</a></li>
+      </ul>
+    </li>
+    <li><a href="#caveats-and-other-apple-specifics">Caveats and other Apple specifics</a>
+      <ul>
+        <li><a href="#authenticationauthorization">Authentication/authorization</a>
+          <ul>
+            <li><a href="#both-routes-are-protected">Both routes are protected</a></li>
+            <li><a href="#only-the-application-file-route-is-protected">Only the application file route is protected</a></li>
+            <li><a href="#both-routes-are-not-protected">Both routes are not protected</a></li>
+          </ul>
+        </li>
+        <li><a href="#launching-downloaded-applications-on-ios-devices">Launching downloaded applications on iOS devices</a></li>
+        <li><a href="#limited-number-of-devices">Limited number of devices</a></li>
+        <li><a href="#applications-expiration">Applications expiration</a></li>
+      </ul>
+    </li>
+    <li><a href="#hosting-ios-applications-on-a-netmvc-website">Hosting iOS applications on a .NET/MVC website</a>
+      <ul>
+        <li><a href="#template-string-for-manifestplist">Template string for manifest.plist</a></li>
+        <li><a href="#initial-download-request">Initial download request</a></li>
+        <li><a href="#downloading-the-manifestplist">Downloading the manifest.plist</a></li>
+        <li><a href="#downloading-the-application">Downloading the application</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h1 id="why-would-one-need-app-center-or-a-similar-service">Why would one need App Center or a similar service</h1>
+<p>Because fucking Apple didn&rsquo;t make it simple to distribute iOS applications. You cannot just place an <a href="https://en.wikipedia.org/wiki/.ipa">.ipa</a> binary on your website, so users could download and install it.</p>
+<p>Well, actually, you can, and that is what this article is about, but more on that <a href="#how-is-it-even-possible-to-distribute-ios-applications-without-app-store">a bit later</a>. For now, assuming that it&rsquo;s all black magic to you and that you don&rsquo;t want to touch App Store / TestFlight with a 100 meters long pole, the only possibility one might have is to use a special service that could host <code>.ipa</code> binaries and perform required voodoo passes to make them installable on users devices. And App Center is one of such services. Was.</p>
+<p>To clarify, here I am talking about distributing &ldquo;internal&rdquo; iOS applications within a company, so this is not about publishing applications for general public - for that, I imagine, you would still need to submerge yourself into the great marsh of App Store / TestFlight things, so if that is your case, then this article will likely be of no use for you.</p>
+<h2 id="alternatives">Alternatives</h2>
+<p>Having announced the retirement of App Center, Microsoft <a href="https://learn.microsoft.com/en-us/appcenter/retirement#alternative-solutions">suggested</a> App Store and TestFlight as alternatives, but we were using (<em>HockeyApp and then</em>) App Center exactly because we did not want to deal with App Store and TestFlight, so that suggestion wasn&rsquo;t helpful at all.</p>
+<p>We did find some other alternatives, such as:</p>
+<ul>
+<li><a href="https://firebase.google.com/docs/app-distribution">Firebase App Distribution</a></li>
+<li><a href="https://docs.appcircle.io/distribute/create-or-select-a-distribution-profile">Appcircle</a></li>
+<li><a href="https://getupdraft.com">Updraft</a></li>
+</ul>
+<p>but neither of these looked like an improvement over App Center. If anything, they look considerably more complicated to deal with than App Center. And there probably is some pricing involved too (<em>App Center was free of charge</em>).</p>
+<h2 id="app-center-itself-wasnt-great-either">App Center itself wasn&rsquo;t great either</h2>
+<p>We actually started slowly looking for an alternative to App Center at least a couple of years ago, so way before its retirement was announced, as over time we eventually came to realization that for us App Center was quite an inconvenient way of distributing applications. Namely, because of:</p>
+<ul>
+<li>the process of downloading/installing the applications was so not intuitive to users, we had to create a step-by-step tutorial (<em>even a video</em>) for that;</li>
+<li>at some point it became impossible to create a new account with a bare e-mail, and they started to force users into using one of the OAuth providers;</li>
+<li>not very well-defined access management:
+<ul>
+<li>applications can have users;</li>
+<li>but there are also distribution groups, which also can have users;</li>
+<li>at the same time, every version of the same application can have different distribution groups;</li>
+<li>and it is quite difficult to keep track of all that and have an overview who has access to what.</li>
+</ul>
+</li>
+</ul>
+<p>Out of those the worst was the access management. Aside from the already listed points, there was one other issue - despite the fact that App Center belongs to Microsoft and even provides a SAML SSO login, and that it even has an option to &ldquo;integrate&rdquo; with Azure AD - none of that provides any means for access management (<em>or anything useful, really</em>). For example, every time there was a new user who needed to be granted access to an application, administrator needed to do that manually - that scales very poorly.</p>
+<p>A <a href="https://github.com/microsoft/appcenter/issues/300">related request</a> was reported in their repository back in 2019, but got no development whatsoever over all these years.</p>
+<p>So we weren&rsquo;t happy with App Center, but we were tolerating it, as the service was provided free of charge and it worked quite well for the essential part of distributing iOS applications. But now has come the time to find something else.</p>
+<h1 id="how-is-it-even-possible-to-distribute-ios-applications-without-app-store">How is it even possible to distribute iOS applications without App Store</h1>
+<p>But how is it even possible to distribute iOS applications without App Store / TestFlight? Did (<em>HockeyApp and</em>) App Center do something shady?</p>
+<p>As we learned (<em>should&rsquo;ve googled that years ago</em>), there is nothing shady about it - that is a very <a href="https://support.apple.com/guide/deployment/distribute-proprietary-in-house-apps-depce7cefc4d/web#dep30d16db76">official feature</a>, which meant to be used exactly for distributing internal applications via one&rsquo;s own website. You just need to know about it.</p>
+<p>In short, all that is required (<em>aside from having Apple Developer (Enterprise?) account</em>) is:</p>
+<ul>
+<li>a particular <code>manifest.plist</code> file;</li>
+<li>a URI with <code>itms-services://</code> scheme.</li>
+</ul>
+<p>The &ldquo;Enterprise&rdquo; part I am not sure about, and in general my knowledge about these Apple certificates/profiles/things is very, very vague. You certainly(?) do need to have an <a href="https://developer.apple.com/account/">Apple Developer</a> account (<em>99 USD per year?</em>), but from my understanding that needs to be not just a &ldquo;regular&rdquo; account but one that belongs to <a href="https://developer.apple.com/programs/enterprise/">Apple Developer Enterprise Program</a> (<em>299 USD per year?</em>). From what I read in the eligibility requirements, our company does not qualify to have that, and yet it seems that we do have it somehow. I really cannot say for sure and I have no idea where to check this.</p>
+<p>But assuming that your company has all the required memberships/certificates/whatever, the technical details are the following.</p>
+<h2 id="building-the-application">Building the application</h2>
+<p>Speaking about fucking Apple not making things simple, before you can build your application you need to prepare quite a lot of things, which include getting signing/distribution <a href="https://developer.apple.com/help/account/certificates/certificates-overview">certificates</a>, <a href="https://developer.apple.com/help/account/provisioning-profiles/create-a-development-provisioning-profile">provisioning profiles</a> and god knows what else.</p>
+<p>The entire procedure is so convoluted that I won&rsquo;t be able to reproduce it even having done everything just 5 minutes ago. I am not even sure that the links that I provided are the correct ones. We even have a special &ldquo;iOS guy&rdquo; in the team, and he is the only one who knows how to set things up. On a good day.</p>
+<p>When you have all the signing-related things in order, then you can produce an <code>.ipa</code> binary like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/your/application/project/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># our applications Xcode projects are generated with CMake (as they are cross-platform),</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># so you can skip this step</span>
+</span></span><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd $_
+</span></span><span style="display:flex;"><span>$ cmake -G Xcode ..
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ xcodebuild <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -scheme SomeApplication archive <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -archivePath SomeApplication.xcarchive <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -allowProvisioningUpdates <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -destination <span style="color:#e6db74">&#34;generic/platform=iOS&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ xcodebuild <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -exportArchive <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -exportPath ./ipa <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -archivePath <span style="color:#e6db74">&#34;SomeApplication.xcarchive&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -exportOptionsPlist ../export-options.plist <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -allowProvisioningUpdates
+</span></span></code></pre></div><p>where <code>export-options.plist</code> contains the following:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#75715e">&lt;!DOCTYPE plist PUBLIC &#34;-//Apple//DTD PLIST 1.0//EN&#34; &#34;http://www.apple.com/DTDs/PropertyList-1.0.dtd&#34;&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;plist</span> <span style="color:#a6e22e">version=</span><span style="color:#e6db74">&#34;1.0&#34;</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;key&gt;</span>method<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;string&gt;</span>enterprise<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;key&gt;</span>teamID<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;string&gt;</span>SOME-ID-HERE<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/plist&gt;</span>
+</span></span></code></pre></div><p>As a result you will have a <code>SomeApplication.ipa</code> file, which you will need to upload to your server. Nothing special about that procedure, just a regular file upload. Although you most likely will want to protect it with authentication/authorization, but more on that <a href="#authenticationauthorization">later</a>.</p>
+<h2 id="the-manifestplist">The manifest.plist</h2>
+<p>Next thing you need is a special <code>manifest.plist</code> file. For example, if the application name is <code>LidarScanner</code>, then <code>manifest.plist</code> will have the following contents:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#75715e">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">&lt;!DOCTYPE plist PUBLIC &#34;-//Apple//DTD PLIST 1.0//EN&#34; &#34;http://www.apple.com/DTDs/PropertyList-1.0.dtd&#34;&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;plist</span> <span style="color:#a6e22e">version=</span><span style="color:#e6db74">&#34;1.0&#34;</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;key&gt;</span>items<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;array&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&lt;key&gt;</span>assets<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&lt;array&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;key&gt;</span>kind<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;string&gt;</span>software-package<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;key&gt;</span>url<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;string&gt;</span>https://your.company.com/downloads/lidar-scanner.ipa<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;key&gt;</span>kind<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;string&gt;</span>display-image<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;key&gt;</span>url<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;string&gt;</span>https://your.company.com/favicon-32x32.png<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;key&gt;</span>kind<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;string&gt;</span>full-size-image<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;key&gt;</span>url<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;string&gt;</span>https://your.company.com/favicon-256x256.png<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&lt;/array&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&lt;key&gt;</span>metadata<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;key&gt;</span>bundle-identifier<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;string&gt;</span>com.company.LidarScanner<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;key&gt;</span>bundle-version<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;string&gt;</span>1.0<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;key&gt;</span>kind<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;string&gt;</span>software<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;key&gt;</span>platform-identifier<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;string&gt;</span>com.apple.platform.iphoneos<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;key&gt;</span>title<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;string&gt;</span>LidarScanner<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;/array&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/plist&gt;</span>
+</span></span></code></pre></div><p>For this to work you will need to upload the <code>lidar-scanner.ipa</code> binary and this <code>manifest.plist</code> file to <code>/downloads/</code> path in your website root path on the server. Actually, <code>manifest.plist</code> can be placed anywhere (<em>and it doesn&rsquo;t even have to be a &ldquo;physical&rdquo; file</em>), but the location of <code>lidar-scanner.ipa</code> should match the one specified in the <code>&lt;string&gt;</code> value for that <code>software-package</code> section in the manifest.</p>
+<p>One more requirement is that the <code>*.ipa</code> URL must be with HTTPS, and the certificate needs to be trusted on the installing device (<em>so you might have some troubles if your SSL/TLS certificate is self-signed</em>).</p>
+<h2 id="the-itms-services-uri">The itms-services URI</h2>
+<p>The last thing to do is adding this link anywhere on your website:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>itms-services://?action<span style="color:#f92672">=</span>download-manifest&amp;url<span style="color:#f92672">=</span>https://your.company.com/downloads/manifest.plist
+</span></span></code></pre></div><p>So on a HTML page it would be something like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span>&lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;itms-services://?action=download-manifest&amp;url=https://your.company.com/downloads/manifest.plist&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>    Install iOS application
+</span></span><span style="display:flex;"><span>&lt;/<span style="color:#f92672">a</span>&gt;
+</span></span></code></pre></div><p>Here it assumes that the <code>manifest.plist</code> file is available at the <code>/downloads/</code> path in your website root path on the server. If you placed it elsewhere, then obviously you&rsquo;ll need to adjust that link. And similar to the <code>.ipa</code> URL, it most likely also needs to be with HTTPS (<em>and trusted SSL/TLS certificate</em>).</p>
+<p>Now, once you click on that link in Safari web-browser on one of your iOS devices, the following modal dialog should appear:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2025/04/03/distributing-ios-applications-without-app-store/images/installing-ios-application-from-website-dialog.png" alt="Modal dialog for installing an iOS application from a website">
+
+<p>and after you click <code>Install</code>, the application will start downloading/installing on your iPhone/iPad.</p>
+<p>This is it, that&rsquo;s the whole magic - just a <code>manifest.plist</code> file and a <code>itms-services://</code> link.</p>
+<h1 id="caveats-and-other-apple-specifics">Caveats and other Apple specifics</h1>
+<p>It was never Apple&rsquo;s intention to make developers life easier, so be prepared for various caveats, nuances and limitations.</p>
+<h2 id="authenticationauthorization">Authentication/authorization</h2>
+<p>You most likely do not want your applications to be available to anyone on the internet, so there definitely should be some authentication on your website (<em>unless it&rsquo;s an internal in-house website, but even then it should probably still have authentication in place</em>). Having said that, the next thing I&rsquo;ll say is that actually your applications kind of will be available to anyone on the internet!</p>
+<p>When I was investigating how the downloads from App Center work, I discovered that the <code>*.ipa</code> files were in fact available for downloading <u>without authentication</u>. In reality it is not as scary as it sounds, because the generated download URLs look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>https://appcenter-filemanagement-distrib2ede6f06e.azureedge.net/dlz9e271-7016-61va-9640-ac0b1k457der/SomeApplication.ipa?sv<span style="color:#f92672">=</span>2025-02-01&amp;sr<span style="color:#f92672">=</span>c&amp;sig<span style="color:#f92672">=</span>YPKVqmfXpecBzveG1nWDPnd4Lh37XM%2F2pLM6D0GWX%2Bg%3D&amp;se<span style="color:#f92672">=</span>2025-03-20T15%3A05%3A50Z&amp;sp<span style="color:#f92672">=</span>r&amp;download_origin<span style="color:#f92672">=</span>appcenter
+</span></span></code></pre></div><p>so it won&rsquo;t be trivial to guess that long GUID, which probably can count as a kind of &ldquo;credentials&rdquo;. Moreover, these URLs have an expiration time, so eventually they will expire and will be returning <code>403</code>.</p>
+<p>But while the URL was still valid, I tested the download from a different device in a private browser tab (<em>where I was not authenticated on App Center</em>), and I also tried it with a bare cURL from a desktop PC, even with a different internet provider (<em>to make sure that I have a different IP address</em>), and it still succeeded:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -sI <span style="color:#e6db74">&#39;https://appcenter-filemanagement-distrib2ede6f06e.azureedge.net/dlz9e271-7016-61va-9640-ac0b1k457der/SomeApplication.ipa?sv=2025-02-01&amp;sr=c&amp;sig=YPKVqmfXpecBzveG1nWDPnd4Lh37XM%2F2pLM6D0GWX%2Bg%3D&amp;se=2025-03-20T15%3A05%3A50Z&amp;sp=r&amp;download_origin=appcenter&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#39;User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#39;Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.5&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#39;Accept-Encoding: gzip, deflate, br&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#39;DNT: 1&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#39;Connection: keep-alive&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    | grep -i Content-Length <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    | awk <span style="color:#e6db74">&#39;{print $2/1024/1024 &#34; MB&#34;}&#39;</span>
+</span></span><span style="display:flex;"><span>10.5228 MB
+</span></span></code></pre></div><p>As you can see, it is indeed available with no authentication. So if the generated URL is somehow known/leaked and has not expired yet, then anyone on the internet can download the application.</p>
+<p>But why is it so? Did App Center people do something wrong? Because Apple&rsquo;s <a href="https://support.apple.com/guide/deployment/distribute-proprietary-in-house-apps-depce7cefc4d/web#dep30d16db76">documentation</a> says:</p>
+<blockquote>
+    <p>
+        Make sure that users are <b>authenticated</b> and that the website is accessible from your intranet or the internet, depending on your needs.
+    </p>
+    <p>
+        [...]
+    </p>
+    <p>
+        Upload these items to an area of your website that your <b>authenticated</b> users can access:
+    </p>
+    <ul>
+        <li>The manifest file (with a .plist filename extension)</li>
+        <li>The app file (with a .ipa filename extension)</li>
+    </ul>
+</blockquote>
+<p>&hellip;so authentication is explicitly mentioned there. But it turned out to be a <b>goddamn lie</b> (<em>or at least it is for some authentication methods/schemas?</em>), as actually both the <code>manifest.plist</code> and the <code>*.ipa</code> file have to be available without authentication.</p>
+<p>I don&rsquo;t know why, and at first I thought that this is because Apple needs to query stuff on the website from their servers, but there were no requests from Apple IP addresses in my web server logs (<em>there were only requests from my iOS devices</em>). So then my next guess is that it&rsquo;s iOS internals who needs to query stuff on the website, and those requests apparently are happening outside of the authenticated Safari session(?), so they are quite naturally failing.</p>
+<p>Specifically, below you can take a look at NGINX logs for requests from my iOS device when I was trying to download an application from our website.</p>
+<h3 id="both-routes-are-protected">Both routes are protected</h3>
+<p>When the <code>manifest.plist</code> route is protected with authentication/authorization:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:14:37:02 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /files/applications/lidar-scanner/v1.3.42/manifest.plist HTTP/1.1&#34;</span> <span style="color:#ae81ff">302</span> <span style="color:#ae81ff">0</span> <span style="color:#e6db74">&#34;https://your.company.com/applications/lidar-scanner&#34;</span> <span style="color:#e6db74">&#34;Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:14:37:04 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /downloads/applications/lidar-scanner/v1.3.42/ipa/694277a0-a42c-4f83-a8e9-f74207d217d1/manifest.plist HTTP/1.1&#34;</span> <span style="color:#ae81ff">302</span> <span style="color:#ae81ff">0</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:14:37:04 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /Account/Login?ReturnUrl=%2Fdownloads%2Fapplications%2Flidar-scanner%2Fv1.3.42%2Fipa%2F694277a0-a42c-4f83-a8e9-f74207d217d1%2Fmanifest.plist HTTP/1.1&#34;</span> <span style="color:#ae81ff">200</span> <span style="color:#ae81ff">1581</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span></code></pre></div><p>then it doesn&rsquo;t even get to the <code>*.ipa</code> route, which is also protected with authentication/authorization, but it didn&rsquo;t matter in this case, as it failed already on getting the <code>manifest.plist</code> and got redirected to the login route, which results in nothing, as these requests are happening behind the scenes (<em>so user gets no prompts</em>).</p>
+<h3 id="only-the-application-file-route-is-protected">Only the application file route is protected</h3>
+<p>Then I removed authentication/authorization requirement from the <code>manifest.plist</code> route but kept it for the <code>*.ipa</code> route, and for that scenario I got the following logs:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:14:40:21 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /files/applications/lidar-scanner/v1.3.42/manifest.plist HTTP/1.1&#34;</span> <span style="color:#ae81ff">302</span> <span style="color:#ae81ff">0</span> <span style="color:#e6db74">&#34;https://your.company.com/applications/lidar-scanner&#34;</span> <span style="color:#e6db74">&#34;Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:14:40:21 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /downloads/applications/lidar-scanner/v1.3.42/ipa/694277a0-a42c-4f83-a8e9-f74207d217d1/manifest.plist HTTP/1.1&#34;</span> <span style="color:#ae81ff">200</span> <span style="color:#ae81ff">496</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:14:40:23 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;HEAD /downloads/applications/lidar-scanner/v1.3.42/ipa/694277a0-a42c-4f83-a8e9-f74207d217d1 HTTP/1.1&#34;</span> <span style="color:#ae81ff">302</span> <span style="color:#ae81ff">0</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:14:40:23 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;HEAD /Account/Login?ReturnUrl=%2Fdownloads%2Fapplications%2Flidar-scanner%2Fv1.3.42%2Fipa%2F694277a0-a42c-4f83-a8e9-f74207d217d1 HTTP/1.1&#34;</span> <span style="color:#ae81ff">405</span> <span style="color:#ae81ff">0</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:14:40:23 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /favicon-32x32.png HTTP/1.1&#34;</span> <span style="color:#ae81ff">200</span> <span style="color:#ae81ff">2004</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:14:40:23 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /favicon-32x32.png HTTP/1.1&#34;</span> <span style="color:#ae81ff">200</span> <span style="color:#ae81ff">2004</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:14:40:23 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;HEAD /downloads/applications/lidar-scanner/v1.3.42/ipa/694277a0-a42c-4f83-a8e9-f74207d217d1 HTTP/1.1&#34;</span> <span style="color:#ae81ff">302</span> <span style="color:#ae81ff">0</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:14:40:23 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;HEAD /Account/Login?ReturnUrl=%2Fdownloads%2Fapplications%2Flidar-scanner%2Fv1.3.42%2Fipa%2F694277a0-a42c-4f83-a8e9-f74207d217d1 HTTP/1.1&#34;</span> <span style="color:#ae81ff">405</span> <span style="color:#ae81ff">0</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:14:40:23 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /downloads/applications/lidar-scanner/v1.3.42/ipa/694277a0-a42c-4f83-a8e9-f74207d217d1 HTTP/1.1&#34;</span> <span style="color:#ae81ff">302</span> <span style="color:#ae81ff">0</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:14:40:23 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /Account/Login?ReturnUrl=%2Fdownloads%2Fapplications%2Flidar-scanner%2Fv1.3.42%2Fipa%2F694277a0-a42c-4f83-a8e9-f74207d217d1 HTTP/1.1&#34;</span> <span style="color:#ae81ff">200</span> <span style="color:#ae81ff">1565</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span></code></pre></div><p>So this time it:</p>
+<ol>
+<li>Succeeded with the <code>manifest.plist</code> route, as it is now available for unauthenticated requests;</li>
+<li>Tried to query the <code>*.ipa</code> route with <code>HEAD</code>, which failed the same way and again got redirected to the login route (<em>and then failed there with <code>405</code>, because that route doesn&rsquo;t allow <code>HEAD</code> requests in our backend</em>);</li>
+<li>However, it didn&rsquo;t stop there, as then it fetched one of the images specified in the manifest (<em>twice, for some reason</em>);</li>
+<li>Then it tried to send the same <code>HEAD</code> request again, with the same unsuccessful result, and apparently it still didn&rsquo;t matter;
+<ul>
+<li>so what is the point of those <code>HEAD</code> requests, if their (<em>double</em>) failure does not interrupt the process?</li>
+</ul>
+</li>
+<li>And then seemingly it actually did try to <code>GET</code> the application&rsquo;s <code>*.ipa</code> file, but that also resulted in a redirect to the login route, where it finally halted.</li>
+</ol>
+<p>On the iOS device though I got the application icon, but with a cloud symbol in front of the title, and trying to open it I got this useless error message:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2025/04/03/distributing-ios-applications-without-app-store/images/ipa-route-authentication.png" alt="Description">
+
+<h3 id="both-routes-are-not-protected">Both routes are not protected</h3>
+<p>And only when I removed the authentication/authorization requirement from both the <code>manifest.plist</code> and the <code>*.ipa</code> routes, then everything succeeded (<em>but still queried the same image twice, for some reason</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:15:15:28 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /files/applications/lidar-scanner/v1.3.42/manifest.plist HTTP/1.1&#34;</span> <span style="color:#ae81ff">302</span> <span style="color:#ae81ff">0</span> <span style="color:#e6db74">&#34;https://your.company.com/applications/lidar-scanner&#34;</span> <span style="color:#e6db74">&#34;Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:15:15:28 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /downloads/applications/lidar-scanner/v1.3.42/ipa/97707e38-079e-4844-9cbf-67cf3c4584c1/manifest.plist HTTP/1.1&#34;</span> <span style="color:#ae81ff">200</span> <span style="color:#ae81ff">497</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:15:15:31 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;HEAD /downloads/applications/lidar-scanner/v1.3.42/ipa/97707e38-079e-4844-9cbf-67cf3c4584c1 HTTP/1.1&#34;</span> <span style="color:#ae81ff">200</span> <span style="color:#ae81ff">0</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:15:15:31 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /favicon-32x32.png HTTP/1.1&#34;</span> <span style="color:#ae81ff">200</span> <span style="color:#ae81ff">2004</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:15:15:31 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /favicon-32x32.png HTTP/1.1&#34;</span> <span style="color:#ae81ff">200</span> <span style="color:#ae81ff">2004</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span><span style="display:flex;"><span>MY-IOS-DEVICE-IP-ADDRESS - - <span style="color:#f92672">[</span>02/Feb/2025:15:15:31 +0100<span style="color:#f92672">]</span> <span style="color:#e6db74">&#34;GET /downloads/applications/lidar-scanner/v1.3.42/ipa/97707e38-079e-4844-9cbf-67cf3c4584c1 HTTP/1.1&#34;</span> <span style="color:#ae81ff">200</span> <span style="color:#ae81ff">11874414</span> <span style="color:#e6db74">&#34;-&#34;</span> <span style="color:#e6db74">&#34;com.apple.appstored/1.0 iOS/18.3 model/iPhone16,2 hwp/t8130 build/22D63 (6; dt:311) AMS/1&#34;</span>
+</span></span></code></pre></div><p>Thus, the only thing that can have authentication/authorization is the page where you publish the <code>itms-services://</code> link.</p>
+<p>So App Center (<em>and all other similar services?</em>) had no other choice but to implement those generated short-lived unauthenticated download URLs in order not to expose static <code>*.ipa</code> URLs for anonymous downloads. And that is <a href="#initial-download-request">what we did</a> on our side too (<em>as you can see in the web server logs above</em>).</p>
+<h2 id="launching-downloaded-applications-on-ios-devices">Launching downloaded applications on iOS devices</h2>
+<p>After downloading/installing the application you will need to perform a certain ritual in order to be able to launch it. To clarify, this applies no matter what solution you will choose for hosting your applications: it was there with HockeyApp, it was there with App Center, and it will be there with any other similar service, including a self-hosted solution which we are talking about here.</p>
+<p>So, thanks to Apple, the downloaded application cannot be launched right away (<em>unless this device already had other applications from this organization/profile before</em>). Trying to launch it for the first time, you will get the following message (<em>I don&rsquo;t know why it says <code>iPhone Distribution</code>, but it works equally fine on both iPhones and iPads</em>):</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2025/04/03/distributing-ios-applications-without-app-store/images/untrusted-developer.png" alt="Trying to launch iOS application, untrusted enterprise developer">
+
+<p>What this message means is that you need to go to <code>Settings</code> → <code>General</code> and there will be this <code>ENTERPRISE APP</code> thing (<em>the last section of the <code>General</code> pane</em>):</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2025/04/03/distributing-ios-applications-without-app-store/images/ipad-settings-enterprise-app.png" alt="Enterprise applications in iPad settings">
+
+<p>In there there will be a button/label for trusting this profile:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2025/04/03/distributing-ios-applications-without-app-store/images/ipad-settings-enterprise-app-trust.png" alt="Enterprise applications in iPad settings, trusting button">
+
+<p>pressing on which will give you one final confirmation dialog:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2025/04/03/distributing-ios-applications-without-app-store/images/ipad-settings-enterprise-app-trust-confirmation.png" alt="Enterprise applications in iPad settings, trust confirmation">
+
+<p>After that you will finally be able to launch the application. I can admit that this is not a terrible security measure against potentially malicious applications, but it is quite tiresome nevertheless.</p>
+<p>And you guessed it right, you will need to teach/explain this procedure to every single user/employee that you have. It might not look like much to you now, but wait until you&rsquo;ll be helping with the same bloody set of problems for the 1000th time, as no one ever fucking reads any manuals/tutorials. You can even make a super detailed step-by-step video (<em>we did, in addition to the one we already had for downloading applications from App Center</em>), but even then there will be individuals who will manage to fail to follow the procedure.</p>
+<h2 id="limited-number-of-devices">Limited number of devices</h2>
+<p>From the little I know about the Apple side of things, there are different &ldquo;types&rdquo; of distribution. If I am not mistaken, the most common ones are a so-called &ldquo;Ad Hoc&rdquo; distribution and a so-called &ldquo;Enterprise&rdquo; distribution. Both of these seem to have different limitations, but for the love of god I could not find a clear explanation in Apple documentation. So the following details are just my silly understanding of what I could find all over the internet.</p>
+<p>With &ldquo;Ad Hoc&rdquo; type of distribution there seems to be a limit of 100 devices of each type (<em>100 iPhones, 100 iPads, etc</em>) to which you can install your applications. And each of those devices (<em>their unique identifiers - UDID</em>) has to be <a href="https://developer.apple.com/documentation/xcode/distributing-your-app-to-registered-devices#Collect-device-identifiers-iOS-iPadOS-tvOS-visionOS-watchOS">registered</a> to your Apple Developer account <em>before</em> you&rsquo;ll try to install/run your applications on it. Or at least I read something about that somewhere, probably <a href="https://developer.apple.com/help/account/provisioning-profiles/create-an-ad-hoc-provisioning-profile/">here</a>.</p>
+<p>With the &ldquo;Enterprise&rdquo; type of distribution (<em>which is apparently the one we have</em>) those limitations do not apply, as we just keep installing our iOS applications on more and more employees devices without registering shit anywhere (<em>unless it happens automatically behind the scenes?</em>), and nothing &ldquo;bad&rdquo; has happened yet, everything keeps working fine. And <a href="https://docs.getupdraft.com/ios/code-signing-explained-certificates-identifiers-profiles-what#distribution-enterprise">this section</a> in Updraft documentation seems to be describing the same.</p>
+<h2 id="applications-expiration">Applications expiration</h2>
+<p>With Apple being Apple there is a surprise awaiting for you where you discover that applications expire in one year. Or rather their &ldquo;<em>provisioning profile</em>&rdquo; does. So in one year all your users will get a pumpkin instead of an application that was working fine just yesterday:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2025/04/03/distributing-ios-applications-without-app-store/images/integrity-could-not-be-verified.png" alt="Error on trying to launch expired iOS application, integrity could not be verified">
+
+<p>To fix that you will need to re-build and re-sign the absolutely fucking same application project just to &ldquo;refresh&rdquo; the expiration countdown. And then you will need to tell all your users/employees that they need to go to your website and re-install that &ldquo;renewed&rdquo; but otherwise absolutely identical application on their devices.</p>
+<p>Again, I don&rsquo;t remember where I read about this, probably <a href="https://developer.apple.com/library/archive/recipes/ProvisioningPortal_Recipes/CreatingaDistributionProvisioningProfile/CreatingaDistributionProvisioningProfile.html">here</a>. Or actually here&rsquo;s what <a href="https://learn.microsoft.com/en-us/intune/intune-service/apps/app-provisioning-profile-ios">Microsoft&rsquo;s documentation</a> says about this:</p>
+<blockquote>The enterprise signing certificate that you use to sign apps typically lasts for three years. However, the provisioning profile expires after a year. While the certificate is still valid, Intune gives you the tools to proactively assign a new provisioning profile to devices that have apps that are nearing expiry. After the certificate expires, you must sign the app again with a new certificate and embed a new provisioning profile with the key of the new certificate.</blockquote>
+<p>So there is one more surprise: in addition to provisioning profile expiring after 1 year, your signing certificate will also be expiring every 3 years.</p>
+<h1 id="hosting-ios-applications-on-a-netmvc-website">Hosting iOS applications on a .NET/MVC website</h1>
+<p>As I already said, now that you know what it takes to distribute an (<em>&ldquo;Enterprise&rdquo;</em>) iOS application, it should be rather trivial for you to implement this on your own website, no matter what web-development framework you are using there. In a simplest case even a single static HTML page would do. Or maybe even a bare <code>itms-services://</code> link sent via e-mail should be enough.</p>
+<p>In our case we have a .NET/MVC-based website, so I&rsquo;ll share the related code fragments. Note that I removed some parts from that code for simplicity/confidentiality, so there might be missing variables or other errors in there. This is just a general example after all, so don&rsquo;t expect it to work &ldquo;out of the box&rdquo;.</p>
+<p>To <a href="#authenticationauthorization">reiterate</a> the key point of having some backend code instead of just a &ldquo;plain&rdquo; HTML page: the goal is to auto-generate short-lived download URLs in order not to expose static <code>*.ipa</code> files without authentication.</p>
+<h2 id="template-string-for-manifestplist">Template string for manifest.plist</h2>
+<p>As you&rsquo;ll probably have more than one application to distribute, and given that every application will likely have more than one version, it quickly becomes impractical to compose static <code>manifest.plist</code> manually. You could probably auto-generate them with a script every time a new application/version is published, but instead we decided to generate them &ldquo;on the fly&rdquo; using a template string:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span>private const string _manifestPlist = &#34;&#34;&#34;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">&lt;!DOCTYPE plist PUBLIC &#34;-//Apple//DTD PLIST 1.0//EN&#34; &#34;http://www.apple.com/DTDs/PropertyList-1.0.dtd&#34;&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;plist</span> <span style="color:#a6e22e">version=</span><span style="color:#e6db74">&#34;1.0&#34;</span><span style="color:#f92672">&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;key&gt;</span>items<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;array&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&lt;key&gt;</span>assets<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&lt;array&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;key&gt;</span>kind<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;string&gt;</span>software-package<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;key&gt;</span>url<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;string&gt;</span>https://your.company.com/downloads/applications/{0}/v{1}/ipa/{2}<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;key&gt;</span>kind<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;string&gt;</span>display-image<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;key&gt;</span>url<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;string&gt;</span>https://your.company.com/favicon-32x32.png<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;key&gt;</span>kind<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;string&gt;</span>full-size-image<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;key&gt;</span>url<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#f92672">&lt;string&gt;</span>https://your.company.com/favicon-256x256.png<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&lt;/array&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&lt;key&gt;</span>metadata<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;key&gt;</span>bundle-identifier<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;string&gt;</span>{3}<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;key&gt;</span>bundle-version<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;string&gt;</span>1.0<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;key&gt;</span>kind<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;string&gt;</span>software<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;key&gt;</span>platform-identifier<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;string&gt;</span>com.apple.platform.iphoneos<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;key&gt;</span>title<span style="color:#f92672">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">&lt;string&gt;</span>{4}<span style="color:#f92672">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&lt;/array&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/plist&gt;</span>
+</span></span><span style="display:flex;"><span>&#34;&#34;&#34;;
+</span></span></code></pre></div><p>Not sure if <code>bundle-version</code> value should also be templated or not, but having it hardcoded to <code>1.0</code> didn&rsquo;t seem to affect anything so far.</p>
+<p>It would probably be more correct to generate the <code>manifest.plist</code> with <a href="https://learn.microsoft.com/en-us/dotnet/api/system.xml.linq.xdocument">XDocument</a>, but it didn&rsquo;t seem to be very trivial in case of Apple&rsquo;s <code>*.plist</code> files schema, and also performance-wise it is likely (<em>although I haven&rsquo;t measured it</em>) more efficient to just substitute variables in a template string than to construct a <code>XDocument</code> object every time.</p>
+<h2 id="initial-download-request">Initial download request</h2>
+<p>As we want to pre-process the download request first before redirecting it to the <code>itms-services://</code> URI, the download links on the website look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span>&lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/files/applications/some-application/v1.2.3/manifest.plist&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>    Install
+</span></span><span style="display:flex;"><span>&lt;/<span style="color:#f92672">a</span>&gt;
+</span></span></code></pre></div><p>And here&rsquo;s the route/action for processing the download request when user clicks on that link:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// note the absence of the [AllowAnonymous] attribute, as this action is protected</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// with authentication/authorization policies on the controller level</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">[HttpGet(&#34;/files/applications/{applicationSlug}/v{applicationVersion}/manifest.plist&#34;)]</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> IActionResult ApplicationDownloadFile(
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> applicationSlug,
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> applicationVersion
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// check in the database if such application even exists</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> application = _databaseContext.GetApplication(applicationSlug);
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (application == <span style="color:#66d9ef">null</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        _logger.Warn(<span style="color:#e6db74">$&#34;There is no [{applicationSlug}] application in the database&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> NotFound();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> downloadGUID = Guid.NewGuid();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// check in the database if there is already an anonymous download</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// for this version of the application (and get its data/info)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> applicationDownloadAnonymous = _databaseContext.GetApplicationVersionDownloadAnonymous(
+</span></span><span style="display:flex;"><span>        applicationSlug,
+</span></span><span style="display:flex;"><span>        applicationVersion
+</span></span><span style="display:flex;"><span>    );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// no such download at all</span>
+</span></span><span style="display:flex;"><span>        applicationDownloadAnonymous == <span style="color:#66d9ef">null</span>
+</span></span><span style="display:flex;"><span>        ||
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// there was a download, but it has expired by now</span>
+</span></span><span style="display:flex;"><span>        DownloadLinkHasExpired(applicationDownloadAnonymous.Created)
+</span></span><span style="display:flex;"><span>    )
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (applicationDownloadAnonymous == <span style="color:#66d9ef">null</span>) <span style="color:#75715e">// does not exist at all</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            _logger.Debug(
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">new</span> StringBuilder()
+</span></span><span style="display:flex;"><span>                    .Append(<span style="color:#e6db74">&#34;There is no existing anonymous download for &#34;</span>)
+</span></span><span style="display:flex;"><span>                    .Append(<span style="color:#e6db74">$&#34;[{applicationSlug}], will create one&#34;</span>)
+</span></span><span style="display:flex;"><span>                    .ToString()
+</span></span><span style="display:flex;"><span>            );
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">else</span> <span style="color:#75715e">// exists but expired</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            _logger.Debug(
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">new</span> StringBuilder()
+</span></span><span style="display:flex;"><span>                    .Append(<span style="color:#e6db74">$&#34;There is an existing anonymous download for &#34;</span>)
+</span></span><span style="display:flex;"><span>                    .Append(<span style="color:#e6db74">$&#34;[{applicationSlug}] - {applicationDownloadAnonymous.GUID} &#34;</span>)
+</span></span><span style="display:flex;"><span>                    .Append(<span style="color:#e6db74">&#34;-  but it has already expired, will create a new one&#34;</span>)
+</span></span><span style="display:flex;"><span>                    .ToString()
+</span></span><span style="display:flex;"><span>            );
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// add a new download to the database</span>
+</span></span><span style="display:flex;"><span>        _databaseContext.AddApplicationVersionDownloadAnonymous(
+</span></span><span style="display:flex;"><span>            applicationSlug,
+</span></span><span style="display:flex;"><span>            applicationVersion,
+</span></span><span style="display:flex;"><span>            downloadGUID,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">$&#34;{applicationSlug}.ipa&#34;</span> <span style="color:#75715e">// iOS downloads might not be the only downloads of such nature, so there might need to be some additional logic here</span>
+</span></span><span style="display:flex;"><span>        );
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        _logger.Debug(
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> StringBuilder()
+</span></span><span style="display:flex;"><span>                .Append(<span style="color:#e6db74">$&#34;Found an existing anonymous download for [{applicationSlug}] &#34;</span>)
+</span></span><span style="display:flex;"><span>                .Append(<span style="color:#e6db74">$&#34;that has not expired yet: {applicationDownloadAnonymous.GUID}&#34;</span>)
+</span></span><span style="display:flex;"><span>                .ToString()
+</span></span><span style="display:flex;"><span>        );
+</span></span><span style="display:flex;"><span>        downloadGUID = applicationDownloadAnonymous.GUID;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// redirect the request to itms-services:// URI of the actual manifest.plist</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> Redirect(
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">new</span> StringBuilder()
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">&#34;itms-services://?action=download-manifest&amp;url=&#34;</span>)
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">&#34;https://your.company.com&#34;</span>)
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">$&#34;/downloads/applications/{applicationSlug}/v{applicationVersion}&#34;</span>)
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">$&#34;/ipa/{downloadGUID}/manifest.plist&#34;</span>)
+</span></span><span style="display:flex;"><span>            .ToString()
+</span></span><span style="display:flex;"><span>    );
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>The function for checking the download URL expiration:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">bool</span> DownloadLinkHasExpired(DateTime dtCreated)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> (DateTime.Now - dtCreated).TotalHours &gt; _configuration.GetSection(
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// instead of getting it from appsettings.json, you can just as well simply hardcode whatever value you want here</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// (we&#39;ve set 2 hours)</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;ApplicationsGallery:DownloadLinkExpirationHours&#34;</span>
+</span></span><span style="display:flex;"><span>    ).Get&lt;<span style="color:#66d9ef">int</span>&gt;();
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="downloading-the-manifestplist">Downloading the manifest.plist</h2>
+<p>The route/action for getting the <code>manifest.plist</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// as you saw in the web server logs, this route should not have authentication,</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// otherwise iOS device services will fail to query stuff</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">[AllowAnonymous]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">[Route(&#34;/downloads/applications/{applicationSlug}/v{applicationVersion}/ipa/{downloadGUID}/manifest.plist&#34;)]</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> IActionResult ApplicationDownloadIpaManifest(
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> applicationSlug,
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> applicationVersion,
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> downloadGUID
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    _logger.Debug(
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">new</span> StringBuilder()
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">$&#34;Got a [{HttpContext.Request.Method}] request to download a manifest &#34;</span>)
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">$&#34;for the application [{applicationSlug}], version [{applicationVersion}], &#34;</span>)
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">$&#34;download GUID [{downloadGUID}]&#34;</span>)
+</span></span><span style="display:flex;"><span>            .ToString()
+</span></span><span style="display:flex;"><span>    );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    ApplicationDownloadAnonymous applicationDownloadAnonymous = <span style="color:#66d9ef">null</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// as we don&#39;t trust anyone, check for the existence of the requested download</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// in the database (and get its data/info)</span>
+</span></span><span style="display:flex;"><span>        applicationDownloadAnonymous = _databaseContext.GetApplicationVersionDownloadAnonymous(
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> Guid(downloadGUID)
+</span></span><span style="display:flex;"><span>        );
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">catch</span> (Exception ex)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        _logger.Error(
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> StringBuilder()
+</span></span><span style="display:flex;"><span>                .Append(<span style="color:#e6db74">$&#34;Error on trying to get the download for GUID [{downloadGUID}]. &#34;</span>)
+</span></span><span style="display:flex;"><span>                .Append(ex.Message)
+</span></span><span style="display:flex;"><span>                .ToString()
+</span></span><span style="display:flex;"><span>        );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> NotFound();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (applicationDownloadAnonymous == <span style="color:#66d9ef">null</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        _logger.Warn(<span style="color:#e6db74">$&#34;There is no download with GUID [{downloadGUID}]&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// and maybe even do something more here (send an alert to admins, at least), for example</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// if there are way too many &#34;failed&#34; requests, as it might indicate that someone is trying</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// to guess/bruteforce unauthenticated download URLs</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> NotFound();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> (DownloadLinkHasExpired(applicationDownloadAnonymous.Created))
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        _logger.Warn(<span style="color:#e6db74">$&#34;The download link for GUID [{downloadGUID}] has expired&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// but don&#39;t let user know about this</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> NotFound();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// this is where the manifest template string gets substituted with the actual values</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// to generate the resulting manifest.plist</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> manifest = <span style="color:#66d9ef">string</span>.Format(_manifestPlist,
+</span></span><span style="display:flex;"><span>        applicationSlug,
+</span></span><span style="display:flex;"><span>        applicationVersion,
+</span></span><span style="display:flex;"><span>        downloadGUID,
+</span></span><span style="display:flex;"><span>        applicationDownloadAnonymous.AppleManifestBundleIdentifier,
+</span></span><span style="display:flex;"><span>        applicationDownloadAnonymous.AppleManifestTitle
+</span></span><span style="display:flex;"><span>    );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> ContentResult
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        Content = manifest.ToString(),
+</span></span><span style="display:flex;"><span>        ContentType = <span style="color:#e6db74">&#34;text/xml&#34;</span>,
+</span></span><span style="display:flex;"><span>        StatusCode = <span style="color:#ae81ff">200</span>
+</span></span><span style="display:flex;"><span>    };
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="downloading-the-application">Downloading the application</h2>
+<p>Finally, the route/action for downloading the <code>*.ipa</code> file:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#75715e">// as you saw in the web server logs, this route should not have authentication either</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">[AllowAnonymous]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">[Route(&#34;/downloads/applications/{applicationSlug}/v{applicationVersion}/ipa/{downloadGUID}&#34;)]</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span> IActionResult ApplicationDownloadIpa(
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> applicationSlug,
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> applicationVersion,
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">string</span> downloadGUID
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    _logger.Debug(
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">new</span> StringBuilder()
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">$&#34;Got a [{HttpContext.Request.Method}] request to download the IPA file &#34;</span>)
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">$&#34;for the application [{applicationSlug}], version [{applicationVersion}], &#34;</span>)
+</span></span><span style="display:flex;"><span>            .Append(<span style="color:#e6db74">$&#34;download GUID [{downloadGUID}]&#34;</span>)
+</span></span><span style="display:flex;"><span>            .ToString()
+</span></span><span style="display:flex;"><span>    );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    ApplicationDownloadAnonymous applicationDownloadAnonymous = <span style="color:#66d9ef">null</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// check in the database if this download even exists (and get its data/info)</span>
+</span></span><span style="display:flex;"><span>        applicationDownloadAnonymous = _databaseContext.GetApplicationVersionDownloadAnonymous(
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> Guid(downloadGUID)
+</span></span><span style="display:flex;"><span>        );
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">catch</span> (Exception ex)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        _logger.Error(
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">new</span> StringBuilder()
+</span></span><span style="display:flex;"><span>                .Append(<span style="color:#e6db74">$&#34;Error on trying to get the download for GUID [{downloadGUID}]. &#34;</span>)
+</span></span><span style="display:flex;"><span>                .Append(ex.Message)
+</span></span><span style="display:flex;"><span>                .ToString()
+</span></span><span style="display:flex;"><span>        );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// if (_hostingEnvironment.IsDevelopment())</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// {</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//     return new ContentResult</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//     {</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//         Content = &#34;Failed to query the database.&#34;,</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//         ContentType = &#34;text/plain&#34;,</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//         StatusCode = 500</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//     };</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// }</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> NotFound();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (applicationDownloadAnonymous == <span style="color:#66d9ef">null</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        _logger.Warn(<span style="color:#e6db74">$&#34;There is no download with GUID [{downloadGUID}]&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// yet again, maybe do something more here (send an alert to admins, at least), for example</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// if there are way too many &#34;failed&#34; requests, as it might indicate that someone is trying</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// to guess/bruteforce unauthenticated download URLs</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> NotFound();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> (DownloadLinkHasExpired(applicationDownloadAnonymous.Created))
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        _logger.Warn(<span style="color:#e6db74">$&#34;The download link for GUID [{downloadGUID}] has expired&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// still don&#39;t let user know about this</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> NotFound();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> downloadPath = <span style="color:#e6db74">$&#34;{_hostingEnvironment.WebRootPath}/files/applications/{applicationSlug}/v{applicationVersion}/{applicationDownloadAnonymous.FileName}&#34;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> (!System.IO.File.Exists(downloadPath))
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        _logger.Warn(<span style="color:#e6db74">$&#34;Could not find the file [{downloadPath}]&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// user should probabably not know about this either</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> NotFound();
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> PhysicalFile(
+</span></span><span style="display:flex;"><span>        downloadPath,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;application/octet-stream&#34;</span>,
+</span></span><span style="display:flex;"><span>        applicationDownloadAnonymous.FileName
+</span></span><span style="display:flex;"><span>    );
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>It should be obvious and already known by now, but probably won&rsquo;t hurt to explicitly state this one more time anyway: at no point the direct static URL to the &ldquo;physical&rdquo; <code>/files/applications/{applicationSlug}/v{applicationVersion}/some-application.ipa</code> file should be exposed in your website routes without authentication/authorization. That is the entire point of having those temporary GUID-based URLs in the unprotected/anonymous <code>ApplicationDownloadIpa()</code> route/action, which is meant to be serving the actual files via <a href="https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.controllerbase.physicalfile#microsoft-aspnetcore-mvc-controllerbase-physicalfile(system-string-system-string-system-string)">PhysicalFile</a>.</p>
+<p>Now, if it&rsquo;s all good, your users/employees will be able to download and install iOS applications from your company website (<em>that is an admin view with additional controls, regular users will see a simplified variant</em>):</p>
+<p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2025/04/03/distributing-ios-applications-without-app-store/images/installing-ios-application-from-website.png" alt="Installing an iOS application from a website">
+
+</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/apple/">apple</a><a class="tag" href="https://retifrav.github.io/tags/ios/">ios</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a><a class="tag" href="https://retifrav.github.io/tags/dotnet/">dotnet</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div style="border:2px orange solid; background-color: floralwhite; border-radius:0.5rem; padding: 10px 14px; font-style:italic; font-size:0.9em;">
+              If you'd like to comment the article, you can do it on the
+              <a href="https://decovar.dev/blog/2025/04/03/distributing-ios-applications-without-app-store/#remark42" style="font-weight:bold;">
+                  original website</a>. This one is just a mirror without comments.
+          </div>
+      
+      </div>
+    </div>
+  </div>
+
+  
+        <div id="footer">
+          <div>
+              2014 - 2025,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <div style="margin:0 0 20px;">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+        </div>
+        <div id="search-results" style="display:none;"></div>
+        <div id="sidebars">
+            <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+            <iframe src="https://github.com/sponsors/retifrav/button"
+                height="35" style="border:0;"
+                title="You can sponsor me">
+            </iframe>
+            
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <a href="/index.xml" title="Subscribe to RSS"><img src="/images/rss.png" width="50px"></a>
+              <a style="margin-left: 5px;" href="https://t.me/decovar" title="Telegram channel"><img src="/images/telegram.png" width="50px"></a>
+            </div>
+            <div id="telegramWidgetBlock" class="sidebar-section"></div>
+            <div class="sidebar-section">
+                <h3>Stuff</h3>
+                <ul class="sidebar-list">
+                    <li><a href="/stuff/kakoi-jvotne-vi-kysaiti/index.html">КАКОИ ЖВОТНЕ ВЫ КУСАИТИ?</a></li>
+                </ul>
+            </div>
+            <div id="social-networks" class="sidebar-section">
+              <h3>Social networks</h3>
+              <div style="font-family:Courier New;">
+                  Zuck: <i>Yeah so if you ever need info about anyone at Harvard</i><br/>
+                  Zuck: <i>Just ask</i><br/>
+                  Zuck: <i>I have over 4,000 emails, pictures, addresses, SNS</i><br/>
+                  smb: <i>What? How'd you manage that one?</i><br/>
+                  Zuck: <i>People just submitted it.</i><br/>
+                  Zuck: <i>I don't know why.</i><br/>
+                  Zuck: <i>They "trust me"</i><br/>
+                  Zuck: <i>Dumb fucks</i>
+              </div>
+            </div>
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (68)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (40)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (37)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (35)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (28)</a></li>
+                  
+                  <li><a href="/tags/review">review (28)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (23)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (19)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (17)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (15)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (12)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (11)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (11)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (8)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (7)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (7)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (5)</a></li>
+                  
+                  <li><a href="/tags/android">android (4)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/azure">azure (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (2)</a></li>
+                  
+                  <li><a href="/tags/steam-deck">steam-deck (2)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/home-automation">home-automation (1)</a></li>
+                  
+                  <li><a href="/tags/ldap">ldap (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/science">science (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-53340325-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "UA-53340325-1");
+    </script>
+
+    <script>
+        const telegramBlock = document.getElementById("telegramWidgetBlock");
+        window.onload = () =>
+        {
+            const pinnedTelegramPosts = [306,319,323]
+            const randomedPostID = pinnedTelegramPosts[
+                Math.floor(Math.random() * pinnedTelegramPosts.length)
+            ];
+            const telegramWidgetScript = document.createElement("script");
+            telegramWidgetScript.src = "https://telegram.org/js/telegram-widget.js?21";
+            telegramWidgetScript.dataset["telegramPost"] = `decovar/${randomedPostID}`;
+            telegramWidgetScript.dataset["color"] = "1E8448";
+            telegramWidgetScript.dataset["width"] = "100%";
+            telegramWidgetScript.dataset["userpic"] = "false";
+            telegramBlock.appendChild(telegramWidgetScript);
+        }
+    </script>
+
+    
+    
+  </body>
+</html>
