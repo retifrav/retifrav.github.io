@@ -64,7 +64,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 131 min read</div>
+</svg> 136 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -267,7 +267,11 @@
         <li><a href="#2024-10-11--caching-in-jfrog-artifactory">2024-10-11 | Caching in JFrog Artifactory</a>
           <ul>
             <li><a href="#binary-caching">Binary caching</a></li>
-            <li><a href="#asset-caching">Asset caching</a></li>
+            <li><a href="#asset-caching">Asset caching</a>
+              <ul>
+                <li><a href="#vcpkg_download_distfile-with-authentication">vcpkg_download_distfile() with authentication</a></li>
+              </ul>
+            </li>
           </ul>
         </li>
       </ul>
@@ -3382,7 +3386,7 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    | <span style="color:#f92672">(</span>cd ./install/vcpkg-default-triplet <span style="color:#f92672">&amp;&amp;</span> tar -xf -<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>And then you will have both the project libraries and their dependencies inside the same prefix, so you&rsquo;ll be able to just pack it and ship to your customers/users.</p>
 <p>But, as usual, there is a but. As you can see in the merged installation prefix listing, it contains <code>vcpkg-cmake</code> and <code>vcpkg-cmake-config</code> helper ports (<em>if your target triplet is the same as the host triplet</em>), which are of no use for consuming projects; and also it contains <code>json-nlohmann</code> dependency, which is used for building the project&rsquo;s executable <a href="https://github.com/retifrav/vcpkg-registry/blob/bf55caff21bd94659d3764b4fbf11d54c805ca31/examples/installing-vcpkg-artifacts/prjct/src/tool/CMakeLists.txt#L21">some-tool</a>, but isn&rsquo;t used for building the project&rsquo;s library <a href="https://github.com/retifrav/vcpkg-registry/blob/bf55caff21bd94659d3764b4fbf11d54c805ca31/examples/installing-vcpkg-artifacts/prjct/src/some/CMakeLists.txt">SomeLibrary</a>. So including those into the final package is redundant, as end user does not need them to be available for his project to link to yours.</p>
-<p>It might be not worth to bother about this, but that&rsquo;s only untill you encounter some ridiculously big packages (<em>more than 3 GB of binaries in case of <a href="https://www.datakit.com/">Datakit</a></em>) or some really &ldquo;special&rdquo; ones (<em>more than 12 000 header files in <a href="https://gisinternals.com/archive.php">GDAL</a> packages</em>). So you most certainly will want to exclude some of those dependencies from your package, if they are not needed for consuming projects.</p>
+<p>It might be not worth to bother about this, but that&rsquo;s only until you encounter some ridiculously big packages (<em>more than 3 GB of binaries in case of <a href="https://datakit.com/">Datakit</a></em>) or some really &ldquo;special&rdquo; ones (<em>more than 12 000 header files in <a href="https://gisinternals.com/archive.php">GDAL</a> packages</em>). So you most certainly will want to exclude some of those dependencies from your package, if they are not needed for consuming projects to link with your libraries.</p>
 <p>Filtering out artifacts of vcpkg-resolved dependencies could have been a challenging task, as one would need to establish which files came from which port, but fortunately vcpkg keeps track of installed artifacts in <code>./build/vcpkg-default-triplet/vcpkg_installed/vcpkg/info/*.list</code> files, making the procedure rather simple. At the same time, certain artifacts you probably would like to keep (<em>such as DLLs</em>), so you&rsquo;ll need to handle such exceptions somehow.</p>
 <p>To automate the process of merging installations, filtering blacklisted dependencies and handling exceptions, I first wrote a <a href="https://github.com/retifrav/vcpkg-registry/blob/3b01d0a5c832aa633ebbf059cd6222f7234970de/scripts/install-vcpkg-artifacts.sh">Bash script</a>, but it was deleting files one by one, and in case of GDAL&rsquo;s more-than-12-000-headers deleting all of them was taking about 10 minutes, which is too goddamn slow. Trying to optimize the operation has overcomplicated the script beyond maintainability, so I rewrote it <a href="https://github.com/retifrav/vcpkg-registry/blob/5273c3f0bcdfeeb8b085b324a63e747a9cbc8a6c/scripts/install-vcpkg-artifacts.py">in Python</a>. Here&rsquo;s how to use it:</p>
 <details>
@@ -3748,6 +3752,126 @@
 </span></span><span style="display:flex;"><span>error: Launching &lt;mirror-script&gt;: error: calling CreateProcessW failed with <span style="color:#ae81ff">2</span> <span style="color:#f92672">(</span>The system cannot find the file specified.<span style="color:#f92672">)</span>
 </span></span></code></pre></div><p>out of which the first one turned out to be <a href="https://learn.microsoft.com/en-us/vcpkg/users/assetcaching#x-block-origin">misleading</a>, because the actual reason was that in my environment (<em>Windows, believe it or not</em>) there was no <code>pwsh</code> available in the <code>PATH</code>. Took me some time to figure that out, but then I just replaced <code>pwsh</code> with <code>PowerShell</code> (<em>or, I guess, I could&rsquo;ve made a symlink instead</em>), and everything went fine after that. So that second error about <a href="https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw">CreateProcessW</a> is the real source of the problem, and it would be more helpful if it was the first one to show up.</p>
 <p>You might say, what good is a PowerShell script, if you are unable to run it anywhere but Windows, however PowerShell has been <a href="https://devblogs.microsoft.com/dotnet/powershell-is-now-open-source-and-cross-platform/">cross-platform</a> for quite some time now, so you can in fact use this script on all the major platforms. Although, as usual with GNU/Linux, <a href="https://learn.microsoft.com/en-us/powershell/scripting/install/install-ubuntu">official instructions</a> for installing PowerShell didn&rsquo;t work for me (<em>neither with ARM-based distribution nor with x64-based</em>), but fortunately one can simply <a href="https://github.com/PowerShell/PowerShell/releases/latest">download binaries directly</a>, and those work just fine.</p>
+<h4 id="vcpkg_download_distfile-with-authentication">vcpkg_download_distfile() with authentication</h4>
+<p>If you have set-up asset caching with that PowerShell script, you might not expect that <a href="https://learn.microsoft.com/en-us/vcpkg/maintainers/functions/vcpkg_download_distfile">vcpkg_download_distfile()</a> in your ports will start failing to download files from servers that require authentication. Although, admittedly, this isn&rsquo;t a very common scenario, so you might never even see it.</p>
+<p>In our case one of the project dependencies is a commercial library, which is provided to us in a binary form of pre-built binaries, so we don&rsquo;t have the sources. But we still use vcpkg to resolve it (<em>with <code>vcpkg_download_distfile()</code></em>), and we host its binaries in the very same Artifactory (<em>in so-called <a href="https://jfrog.com/help/r/jfrog-artifactory-documentation/generic-repositories">Generic</a> repository</em>), as using Git for this (<em>even with LFS</em>) would be rather pointless.</p>
+<p>Here&rsquo;s how it looks like in the portfile:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>vcpkg_download_distfile(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">ARCHIVE</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">URLS</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;https://artifactory.YOUR.HOST/artifactory/etc/binaries/${PORT}/v${VERSION}/${PLATFORM-ARCHITECTURE-ETC}.7z&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">FILENAME</span> <span style="color:#e6db74">&#34;${PORT}-v${VERSION}-${PLATFORM_ARCHITECTURE_ETC}.7z&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">SHA512</span> <span style="color:#f92672">${</span>EXPECTED_SHA512<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>But since access to Artifactory is protected with authentication/authorization, such a &ldquo;bare&rdquo; download requests will fail, as expected:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Downloading https://artifactory.YOUR.HOST/artifactory/etc/binaries/THAT-DEPENDENCY-NAME/VERSION/FILENAME.7z -&gt; FILENAME.7z
+</span></span><span style="display:flex;"><span>error: curl: <span style="color:#f92672">(</span>22<span style="color:#f92672">)</span> The requested URL returned error: <span style="color:#ae81ff">401</span>
+</span></span></code></pre></div><p>From which you can determine that <code>vcpkg_download_distfile()</code> uses cURL for the actual downloading (<em>at least it does so on Mac OS</em>). In that case it is fair to assume that you can then just put your Artifactory credentials into <a href="https://everything.curl.dev/usingcurl/netrc.html">.netrc</a> file:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#a6e22e">machine artifactory.YOUR.HOST</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">login YOUR-EMAIL@YOUR.COMPANY</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">password YOUR-API-KEY</span>
+</span></span></code></pre></div><p>but, unfortunately, the download will still be failing, as apparently vcpkg/CMake does not pass the <code>-n</code>/<code>--netrc</code> argument when it executes the cURL command. So then you&rsquo;ll have to explicitly add <code>X-JFrog-Art-Api</code> HTTP header into your <code>vcpkg_download_distfile()</code> call:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>vcpkg_download_distfile(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">ARCHIVE</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">URLS</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;https://artifactory.YOUR.HOST/artifactory/etc/binaries/${PORT}/v${VERSION}/${PLATFORM-ARCHITECTURE-ETC}.7z&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">FILENAME</span> <span style="color:#e6db74">&#34;${PORT}-v${VERSION}-${PLATFORM_ARCHITECTURE_ETC}.7z&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">SHA512</span> <span style="color:#f92672">${</span>EXPECTED_SHA512<span style="color:#f92672">}</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#e6db74">HEADERS</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>        <span style="color:#e6db74">&#34;X-JFrog-Art-Api: $ENV{ARTIFACTORY_ACCESS_TOKEN}&#34;</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>For that to work on Windows platforms (<em>as it is stated in <a href="https://learn.microsoft.com/en-us/vcpkg/users/triplets#vcpkg_env_passthrough">VCPKG_ENV_PASSTHROUGH</a> documentation</em>) you would need to pass-through the <code>ARTIFACTORY_ACCESS_TOKEN</code> environment variable (<em>which in turn obviously needs to be set on every machine where you&rsquo;ll be running vcpkg</em>), and for that you will need to make a custom <a href="#triplets">triplet</a> and add the following lines there:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># changing credentials should not affect the hashing, hence _UNTRACKED
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set(<span style="color:#e6db74">VCPKG_ENV_PASSTHROUGH_UNTRACKED</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">ARTIFACTORY_ACCESS_TOKEN</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ...
+</span></span></span></code></pre></div><p>On non-Windows platforms customizing a triplet to pass-through host environment variables is not required, as they are already available in vcpkg environment.</p>
+<p>It also wouldn&rsquo;t hurt to add an explicit check for the access token variable right before the <code>vcpkg_download_distfile()</code> call:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>if(<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">DEFINED</span> <span style="color:#e6db74">ENV{ARTIFACTORY_ACCESS_TOKEN}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">FATAL_ERROR</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;The [${PORT}] port pre-built binaries are hosted in Artifactory, and you need to set &#34;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;ARTIFACTORY_ACCESS_TOKEN environment variable to authorize the downloads from there&#34;</span>
+</span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_download_distfile(
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># ...
+</span></span></span></code></pre></div><p>Certainly, it would be nice if <code>vcpkg_download_distfile()</code> was checking for credentials in <a href="https://everything.curl.dev/usingcurl/netrc.html">.netrc</a> (<em>especially given that the download operation is carried out with cURL after all</em>), then there would be no need to do any of that.</p>
+<p>But either way, here comes that surprise where the download (<em>although a &ldquo;different&rdquo; one</em>) will still fail as unauthenticated, if you have vcpkg <a href="#asset-caching">asset caching</a> in place:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Trying to download FILENAME.7z using asset cache script
+</span></span><span style="display:flex;"><span>Transcript started, output file is /Users/vasya/programs/vcpkg/downloads/_assets-download.log
+</span></span><span style="display:flex;"><span>Downloading https://artifactory.YOUR.HOST/artifactory/vcpkg-binary-caching/_assets/FILENAME.7z
+</span></span><span style="display:flex;"><span>WARNING: <span style="color:#f92672">[</span>FILENAME.7z<span style="color:#f92672">]</span> not available in cache at https://artifactory.YOUR.HOST/artifactory/vcpkg-binary-caching/_assets
+</span></span><span style="display:flex;"><span>WARNING: Falling back to download from https://artifactory.YOUR.HOST/artifactory/etc/binaries/THAT-DEPENDENCY-NAME/VERSION/FILENAME.7z
+</span></span><span style="display:flex;"><span>vcpkg-assets-caching.ps1: Download failed with status code: Unauthorized
+</span></span><span style="display:flex;"><span>error: the asset cache script returned nonzero exit code <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>note: the full script command line was: pwsh /Users/vasya/bin/vcpkg-assets-caching.ps1 https://artifactory.YOUR.HOST/artifactory/etc/binaries/THAT-DEPENDENCY-NAME/VERSION/FILENAME.7z EXPECTED_SHA512 /Users/vasya/programs/vcpkg/downloads/FILENAME.7z.40758.part
+</span></span><span style="display:flex;"><span>error: there were no asset cache hits, and x-block-origin blocks trying the authoritative source https://artifactory.YOUR.HOST/artifactory/etc/binaries/THAT-DEPENDENCY-NAME/VERSION/FILENAME.7z
+</span></span></code></pre></div><p>What happened here is that now <code>vcpkg_download_distfile()</code> did not do the download itself, because it saw that we have <code>X_VCPKG_ASSET_SOURCES</code> environment variable set. So instead it invoked our <a href="https://github.com/retifrav/vcpkg-registry/blob/fbaa71af5accac438143aa2f652dea8e0efb38b4/scripts/vcpkg-assets-caching.ps1">asset caching script</a>, where it did not find the download in the cache, as it was never downloaded before, so then it tried to download it for the very first time from its origin, and <a href="https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-webrequest">Invoke-WebRequest</a> naturally failed with unauthenticated download request, because no credentials were provided to it (<em>and it does not use <code>.netrc</code> either</em>).</p>
+<p>Even if we wanted to pass the credentials to the script, there is simply no CLI argument for that. This means that we will need to explicitly handle authentication in there, keeping in mind that different hosts will require different authentication credentials/methods. A <a href="https://github.com/retifrav/vcpkg-registry/blob/afe45cd4642113bd50180efc6ec2c90c6623d6d1/scripts/vcpkg-assets-caching.ps1#L86-L133">crude implementation</a> would look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-powershell" data-lang="powershell"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Write-Warning <span style="color:#e6db74">&#34;Falling back to download from </span>$Url<span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">try</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    $domainsThatRequireAuthentication = @(
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;artifactory.YOUR.HOST&#34;</span> <span style="color:#75715e"># yes, we already have credentials for this one, as that&#39;s the same host that we use for asset caching, but let&#39;s imagine it&#39;s a different one</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;some.other.domain&#34;</span>
+</span></span><span style="display:flex;"><span>    )
+</span></span><span style="display:flex;"><span>    $downloadRequiresAuthentication = $false
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># https://stackoverflow.com/a/25703406/1688203</span>
+</span></span><span style="display:flex;"><span>    $regexDomain = <span style="color:#e6db74">&#34;^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/?\n]+)&#34;</span>
+</span></span><span style="display:flex;"><span>    $downloadDomain = <span style="color:#e6db74">&#34;unknown&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> ($Url <span style="color:#f92672">-match</span> $regexDomain)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        $downloadDomain = $Matches.1
+</span></span><span style="display:flex;"><span>        Write-Output <span style="color:#e6db74">&#34;Domain: </span>${downloadDomain}<span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> ($downloadDomain -in $domainsThatRequireAuthentication)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            $downloadRequiresAuthentication = $true
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    Write-Output <span style="color:#e6db74">&#34;The download requires authentication: </span>$downloadRequiresAuthentication<span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> ($downloadRequiresAuthentication)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e"># https://learn.microsoft.com/en-us/powershell/scripting/learn/deep-dives/add-credentials-to-powershell-functions#creating-credential-object</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">#$downloadCredentials = Get-Credential</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">switch</span> ($downloadDomain)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;artifactory.YOUR.HOST&#34;</span> {
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e"># YOUR-ARTIFACTORY-LOGIN and YOUR-ARTIFACTORY-API-KEY could also be environment variables,</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e"># or you might want to read them from some common credentials file, such as that very same .netrc</span>
+</span></span><span style="display:flex;"><span>                $password = ConvertTo-SecureString <span style="color:#e6db74">&#34;YOUR-ARTIFACTORY-API-KEY&#34;</span> -AsPlainText -Force
+</span></span><span style="display:flex;"><span>                $downloadCredentials = New-Object System.Management.Automation.PSCredential(<span style="color:#e6db74">&#34;YOUR-ARTIFACTORY-LOGIN&#34;</span>, $password)
+</span></span><span style="display:flex;"><span>                $response = Invoke-WebRequest -Uri $Url -OutFile $Destination -Authentication Basic -Credential $downloadCredentials
+</span></span><span style="display:flex;"><span>                <span style="color:#75715e"># could probably also do this with `-Headers` and `X-JFrog-Art-Api` instead</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">#&#34;some.other.domain&#34; {</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">#    #$downloadCredentials = [...]</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">#    #$response = Invoke-WebRequest -Uri $Url -OutFile $Destination [...]</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e">#}</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">default</span> {
+</span></span><span style="display:flex;"><span>                Write-Error <span style="color:#e6db74">&#34;Authenticating with this host has not been implemented yet&#34;</span>
+</span></span><span style="display:flex;"><span>                exit <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">else</span> <span style="color:#75715e"># no authentication, just a regular download</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        $response = Invoke-WebRequest -Uri $Url -OutFile $Destination
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">catch</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span></code></pre></div><p>Not great, but it works.</p>
       </div>
     </article>
     <div><div id="tags">
