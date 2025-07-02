@@ -610,7 +610,7 @@
 <p>then it could be because you didn&rsquo;t update the <code>git-tree</code> value in that dependency&rsquo;s version JSON in the registry, or perhaps the <code>baseline</code> value in your project&rsquo;s <code>vcpkg-configuration.json</code> points to a wrong commit.</p>
 <h5 id="checking-versions-and-hashes">Checking versions and hashes</h5>
 <p>It is quite easy to forget to update the <code>git-tree</code> value, so you might end up with a somewhat broken port, like it is shown in the previous section when it fails with an error. But there also might be a different situation: when <code>git-tree</code> points to an existing state of the registry, so there will be no error, but you won&rsquo;t be getting the actually latest ports state for that version either.</p>
-<p>And the bigger your registry will get, the harder it will be to watch for potential mismatches, so you&rsquo;ll likely want to automate this somehow. For example, with a <a href="https://github.com/retifrav/vcpkg-registry/blob/master/scripts/check-versions-and-hashes.sh">shell script</a>:</p>
+<p>And the bigger your registry will get, the harder it will be to watch for potential mismatches, so you&rsquo;ll likely want to automate this somehow. For example, with a <a href="https://github.com/retifrav/vcpkg-registry/blob/68df0b77d23f7dbcd90f469fa13ac9dabaafd8b0/scripts/check-versions-and-hashes.sh">shell script</a>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ./scripts/check-versions-and-hashes.sh
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>                port |      version |                                          |
@@ -635,14 +635,18 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>- dearimgui
 </span></span><span style="display:flex;"><span>- glfw</span></span></code></pre></div>
-<p>The hashes matching is highlighted with colors, here&rsquo;s a screenshot:</p>
+<p>The hash matching results are highlighted with colors, here&rsquo;s a screenshot:</p>
 
 
     <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/check-versions-and-hashes.png" alt="vcpkg, check versions and hashes">
 
 <p>Aside from the colors and summary in the end of the output, if there is at least one mismatch, the exit code is set to non-zero, so you can also use this script as a pre-commit <a href="https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks#_client_side_hooks">Git hook</a>.</p>
 <p>At the moment the script has a flaw of expecting certain structure of versions file, in particular it will fail to get the <code>git-tree</code> property if it doesn&rsquo;t go right on the next line after the <code>version</code> property (<em>for example, it could be a <code>port-version</code> property there instead</em>).</p>
-<h2 id="triplets">Triplets</h2>
+<p>&hellip;at some point later I&rsquo;ve <a href="https://github.com/retifrav/vcpkg-registry/blob/201c023646c67e74cb6026ce58b55ee878b9cb56/scripts/check-versions-and-hashes.py">re-written this script</a> in Python for easier maintainability, and implemented handling of the <code>port-version</code> values too. So now you would run it like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/vcpkg-registry
+</span></span><span style="display:flex;"><span>$ pip install pandas pandera tabulate colorama
+</span></span><span style="display:flex;"><span>$ python ./scripts/check-versions-and-hashes.py
+</span></span></code></pre></div><h2 id="triplets">Triplets</h2>
 <p>A <a href="https://github.com/microsoft/vcpkg/blob/master/docs/users/triplets.md">vcpkg triplet</a> is a file with a set of values that together &ldquo;identify&rdquo; the target platform: CPU architecture, type of linking and so on. One could probably say that it&rsquo;s like <a href="https://docs.conan.io/en/latest/reference/config_files/default_profile.html">Conan profiles</a>, but with fewer(?) parameters.</p>
 <p>Default triplets are located here: <code>/path/to/programs/vcpkg/triplets/</code>. If you are not happy with the standard collection, you can add your own triplets as well, but don&rsquo;t edit the default ones, as it will certainly backfire at you at some point later.</p>
 <p>I learned about triplets when I noticed that dependencies in one of my Windows projects were built as DLLs (<em><code>SHARED</code> libraries</em>), even though I did not set <code>-DBUILD_SHARED_LIBS=1</code>. And it turned out that on Windows by default vcpkg uses <code>x64-windows.cmake</code> triplet, which contents are:</p>
