@@ -65,7 +65,7 @@
 </svg> 2024-08-16 16:49:19 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 55 min read</div>
+</svg> 61 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -121,6 +121,17 @@
         <li><a href="#zaptec">Zaptec</a></li>
         <li><a href="#nord-pool-electricity-prices">Nord Pool electricity prices</a></li>
         <li><a href="#lg-webos-smart-tv-and-wake-on-lan">LG webOS Smart TV and Wake-on-LAN</a></li>
+      </ul>
+    </li>
+    <li><a href="#webhooks">Webhooks</a>
+      <ul>
+        <li><a href="#sending-data-with-a-webhook">Sending data with a webhook</a>
+          <ul>
+            <li><a href="#automation-and-dispatched-event">Automation and dispatched event</a></li>
+            <li><a href="#direct-webhook-trigger-based-sensor">Direct webhook trigger-based sensor</a></li>
+            <li><a href="#using-data-from-different-triggers-for-different-sensors">Using data from different triggers for different sensors</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
     <li><a href="#organizing-dashboards-layout">Organizing dashboards layout</a></li>
@@ -1496,7 +1507,7 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      **{{&#34;%.2f&#34;|format(highestiter.kr/num_hours)}}** NOK/kWh*).</span>
 </span></span></code></pre></div><p>Sorry for the russian parts (<em>if it is of any comfort, the original code was in finnish language</em>) and especially for the ugly formatting, but Home Assistant keeps reformatting the code on saving the card, so there is no point in trying to make it look nice.</p>
 <h2 id="lg-webos-smart-tv-and-wake-on-lan">LG webOS Smart TV and Wake-on-LAN</h2>
-<p>One of the (<em>very few</em>) good things about modern TVs being &ldquo;smart&rdquo; is that they expose certain APIs, and for LG TVs in particular (<em>I have one of those</em>) Home Assistant offers <a href="https://www.home-assistant.io/integrations/webostv">LG webOS Smart TV</a> integration.</p>
+<p>One of the (<em>very few</em>) good things about modern TVs being &ldquo;smart&rdquo; is that they expose certain APIs, and for LG TVs in particular (<em>I have one of those</em>) Home Assistant offers <a href="https://home-assistant.io/integrations/webostv">LG webOS Smart TV</a> integration.</p>
 <p>But to be able to send commands to your TV, you need to make sure that it is on (<em>and turn it on, if it isn&rsquo;t</em>). Good news is that LG TVs support <a href="https://en.wikipedia.org/wiki/Wake-on-LAN">Wake-on-LAN</a>, and from what I could find in the TV settings, it is enabled in two places, and you need to enable it in both. The first place is this explicitly named setting inside <code>Support</code> → <code>IP Control Settings</code>:</p>
 
 
@@ -1675,8 +1686,155 @@
 
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/lg-webos-switch-tv-on.png" alt="Home Assistant, TV switch as a button on a dashboard, TV is on">
 
+<h1 id="webhooks">Webhooks</h1>
+<p>This isn&rsquo;t very specific to running Home Assistant in a Docker container, but I thought I&rsquo;ll share this anyway.</p>
+<p>So, Home Assistant has a <a href="https://home-assistant.io/docs/automation/trigger/#webhook-trigger">webhooks</a> functionality, which you can use as an automation trigger. The webhooks you&rsquo;ll create will have the route of <code>https://YOUR-VERO-IP:8123/api/webhook/SOME-UNIQUE-ID</code>, where <code>SOME-UNIQUE-ID</code> can be anything you want: a completely random set of characters or a human-readable identifier.</p>
+<p>Here&rsquo;s a screenshot of an example webhook trigger in an automation:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/automation-webhook-trigger.png" alt="Home Assistant, automation webhook trigger">
+
+<p>and also here it is in YAML:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">webhook</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">allowed_methods</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">POST</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">local_only</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">webhook_id</span>: <span style="color:#ae81ff">osdr54-ftFGiuKKK57OL9B9_WYH0Yx</span>
+</span></span></code></pre></div><p>Now you can add whatever action you&rsquo;d like in that automation, such as turning on the lights in some room, and then every time this webhook would trigger, that room lights will be turning on (<em>or off</em>). To trigger this webhook you&rsquo;d need to send the following <code>POST</code> request from any other device in your local network:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X POST -k https://YOUR-VERO-IP:8123/api/webhook/osdr54-ftFGiuKKK57OL9B9_WYH0Yx
+</span></span></code></pre></div><p>The <code>-k</code> argument is here to skip the verification of our <a href="#https">self-signed certificate</a>.</p>
+<h2 id="sending-data-with-a-webhook">Sending data with a webhook</h2>
+<p>Webhooks can also contain a JSON payload, which makes them even more useful. In particular, you can create a virtual <a href="https://home-assistant.io/integrations/template/#state-based-template-entities">template sensor</a> to monitor whatever metric you&rsquo;d like.</p>
+<p>For example, I have a Raspberry Pi device running some services, and I would like to monitor its temperature. Since Raspberry Pi isn&rsquo;t really a Zigbee-enabled thermometer that could be added to Home Assistant by the <a href="#philips-hue-smart-plug">usual means</a>, the other way you can get its temperature is by submitting it with a webhook.</p>
+<p>To begin with, the <code>POST</code> request with a JSON payload would look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X POST <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> -d <span style="color:#e6db74">&#39;{&#34;temperature&#34;:50}&#39;</span> -k <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    https://YOUR-VERO-IP:8123/api/webhook/monitoring-raspberry-temperature
+</span></span></code></pre></div><p>Like I said, the <code>monitoring-raspberry-temperature</code> value can be anything, so you might prefer to use human-readable identifiers (<em>but don&rsquo;t neglect the <a href="https://home-assistant.io/docs/automation/trigger/#webhook-security">security</a> aspect</em>).</p>
+<p>The temperature of Raspberry Pi running Raspbian (<em>Raspberry Pi OS</em>) can be queried like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ vcgencmd measure_temp | awk -F <span style="color:#e6db74">&#34;[=&#39;]&#34;</span> <span style="color:#e6db74">&#39;{print($2)}&#39;</span>
+</span></span><span style="display:flex;"><span>60.4
+</span></span></code></pre></div><p>Combining everything together, the final command (<em>using <code>jq</code> to format the JSON payload/body</em>) will be this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ jq -nc --argjson msg <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    <span style="color:#66d9ef">$(</span>vcgencmd measure_temp | awk -F <span style="color:#e6db74">&#34;[=&#39;]&#34;</span> <span style="color:#e6db74">&#39;{print($2)}&#39;</span><span style="color:#66d9ef">)</span> <span style="color:#e6db74">&#39;{&#34;temperature&#34;:$msg}&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    | curl -X POST <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> -d @- -k <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    https://YOUR-VERO-IP:8123/api/webhook/monitoring-raspberry-temperature
+</span></span></code></pre></div><p>Note the <code>--argjson</code>, because if you use the <code>--arg</code> instead, then the temperature value will be in quotes:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>jq -nc --argjson msg <span style="color:#66d9ef">$(</span>vcgencmd measure_temp | awk -F <span style="color:#e6db74">&#34;[=&#39;]&#34;</span> <span style="color:#e6db74">&#39;{print($2)}&#39;</span><span style="color:#66d9ef">)</span> <span style="color:#e6db74">&#39;{&#34;temperature&#34;:$msg}&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span><span style="color:#e6db74">&#34;temperature&#34;</span>:57.6<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ jq -nc --arg msg <span style="color:#66d9ef">$(</span>vcgencmd measure_temp | awk -F <span style="color:#e6db74">&#34;[=&#39;]&#34;</span> <span style="color:#e6db74">&#39;{print($2)}&#39;</span><span style="color:#66d9ef">)</span> <span style="color:#e6db74">&#39;{&#34;temperature&#34;:$msg}&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span><span style="color:#e6db74">&#34;temperature&#34;</span>:<span style="color:#e6db74">&#34;57.6&#34;</span><span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>which will fail on parsing into a float value.</p>
+<p>Last thing to do on the Raspberry Pi side is to put this command into a cron task (<em>or maybe a systemd service</em>), so it would automatically execute as frequently as you want it to (<em>once per minute seems often enough</em>).</p>
+<p>On the Home Assistant side you need to create a template sensor for receiving those temperature values. This is done by editing the <code>templates.yaml</code> (<em><code>/root/homeassistant/templates.yaml</code> or wherever you have it</em>), as those can&rsquo;t(?) be created via the web GUI. And then there are two ways for updating that sensor value:</p>
+<ol>
+<li>An automation&rsquo;s action to dispatch an event with the webhook data, which is then received by the sensor;
+<ul>
+<li>anticipating your question, no, it isn&rsquo;t fekking possible to &ldquo;simply&rdquo; set the state of a sensor with an automation&rsquo;s action, because <a href="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/one-does-not-simply.jpg">one does not</a> simply update sensor vales;</li>
+</ul>
+</li>
+<li>A &ldquo;direct&rdquo; webhook trigger-based sensor.</li>
+</ol>
+<h3 id="automation-and-dispatched-event">Automation and dispatched event</h3>
+<p>A sensor getting the data from an event trigger can be defined like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">triggers</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">event</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">event_type</span>: <span style="color:#ae81ff">new_raspberry_pi_temperature_value</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sensor</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">name</span>: <span style="color:#e6db74">&#34;Raspberry Pi temperature&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">unique_id</span>: <span style="color:#e6db74">&#34;raspberry_pi_temperature&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">unit_of_measurement</span>: <span style="color:#e6db74">&#34;°C&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">state</span>: <span style="color:#e6db74">&#34;{{ trigger.event.data.state }}&#34;</span>
+</span></span></code></pre></div><p>As you can see, sensor gets its state from an event. And that event will be dispatched by the automation, so that needs to be created too, and it will be triggered by our webhook:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/automation-webhook-trigger-event.png" alt="Home Assistant, automation webhook trigger dispatching an event">
+
+<p>also here it is in YAML:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">webhook</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">allowed_methods</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">POST</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">local_only</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">webhook_id</span>: <span style="color:#ae81ff">monitoring-raspberry-temperature</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">conditions</span>: []
+</span></span><span style="display:flex;"><span><span style="color:#f92672">actions</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">event</span>: <span style="color:#ae81ff">new_raspberry_pi_temperature_value</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">event_data</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">state</span>: <span style="color:#e6db74">&#34;{{ trigger.json[\&#34;temperature\&#34;] }}&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">mode</span>: <span style="color:#ae81ff">single</span>
+</span></span></code></pre></div><p>After reloading the templates (<em>or restarting the entire Home Assistant instance</em>), the sensor will start getting updates from the temperature values reported by Raspberry Pi:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/raspberry-pi-temperature-chart.png" alt="Home Assistant, Raspberry Pi temperature chart" style="border:1px solid black;">
+
+<h3 id="direct-webhook-trigger-based-sensor">Direct webhook trigger-based sensor</h3>
+<p>This one looks almost the <a href="#automation-and-dispatched-event">same way</a>, but now instead of an event the trigger is a webhook and the value is extracted directly from the JSON payload:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">triggers</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">webhook</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">webhook_id</span>: <span style="color:#e6db74">&#34;monitoring-raspberry-temperature&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sensor</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">name</span>: <span style="color:#e6db74">&#34;Raspberry Pi temperature&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">unique_id</span>: <span style="color:#e6db74">&#34;raspberry_pi_temperature&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">unit_of_measurement</span>: <span style="color:#e6db74">&#34;°C&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">state</span>: <span style="color:#e6db74">&#34;{{ trigger.json.temperature }}&#34;</span>
+</span></span></code></pre></div><p>And this is it, no need to create an automation and nothing else needs to be done (<em>aside from reloading the templates</em>).</p>
+<p>So I can say that there is no point in using automations for this at all, as webhook trigger-based sensor involves less moving parts and is easier/quicker to set-up. Automations would make sense only if it was possible to simply set template sensor value/state directly from actions, <a href="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/one-does-not-simply.jpg">but</a>&hellip;</p>
+<h3 id="using-data-from-different-triggers-for-different-sensors">Using data from different triggers for different sensors</h3>
+<p>Oh yeah, that was quite a WTF moment for me. As you can see in the examples above, sensor is attached to its trigger and it gets the data from <code>trigger.json.temperature</code>. But what if there will be more than one trigger? How does sensor know which <code>trigger.json.temperature</code> is from what trigger?</p>
+<p>At first I naively tried to do the following:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">webhook</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">webhook_id</span>: <span style="color:#ae81ff">my-super-secret-webhook-1</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">webhook</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">webhook_id</span>: <span style="color:#ae81ff">my-super-secret-webhook-2</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">sensor</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">name</span>: <span style="color:#e6db74">&#34;Webhook Temperature 1&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">unique_id</span>: <span style="color:#e6db74">&#34;webhook_temperature_1&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">state</span>: <span style="color:#e6db74">&#34;{{ trigger.json.temperature }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">unit_of_measurement</span>: <span style="color:#ae81ff">°C</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">name</span>: <span style="color:#e6db74">&#34;Webhook Temperature 2&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">unique_id</span>: <span style="color:#e6db74">&#34;webhook_temperature_2&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">state</span>: <span style="color:#e6db74">&#34;{{ trigger.json.temperature }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">unit_of_measurement</span>: <span style="color:#ae81ff">°C</span>
+</span></span></code></pre></div><p>But sending a <code>POST</code> request to either of the webhooks:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X POST <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -d <span style="color:#e6db74">&#39;{&#34;temperature&#34;:5}&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    https://YOUR-VERO-IP:8123/api/webhook/my-super-secret-webhook-1 <span style="color:#75715e"># or my-super-secret-webhook-2</span>
+</span></span></code></pre></div><p>was updating both sensors:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/template-sensors-states.png" alt="Home Assistant, template sensors states" style="border:1px solid black;">
+
+<p>I couldn&rsquo;t figure out how to resolve this, so I posted a <a href="https://community.home-assistant.io/t/multiple-trigger-based-sensors-using-json-data-from-different-webhooks/914573">question</a> at the Home Assistant forum, and from there I learned that first of all I was lacking the understanding of <a href="http://thomasloven.com/blog/2018/08/YAML-For-Nonprogrammers/">dictionaries and lists in YAML</a> and more importantly the fact that <code>templates.yaml</code> format can be <u>either of those</u> (<em>u fukken wut</em>). Secondly, such triggers and sensor should be &ldquo;grouped&rdquo; in a &ldquo;tandem&rdquo;, like so:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">triggers</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">webhook</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">webhook_id</span>: <span style="color:#ae81ff">my-super-secret-webhook-1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sensor</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">name</span>: <span style="color:#e6db74">&#34;Webhook Temperature 1&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">unique_id</span>: <span style="color:#e6db74">&#34;webhook_temperature_1&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">state</span>: <span style="color:#e6db74">&#34;{{ trigger.json.temperature }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">unit_of_measurement</span>: <span style="color:#e6db74">&#34;°C&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>- <span style="color:#f92672">triggers</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">webhook</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">webhook_id</span>: <span style="color:#ae81ff">my-super-secret-webhook-2</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sensor</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">name</span>: <span style="color:#e6db74">&#34;Webhook Temperature 2&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">unique_id</span>: <span style="color:#e6db74">&#34;webhook_temperature_2&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">state</span>: <span style="color:#e6db74">&#34;{{ trigger.json.temperature }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">unit_of_measurement</span>: <span style="color:#e6db74">&#34;°C&#34;</span>
+</span></span></code></pre></div><p>As you can see, the sections here start with <code>-</code>, which means that the file is now using the lists format. I had it in dictionary format before, so I had to update all my other sections in the file to the lists format too.</p>
+<p>Now sending a <code>POST</code> request to <code>my-super-secret-webhook-1</code> webhook updates only the <code>webhook_temperature_1</code> sensor, and <code>my-super-secret-webhook-2</code> webhook updates only the <code>webhook_temperature_2</code> sensor.</p>
+<p>And obviously the same applies if you&rsquo;ll decide to go the way of using automations and dispatched events, because those event-based triggers would also need to be &ldquo;grouped&rdquo; with their sensors.</p>
+<p>But quite honestly, it all feels like a crutch. Especially that it seems to be impossible to create more than one such trigger/sensor &ldquo;tandem&rdquo; using the dictionary format in <code>templates.yaml</code>.</p>
 <h1 id="organizing-dashboards-layout">Organizing dashboards layout</h1>
-<p>Eventually you&rsquo;ll probably want to change the dashboards layout, in particular almost immediately I wanted to have a 2-column layout with the second column being wider. And surprisingly, that <del>isn&rsquo;t</del> wasn&rsquo;t possible/trivial to do out of the box.</p>
+<p>Also nothing specific to using Docker here, but eventually you&rsquo;ll probably want to change the dashboards layout, in particular almost immediately I wanted to have a 2-column layout with the second column being wider. And surprisingly, that <del>isn&rsquo;t</del> wasn&rsquo;t possible/trivial to do out of the box.</p>
 <p>Until there was a way, one could use the <a href="https://github.com/thomasloven/lovelace-layout-card">layout-card</a> frontend plugin, which can be installed via <a href="#home-assistant-community-store">HACS</a>. It probably offers more than what I am using it for, but for me the <a href="https://github.com/thomasloven/lovelace-layout-card?tab=readme-ov-file#grid-layout">grid layout</a> was enough, so now I can organize my cards like this:</p>
 
 
