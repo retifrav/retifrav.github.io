@@ -65,7 +65,7 @@
 </svg> 2024-08-16 16:49:19 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 65 min read</div>
+</svg> 66 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -1386,7 +1386,46 @@
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">msg</span>: <span style="color:#e6db74">&#34;{{ notification_msg }}&#34;</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">mode</span>: <span style="color:#ae81ff">single</span>
 </span></span></code></pre></div><p>Now if the garage done has been open for more than 10 minutes, me and my boyfriend will both receive a Telegram notification about that. Naturally, instead of individual notifications to each person it could just as well be a group chat or a channel - that way there will be no need to send the same notification more than once.</p>
-<h1 id="home-assistant-community-store">Home Assistant Community Store</h1>
+<p>But a single notification might not be enough, especially if you are driving and missed it, so you might want to keep sending them until the door gets closed. For that you&rsquo;d need to:</p>
+<ol>
+<li>Create a helper timer (<em>5 minutes or whichever</em>) and two new automations to start/stop that timer when the garage door opens/closes;</li>
+<li>Change your existing automation trigger to that timer state becoming <code>Idle</code>;</li>
+<li>Add a condition to perform actions only if the door is open, otherwise everything will get executed on the door being closed as well (<em>because the timer will get stopped and become <code>Idle</code></em>);</li>
+<li>Add an action to start that timer again after sending notifications.</li>
+</ol>
+<p>The message text can be then a bit more informative, such as stating when the door was opened and how much time has passed since then. So the updated automation would look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Гаражная дверь открыта</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">description</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">state</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">entity_id</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">timer.garage_door_open</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">to</span>: <span style="color:#ae81ff">idle</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">conditions</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">type</span>: <span style="color:#ae81ff">is_open</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">condition</span>: <span style="color:#ae81ff">device</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">device_id</span>: <span style="color:#ae81ff">DEVICE-ID</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">entity_id</span>: <span style="color:#ae81ff">ENTITY-ID</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">domain</span>: <span style="color:#ae81ff">binary_sensor</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">actions</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">variables</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">notification_msg</span>: &gt;<span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        {% set openedAt =
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        as_timestamp(states.binary_sensor.third_reality_garage_door_contact.last_changed)
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        %} ⚠️ garage door has been &lt;b&gt;open&lt;/b&gt; since &lt;code&gt;{{ openedAt |
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        timestamp_custom(&#39;%Y-%m-%d %H:%M:%S&#39;) }}&lt;/code&gt;, that&#39;s already &lt;code&gt;{{
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        timedelta(seconds=(as_timestamp(now()) - openedAt)|int) }}&lt;/code&gt; by now</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Telegram notification to me</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Telegram notification to my boyfriend</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">action</span>: <span style="color:#ae81ff">timer.start</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">metadata</span>: {}
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">data</span>: {}
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">target</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">entity_id</span>: <span style="color:#ae81ff">timer.garage_door_open</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">mode</span>: <span style="color:#ae81ff">single</span>
+</span></span></code></pre></div><h1 id="home-assistant-community-store">Home Assistant Community Store</h1>
 <p>To further extend Home Assistant capabilities, you can add <a href="https://hacs.xyz">Home Assistant Community Store</a> (<em>HACS</em>) to it.</p>
 <p>The HACS is supposed to be installed into <code>/path/to/home-assistant/config/custom_components/</code>, which in case of Docker container would mean creating this folder inside the container, but fortunately we have already mounted/mapped this path on <a href="#home-assistant">container creation</a>, and it points to <code>/root/homeassistant/</code> in the host filesystem.</p>
 <p>As for the installation itself, yet again it is expected that you will download and run <a href="https://get.hacs.xyz">their script</a>, but this time I couldn&rsquo;t tolerate that, so I just picked out the relevant commads from it. Essentially, it just downloads a ZIP archive and extracts it to <code>/path/to/home-assistant/config/custom_components/hacs/</code>:</p>
