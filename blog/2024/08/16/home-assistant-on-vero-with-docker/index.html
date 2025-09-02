@@ -65,7 +65,7 @@
 </svg> 2024-08-16 16:49:19 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 66 min read</div>
+</svg> 67 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -163,6 +163,11 @@
       </ul>
     </li>
     <li><a href="#performance-monitoring-with-btop">Performance monitoring with btop</a></li>
+    <li><a href="#updates-1">Updates</a>
+      <ul>
+        <li><a href="#2025-09-02--installing-docker-from-apt-repository">2025-09-02 | Installing Docker from apt repository</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 <h1 id="is-something-wrong-with-homely">Is something wrong with Homely</h1>
@@ -2242,6 +2247,30 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/btop-metrics.png" alt="Home Assistant on Vero V, CPU load in btop">
 
 <p>And it barely broke any sweat.</p>
+<h1 id="updates-1">Updates</h1>
+<h2 id="2025-09-02--installing-docker-from-apt-repository">2025-09-02 | Installing Docker from apt repository</h2>
+<p>Like I <a href="#docker">said</a>, installing anything via a script from the internet is a condemned practice, so I was happy to learn that Docker now has an <a href="https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository">apt repository</a>. It could have always been the case, but I am almost sure that it wasn&rsquo;t there when I was looking.</p>
+<p>First they recommend to uninstall &ldquo;unofficial&rdquo; (<em>as they call them</em>) packages that could have been installed from default repositories:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ <span style="color:#66d9ef">for</span> pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    <span style="color:#66d9ef">do</span> sudo apt remove $pkg; <span style="color:#66d9ef">done</span>
+</span></span></code></pre></div><p>Then you can add their repository to your system sources:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt update
+</span></span><span style="display:flex;"><span>$ sudo apt install ca-certificates curl
+</span></span><span style="display:flex;"><span>$ stat -c %a /etc/apt/keyrings
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">755</span>
+</span></span><span style="display:flex;"><span>$ sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+</span></span><span style="display:flex;"><span>$ sudo chmod a+r /etc/apt/keyrings/docker.asc
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    <span style="color:#e6db74">&#34;deb [arch=</span><span style="color:#66d9ef">$(</span>dpkg --print-architecture<span style="color:#66d9ef">)</span><span style="color:#e6db74"> signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    </span><span style="color:#66d9ef">$(</span>. /etc/os-release <span style="color:#f92672">&amp;&amp;</span> echo <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>UBUNTU_CODENAME<span style="color:#66d9ef">:-</span>$VERSION_CODENAME<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74"> stable&#34;</span> | <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
+</span></span></code></pre></div><p>And install Docker:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt update
+</span></span><span style="display:flex;"><span>$ sudo apt install docker-ce docker-ce-cli containerd.io
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ docker --version
+</span></span><span style="display:flex;"><span>Docker version 28.3.3, build 980b856
+</span></span></code></pre></div><p>They also recommend installing <code>docker-buildx-plugin</code> and <code>docker-compose-plugin</code>, but those aren&rsquo;t really needed. Or at least I&rsquo;ve never needed them yet.</p>
       </div>
     </article>
     <div><div id="tags">
