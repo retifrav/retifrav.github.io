@@ -65,7 +65,7 @@
 </svg> 2024-08-16 16:49:19 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 67 min read</div>
+</svg> 68 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -90,7 +90,11 @@
         </li>
         <li><a href="#nginx">NGINX</a>
           <ul>
-            <li><a href="#what-if-container-ip-address-will-change">What if container IP address will change</a></li>
+            <li><a href="#what-if-container-ip-address-will-change">What if container IP address will change</a>
+              <ul>
+                <li><a href="#user-configured-subnet">User-configured subnet</a></li>
+              </ul>
+            </li>
             <li><a href="#https">HTTPS</a></li>
           </ul>
         </li>
@@ -522,6 +526,32 @@
 </span></span><span style="display:flex;"><span>172.18.0.100
 </span></span></code></pre></div><p>Here it is assumed that you have already <a href="#ip-address-of-the-running-container">moved</a> the container from the default <code>bridge</code> network to the new user-defined <code>hub</code> network.</p>
 <p>Don&rsquo;t forget to edit NGINX config and change the IP address from <code>172.18.0.2</code> to <code>172.18.0.100</code>.</p>
+<h4 id="user-configured-subnet">User-configured subnet</h4>
+<p>Some time later on a different host I suddenly got this error trying to run a container with specified <code>--ip</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>docker: Error response from daemon: invalid config for network hub: invalid endpoint settings:
+</span></span><span style="display:flex;"><span>user specified IP address is supported only when connecting to networks with user configured subnets
+</span></span></code></pre></div><p>Not sure what this is about, maybe something changed in later Docker versions, but apparently now one needs to explicitly specify a subnet for the network, so I had to recreate my network:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker network rm hub
+</span></span><span style="display:flex;"><span>$ sudo docker network create --driver bridge --subnet<span style="color:#f92672">=</span>172.18.0.0/16 hub
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ sudo docker network inspect hub
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;Name&#34;</span>: <span style="color:#e6db74">&#34;hub&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;IPAM&#34;</span>: <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;Driver&#34;</span>: <span style="color:#e6db74">&#34;default&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;Options&#34;</span>: <span style="color:#f92672">{}</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;Config&#34;</span>: <span style="color:#f92672">[</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#e6db74">&#34;Subnet&#34;</span>: <span style="color:#e6db74">&#34;172.18.0.0/16&#34;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">}</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">]</span>
+</span></span></code></pre></div><p>Yeah, the subnet is exactly the same as before, but this time it was &ldquo;user-configured&rdquo;, which apparently matters. Also there is no <code>Gateway</code> anymore, but I don&rsquo;t know if this is important.</p>
 <h3 id="https">HTTPS</h3>
 <p>I don&rsquo;t plan to expose my Home Assistant instance to the internet, at least not without a VPN, so I intend to use it from the local home network only, but even there it is still worth to encrypt the traffic, so credentials aren&rsquo;t sent in plain text.</p>
 <p>A self-signed certificate should be enough for this purpose:</p>
