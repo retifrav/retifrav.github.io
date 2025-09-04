@@ -64,7 +64,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 136 min read</div>
+</svg> 138 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -274,6 +274,7 @@
             </li>
           </ul>
         </li>
+        <li><a href="#2025-09-04--caching-in-gitea">2025-09-04 | Caching in Gitea</a></li>
       </ul>
     </li>
   </ul>
@@ -3876,6 +3877,55 @@
 </span></span><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
 </span></span></code></pre></div><p>Not great, but it works.</p>
+<h2 id="2025-09-04--caching-in-gitea">2025-09-04 | Caching in Gitea</h2>
+<p>JFrog people have delivered exciting news that this year the Artifactory license renewal will be 2100 USD more expensive - that&rsquo;s just fucking wow, over 2000 USD increase in one year. To summarize, here are all the price increases over the years since we started using Artifactory:</p>
+<ul>
+<li>2020: 2950 USD;</li>
+<li>2021: 3200 USD (<em>+<code>250</code></em>);</li>
+<li>2022: (<em>don&rsquo;t remember and couldn&rsquo;t find the invoice</em>);</li>
+<li>2023: 3500 USD (<em>+<code>300</code>?</em>);</li>
+<li>2024: 3990 USD (<em>+<code>490</code></em>);</li>
+<li>2025: 6000 USD (<em>+<code>2100</code></em>).</li>
+</ul>
+<p>And that is for the lowest self-hosted license tier (<em>which by the way is no longer available on their website</em>), while they also have 3 more higher tiers, out of which the &ldquo;cheapest&rdquo; one is 27 000 USD (<em>also per year, of course</em>).</p>
+<p>Even the &ldquo;old&rdquo; price of 2950 USD from 2020 was quite high for a &ldquo;simple&rdquo; web-server, but it was okay-ish because of the convenience (<em>and not so many alternatives</em>). However, 6000 USD is a bloody robbery, and nothing stops them from raising the price even higher, which is what they have been doing so far.</p>
+<p>So yeah, we decided that it is about fucking time we abandon Artifactory and migrate to something else. There are several alternatives nowadays, and surprisingly <a href="https://about.gitea.com/products/gitea/">Gitea</a> turned out to be one of them, as it has <a href="https://docs.gitea.com/usage/packages/overview/">packages</a> now. Specifically, the <a href="https://docs.gitea.com/usage/packages/generic">Generic</a> type of packages can be used for vcpkg binary/asset caching.</p>
+<p>The procedure is almost <a href="#2024-10-11--caching-in-jfrog-artifactory">the same</a> as with Artifactory, but there are some differences.</p>
+<p>For binary caching, since Gitea does not(?) allow arbitrary nesting level in the packages route, the URL will have to be with dashes instead of slashes (<em>also note the <code>token</code> instead of <code>Bearer</code></em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>export VCPKG_BINARY_SOURCES<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;clear;http,https://gitea.YOUR.HOST/api/packages/YOUR-ORGANIZATION/generic/vcpkg-binary-caching/{name}-{version}-{triplet}/{sha},readwrite,Authorization: token YOUR-ACCESS-TOKEN&#34;</span>
+</span></span></code></pre></div><p>And for asset caching, for the same reason of the route/URL having a particular number of &ldquo;sections&rdquo;, all the vcpkg assets will be uploaded under the <code>_assets</code> value for the version &ldquo;section&rdquo; of the route:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>https://gitea.YOUR.HOST/api/packages/YOUR-ORGANIZATION/generic/vcpkg-binary-caching/_assets
+</span></span></code></pre></div><p>In the <a href="https://github.com/retifrav/vcpkg-registry/blob/fbaa71af5accac438143aa2f652dea8e0efb38b4/scripts/vcpkg-assets-caching.ps1">caching script</a> the authorization header also should be with <code>token</code> instead of <code>Bearer</code>, and the content type should be <code>application/octet-stream</code>. If you keep the <code>multipart/form-data</code>, then the script will fail:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>TerminatingError<span style="color:#f92672">(</span>Invoke-WebRequest<span style="color:#f92672">)</span>: <span style="color:#e6db74">&#34;no multipart boundary param in Content-Type&#34;</span>
+</span></span></code></pre></div><p>Just in case, here are all the updates:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span># ...
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$baseurl = <span style="color:#e6db74">&#34;https://gitea.YOUR.HOST/api/packages/YOUR-ORGANIZATION/generic/vcpkg-binary-caching/_assets&#34;</span>
+</span></span><span style="display:flex;"><span>$token = <span style="color:#e6db74">&#34;YOUR-ACCESS-TOKEN&#34;</span>
+</span></span><span style="display:flex;"><span>$headers = @{ Authorization = <span style="color:#e6db74">&#34;token $token&#34;</span> }
+</span></span><span style="display:flex;"><span>$contentype = <span style="color:#e6db74">&#34;application/octet-stream&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span># ...
+</span></span></code></pre></div><p>Once you upload/cache some packages, the result won&rsquo;t look nice in the web-GUI, since we &ldquo;broke&rdquo; the expected route layout for package versioning:</p>
+<p>
+    
+    
+        <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/gitea-packages-vcpkg-caching-versions.png" alt="Gitea, vcpkg caching package versions" style="border:1px solid black;">
+    
+</p>
+<p>
+    
+    
+        <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/gitea-packages-vcpkg-caching-version-assets.png" alt="Gitea, vcpkg caching package version assets" style="border:1px solid black;">
+    
+</p>
+<p>
+    
+    
+        <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/gitea-packages-vcpkg-caching-admin.png" alt="Gitea, vcpkg caching packages in admin view" style="border:1px solid black;">
+    
+</p>
+<p>&hellip;but it seems to work fine with vcpkg for both binary and asset caching, so it probably doesn&rsquo;t really matter how nice it looks in the web-GUI. It will probably look nicer with <a href="https://docs.gitea.com/usage/packages/nuget">NuGet</a> type of packages for binary caching, but yet again we did not explore that option (<em>still no reason to</em>).</p>
       </div>
     </article>
     <div><div id="tags">
