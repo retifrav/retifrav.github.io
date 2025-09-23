@@ -64,7 +64,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 138 min read</div>
+</svg> 143 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -275,6 +275,7 @@
           </ul>
         </li>
         <li><a href="#2025-09-04--caching-in-gitea">2025-09-04 | Caching in Gitea</a></li>
+        <li><a href="#2025-09-23--modifications-in-the-original-sources-without-updating-the-port">2025-09-23 | Modifications in the original sources without updating the port</a></li>
       </ul>
     </li>
   </ul>
@@ -1415,8 +1416,23 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ git clone <span style="color:#f92672">--</span>depth <span style="color:#ae81ff">1</span> <span style="color:#f92672">--</span>filter<span style="color:#66d9ef">=</span>blob<span style="color:#66d9ef">:</span><span style="color:#66d9ef">none</span> <span style="color:#66d9ef">--sparse</span> <span style="color:#66d9ef">git@github.com:retifrav/cmake-library-example.git</span>
 </span></span><span style="display:flex;"><span>$ cd <span style="color:#f92672">./</span>cmake<span style="color:#f92672">-</span>library<span style="color:#f92672">-</span>example
 </span></span><span style="display:flex;"><span>$ git sparse<span style="color:#f92672">-</span>checkout set <span style="color:#f92672">--</span>no<span style="color:#f92672">-</span>cone internal<span style="color:#f92672">-</span>project<span style="color:#f92672">/</span>libraries<span style="color:#f92672">/</span><span style="color:#a6e22e">SomeLibrary</span></span></span></code></pre></div>
-<p>But default vcpkg CMake functions such as <a href="https://github.com/microsoft/vcpkg/blob/master/scripts/cmake/vcpkg_from_git.cmake">vcpkg_from_git</a> unfortunately do not have an option for sparse cloning and checkout, so I&rsquo;ll probably implement my own custom function/helper for that (<em>or at least register a feature request for it</em>).</p>
-<h2 id="git-submodules">Git submodules</h2>
+<p>But default vcpkg CMake functions such as <a href="https://github.com/microsoft/vcpkg/blob/master/scripts/cmake/vcpkg_from_git.cmake">vcpkg_from_git</a> unfortunately do not have an option for sparse cloning and checkout, so <del>I&rsquo;ll probably implement my own custom function/helper for that (<em>or at least register a feature request for it</em>)</del> I made <a href="https://github.com/retifrav/vcpkg-registry/blob/284541d4a911378983ccfcac0f70c4826cfc1a9b/ports/dawn/portfile.cmake#L21-L106">this crutchy thing</a> when I needed to get certain tools from Emscripten repository:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># ...
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_execute_required_process(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">COMMAND</span> <span style="color:#f92672">${</span>GIT<span style="color:#f92672">}</span> <span style="color:#e6db74">clone</span> <span style="color:#e6db74">--depth=1</span> <span style="color:#e6db74">--filter=blob:none</span> <span style="color:#e6db74">--sparse</span> <span style="color:#e6db74">--branch</span> <span style="color:#f92672">${</span>EMSCRIPTEN_TOOLS_VERSION<span style="color:#f92672">}</span> <span style="color:#e6db74">git@github.com:emscripten-core/emscripten.git</span> <span style="color:#f92672">${</span>EMSCRIPTEN_TOOLS<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>CURRENT_BUILDTREES_DIR<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">git-emscripten-tools-cloning</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;+ checking out the tools...&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>vcpkg_execute_required_process(
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">COMMAND</span> <span style="color:#f92672">${</span>GIT<span style="color:#f92672">}</span> <span style="color:#e6db74">sparse-checkout</span> <span style="color:#e6db74">set</span> <span style="color:#e6db74">--no-cone</span> <span style="color:#e6db74">/tools/maint</span> <span style="color:#75715e">#/src/closure-externs
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#e6db74">WORKING_DIRECTORY</span> <span style="color:#f92672">${</span>EMSCRIPTEN_TOOLS<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">LOGNAME</span> <span style="color:#e6db74">git-emscripten-tools-checkout</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ...
+</span></span></span></code></pre></div><h2 id="git-submodules">Git submodules</h2>
 <p>A project repository might have <a href="https://git-scm.com/book/en/v2/Git-Tools-Submodules">Git submodules</a>, which complicates things. If those submodules are used for resolving 3rd-party dependencies, then I would disable them and make vcpkg ports for those dependencies to resolve them in a civilized manner. However, if project uses submodules to resolve its own components, then I would say that this is an okay scenario (<em>although a rather inconvenient one</em>), and so one might probably prefer not move those into their own ports (<em>but that of course depends on a particulal project</em>).</p>
 <p>Here&rsquo;s an example of one such project - <a href="https://github.com/aws/aws-sdk-cpp">AWS SDK</a>. It has <a href="https://github.com/aws/aws-sdk-cpp/blob/ef4ea97447c665ce6681ce110feaa9de6aa4ba00/.gitmodules">one direct submodule</a>, which in turn has <a href="https://github.com/awslabs/aws-crt-cpp/blob/83aacf7ae3a79c1cd1d2e1fe901a8ac9c427a199/.gitmodules">several recursive submodules</a>.</p>
 <p>Having recursive submodules makes it rather difficult to create a port for such a project, because vcpkg does not have an out-of-the-box function for cloning repositories with submodules, so we would need to resort to running &ldquo;bare&rdquo; Git commands with CMake, and it would be something like:</p>
@@ -3926,6 +3942,113 @@
     
 </p>
 <p>&hellip;but it seems to work fine with vcpkg for both binary and asset caching, so it probably doesn&rsquo;t really matter how nice it looks in the web-GUI. It will probably look nicer with <a href="https://docs.gitea.com/usage/packages/nuget">NuGet</a> type of packages for binary caching, but yet again we did not explore that option (<em>still no reason to</em>).</p>
+<h2 id="2025-09-23--modifications-in-the-original-sources-without-updating-the-port">2025-09-23 | Modifications in the original sources without updating the port</h2>
+<p>Sometimes there might be a need to modify something in the dependency&rsquo;s original sources and quickly try it out without going through the &ldquo;usual&rdquo; procedure of making patches and updating the (<em>overlay</em>) port, which might be perceived as a somewhat tiresome process by some.</p>
+<p>Sadly, vcpkg doesn&rsquo;t (<em>as of now</em>) provide such a capability. You might have seen the <code>--editable</code> option, whose description looks promising:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ vcpkg help install | grep -A1 editable
+</span></span><span style="display:flex;"><span>  --editable             Disables source re-extraction and binary caching <span style="color:#66d9ef">for</span> libraries on the
+</span></span><span style="display:flex;"><span>                         command line <span style="color:#f92672">(</span>classic mode<span style="color:#f92672">)</span>
+</span></span></code></pre></div><p>but, as you see, this is only for the <a href="https://learn.microsoft.com/en-us/vcpkg/concepts/classic-mode">classic mode</a>, and we are using manifest mode.</p>
+<p>To clarify, just in case, I don&rsquo;t consider this to be a downside of vcpkg as a package manager. After all, you don&rsquo;t expect to be able to modify sources of dependencies delivered by APT, RPM, Homebrew, scoop or any other, do you. It would of course be nice of vcpkg to let us re-use the sources path with an option like <code>--particular-sources-checkout-path-no-touching</code>, so we could modify stuff in there and expect those modifications to survive between runs, but it&rsquo;s not the end of the world that there is no such option (<em>yet?</em>).</p>
+<p>So far I&rsquo;ve managed to come up with a following (<em>pretty crutched</em>) workaround:</p>
+<ol>
+<li>Resolve the port of interest as it is with vcpkg at least once, so you get its sources in <code>/path/to/vcpkg/buildtrees/</code> already containing all the possible additional files from helper ports and patched with your current set of patches, so everything is ready to be used;</li>
+<li>Remove the cached archive of the port&rsquo;s package from your <code>/path/to/vcpkg/archives/</code>;</li>
+<li>Copy the port itself to some temporary path (<em>where you keep your <a href="#overlay-ports">overlay ports</a></em>), remove the <code>vcpkg_from_git()</code> (<em>or its equivalent</em>) from <code>portfile.cmake</code> and instead simply set the <code>SOURCE_PATH</code> variable to the prepared sources path (<em>the one inside the vcpkg&rsquo;s <code>buildtrees</code></em>);</li>
+<li>Make whatever modifications in those sources and try to build your main project using this overlay port.</li>
+</ol>
+<p>Here are these steps with more details, using <a href="https://github.com/retifrav/vcpkg-registry/tree/a30fec97daea20e2bb28624c0e15212db615c928/ports/some">this port</a> and <a href="https://github.com/retifrav/vcpkg-registry/tree/276ec1922e70d43b5cb299e897a15608acf00a39/examples/modifying-original-sources-without-updating-port">this example project</a>.</p>
+<p>So first we resolve the <code>some</code> dependency with vcpkg as it is, and if we try to run the application, its output will be <a href="https://github.com/retifrav/cmake-library-example/blob/fb463aa8fe49d1d316faba8b48b01676d053593c/internal-project/libraries/SomeLibrary/src/things.h#L3">as expected</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/examples/modifying-original-sources-without-updating-port/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ cmake --preset vcpkg-default-triplet
+</span></span><span style="display:flex;"><span>$ cmake --build --preset vcpkg-default-triplet
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ ./install/vcpkg-default-triplet/bin/tl
+</span></span><span style="display:flex;"><span>Base program message
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Message from a dependency:
+</span></span><span style="display:flex;"><span>ololo, some string
+</span></span></code></pre></div><p>Next, to remove the archived package (<em>otherwise it will prevent the building of the modified sources, as the package will simply get restored from cache, as it should by design</em>), we need to find the hash value in the vcpkg output (<em>you can also get it from <code>/path/to/vcpkg_installed/arm64-osx/share/some/vcpkg.spdx.json</code></em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>some:arm64-osx package ABI: e40b440865736e44b2a88b72457a40f795806753551aca3eb8c1b2450a75580f
+</span></span><span style="display:flex;"><span>...
+</span></span></code></pre></div><p>The actual removing is just this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ rm /Users/vasya/.cache/vcpkg/archives/e4/e40b440865736e44b2a88b72457a40f795806753551aca3eb8c1b2450a75580f.zip
+</span></span></code></pre></div><p>Then we copy and modify the overlay port, so that <code>SOURCE_PATH</code> points to the prepared sources:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkdir /tmp/ovrl-prts
+</span></span><span style="display:flex;"><span>$ cp -r /path/to/vcpkg-registry/ports/some /tmp/ovrl-prts/
+</span></span><span style="display:flex;"><span>$ nano /tmp/ovrl-prts/some/portfile.cmake
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span><span style="color:#f92672">-vcpkg_from_git(
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-    OUT_SOURCE_PATH SOURCE_PATH
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-    URL git@github.com:retifrav/cmake-library-example.git
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-    REF fb463aa8fe49d1d316faba8b48b01676d053593c
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-    PATCHES
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-        001-dynamic-library.patch
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-        002-installation.patch
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-)
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+set(SOURCE_PATH &#34;/Users/vasya/programs/vcpkg/buildtrees/some/src/76d053593c-a5448cfde7.clean&#34;)
+</span></span></span></code></pre></div><p>Thanks to the removal of <code>vcpkg_from_git()</code>, the sources of that port inside the <code>buildtrees</code> will persist and our modifications will survive. So now you can modify something in those sources, for example the message text:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span><span style="color:#f92672">-const std::string someString = &#34;some string&#34;;
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+const std::string someString = &#34;some string modified&#34;;
+</span></span></span></code></pre></div><p>and then do a clean re-build of the main project. Actually, as you probably already know, you don&rsquo;t have to remove the entire build directory, just the <code>./build/vcpkg-default-triplet/vcpkg_installed</code> folder. Even just the <code>./build/vcpkg-default-triplet/vcpkg_installed/vcpkg/status</code> file would be enough, but vcpkg will still install all the packages without checking that they are already there, so you&rsquo;ll just get lots of warnings about things being overwritten. Either way, for configuring the build this time you&rsquo;ll need point vcpkg to that overlay port with <code>VCPKG_OVERLAY_PORTS</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ rm ./build/vcpkg-default-triplet/vcpkg_installed
+</span></span><span style="display:flex;"><span>$ cmake --preset vcpkg-default-triplet -DVCPKG_OVERLAY_PORTS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/tmp/ovrl-prts&#34;</span>
+</span></span></code></pre></div><p>First thing that should be different in the vcpkg output, as one would expect, is the port location:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>The following packages will be built and installed:
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    some:arm64-osx@0.9.1 -- /tmp/ovrl-prts/some
+</span></span><span style="display:flex;"><span>  * vcpkg-cmake:arm64-osx@2023-05-04 -- git+git@github.com:retifrav/vcpkg-registry.git@680ad9afe6e6e3acdc4283cc25abb1c3a3929ffc
+</span></span><span style="display:flex;"><span>  * vcpkg-cmake-config:arm64-osx@2022-02-06 -- git+git@github.com:retifrav/vcpkg-registry.git@17a9380c109b095664a9e18e59a25c421f8cc71d
+</span></span><span style="display:flex;"><span>...
+</span></span></code></pre></div><p>and the second difference should be that the port has been built from sources and that it got a different ABI hash (<em>so it wasn&rsquo;t actually necessary to delete the cached package for its original not-overlayed variant</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>Installing 3/3 some:arm64-osx@0.9.1...
+</span></span><span style="display:flex; background-color:#3c3d38"><span>Building some:arm64-osx@0.9.1...
+</span></span><span style="display:flex;"><span>/tmp/ovrl-prts/some: info: installing overlay port from here
+</span></span><span style="display:flex;"><span>-- Found external ninja<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;1.13.1&#39;</span><span style="color:#f92672">)</span>.
+</span></span><span style="display:flex;"><span>-- Configuring arm64-osx
+</span></span><span style="display:flex;"><span>-- Building arm64-osx-dbg
+</span></span><span style="display:flex;"><span>-- Building arm64-osx-rel
+</span></span><span style="display:flex;"><span>-- Installing: /Users/vasya/programs/vcpkg/packages/some_arm64-osx/share/some/copyright
+</span></span><span style="display:flex;"><span>-- Performing post-build validation
+</span></span><span style="display:flex;"><span>Starting submission of some:arm64-osx@0.9.1 to <span style="color:#ae81ff">1</span> binary cache<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span> in the background
+</span></span><span style="display:flex;"><span>Elapsed time to handle some:arm64-osx: 1.2 s
+</span></span><span style="display:flex; background-color:#3c3d38"><span>some:arm64-osx package ABI: 41423159146c66969aa85f668add4a66bac37c310297c6957161649fedaefe1c
+</span></span><span style="display:flex;"><span>...
+</span></span></code></pre></div><p>Building and running the application should now provide a different output - matching the modifications that we made:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cmake --build --preset vcpkg-default-triplet
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ ./install/vcpkg-default-triplet/bin/tl
+</span></span><span style="display:flex;"><span>Base program message
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Message from a dependency:
+</span></span><span style="display:flex;"><span>ololo, some string modified
+</span></span></code></pre></div><p>We can try again with some more modifications:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span><span style="color:#f92672">-const std::string someString = &#34;some string modified&#34;;
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+const std::string someString = &#34;some string modified again. Goodness!&#34;;
+</span></span></span></code></pre></div><p>If it is still not clear at this point, then do not forget that if you don&rsquo;t remove the cached package before trying to build the project again, then even after a clean build (<em>with the entire build directory wiped</em>) you will not get the latest modifications of the dependency sources, as the port package will be restored from cache (<em>as it should</em>), so the application output will still be this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ rm -r ./build/vcpkg-default-triplet
+</span></span><span style="display:flex;"><span>$ cmake --preset vcpkg-default-triplet -DVCPKG_OVERLAY_PORTS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/tmp/ovrl-prts&#34;</span>
+</span></span><span style="display:flex;"><span>$ cmake --build --preset vcpkg-default-triplet
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ ./install/vcpkg-default-triplet/bin/tl
+</span></span><span style="display:flex;"><span>Base program message
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Message from a dependency:
+</span></span><span style="display:flex;"><span>ololo, some string modified
+</span></span></code></pre></div><p>And if you did remove the cached package (<em>note the updated hash</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ rm /Users/vasya/.cache/vcpkg/archives/41/41423159146c66969aa85f668add4a66bac37c310297c6957161649fedaefe1c.zip
+</span></span></code></pre></div><p>then rebuilding the project will get you the latest modifications:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ rm -r ./build/vcpkg-default-triplet/vcpkg_installed
+</span></span><span style="display:flex;"><span>$ cmake --build --preset vcpkg-default-triplet
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ ./install/vcpkg-default-triplet/bin/tl
+</span></span><span style="display:flex;"><span>Base program message
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Message from a dependency:
+</span></span><span style="display:flex;"><span>ololo, some string modified again. Goodness!
+</span></span></code></pre></div><p>One last thing to note here is that if you&rsquo;ll keep modifying the sources for this overlayed port, every new build will still be getting the same hash <code>41423159146c66969aa85f668add4a66bac37c310297c6957161649fedaefe1c</code> (<em>which makes it more convenient to remove the cached package before trying out new modifications</em>). But once you get back to the &ldquo;normal&rdquo; port, the hash will change to its &ldquo;normal&rdquo; value too, but that should be obvious.</p>
       </div>
     </article>
     <div><div id="tags">
