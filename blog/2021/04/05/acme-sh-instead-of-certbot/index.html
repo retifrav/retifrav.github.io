@@ -66,7 +66,7 @@ On top of that, last month Electronic Frontier Foundation (creators of Certbot) 
 </svg> 2021-04-05 13:08:02 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 25 min read</div>
+</svg> 27 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -100,6 +100,7 @@ On top of that, last month Electronic Frontier Foundation (creators of Certbot) 
             <li><a href="#distributing-certificate-files-to-internal-servers">Distributing certificate files to internal servers</a></li>
           </ul>
         </li>
+        <li><a href="#2025-10-05--installing-acmesh-as-a-docker-container">2025-10-05 | Installing acme.sh as a Docker container</a></li>
       </ul>
     </li>
   </ul>
@@ -668,6 +669,62 @@ On top of that, last month Electronic Frontier Foundation (creators of Certbot) 
 </span></span><span style="display:flex;"><span>login <span style="color:#a6e22e">USERNAME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">HERE</span>
 </span></span><span style="display:flex;"><span>password <span style="color:#a6e22e">PASSWORD</span><span style="color:#f92672">-</span><span style="color:#a6e22e">HERE</span></span></span></code></pre></div>
 <p>otherwise these need to be provided inline via <code>-u USERNAME-HERE:PASSWORD-HERE</code> instead of <code>--netrc</code>.</p>
+<h2 id="2025-10-05--installing-acmesh-as-a-docker-container">2025-10-05 | Installing acme.sh as a Docker container</h2>
+<p>As it is never a good idea to execute random scripts from the internet, a better way of <a href="#installation">installing</a> <code>acme.sh</code> is to run it in a <a href="https://github.com/acmesh-official/acme.sh/wiki/Run-acme.sh-in-docker">Docker container</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkdir -p /home/USERNAME/acme.sh/installed/domain.dev
+</span></span><span style="display:flex;"><span>$ docker run --rm -itd <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --name<span style="color:#f92672">=</span>acme.sh <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --network<span style="color:#f92672">=</span>host <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /home/USERNAME/acme.sh:/acme.sh  <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    neilpang/acme.sh daemon
+</span></span></code></pre></div><p>Not sure if it actually needs to be running in the <code>host</code> network, but it probably does? Also, here it is assumed that Docker is running in <a href="https://github.com/retifrav/scraps/blob/master/docker/index.md#linux">rootless mode</a>, but it should work just as well in root mode too.</p>
+<p>Having run it, you will be able to execute any of the <code>acme.sh</code> commands like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ docker exec acme.sh --help
+</span></span><span style="display:flex;"><span>https://github.com/acmesh-official/acme.sh
+</span></span><span style="display:flex;"><span>v3.1.2
+</span></span><span style="display:flex;"><span>Usage: acme.sh &lt;command&gt; ... <span style="color:#f92672">[</span>parameters ...<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>...
+</span></span></code></pre></div><p>For example to issue a certificate via DNS challenge using Porkbun API:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ docker exec <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -e PORKBUN_API_KEY<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;HERE-GOES-PORKBUN-API-KEY&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -e PORKBUN_SECRET_API_KEY<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;HERE-GOES-PORKBUN-API-SECRET&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    acme.sh <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --issue <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -d domain.dev <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -d *.domain.dev <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --dns dns_porkbun <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --server letsencrypt
+</span></span></code></pre></div><p>Note that the certificate installation command will be different, because now the paths are inside the container and also you won&rsquo;t be able to execute <code>--reloadcmd &quot;sudo systemctl restart nginx.service&quot;</code>, as it will be happening inside the container too (<em>while NGINX is running on the host</em>). So then it all becomes this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ docker exec <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    acme.sh <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --install-cert <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -d domain.dev <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --key-file /acme.sh/installed/domain.dev/key.pem <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --fullchain-file /acme.sh/installed/domain.dev/fullchain.pem
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ cp ~/acme.sh/installed/domain.dev/* /home/www-data/certs/domain.dev/
+</span></span><span style="display:flex;"><span>$ sudo chown -R www-data:www-data /home/www-data/certs/domain.dev
+</span></span><span style="display:flex;"><span>$ ls -lah /home/www-data/certs/domain.dev/
+</span></span><span style="display:flex;"><span>total 16K
+</span></span><span style="display:flex;"><span>drwxrwxr-x <span style="color:#ae81ff">2</span> www-data www-data 4.0K Oct  <span style="color:#ae81ff">5</span> 21:10 .
+</span></span><span style="display:flex;"><span>drwxrwxr-x <span style="color:#ae81ff">6</span> www-data www-data 4.0K Oct  <span style="color:#ae81ff">5</span> 11:33 ..
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> www-data www-data 2.9K Oct  <span style="color:#ae81ff">5</span> 21:09 fullchain.pem
+</span></span><span style="display:flex;"><span>-rw------- <span style="color:#ae81ff">1</span> www-data www-data  <span style="color:#ae81ff">227</span> Oct  <span style="color:#ae81ff">5</span> 21:09 key.pem
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ sudo systemctl restart nginx.service
+</span></span></code></pre></div><p>Then the cron task becomes this script:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cat /home/USERNAME/scripts/acme/domain.sh
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#39;&#39;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>/usr/bin/docker exec acme.sh --cron <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> sudo cp ~/acme.sh/installed/domain.dev/* /home/www-data/certs/domain.dev/ <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> sudo chown -R www-data:www-data /home/www-data/certs/domain.dev <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> sudo systemctl restart nginx.service
+</span></span></code></pre></div><p>which is called in cron like so:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#ae81ff">1</span> <span style="color:#ae81ff">1</span> 1,20 * * /home/USERNAME/scripts/acme/domain.sh &gt;&gt; /home/USERNAME/logs/cron-acme-domain.log 2&gt;&amp;<span style="color:#ae81ff">1</span>
+</span></span></code></pre></div>
       </div>
     </article>
     <div><div id="tags">
