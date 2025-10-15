@@ -64,7 +64,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 147 min read</div>
+</svg> 148 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -101,7 +101,6 @@
                 <li><a href="#baselinejson">baseline.json</a></li>
                 <li><a href="#versions-file">Versions file</a>
                   <ul>
-                    <li><a href="#several-versions-of-a-port">Several versions of a port</a></li>
                     <li><a href="#checking-versions-and-hashes">Checking versions and hashes</a></li>
                   </ul>
                 </li>
@@ -183,7 +182,13 @@
         </li>
       </ul>
     </li>
-    <li><a href="#updating-a-port">Updating a port</a></li>
+    <li><a href="#updating-a-port">Updating a port</a>
+      <ul>
+        <li><a href="#adding-a-newer-version">Adding a newer version</a></li>
+        <li><a href="#adding-an-older-version">Adding an older version</a></li>
+        <li><a href="#incrementing-the-port-version">Incrementing the port-version</a></li>
+      </ul>
+    </li>
     <li><a href="#testing-your-ports-before-publishing">Testing your ports before publishing</a>
       <ul>
         <li><a href="#overlay-ports">Overlay ports</a></li>
@@ -570,47 +575,19 @@
 <h4 id="versions-file">Versions file</h4>
 <p>Individual <code>*.json</code> files establish which version of the port is available in which commit, for example here&rsquo;s <code>glfw.json</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;versions&#34;</span>: [
-</span></span><span style="display:flex;"><span>    {
-</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;3.3.8&#34;</span>,
-</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;git-tree&#34;</span>: <span style="color:#e6db74">&#34;597fa07e1afd57c50dfdbeb0c0d28f4157748564&#34;</span>
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>  ]
-</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
-<p>To get the commit hash value (<em>for the <code>git-tree</code> property</em>) of the current version of the <code>glfw</code> port you need to run the following:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/your/vcpkg-registry
-</span></span><span style="display:flex;"><span>$ git rev-parse HEAD:./ports/glfw
-</span></span><span style="display:flex;"><span>597fa07e1afd57c50dfdbeb0c0d28f4157748564</span></span></code></pre></div>
-<p>And it might not be obvious, but it means that whenever you make any changes to <code>glfw</code> port and commit them, you should not immediately push that commit to server. First you need to run <code>git rev-parse</code> to get the new hash value, set this value to <code>git-tree</code>, amend (<em><code>git commit --amend --no-edit</code></em>) your commit and only then push your commit to server. Here are <a href="#updating-a-port">some more details</a> about that.</p>
-<h5 id="several-versions-of-a-port">Several versions of a port</h5>
-<p>A port can have more than one version. To add another version you need to, with my <code>glfw</code> port as <a href="https://github.com/retifrav/vcpkg-registry/commit/bc0525884389177f8b42d756b036032fa6ffae8d">an example</a>:</p>
-<ol>
-<li>Set a new Git hash (<em>pointing to a different version tag</em>) in <code>./ports/glfw/portfile.cmake</code>;</li>
-<li>Update the <code>version</code> value in <code>./ports/glfw/vcpkg.json</code>;</li>
-<li>Commit and do the <code>git rev-parse</code> thing;</li>
-<li>Add (<em>not replace</em>) a new version to <code>./versions/g-/glfw.json</code>:
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;versions&#34;</span>:
 </span></span><span style="display:flex;"><span>    [
 </span></span><span style="display:flex;"><span>        {
 </span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;3.3.8&#34;</span>,
 </span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;git-tree&#34;</span>: <span style="color:#e6db74">&#34;597fa07e1afd57c50dfdbeb0c0d28f4157748564&#34;</span>
-</span></span><span style="display:flex;"><span>        },
-</span></span><span style="display:flex;"><span>        {
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;3.3.7&#34;</span>,
-</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;git-tree&#34;</span>: <span style="color:#e6db74">&#34;45af0346d2ec926146091ab374c475cac5aaf055&#34;</span>
 </span></span><span style="display:flex;"><span>        }
 </span></span><span style="display:flex;"><span>    ]
-</span></span><span style="display:flex;"><span>}</span></span></code></pre></div></li>
-</ol>
-<p>So at first I had GLFW version <code>3.3.8</code> and now I added version <code>3.3.7</code>. So even though this commit is &ldquo;newer&rdquo;, and the versions order is &ldquo;wrong&rdquo;, it doesn&rsquo;t matter at all, as it&rsquo;s all just Git hashes pointing to certain &ldquo;states&rdquo; of the repository.</p>
-<p>If you&rsquo;ll get this error trying to install a dependency in your project:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>-- Running vcpkg install
-</span></span><span style="display:flex;"><span>Fetching registry information from git@github.com:retifrav/vcpkg-registry.git <span style="color:#f92672">(</span>HEAD<span style="color:#f92672">)</span>...
-</span></span><span style="display:flex;"><span>git archive failed with message:
-</span></span><span style="display:flex;"><span>error: git failed with exit code: <span style="color:#f92672">(</span>128<span style="color:#f92672">)</span>.
-</span></span><span style="display:flex;"><span>fatal: not a tree object: cdeffa673205b611d8ced28468cce6a06f1fdffd</span></span></code></pre></div>
-<p>then it could be because you didn&rsquo;t update the <code>git-tree</code> value in that dependency&rsquo;s version JSON in the registry, or perhaps the <code>baseline</code> value in your project&rsquo;s <code>vcpkg-configuration.json</code> points to a wrong commit.</p>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>To get the commit hash value (<em>for the <code>git-tree</code> property</em>) of the current version of the <code>glfw</code> port you need to run the following:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/your/vcpkg-registry
+</span></span><span style="display:flex;"><span>$ git rev-parse HEAD:./ports/glfw
+</span></span><span style="display:flex;"><span>597fa07e1afd57c50dfdbeb0c0d28f4157748564
+</span></span></code></pre></div><p>And it might not be obvious, but it means that whenever you make any changes to <code>glfw</code> port and commit them, you should not immediately push that commit to server. First you need to run <code>git rev-parse</code> to get the new hash value, set this value to <code>git-tree</code>, amend (<em><code>git commit --amend --no-edit</code></em>) your commit and only then push your commit to server. Here are <a href="#updating-a-port">some more details</a> about that.</p>
 <h5 id="checking-versions-and-hashes">Checking versions and hashes</h5>
 <p>It is quite easy to forget to update the <code>git-tree</code> value, so you might end up with a somewhat broken port, like it is shown in the previous section when it fails with an error. But there also might be a different situation: when <code>git-tree</code> points to an existing state of the registry, so there will be no error, but you won&rsquo;t be getting the actually latest ports state for that version either.</p>
 <p>And the bigger your registry will get, the harder it will be to watch for potential mismatches, so you&rsquo;ll likely want to automate this somehow. For example, with a <a href="https://github.com/retifrav/vcpkg-registry/blob/68df0b77d23f7dbcd90f469fa13ac9dabaafd8b0/scripts/check-versions-and-hashes.sh">shell script</a>:</p>
@@ -2150,7 +2127,7 @@
 <p>Much more convenient, innit. And that way your team members might even &ldquo;not know&rdquo; about vcpkg&rsquo;s existence (<em>after they <a href="#installation">install it</a> on their machines, of course</em>).</p>
 <p>The Ninja CMake generator and <code>CMAKE_BUILD_TYPE</code> are set in the presets too, but one can of course override those by explicitly setting them with <code>-G</code> and <code>-D</code> when calling CMake.</p>
 <h3 id="updating-a-dependency-version">Updating a dependency version</h3>
-<p>When you need to update (<em>or downgrade</em>) one of the project dependencies version (<em>given that new version is available in the registry</em>), you can do it in your project&rsquo;s <code>vcpkg.json</code>. For example, I have <a href="#several-versions-of-a-port">two versions</a> of GLFW in my registry - <code>3.3.7</code> and <code>3.3.8</code> - and the project depends on version <code>3.3.8</code> at the moment:</p>
+<p>When you need to update (<em>or downgrade</em>) one of the project dependencies version (<em>given that new version is already available in the registry</em>), you can do it in your project&rsquo;s <code>vcpkg.json</code>. For example, I have two versions of GLFW in my registry - <code>3.3.7</code> and <code>3.3.8</code> - and the project depends on version <code>3.3.8</code> at the moment:</p>
 
 
     <img class="image-post" loading="lazy" src="/blog/2022/10/30/cpp-dependencies-with-vcpkg/images/glfw-imgui-example-338.png" alt="GLFW v3.3.8">
@@ -2293,7 +2270,53 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL</span> <span style="color:#e6db74">Release</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>set(<span style="color:#e6db74">CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO</span> <span style="color:#e6db74">Release</span>)</span></span></code></pre></div>
 <h1 id="updating-a-port">Updating a port</h1>
-<p>Not once and not twice you&rsquo;ll need to change something in your existing port, especially when you are working on the very first version of it, as you&rsquo;ll be making mistakes and overlooking things.</p>
+<p>You will be updating your existing ports mostly to add a new version of dependency, but sometimes you will also be adding older versions, and in other cases you will be modifying a port without upgrading or downgrading the dependency version at all.</p>
+<h2 id="adding-a-newer-version">Adding a newer version</h2>
+<p>The most common scenario is that one of your dependencies released a new version, and now you need to update your port too.</p>
+<p>With my cURL port as an example, the process consists of the following steps:</p>
+<ol>
+<li>In <code>./ports/curl/portfile.cmake</code> set the <code>REF</code> value to the Git hash of the new version;</li>
+<li>Update the <code>version</code> value in <code>./ports/curl/vcpkg.json</code>;</li>
+<li>Optionally update the <code>baseline</code> version value in <code>./versions/baseline.json</code>;</li>
+<li>Commit and do the <code>rev-parse</code> thing;</li>
+<li>Add (<em>not replace</em>) a new version to <code>./versions/c-/curl.json</code>.</li>
+</ol>
+<p>You can see the result in <a href="https://github.com/retifrav/vcpkg-registry/commit/b84bbd788c917e76c00c029fbfed378cd086d409">this commit</a>.</p>
+<p>At some point later I need to automate the steps 3-to-5, and so I created <a href="https://github.com/retifrav/vcpkg-registry/blob/369e7054f1ba015f5e02bbff1d934e7224536c8b/scripts/add-new-version.py">this script</a>, which includes getting the <code>rev-parse</code> value too, so it might be easier to use <a href="https://github.com/retifrav/vcpkg-registry/blob/369e7054f1ba015f5e02bbff1d934e7224536c8b/scripts#add-new-version">that</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ python ./scripts/add-new-version.py --port-name curl --port-version 8.14.1#0
+</span></span></code></pre></div><h2 id="adding-an-older-version">Adding an older version</h2>
+<p>From time to time you&rsquo;ll need to add an older version of a dependency. For example, it could be that you added the latest version first, but then discovered that it has a bug on one of the platforms, and the previous version doesn&rsquo;t have the bug and works fine, so now you need to &ldquo;downgrade&rdquo; to that older version.</p>
+<p>With my GLFW port as an <a href="https://github.com/retifrav/vcpkg-registry/commit/bc0525884389177f8b42d756b036032fa6ffae8d">example</a>, here&rsquo;s how I &ldquo;downgraded&rdquo; to version <code>3.3.7</code> from version <code>3.3.8</code>:</p>
+<ol>
+<li>Set a &ldquo;new&rdquo; (<em>which is actually &ldquo;old&rdquo;</em>) Git hash in <code>./ports/glfw/portfile.cmake</code>;</li>
+<li>Update the <code>version</code> value in <code>./ports/glfw/vcpkg.json</code>;</li>
+<li>Commit and do the <code>rev-parse</code> thing;</li>
+<li>Add that version to <code>./versions/g-/glfw.json</code>:</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;versions&#34;</span>:
+</span></span><span style="display:flex;"><span>    [
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;3.3.8&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;git-tree&#34;</span>: <span style="color:#e6db74">&#34;597fa07e1afd57c50dfdbeb0c0d28f4157748564&#34;</span>
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;3.3.7&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">&#34;git-tree&#34;</span>: <span style="color:#e6db74">&#34;45af0346d2ec926146091ab374c475cac5aaf055&#34;</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    ]
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>So it is almost the <a href="#adding-a-newer-version">same steps</a> as for adding a newer version. And even though this commit is &ldquo;newer&rdquo; in the registry, while the version is actually &ldquo;older&rdquo;, it doesn&rsquo;t matter at all, as it&rsquo;s all just Git hashes pointing to different &ldquo;states&rdquo; of that port folder, so it will work in consuming projects just as good. The baseline still <a href="https://github.com/retifrav/vcpkg-registry/blob/bc0525884389177f8b42d756b036032fa6ffae8d/versions/baseline.json#L21">points</a> to <code>3.3.8</code>, but <code>3.3.7</code> is also available via an <a href="#locking-on-dependencies-versions">override</a> (<em>or I could also update the baseline too, and then <code>3.3.7</code> would be the default version without requiring projects to lock on it via an override</em>).</p>
+<p>If you&rsquo;ll get this error trying to install a dependency in your project:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>-- Running vcpkg install
+</span></span><span style="display:flex;"><span>Fetching registry information from git@github.com:retifrav/vcpkg-registry.git <span style="color:#f92672">(</span>HEAD<span style="color:#f92672">)</span>...
+</span></span><span style="display:flex;"><span>git archive failed with message:
+</span></span><span style="display:flex;"><span>error: git failed with exit code: <span style="color:#f92672">(</span>128<span style="color:#f92672">)</span>.
+</span></span><span style="display:flex;"><span>fatal: not a tree object: cdeffa673205b611d8ced28468cce6a06f1fdffd
+</span></span></code></pre></div><p>then it could be because you didn&rsquo;t update the <code>git-tree</code> value in that dependency&rsquo;s version JSON in the registry (<em><code>./versions/g-/glfw.json</code></em>), or perhaps the <code>baseline</code> value in your project&rsquo;s <code>vcpkg-configuration.json</code> points to a wrong registry commit.</p>
+<p>What you should also keep in mind is that when you&rsquo;ll need to update to version <code>3.3.9</code> or newer, then you most likely will need to first checkout the registry state which has the version <code>3.3.8</code>, get the <code>3.3.8</code> port files, checkout back to the latest commit, replace the <code>3.3.7</code> port contents, and update to the newer version from that.</p>
+<h2 id="incrementing-the-port-version">Incrementing the port-version</h2>
+<p>Not once and not twice you&rsquo;ll need to change something in your existing ports, especially when you are working on the very first version of a port, as you&rsquo;ll be making mistakes and overlooking things.</p>
 <p>As an example, I forgot to add <code>include_guard(GLOBAL)</code> in my <code>ports/decovar-vcpkg-cmake</code> helper package, and here&rsquo;s what I needed to do in order to fix that:</p>
 <ol>
 <li>Edit <code>./ports/decovar-vcpkg-cmake/vcpkg-port-config.cmake</code> and commit this change, but don&rsquo;t push yet;</li>
@@ -2301,14 +2324,9 @@
 <li>Stage that change and amend the commit from the step 1 by running <code>git commit --amend --no-edit</code>;</li>
 <li>Push.</li>
 </ol>
-<p>You can inspect <a href="https://github.com/retifrav/vcpkg-registry/commit/3332ca16e36cf806256e963bfbe9ab2fef7460e0">that commit</a> in my example registry. As you can see, it&rsquo;s almost the same steps as with <a href="#several-versions-of-a-port">adding a new version</a> of a port, except that here the version stays the same.</p>
-<p>Also don&rsquo;t forget to update Git hash value (<em>current <code>HEAD</code> of the entire registry repository, not just this dependency</em>) for <code>baseline</code> property in <a href="https://github.com/retifrav/glfw-imgui-example/blob/master/vcpkg-configuration.json#L6">vcpkg-configuration.json</a> of the &ldquo;consuming&rdquo; project, otherwise it will not &ldquo;know&rdquo; about the updated version in the registry. Moreover, if you force-pushed that fix, then vcpkg will simply fail to resolve dependencies, as that commit would no longer exist.</p>
-<p>But actually that last bit about changing <code>baseline</code> property in the project&rsquo;s <code>vcpkg-configuration.json</code> when updating the same version of a port in the registry (<em>when the same port v1.2.3 has different configuration/patches/etc in different registry commits/states</em>) is something I am not very confident about, because I am not really sure how exactly the <code>baseline</code> value is used for resolving the port version/state:</p>
-<ol>
-<li>Does vcpkg look for a version with <code>git-tree</code> value that was available no later than that commit?</li>
-<li>Or does vcpkg use that commit hash value only for getting <code>versions/baseline.json</code> from that exact commit (<em>to establish a minimum port version</em>), and then it will still find the latest version&rsquo;s <code>git-tree</code> value that might be pointing to a later repository state and take that one? So one cannot rely on <code>baseline</code> property to &ldquo;prevent&rdquo; vcpkg from getting updated port versions available in the registry?</li>
-</ol>
-<p>I was hoping it&rsquo;s the former, but looks like it&rsquo;s actually the latter. In that case I now better understand the point of <a href="https://learn.microsoft.com/en-us/vcpkg/users/versioning#port-version">port-version</a>.</p>
+<p>You can inspect <a href="https://github.com/retifrav/vcpkg-registry/commit/3332ca16e36cf806256e963bfbe9ab2fef7460e0">that commit</a> in my registry. As you can see, it&rsquo;s almost the same steps as with <a href="#adding-a-newer-version">adding a new version</a> of a port, except that here the version stays the same.</p>
+<p>There is a problem however with the version staying the same, as in general it means that vcpkg has no way of knowing that the port has actually changed, so on your project rebuild you might still get the previous version that doesn&rsquo;t yet have your recent modifications. You could update the <code>baseline</code> property in <a href="https://github.com/retifrav/glfw-imgui-example/blob/master/vcpkg-configuration.json#L6">vcpkg-configuration.json</a> of your project, and that should trigger vcpkg to fetch that new registry tree, which will bring you the updated port, but that&rsquo;s not really a good way to go about it. Related to that, if you have force-pushed that port update into the registry and did not update the <code>baseline</code> value in your project&rsquo;s <code>vcpkg-configuration.json</code> afterwards, then vcpkg will fail to resolve dependencies using that previous commit, as it is no longer &ldquo;reachable&rdquo;.</p>
+<p>A better/proper way to go about updating a port that doesn&rsquo;t require updating its version is to update its <a href="https://learn.microsoft.com/en-us/vcpkg/users/versioning#port-version">port-version</a>. Here&rsquo;s an <a href="https://github.com/retifrav/vcpkg-registry/commit/d91c5de4c70829a9ee6dc84933ae65e52bc5fcee">example commit</a> where I added a patch to an existing port, but since the original sources were still from the same version (<em>so from the same commit in the original repository</em>), the &ldquo;main&rdquo; version of the dependency remained the same, however the <code>port-version</code> got explicitly incremented from <code>0</code> to <code>1</code>, which helps with avoiding surprises and maintaining reproducible builds.</p>
 <h1 id="testing-your-ports-before-publishing">Testing your ports before publishing</h1>
 <p>While working on a port, would it be <a href="#creating-your-own-ports">creating</a> a new port or <a href="#updating-a-port">updating</a> an existing one, you will want to test it before publishing/pushing it to the registry. The reason is that all too often you will be finding a yet another error/typo/imperfection some minutes after your last push, which you&rsquo;ll want to amend in your last commit and force-push it to the registry, trying not to &ldquo;overwhelm&rdquo; the history with lots (and lots) of these &ldquo;correction&rdquo; commits.</p>
 <p>It might be fine if you are using that registry alone, but if you are working in a team, then it should absolutely not be allowed to force-push, so testing the ports before pushing your changes to the registry becomes especially important. There are several ways how you can do that, and here are some.</p>
