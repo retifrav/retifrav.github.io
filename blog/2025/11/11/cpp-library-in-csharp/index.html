@@ -140,7 +140,21 @@
 </nav>
 <h1 id="base-project">Base project</h1>
 <p>The idea is the same as it was with Android: native C++ library is integrated/wrapped into a .NET/C# library, which then can be used in a .NET/C# project to call the that native C++ library functions.</p>
-<h2 id="native-c-library">Native C++ library</h2>
+<p>If anything, this is my .NET environment on Windows:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ dotnet --info
+</span></span><span style="display:flex;"><span>.NET SDK:
+</span></span><span style="display:flex;"><span> Version:           9.0.304
+</span></span><span style="display:flex;"><span> Commit:            f12f5f689e
+</span></span><span style="display:flex;"><span> Workload version:  9.0.300-manifests.ad61bb1c
+</span></span><span style="display:flex;"><span> MSBuild version:   17.14.16+5d8159c5f
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Runtime Environment:
+</span></span><span style="display:flex;"><span> OS Name:     Windows
+</span></span><span style="display:flex;"><span> OS Version:  10.0.22000
+</span></span><span style="display:flex;"><span> OS Platform: Windows
+</span></span><span style="display:flex;"><span> RID:         win-x64
+</span></span><span style="display:flex;"><span> Base Path:   C:<span style="color:#ae81ff">\P</span>rogram Files<span style="color:#ae81ff">\d</span>otnet<span style="color:#ae81ff">\s</span>dk<span style="color:#ae81ff">\9</span>.0.304<span style="color:#ae81ff">\
+</span></span></span></code></pre></div><h2 id="native-c-library">Native C++ library</h2>
 <p>Let&rsquo;s take the same <a href="https://github.com/retifrav/csharp-cpp-example/tree/eafc7860c50ed6def894b00e26e84b35673eba87/cpp/library">C++ library</a> as the last time:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>./cpp/library/
 </span></span><span style="display:flex;"><span>├── include
@@ -849,8 +863,22 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span> #endif
 </span></span></code></pre></div><p>and a similar change in <a href="https://github.com/retifrav/csharp-cpp-example/blob/f7c725328178f8cdaf3334663216586ff6483122/cpp/library-c-api/src/thingy-c-api.cpp#L3-L8">thingy-c-api.cpp</a> (<em>don&rsquo;t re-use the <code>DLLEXPORT</code> definition</em>).</p>
 <h2 id="creating-msbuild-project-files">Creating MSBuild project files</h2>
-<p>Since C# cannot be handled with CMake outside of Windows, we have to create <a href="https://learn.microsoft.com/en-us/dotnet/core/project-sdk/overview#project-files">MSBuild project files</a> for C# targets (<em>library and application</em>). I&rsquo;ll be using Mac OS environment as an example, but it will be all the same on GNU/Linux too (<em>except for the file name extensions</em>).</p>
-<p>A minimal project file for the library is rather short:</p>
+<p>Since C# cannot be handled with CMake outside of Windows, we have to create <a href="https://learn.microsoft.com/en-us/dotnet/core/project-sdk/overview#project-files">MSBuild project files</a> for C# targets (<em>library and application</em>).</p>
+<p>I&rsquo;ll be using Mac OS environment as an example, but it will be all the same on GNU/Linux too (<em>except for the file name extensions</em>). Just in case, here&rsquo;s my .NET environment on Mac OS:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ dotnet --info
+</span></span><span style="display:flex;"><span>.NET SDK:
+</span></span><span style="display:flex;"><span> Version:           9.0.305
+</span></span><span style="display:flex;"><span> Commit:            3fc74f3529
+</span></span><span style="display:flex;"><span> Workload version:  9.0.300-manifests.c2634b04
+</span></span><span style="display:flex;"><span> MSBuild version:   17.14.21+8929ca9e3
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Runtime Environment:
+</span></span><span style="display:flex;"><span> OS Name:     Mac OS X
+</span></span><span style="display:flex;"><span> OS Version:  15.7
+</span></span><span style="display:flex;"><span> OS Platform: Darwin
+</span></span><span style="display:flex;"><span> RID:         osx-arm64
+</span></span><span style="display:flex;"><span> Base Path:   /usr/local/share/dotnet/sdk/9.0.305/
+</span></span></code></pre></div><p>A minimal project file for the library is rather short:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#f92672">&lt;Project</span> <span style="color:#a6e22e">Sdk=</span><span style="color:#e6db74">&#34;Microsoft.NET.Sdk&#34;</span><span style="color:#f92672">&gt;</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">&lt;PropertyGroup&gt;</span>
@@ -1058,8 +1086,8 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -t:Run
 </span></span><span style="display:flex;"><span>  maui net9.0-ios failed with <span style="color:#ae81ff">1</span> error<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>0.3s<span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span>    /usr/local/share/dotnet/packs/Microsoft.iOS.Sdk.net9.0_26.0/26.0.9766/targets/Xamarin.Shared.Sdk.targets<span style="color:#f92672">(</span>2346,3<span style="color:#f92672">)</span>: error : This version of .NET <span style="color:#66d9ef">for</span> iOS <span style="color:#f92672">(</span>26.0.9766<span style="color:#f92672">)</span> requires Xcode 26.0. The current version of Xcode is 26.1. Either install Xcode 26.0, or use a different version of .NET <span style="color:#66d9ef">for</span> iOS. See https://aka.ms/xcode-requirement <span style="color:#66d9ef">for</span> more information.
-</span></span></code></pre></div><p>Here it complains that my Xcode is of a wrong version, and indeed, I&rsquo;ve just recently updated it to version <code>26.1</code>, but (<em>god knows why</em>) it needs exactly <code>26.0</code>. They <a href="https://github.com/dotnet/maui/discussions/31662#discussioncomment-14879582">say</a> that support for Xcode <code>26.1</code> will be added only in .NET 10, so I cannot proceed until that one is released.</p>
-<p>Well, actually, let&rsquo;s try to install a separate Xcode with version <code>26.0</code> using <a href="https://github.com/XcodesOrg/xcodes">xcodes</a> tool:</p>
+</span></span></code></pre></div><p>Here it complains that my Xcode is of a wrong version, and indeed, I&rsquo;ve just recently updated it to version <code>26.1</code>, but (<em>god knows why</em>) it needs exactly <code>26.0</code>. They <a href="https://github.com/dotnet/maui/discussions/31662#discussioncomment-14879582">say</a> that support for Xcode <code>26.1</code> will be added only in .NET 10, so I cannot proceed until this one is released (<em>I fukken lold, they actually <a href="https://devblogs.microsoft.com/dotnet/announcing-dotnet-10/">released</a> it on the same day as I was publishing this article, but I noticed that only afterwards</em>).</p>
+<p>Well, not all the hope has been lost yet, let&rsquo;s try to install a separate Xcode with version <code>26.0</code> using <a href="https://github.com/XcodesOrg/xcodes">xcodes</a> tool:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ brew install xcodesorg/made/xcodes
 </span></span><span style="display:flex;"><span>$ xcodes install 26.0 --directory ~/Applications --no-superuser
 </span></span></code></pre></div><p>It will ask for your Apple ID credentials, which is rich, coming from a random tool downloaded from the internet (<em>I guess it is Apple who we we should thank for that</em>), but fortunately I have a spare Apple ID account that can be used for things like that.</p>
