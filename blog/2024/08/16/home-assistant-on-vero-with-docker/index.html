@@ -65,7 +65,7 @@
 </svg> 2024-08-16 16:49:19 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 68 min read</div>
+</svg> 71 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -170,6 +170,7 @@
     <li><a href="#updates">Updates</a>
       <ul>
         <li><a href="#2025-09-02--installing-docker-from-apt-repository">2025-09-02 | Installing Docker from apt repository</a></li>
+        <li><a href="#2025-11-18--sonos-integration-with-ikea-symfonisk">2025-11-18 | Sonos integration with IKEA SYMFONISK</a></li>
       </ul>
     </li>
   </ul>
@@ -2301,6 +2302,25 @@
 </span></span><span style="display:flex;"><span>$ docker --version
 </span></span><span style="display:flex;"><span>Docker version 28.3.3, build 980b856
 </span></span></code></pre></div><p>They also recommend installing <code>docker-buildx-plugin</code> and <code>docker-compose-plugin</code>, but those aren&rsquo;t really needed. Or at least I&rsquo;ve never needed them yet.</p>
+<h2 id="2025-11-18--sonos-integration-with-ikea-symfonisk">2025-11-18 | Sonos integration with IKEA SYMFONISK</h2>
+<p>I wanted to play various sound alers for different events, for example when the front-door camera triggers a webhook on movement or when total energy consumption in the house exceeds 10 kW.</p>
+<p>At first I thought that since my Home Assistant is already running on an actual media player - Vero V - then I can just connect some speakers to it via 3.5 mm jack, so I could play alerts when TV is off, but that <a href="https://discourse.osmc.tv/t/playing-a-sound-to-3-5-mm-jack-connected-speakers-instead-of-hdmi/108167">did not work out</a> all that well:</p>
+<ol>
+<li>The sound comes from both TV speakers via HDMI and external speakers connected via 3.5 mm jack, I could not make it output only from the external speakers;</li>
+<li>If Kodi is already playing something, then <code>aplay</code> (<em>the tool I was using</em>) will refuse to play, saying that <code>Device or resource busy</code>.</li>
+</ol>
+<p>So I abandonned idea for some time, and then I discovered that I could use a &ldquo;smart&rdquo; speaker such as <a href="https://sonos.com/en-us/shop/wireless-speakers">Sonos</a>, which Home Assistant even has a default integration for, but these speakers are quite expensive, even the lowest tier models. But then I learned that IKEA SYMFONISK series is actually re-branded Sonos speakers made in collaboration, and aside from looking better they are also more affordable. Too bad this IKEA-Sonos collaboration ended in May 2025, while I got to know all this only some months later when almost all of them went out of stock and I could only get my hands on the lame white <a href="https://ikea.com/no/no/p/symfonisk-lampefot-med-tradlos-hoyttaler-hvit-smart-70485763/">IKEA SYMFONISK lamp</a>. To be fair, it is not very lame and looks quite okay.</p>
+<p>Having bought the device, I tried to add it to Home Assistant in the <a href="https://home-assistant.io/integrations/sonos/">Sonos integration</a>, but it told me that there are no devices available. Turns out, to be able to auto-discover Sonos devices Home Assistant needs to have access to the host network, but my instance is running in a Docker container inside an explicitly created <a href="#ip-address-of-the-running-container">bridge network</a>. In addition to that, Home Assistant supposedly also needs to expose the <code>1400</code> port for Sonos devices to talk back to it, and I was almost ready to ruin my beautiful Docker setup and move Home Assistant container to the host network. But, fortunately, it is still possible to make it all work simply by specifying the Sonos device IP address manually, and <a href="https://home-assistant.io/integrations/sonos/#advanced-use">it is also possible</a> to set the Home Assistant announce/advertise address in the <code>configuration.yaml</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"></code></pre></div><p>As for the port, then it is simply a matter of adding <code>-p 1400:1400</code> to your container creation (<em>so I needed to re-create it</em>). To verify that it is open:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo ss -lntup
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>0.0.0.0:1400    users:<span style="color:#f92672">((</span><span style="color:#e6db74">&#34;docker-proxy&#34;</span>,pid<span style="color:#f92672">=</span>18935,fd<span style="color:#f92672">=</span>7<span style="color:#f92672">))</span>
+</span></span><span style="display:flex;"><span>0.0.0.0:8123    users:<span style="color:#f92672">((</span><span style="color:#e6db74">&#34;nginx&#34;</span>,pid<span style="color:#f92672">=</span>2648,fd<span style="color:#f92672">=</span>8<span style="color:#f92672">)</span>,<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;nginx&#34;</span>,pid<span style="color:#f92672">=</span>2647,fd<span style="color:#f92672">=</span>8<span style="color:#f92672">)</span>,<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;nginx&#34;</span>,pid<span style="color:#f92672">=</span>2646,fd<span style="color:#f92672">=</span>8<span style="color:#f92672">)</span>,<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;nginx&#34;</span>,pid<span style="color:#f92672">=</span>2645,fd<span style="color:#f92672">=</span>8<span style="color:#f92672">)</span>,<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;nginx&#34;</span>,pid<span style="color:#f92672">=</span>2644,fd<span style="color:#f92672">=</span>8<span style="color:#f92672">))</span>
+</span></span><span style="display:flex;"><span>      *:1400    users:<span style="color:#f92672">((</span><span style="color:#e6db74">&#34;docker-proxy&#34;</span>,pid<span style="color:#f92672">=</span>18943,fd<span style="color:#f92672">=</span>7<span style="color:#f92672">))</span>
+</span></span><span style="display:flex;"><span>...
+</span></span></code></pre></div><p>Adding media files to Home Assistant media library was not so trivial. At first I thought that I&rsquo;ll mount a Samba share with my music from NAS and map that location to Home Assistant with <code>-v /media/music:/media</code></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>iocharset<span style="color:#f92672">=</span>utf8
+</span></span></code></pre></div><p>and while that work to a point where I could see and play my music files on the media tab in web-browser, after switching to Sonos did not play, and application was showing Couldn&rsquo;t authSig.</p>
       </div>
     </article>
     <div><div id="tags">
@@ -2342,14 +2362,14 @@
             </iframe>
             
             <div class="sidebar-section">
-              <h3>Resources</h3>
+              <h3>Feeds</h3>
               <div class="sidebar-row">
                 <a href="/index.xml" title="Subscribe to RSS">
-                  <img src="/images/rss.png" width="50px">
+                  <img src="/images/rss.png" class="sidebar-row-icon">
                 </a>
                 
                 <a href="https://t.me/decovar" title="Telegram channel">
-                  <img src="/images/telegram.png" width="50px">
+                  <img src="/images/telegram.png" class="sidebar-row-icon">
                 </a>
               </div>
             </div>
