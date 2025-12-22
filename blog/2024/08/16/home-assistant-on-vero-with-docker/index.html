@@ -65,7 +65,7 @@
 </svg> 2024-08-16 16:49:19 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 73 min read</div>
+</svg> 78 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -171,6 +171,12 @@
       <ul>
         <li><a href="#2025-09-02--installing-docker-from-apt-repository">2025-09-02 | Installing Docker from APT repository</a></li>
         <li><a href="#2025-12-07--32-bit-hosts-have-been-deprecated">2025-12-07 | 32-bit hosts have been deprecated</a></li>
+        <li><a href="#2025-12-22--sonos-integration-with-ikea-symfonisk">2025-12-22 | Sonos integration with IKEA SYMFONISK</a>
+          <ul>
+            <li><a href="#adding-sonos-speaker-to-home-assistant">Adding Sonos speaker to Home Assistant</a></li>
+            <li><a href="#playing-media-from-home-assistant-on-sonos-speaker">Playing media from Home Assistant on Sonos speaker</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
   </ul>
@@ -1220,7 +1226,21 @@
 
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/ledvance-smart-plug-energy-changes.png" alt="Home Assistant, LEDVANCE smart plug energy changing" style="border:1px solid black;">
 
-<p>Hopefully, LEDVANCE will fix this problem in the plug firmware, but it doesn&rsquo;t seem to have OTA updates, so I don&rsquo;t know how we&rsquo;ll get that fix (<em>if the problem will ever get fixed at all</em>).</p>
+<p>Hopefully, LEDVANCE will fix this problem in the plug firmware, although at the moment it didn&rsquo;t seem to have OTA updates supported in Zigbee2MQTT. But when I checked some months later after updating Zigbee2MQTT to a newer version, OTA updates appeared in there, and I got a notification about an available update in Home Assistant, which I started installing right away:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/ledvance-smart-compact-outdoor-plug-ota-update.png" alt="Home Assistant, LEDVANCE smart plug OTA update" style="border:1px solid black;">
+
+<p>Looking at the changelog for the updates, I saw that something related seemed to have been fixed already in the March 2025 update (<em>while I was struggling with it in July 2025</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>echo <span style="color:#e6db74">&#39;Their backend requires POST&#39;</span>
+</span></span><span style="display:flex;"><span>$ curl -X POST https://update.ledvance.com/firmware-overview/releasenotes?name<span style="color:#f92672">=</span>PLUG_COMPACT_EU_EM_T-0x00E6-0x033D3674-MF_DIS.OTA
+</span></span><span style="display:flex;"><span>RELEASE NOTES - PLUG_COMPACT_EU_EM_T-0x00E6-0x033D3674-MF_DIS.OTA
+</span></span><span style="display:flex;"><span>Date: Thursday, <span style="color:#ae81ff">13</span> March <span style="color:#ae81ff">2025</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>1.Support real-time power, current, and voltage report.
+</span></span><span style="display:flex;"><span>2.Support total power consumption statistics feature to track energy usage.
+</span></span><span style="display:flex;"><span>3.Support power-on on/off configuration, allowing users to set initial operating state when power-on.
+</span></span></code></pre></div><p>but even after updating to the latest available firmware (<em>and disabling the automation for querying energy values</em>) the issue remained, so I still was not getting auto-updating energy (<em>or any other</em>) readings, and so I still have to rely on my additional automation to poll for new values every minute.</p>
 <h4 id="ikea-inspelning">IKEA INSPELNING</h4>
 <p>At some point later IKEA suddenly released <a href="https://ikea.com/no/no/p/inspelning-stopsel-smart-energimaler-00569836/">their own smart plug</a> (<em><a href="https://zigbee2mqtt.io/devices/E2206.html">database</a></em>) with energy meter (<em>which also does not require adding an integral sensor helper</em>), and for such a good price (<em>at least two times cheaper than competition</em>) that I have immediately bought 5 items (<em>after waiting for them to return back in stock, as the initial batch with even lower price was sold out very fast</em>).</p>
 <p>
@@ -2214,6 +2234,7 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/homeassistant:/config <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /opt/wolpipe:/config/wolpipe <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -p 1400:1400 <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    ghcr.io/home-assistant/home-assistant:stable
 </span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;If it fails with no matching manifest, then instead of :stable you will need to find the latest tag version that is still supported for your target architecture&#34;</span>
 </span></span><span style="display:flex;"><span>
@@ -2431,6 +2452,136 @@
 </span></span><span style="display:flex;"><span>instruction bytes: 0x0 0x6 0x38 0xd5 0xe0 0x7 0x0 0xf9 0xc0 0x3 0x5f 0xd6 0x0 0x0 0x0 0x0
 </span></span><span style="display:flex;"><span>...
 </span></span></code></pre></div><p>Soooo that&rsquo;s it then, no way to proceed. I reverted back to x32 Docker and I guess I&rsquo;ll be just waiting for OSMC to switch to that x64 &ldquo;userland&rdquo; thing. Or maybe even consider using a different host for Home Assistant, especially that it probably isn&rsquo;t very good for the eMMC storage to be handling tasks outside of OSMC direct purpose of simly running Kodi.</p>
+<h2 id="2025-12-22--sonos-integration-with-ikea-symfonisk">2025-12-22 | Sonos integration with IKEA SYMFONISK</h2>
+<p>I wanted to be able to play sound alers for various events, for example when a camera detects movement, or maybe when total energy consumption in the house exceeds 10 kW, or some other event that requires immediate attention.</p>
+<p>Since I am hosting Home Assistant on Vero V that is connected to TV, I thought that I can just plug-in some additional speakers to the player via 3.5 mm jack and play sounds with <a href="https://en.wikipedia.org/wiki/Aplay">aplay</a>, but that <a href="https://discourse.osmc.tv/t/playing-a-sound-to-3-5-mm-jack-connected-speakers-instead-of-hdmi/108167">did not work out</a>:</p>
+<ol>
+<li>The sound comes from both TV speakers via HDMI and those external speakers via 3.5 mm jack, and I could not make it output only from the external speakers;</li>
+<li>If Kodi is already playing something, then <code>aplay</code> will refuse to play anything, saying that <code>Device or resource busy</code>.</li>
+</ol>
+<p>So I abandonned the idea for some time, but then I found out that instead of connecting external speakers to the device I could just use a network speaker such as <a href="https://sonos.com/en-us/shop/wireless-speakers">Sonos</a>, which Home Assistant even has a default integration for. The Sonos speakers in particular are quite expensive, even the lowest tier models, so I was hesitant, but then I discovered that <a href="https://ikea.com/no/en/cat/symfonisk-series-60288/">IKEA SYMFONISK</a> series is actually re-branded Sonos speakers made in collaboration with IKEA, and those are more affordable (<em>and look better too</em>).</p>
+<p>Too bad that IKEA-Sonos collaboration ended in May 2025, and I got to know all that only some months after the fact, when almost all of them went out of stock, so I could only get my hands on this <a href="https://ikea.com/no/no/p/symfonisk-lampefot-med-tradlos-hoyttaler-hvit-smart-70485763/">IKEA SYMFONISK lamp</a> (<em>the <a href="https://boozt.com/no/no/nud-collection/led-bubble_29563780/223540076">light bulb</a> on photo is not from IKEA</em>):</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/ikea-symfonisk-lamp.jpg" alt="IKEA SYMFONISK lamp">
+
+<h3 id="adding-sonos-speaker-to-home-assistant">Adding Sonos speaker to Home Assistant</h3>
+<p>Having bought the device, I tried to add it to Home Assistant with the <a href="https://home-assistant.io/integrations/sonos/">Sonos integration</a>, but it told me that there are no devices available. As it turned out, to be able to auto-discover Sonos devices, Home Assistant needs to have access to the host network, but my instance is running in a Docker container inside a <a href="#ip-address-of-the-running-container">bridge network</a>. In addition to that, Home Assistant also needs to expose <code>1400</code> port for Sonos devices to be able to talk back to it.</p>
+<p>I was almost ready to move Home Assistant container to the host network, but then I noticed that it is <a href="https://home-assistant.io/integrations/sonos/#advanced-use">still possible</a> to make it all work as it is by simply specifying the Sonos device IP address manually in <code>configuration.yaml</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">sonos</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">media_player</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">hosts</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">192.168.1.60</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">advertise_addr</span>: <span style="color:#ae81ff">192.168.1.35</span>
+</span></span></code></pre></div><p>Here <code>192.168.1.60</code> is the IP address of my Sonos speaker and <code>192.168.1.35</code> is the IP address of my Vero V host, which is supposedly for Home Assistant to announce/advertise it to Sonos, although I am not sure if that is actually needed.</p>
+<p>As for the port - that is simply a matter of adding <code>-p 1400:1400</code> on container creation. To verify that you have it open, you can run the following command:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo ss -lntup | grep <span style="color:#ae81ff">1400</span>
+</span></span><span style="display:flex;"><span>0.0.0.0:1400       0.0.0.0:*    users:<span style="color:#f92672">((</span><span style="color:#e6db74">&#34;docker-proxy&#34;</span>,pid<span style="color:#f92672">=</span>3453,fd<span style="color:#f92672">=</span>7<span style="color:#f92672">))</span>
+</span></span><span style="display:flex;"><span>      *:1400             *:*    users:<span style="color:#f92672">((</span><span style="color:#e6db74">&#34;docker-proxy&#34;</span>,pid<span style="color:#f92672">=</span>3459,fd<span style="color:#f92672">=</span>7<span style="color:#f92672">))</span>
+</span></span></code></pre></div><h3 id="playing-media-from-home-assistant-on-sonos-speaker">Playing media from Home Assistant on Sonos speaker</h3>
+<p>There are several ways of adding media files to Home Assistant media library, and the easiest might be simply mapping the container paths with <code>-v /path/to/your/music:/media</code>, where <code>/path/to/your/music</code> could be local media files or a <a href="https://github.com/retifrav/scraps/blob/master/_linux/index.md#mounting-a-samba-share">mounted Samba share</a> from NAS.</p>
+<p>And I was able to play my music files from Home Assistant on the Media tab in web-browser, so that part was good, but I could not play anything on Sonos:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/home-assistant-media-sonos.png" alt="Home Assistant, Media, Sonos" style="border:1px solid black;">
+
+<p>I couldn&rsquo;t find any error messages, so I had no clue what is wrong, and only by accident I noticed that when Sonos mobile application is open then it actually shows error messages in there every time playback is failing to execute from Home Assistant:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>Couldn&#39;t play <span style="color:#e6db74">&#34;Something.flac?authSig=SOME-TOKEN&#34;</span>
+</span></span></code></pre></div>
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/sonos-authsig.png" alt="Sonos, authSig" style="border:1px solid black;">
+
+<p>So I got an error message, buy it wasn&rsquo;t helpful at all.</p>
+<p>Having spent some time trying different things, I stumbled about some forum thread, where someone mentioned self-signed certificates, and only then realized that this was the actual reason, because I do use a <a href="#https">self-signed certificate</a> to serve my Home Assistant instance via HTTPS in my local network. So then the solution would be to either (<em>get a proper certificate or</em>) disable HTTPS for Home Assistant or serve media files via HTTP. Since I only needed to play small sound alerts, I went with the latter and simply added a config to NGINX to serve static files from <code>/var/www/html/media/sounds/</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">charset</span> <span style="color:#e6db74">utf-8</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">root</span> <span style="color:#e6db74">/var/www/html</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">index</span> <span style="color:#e6db74">index.html</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">try_files</span> $uri $uri/ =<span style="color:#ae81ff">404</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Then to use that in automations I can add the following action:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">action</span>: <span style="color:#ae81ff">media_player.play_media</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">metadata</span>: {}
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">data</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">media</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">media_content_id</span>: <span style="color:#ae81ff">http://192.168.1.35/media/sounds/some.mp3</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">media_content_type</span>: <span style="color:#ae81ff">music</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">announce</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">target</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">entity_id</span>: <span style="color:#ae81ff">media_player.sonos</span>
+</span></span></code></pre></div><p>For example, I&rsquo;ve assigned an <a href="#ikea-remote-controls">IKEA remote control</a> button to start/stop playing current media (<em>such as online radio</em>) on Sonos speaker, and actions in that automation are accompanied with sound alerts to confirm that the command has been successfully executed:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Sonos | Play/pause</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">description</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">domain</span>: <span style="color:#ae81ff">mqtt</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">device_id</span>: <span style="color:#ae81ff">IKEA-REMOTE-CONTROL-ID</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">type</span>: <span style="color:#ae81ff">action</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">subtype</span>: <span style="color:#e6db74">&#34;on&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">device</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">conditions</span>: []
+</span></span><span style="display:flex;"><span><span style="color:#f92672">actions</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">if</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">condition</span>: <span style="color:#ae81ff">state</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">entity_id</span>: <span style="color:#ae81ff">media_player.sonos</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">state</span>:
+</span></span><span style="display:flex;"><span>          - <span style="color:#ae81ff">playing</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">then</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">action</span>: <span style="color:#ae81ff">media_player.media_pause</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">metadata</span>: {}
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">data</span>: {}
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">target</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">entity_id</span>: <span style="color:#ae81ff">media_player.sonos</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">action</span>: <span style="color:#ae81ff">media_player.play_media</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">metadata</span>: {}
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">data</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">media</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">media_content_id</span>: <span style="color:#ae81ff">http://192.168.1.35/media/sounds/intel.mp3</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">media_content_type</span>: <span style="color:#ae81ff">music</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">announce</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">target</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">entity_id</span>: <span style="color:#ae81ff">media_player.sonos</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">else</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">action</span>: <span style="color:#ae81ff">media_player.play_media</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">metadata</span>: {}
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">data</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">media</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">media_content_id</span>: <span style="color:#ae81ff">http://192.168.1.35/media/sounds/radio-mayak.mp3</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">media_content_type</span>: <span style="color:#ae81ff">music</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">announce</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">target</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">entity_id</span>: <span style="color:#ae81ff">media_player.sonos</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">delay</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">hours</span>: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">minutes</span>: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">seconds</span>: <span style="color:#ae81ff">5</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">milliseconds</span>: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">action</span>: <span style="color:#ae81ff">media_player.media_play</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">metadata</span>: {}
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">data</span>: {}
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">target</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">entity_id</span>: <span style="color:#ae81ff">media_player.sonos</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">mode</span>: <span style="color:#ae81ff">single</span>
+</span></span></code></pre></div><p>And here it is in action:</p>
+
+
+
+
+
+
+
+<video  controls="yes"   class="video">
+    <source src="https://files.decovar.dev/public/blog/home-assistant-on-vero-with-docker/home-assistant-sonos-ikea-remote-control.mp4" type="video/mp4">
+</video>
+
+<p class="video-fallback">If video doesn't play in your browser, you can download it <a href="https://files.decovar.dev/public/blog/home-assistant-on-vero-with-docker/home-assistant-sonos-ikea-remote-control.mp4">here</a>.</p>
       </div>
     </article>
     <div><div id="tags">
