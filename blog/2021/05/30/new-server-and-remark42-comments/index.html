@@ -174,8 +174,8 @@
 </span></span><span style="display:flex;"><span>/dnscfg.cgi</span></span></code></pre></div>
 <p>then here&rsquo;s how this list can be used in the pipe of generating GoAccess report:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ zcat -f /var/log/nginx/access.log* <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    | grep -v -f /path/to/requests-blacklisted.txt <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    | sudo -u www-data goaccess - -o /var/www/decovar.dev/admin/analytics.html</span></span></code></pre></div>
+</span></span></span><span style="display:flex;"><span>    | grep -v -f /path/to/requests-blacklisted.txt <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    | sudo -u www-data goaccess - -o /var/www/decovar.dev/admin/analytics.html</span></span></code></pre></div>
 <p>However, this way you are risking to accidentally <em>blacklist</em> some routes which you don&rsquo;t have now, but might have in future, so an even better solution would be to first <em>whitelist</em> all the known routes of your website and then optionally <em>blacklist</em> some sub-routes.</p>
 <p>In my case, here&rsquo;s what I whitelisted in <code>requests-whitelisted.txt</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">GET</span> \<span style="color:#f92672">/\</span>s
@@ -216,9 +216,9 @@
 <p>The second half of the list excludes crawlers, and actually GoAccess seems to have its own lists of crawlers and even a setting to exclude them, but for some reasons that doesn&rsquo;t work for me. Plus not all the crawlers I&rsquo;ve seen are present in GoAccess&rsquo;es list.</p>
 <p>And the updated pipe for generating GoAccess report now looks like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ zcat -f /var/log/nginx/access.log* <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    | egrep -if /path/to/requests-whitelisted.txt <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    | egrep -vif /path/to/requests-blacklisted.txt <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    | sudo -u www-data goaccess - -o /var/www/decovar.dev/admin/analytics.html</span></span></code></pre></div>
+</span></span></span><span style="display:flex;"><span>    | egrep -if /path/to/requests-whitelisted.txt <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    | egrep -vif /path/to/requests-blacklisted.txt <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    | sudo -u www-data goaccess - -o /var/www/decovar.dev/admin/analytics.html</span></span></code></pre></div>
 <p>So first I apply whitelist and then blacklist. Also note the <code>egrep</code> here - this is to enable proper (<em>extended</em>) mode for regular expressions.</p>
 <p>As a result, I now have a clean visitors analytics report:</p>
 
@@ -250,7 +250,7 @@
 <p>Then you get the binary and install it in the system:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>home<span style="color:#f92672">/</span>remark42<span style="color:#f92672">/</span>
 </span></span><span style="display:flex;"><span>$ wget https<span style="color:#66d9ef">:</span><span style="color:#75715e">//github.com/umputun/remark42/releases/download/v1.8.1/remark42.linux-amd64.tar.gz
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>$ tar <span style="color:#f92672">-</span>xvf remark42<span style="color:#f92672">.</span>linux<span style="color:#f92672">-</span>amd64<span style="color:#f92672">.</span>tar<span style="color:#f92672">.</span>gz
+</span></span></span><span style="display:flex;"><span>$ tar <span style="color:#f92672">-</span>xvf remark42<span style="color:#f92672">.</span>linux<span style="color:#f92672">-</span>amd64<span style="color:#f92672">.</span>tar<span style="color:#f92672">.</span>gz
 </span></span><span style="display:flex;"><span>$ sudo mv remark42<span style="color:#f92672">.</span>linux<span style="color:#f92672">-</span>amd64 <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>local<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span></span></span></code></pre></div>
 <p>Official documentation recommends to run it from Docker, but obviously we won&rsquo;t do so, and that complicates things a bit. The setup without Docker is actually not that hard, but I had to refer to <a href="https://blog.lasall.dev/post/hugo-and-comments-with-remark42/">this article</a> a couple of times, as some things were not entirely clear.</p>
 <p>To run Remark42 you need to pass several mandatory parameters to it. If you&rsquo;d like to provide non-default paths for things like backup folder and avatars, that can be also done via parameters.</p>
@@ -352,11 +352,11 @@
 <p>I chose the second option:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#75715e">#root /var/www/decovar.dev;
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_redirect</span> <span style="color:#66d9ef">off</span>;
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_http_version</span> <span style="color:#ae81ff">1</span><span style="color:#e6db74">.1</span>;
@@ -371,11 +371,11 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#f92672">location</span> <span style="color:#e6db74">/.well-known/acme-challenge/</span> {
 </span></span><span style="display:flex; background-color:#3c3d38"><span>        <span style="color:#75715e">#try_files $uri $uri/ =404;
-</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#75715e"></span>        <span style="color:#f92672">return</span> <span style="color:#ae81ff">301</span> <span style="color:#e6db74">https://decovar.dev</span>$request_uri;
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span>        <span style="color:#f92672">return</span> <span style="color:#ae81ff">301</span> <span style="color:#e6db74">https://decovar.dev</span>$request_uri;
 </span></span><span style="display:flex; background-color:#3c3d38"><span>    }
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}</span></span></code></pre></div>
+</span></span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>To test if your Remark42 setup is correct, documentation suggest to open <code>/web/</code> route on your comments subdomain, such as <a href="https://comments.decovar.dev/web/">https://comments.decovar.dev/web/</a>, but for me this page <a href="https://github.com/umputun/remark42/discussions/1002">is failing</a> (<em>yet another artifact of running without Docker</em>), although this particular problem should be fixed soon. At the same time, comments on the main website are working fine.</p>
 <h2 id="adding-remark42-to-hugo">Adding Remark42 to Hugo</h2>
 <p>To run the Remark42 scripts, I created a <code>/layouts/partials/comments.html</code> partial:</p>
@@ -495,9 +495,9 @@
 </span></span><span style="display:flex;"><span>$ sudo -u remark42 wget https://media.disqus.com/uploads/exports/1/1/waspenterprises-2021-05-22T20:31:45.123456-all.xml.gz
 </span></span><span style="display:flex;"><span>$ sudo -u remark42 gunzip ./waspenterprises-2021-05-22T20:31:45.123456-all.xml.gz
 </span></span><span style="display:flex;"><span>$ sudo -u remark42 remark42.linux-amd64 import -p disqus <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --secret SOME-SECRET --url https://comments.decovar.dev <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --admin-passwd SOME-PASSWORD -s decovar.dev <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -f ./downloads/waspenterprises-2021-05-22T20:31:45.123456-all.xml</span></span></code></pre></div>
+</span></span></span><span style="display:flex;"><span>    --secret SOME-SECRET --url https://comments.decovar.dev <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --admin-passwd SOME-PASSWORD -s decovar.dev <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -f ./downloads/waspenterprises-2021-05-22T20:31:45.123456-all.xml</span></span></code></pre></div>
 <p>For that to work you need to have <code>ADMIN_PASSWD</code> set in your Remark42 config file. I didn&rsquo;t see that in import/remapping examples which I found on the internet, but as I recall for me either of the commands was complaining about missing mandatory parameters such as <code>--admin-passwd</code>.</p>
 <p>Now you need to remap the imported comments from the old page URLs to the new URLs on your domain. Create a file with mapping rules, like so:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ sudo <span style="color:#f92672">-</span>u remark42 nano rules<span style="color:#f92672">.</span>txt</span></span></code></pre></div>
@@ -505,7 +505,7 @@
 <p>And execute the remapping:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ sudo <span style="color:#f92672">-</span>u remark42 remark42<span style="color:#f92672">.</span>linux<span style="color:#f92672">-</span>amd64 remap \
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>secret <span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">SECRET</span> <span style="color:#f92672">--</span>url https<span style="color:#66d9ef">:</span><span style="color:#75715e">//comments.decovar.dev \
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#f92672">--</span>admin<span style="color:#f92672">-</span>passwd <span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PASSWORD</span> <span style="color:#f92672">-</span>f <span style="color:#f92672">./</span>rules<span style="color:#f92672">.</span>txt <span style="color:#f92672">-</span>s decovar<span style="color:#f92672">.</span>dev</span></span></code></pre></div>
+</span></span></span><span style="display:flex;"><span>    <span style="color:#f92672">--</span>admin<span style="color:#f92672">-</span>passwd <span style="color:#a6e22e">SOME</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PASSWORD</span> <span style="color:#f92672">-</span>f <span style="color:#f92672">./</span>rules<span style="color:#f92672">.</span>txt <span style="color:#f92672">-</span>s decovar<span style="color:#f92672">.</span>dev</span></span></code></pre></div>
 <p>Actually, it wasn&rsquo;t too obvious to guess what rules exactly are expected here. I tried several combinations of rules and parameters for the remapping command, and eventually something worked. What exactly did work - I don&rsquo;t know, because to see if it worked or not, you need to restart the service, and I figured that out only after some time, so maybe the very first attempt was already successful, and all further actions were redundant.</p>
 <p>After the remapping all the old Disqus comments magically appeared under the posts on my new website. Shortly after I went to Disqus admin panel and deleted all the comments from the old website there.</p>
 <h2 id="authentication">Authentication</h2>
@@ -544,8 +544,8 @@
 
 <p>Now you can perform administrator actions. For example, if you&rsquo;d like to delete a comment with <code>COMMENT-ID</code> from <code>https://decovar.dev/some/page.html</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -X <span style="color:#e6db74">&#34;DELETE&#34;</span> <span style="color:#e6db74">&#34;https://comments.decovar.dev/api/v1/admin/comment/COMMENT-ID?site=decovar.dev&amp;url=https:%2F%2Fdecovar.dev%2Fsome%2Fpage.html&#34;</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#39;X-JWT: HERE-GOES-JWT&#39;</span></span></span></code></pre></div>
+</span></span></span><span style="display:flex;"><span>    -X <span style="color:#e6db74">&#34;DELETE&#34;</span> <span style="color:#e6db74">&#34;https://comments.decovar.dev/api/v1/admin/comment/COMMENT-ID?site=decovar.dev&amp;url=https:%2F%2Fdecovar.dev%2Fsome%2Fpage.html&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;X-JWT: HERE-GOES-JWT&#39;</span></span></span></code></pre></div>
 <h2 id="notifications">Notifications</h2>
 <h3 id="via-telegram">Via Telegram</h3>
 <p>You can enable <a href="https://remark42.com/docs/latest/telegram/">Telegram notifications</a> in a minute or so. Get a <a href="https://core.telegram.org/bots#creating-a-new-bot">token</a> from <a href="https://t.me/botfather">BotFather</a> (<em>or reuse one of your existing bots</em>) and add the following to the Remark42 config:</p>

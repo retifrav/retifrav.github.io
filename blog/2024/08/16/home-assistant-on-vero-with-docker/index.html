@@ -249,11 +249,11 @@
 <p>The installation or rather deployment procedure for anything Docker-based is to create a <a href="https://docs.docker.com/guides/docker-concepts/the-basics/what-is-a-container/">container</a> from a specified <a href="https://docs.docker.com/guides/docker-concepts/the-basics/what-is-an-image/">image</a>. If you don&rsquo;t have the image available locally already, it will get fetched from <a href="https://hub.docker.com">Docker Hub</a>. Which begs the question whether one can get images and host them somewhere locally and independently from Docker Hub, and fortunately that seems to be <a href="https://docker.com/blog/how-to-use-your-own-registry-2/">supported</a> too.</p>
 <p>The process of creating/running a Home Assistant container is the following:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --name homeassistant <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/homeassistant:/config <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    ghcr.io/home-assistant/home-assistant:stable
+</span></span></span><span style="display:flex;"><span>    --name homeassistant <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/homeassistant:/config <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    ghcr.io/home-assistant/home-assistant:stable
 </span></span></code></pre></div><p>The <code>-v</code> argument here tells the container that host paths (<em>what&rsquo;s on the left from <code>:</code></em>) will be mapped to container paths (<em>what&rsquo;s on the right from <code>:</code></em>). Here Home Assistant settings (<em><code>/config/</code> path inside container</em>) will be stored in <code>/root/homeassistant/</code> path in the host filesystem. So when container will be deleted/re-created (<em>during an <a href="#updating">update</a>, for example</em>), the data (<em><a href="https://docs.docker.com/engine/storage/volumes/">volume</a></em>) will be preserved between container reincarnations. In addition to that, we can edit the configs in the host filesystem without logging-in to the container.</p>
 <p>In <a href="https://home-assistant.io/installation/linux#platform-installation">their manual</a> they also set <code>--privileged</code> and <code>--network=host</code>, but there is no need for that, as well as there is probably no need for <code>-v /run/dbus:/run/dbus:ro</code> (<em>if you don&rsquo;t intend to use Bluetooth</em>). The Home Assistant team probably added those options to reduce the number of users complaining that &ldquo;<em>nothing works</em>&rdquo;, but in general these parameters certainly aren&rsquo;t great for something that is supposed to be running isolated from the main/host environment.</p>
 <h3 id="ip-address-of-the-running-container">IP address of the running container</h3>
@@ -499,18 +499,18 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /etc/nginx/sites-available/homeassistant
 </span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#75715e"># this is supposed to be used for WebSocket connections,
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"># although it might require a separate `location` block
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">map</span> $http_upgrade $connection_upgrade {
+</span></span></span><span style="display:flex;"><span><span style="color:#66d9ef">map</span> $http_upgrade $connection_upgrade {
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">default</span> <span style="color:#e6db74">upgrade</span>;
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#39;&#39;</span> <span style="color:#e6db74">close</span>;
 </span></span><span style="display:flex;"><span>}
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e"># doesn&#39;t have to be exactly `8123`, you can set it to the &#34;usual&#34; `80`
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">8123</span>;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">8123</span>;
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
 </span></span><span style="display:flex;"><span>        <span style="color:#75715e"># `172.18.0.2` is the IP address of the Home Assistant container
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://172.18.0.2:8123</span>;
+</span></span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://172.18.0.2:8123</span>;
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_http_version</span> <span style="color:#ae81ff">1</span><span style="color:#e6db74">.1</span>;
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Upgrade</span> $http_upgrade;
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Connection</span> $connection_upgrade;
@@ -566,10 +566,10 @@
 </span></span><span style="display:flex;"><span>$ mkdir /tmp/crts <span style="color:#f92672">&amp;&amp;</span> cd $_
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ openssl req -x509 -newkey rsa:2048 -nodes -sha256 <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -subj <span style="color:#e6db74">&#39;/CN=Home Assistant&#39;</span> -extensions EXT -config &lt;<span style="color:#f92672">(</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    printf <span style="color:#e6db74">&#34;[dn]\nCN=Home Assistant\n[req]\ndistinguished_name=dn\n[EXT]\nsubjectAltName=IP:192.168.1.35,DNS:vero.local\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth&#34;</span><span style="color:#f92672">)</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -days <span style="color:#ae81ff">1111</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -out fullchain.pem -keyout key.pem
+</span></span></span><span style="display:flex;"><span>    -subj <span style="color:#e6db74">&#39;/CN=Home Assistant&#39;</span> -extensions EXT -config &lt;<span style="color:#f92672">(</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    printf <span style="color:#e6db74">&#34;[dn]\nCN=Home Assistant\n[req]\ndistinguished_name=dn\n[EXT]\nsubjectAltName=IP:192.168.1.35,DNS:vero.local\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth&#34;</span><span style="color:#f92672">)</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -days <span style="color:#ae81ff">1111</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -out fullchain.pem -keyout key.pem
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ ls -l
 </span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> osmc osmc <span style="color:#ae81ff">1115</span> Jul <span style="color:#ae81ff">30</span> 11:11 fullchain.pem
@@ -579,10 +579,10 @@
 </span></span><span style="display:flex;"><span>$ sudo chown -R www-data:www-data /opt/certificates
 </span></span></code></pre></div><p>Again, the <code>192.168.1.35</code> is the (<em>static</em>) IP address of your hub/device, which in my case is Vero V. The <code>subjectAltName=IP:192.168.1.35,DNS:homeassistant.local</code> might be just the IP, if you don&rsquo;t have a DNS record for it in your home network. I actually don&rsquo;t have it, and as a matter of fact, you can probably just drop the entire line altogether, so the command becomes:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ openssl req -x509 -newkey rsa:2048 -nodes -sha256 <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -subj <span style="color:#e6db74">&#39;/CN=Home Assistant&#39;</span> -extensions EXT -config &lt;<span style="color:#f92672">(</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    printf <span style="color:#e6db74">&#34;[dn]\nCN=Home Assistant\n[req]\ndistinguished_name=dn\n[EXT]\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth&#34;</span><span style="color:#f92672">)</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -days <span style="color:#ae81ff">1111</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -out fullchain.pem -keyout key.pem
+</span></span></span><span style="display:flex;"><span>    -subj <span style="color:#e6db74">&#39;/CN=Home Assistant&#39;</span> -extensions EXT -config &lt;<span style="color:#f92672">(</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    printf <span style="color:#e6db74">&#34;[dn]\nCN=Home Assistant\n[req]\ndistinguished_name=dn\n[EXT]\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth&#34;</span><span style="color:#f92672">)</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -days <span style="color:#ae81ff">1111</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -out fullchain.pem -keyout key.pem
 </span></span></code></pre></div><p>Then to enable HTTPS in NGINX site config:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /etc/nginx/sites-available/homeassistant
 </span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
@@ -592,7 +592,7 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">ssl_certificate_key</span> <span style="color:#e6db74">/opt/certificates/key.pem</span>;
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span></span><span style="display:flex;"><span>}
 </span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo systemctl restart nginx.service
 </span></span></code></pre></div><p>Check the certificate expiration date from some other machine:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ echo | openssl s_client -connect 192.168.1.35:8123 2&gt;&amp;<span style="color:#ae81ff">1</span> | openssl x509 -noout -dates
@@ -615,7 +615,7 @@
 </div>
 <p>printing this useless error message to the console:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">Firefox</span> can&#39;t establish a connection to the server at wss<span style="color:#66d9ef">:</span><span style="color:#75715e">//192.168.1.35:8123/api/websocket. core.7weG3TqZ_G4.js:1:65105
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#a6e22e">Uncaught</span> <span style="color:#f92672">(</span>in promise<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span> 
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">Uncaught</span> <span style="color:#f92672">(</span>in promise<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span> 
 </span></span></code></pre></div><p>Mobile applications will fail to connect to, but you&rsquo;ll get a more informative error message there:</p>
 <div class="vertical-image-centered-scaled">
 
@@ -637,12 +637,12 @@
 <p>Zigbee coordinator manages Zigbee traffic from/to devices, but it also needs to be able to talk to Home Assistant and the other way around. For that type of communication it uses <a href="https://en.wikipedia.org/wiki/MQTT">MQTT</a> protocol, so we will need an MQTT broker.</p>
 <p>One such broker is <a href="https://mosquitto.org">Eclipse Mosquitto</a>. It can be installed as a Docker container too, and the image is <a href="https://hub.docker.com/_/eclipse-mosquitto/">here</a>. Setting up a container:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --name mosquitto <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/mosquitto/config:/mosquitto/config <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/mosquitto/data:/mosquitto/data <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/mosquitto/log:/mosquitto/log <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    eclipse-mosquitto
+</span></span></span><span style="display:flex;"><span>    --name mosquitto <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/mosquitto/config:/mosquitto/config <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/mosquitto/data:/mosquitto/data <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/mosquitto/log:/mosquitto/log <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    eclipse-mosquitto
 </span></span></code></pre></div><p>Again, the <code>-v</code> arguments here tell the container which host paths will be mapped to which container paths, so when Mosquitto binary inside container will need to read its &ldquo;local&rdquo; <code>/mosquitto/config/mosquitto.conf</code> file, it will actually read the <code>/root/mosquitto/config/mosquitto.conf</code> file in the host filesystem.</p>
 <p>Speaking about the config, it needs to be <a href="https://mosquitto.org/man/mosquitto-conf-5.html">created</a>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /root/mosquitto/config/mosquitto.conf
@@ -894,14 +894,14 @@
 </span></span><span style="display:flex;"><span>    - <span style="color:#ae81ff">file</span>
 </span></span></code></pre></div><p>Configure and run a Docker container:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --name zigbee2mqtt <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --network hub <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --device<span style="color:#f92672">=</span>/dev/serial/by-id/YOUR-ZIGBEE-ADAPTER:/dev/ttyACM0 <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/zigbee2mqtt/data:/app/data <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/zigbee2mqtt/logs:/app/logs <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    koenkk/zigbee2mqtt
+</span></span></span><span style="display:flex;"><span>    --name zigbee2mqtt <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --network hub <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --device<span style="color:#f92672">=</span>/dev/serial/by-id/YOUR-ZIGBEE-ADAPTER:/dev/ttyACM0 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/zigbee2mqtt/data:/app/data <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/zigbee2mqtt/logs:/app/logs <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    koenkk/zigbee2mqtt
 </span></span></code></pre></div><p>If you specified incorrect <code>--device</code> path, or if the device (<em>Zigbee adapter/coordinator</em>) is not connected, then you&rsquo;ll see errors like these in the log:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker container logs zigbee2mqtt
 </span></span><span style="display:flex;"><span>...
@@ -942,14 +942,14 @@
 </span></span><span style="display:flex;"><span>$ sudo docker rm zigbee2mqtt
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --name zigbee2mqtt <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --network hub <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --device<span style="color:#f92672">=</span>/dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_SERIAL-NUMBER-HERE-if00:/dev/ttyACM0 <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/zigbee2mqtt/data:/app/data <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/zigbee2mqtt/logs:/app/logs <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    koenkk/zigbee2mqtt
+</span></span></span><span style="display:flex;"><span>    --name zigbee2mqtt <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --network hub <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --device<span style="color:#f92672">=</span>/dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_SERIAL-NUMBER-HERE-if00:/dev/ttyACM0 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/zigbee2mqtt/data:/app/data <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/zigbee2mqtt/logs:/app/logs <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    koenkk/zigbee2mqtt
 </span></span></code></pre></div><p>Successful launch will manifest itself in the log like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>info:     z2m: Starting Zigbee2MQTT version 1.39.0 <span style="color:#f92672">(</span>commit <span style="color:#75715e">#0326926)</span>
 </span></span><span style="display:flex;"><span>info:     z2m: Starting zigbee-herdsman <span style="color:#f92672">(</span>0.50.1<span style="color:#f92672">)</span>
@@ -1047,7 +1047,7 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e"># again, doesn&#39;t have to be exactly 8080
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">8080</span> <span style="color:#e6db74">ssl</span>;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">8080</span> <span style="color:#e6db74">ssl</span>;
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">ssl_certificate</span> <span style="color:#e6db74">/opt/certificates/fullchain.pem</span>;
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">ssl_certificate_key</span> <span style="color:#e6db74">/opt/certificates/key.pem</span>;
@@ -1396,8 +1396,8 @@
 <p>For example, if you drive away somewhere and forget to close your garage door, you probably would want to get notified about that. So one thing you need is a sensor that would report that the door is open and second thing is sending a notification after it has been open for longer than a certain period of time.</p>
 <p>Setting-up an automation that would send a notification after some period of time is rather trivial, but the complicating factor here is that you drove away from your home, so you are now on mobile internet outside of your house local network. So the notification will have to be via some online service, such as <a href="/blog/2017/10/01/telegram-bot-en/">Telegram bot</a>. No need to create a service and implement any commands, just get the token, send <code>/start</code> to the bot and then test it with cURL:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -s -X POST -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -d <span style="color:#e6db74">&#39;{&#34;chat_id&#34;: &#34;CHAT-ID-OR-CHANNEL-NAME&#34;, &#34;text&#34;: &#34;ololo&#34;}&#39;</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    https://api.telegram.org/YOUR-TELEGRAM-BOT-TOKEN/sendMessage
+</span></span></span><span style="display:flex;"><span>    -d <span style="color:#e6db74">&#39;{&#34;chat_id&#34;: &#34;CHAT-ID-OR-CHANNEL-NAME&#34;, &#34;text&#34;: &#34;ololo&#34;}&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    https://api.telegram.org/YOUR-TELEGRAM-BOT-TOKEN/sendMessage
 </span></span></code></pre></div><p>Then add a <a href="https://home-assistant.io/integrations/rest_command/">RESTful Command</a> in your <code>configuration.yaml</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">rest_command</span>:
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">telegram_notification</span>:
@@ -1904,14 +1904,14 @@
 </span></span><span style="display:flex;"><span>$ sudo docker rm homeassistant
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --name homeassistant <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --network hub <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --ip 172.18.0.100 <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/homeassistant:/config <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#ae81ff"></span>    -v /opt/wolpipe:/config/wolpipe <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    ghcr.io/home-assistant/home-assistant:stable
+</span></span></span><span style="display:flex;"><span>    --name homeassistant <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --network hub <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --ip 172.18.0.100 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/homeassistant:/config <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span>    -v /opt/wolpipe:/config/wolpipe <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    ghcr.io/home-assistant/home-assistant:stable
 </span></span></code></pre></div><p>Check what you have in the <code>/config/</code> now:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker exec -it homeassistant bash
 </span></span><span style="display:flex;"><span>
@@ -2009,18 +2009,18 @@
 <p>For example, I have a Raspberry Pi device running some services, and I would like to monitor its temperature. Since Raspberry Pi isn&rsquo;t really a Zigbee-enabled thermometer that could be added to Home Assistant by the <a href="#philips-hue-smart-plug">usual means</a>, the other way you can get its temperature is by submitting it with a webhook.</p>
 <p>To begin with, the <code>POST</code> request with a JSON payload would look like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X POST <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> -d <span style="color:#e6db74">&#39;{&#34;temperature&#34;:50}&#39;</span> -k <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    https://YOUR-VERO-IP:8123/api/webhook/monitoring-raspberry-temperature
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> -d <span style="color:#e6db74">&#39;{&#34;temperature&#34;:50}&#39;</span> -k <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    https://YOUR-VERO-IP:8123/api/webhook/monitoring-raspberry-temperature
 </span></span></code></pre></div><p>Like I said, the <code>monitoring-raspberry-temperature</code> value can be anything, so you might prefer to use human-readable identifiers (<em>but don&rsquo;t neglect the <a href="https://home-assistant.io/docs/automation/trigger/#webhook-security">security</a> aspect</em>).</p>
 <p>The temperature of Raspberry Pi running Raspbian (<em>Raspberry Pi OS</em>) can be queried like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ vcgencmd measure_temp | awk -F <span style="color:#e6db74">&#34;[=&#39;]&#34;</span> <span style="color:#e6db74">&#39;{print($2)}&#39;</span>
 </span></span><span style="display:flex;"><span>60.4
 </span></span></code></pre></div><p>Combining everything together, the final command (<em>using <code>jq</code> to format the JSON payload/body</em>) will be this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ jq -nc --argjson msg <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    <span style="color:#66d9ef">$(</span>vcgencmd measure_temp | awk -F <span style="color:#e6db74">&#34;[=&#39;]&#34;</span> <span style="color:#e6db74">&#39;{print($2)}&#39;</span><span style="color:#66d9ef">)</span> <span style="color:#e6db74">&#39;{&#34;temperature&#34;:$msg}&#39;</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    | curl -X POST <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> -d @- -k <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    https://YOUR-VERO-IP:8123/api/webhook/monitoring-raspberry-temperature
+</span></span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">$(</span>vcgencmd measure_temp | awk -F <span style="color:#e6db74">&#34;[=&#39;]&#34;</span> <span style="color:#e6db74">&#39;{print($2)}&#39;</span><span style="color:#66d9ef">)</span> <span style="color:#e6db74">&#39;{&#34;temperature&#34;:$msg}&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    | curl -X POST <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> -d @- -k <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    https://YOUR-VERO-IP:8123/api/webhook/monitoring-raspberry-temperature
 </span></span></code></pre></div><p>Note the <code>--argjson</code>, because if you use the <code>--arg</code> instead, then the temperature value will be in quotes:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>jq -nc --argjson msg <span style="color:#66d9ef">$(</span>vcgencmd measure_temp | awk -F <span style="color:#e6db74">&#34;[=&#39;]&#34;</span> <span style="color:#e6db74">&#39;{print($2)}&#39;</span><span style="color:#66d9ef">)</span> <span style="color:#e6db74">&#39;{&#34;temperature&#34;:$msg}&#39;</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">{</span><span style="color:#e6db74">&#34;temperature&#34;</span>:57.6<span style="color:#f92672">}</span>
@@ -2103,9 +2103,9 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">unit_of_measurement</span>: <span style="color:#ae81ff">°C</span>
 </span></span></code></pre></div><p>But sending a <code>POST</code> request to either of the webhooks:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X POST <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -d <span style="color:#e6db74">&#39;{&#34;temperature&#34;:5}&#39;</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    https://YOUR-VERO-IP:8123/api/webhook/my-super-secret-webhook-1 <span style="color:#75715e"># or my-super-secret-webhook-2</span>
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -d <span style="color:#e6db74">&#39;{&#34;temperature&#34;:5}&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    https://YOUR-VERO-IP:8123/api/webhook/my-super-secret-webhook-1 <span style="color:#75715e"># or my-super-secret-webhook-2</span>
 </span></span></code></pre></div><p>was updating both sensors:</p>
 
 
@@ -2179,7 +2179,7 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkdir /root/_backups
 </span></span><span style="display:flex;"><span>$ sudo nano /root/_backups/backup.sh
 </span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>dt<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">$(</span>date +%Y.%m.%d-%H%M%S<span style="color:#66d9ef">)</span><span style="color:#e6db74">&#34;</span>
 </span></span><span style="display:flex;"><span>backupname<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;vero-backup_</span>$dt<span style="color:#e6db74">&#34;</span>
 </span></span><span style="display:flex;"><span>workingdir<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/root/_backups/</span>$backupname<span style="color:#e6db74">&#34;</span>
@@ -2187,15 +2187,15 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># Home Assistant and friends</span>
 </span></span><span style="display:flex;"><span>tar -czf $workingdir/home-assistant.tar.gz <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    /root/homeassistant <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    /root/mosquitto <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    /root/zigbee2mqtt
+</span></span></span><span style="display:flex;"><span>    /root/homeassistant <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    /root/mosquitto <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    /root/zigbee2mqtt
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># NGINX</span>
 </span></span><span style="display:flex;"><span>tar -czf $workingdir/nginx.tar.gz <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    /etc/nginx/sites-available/* <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    /etc/nginx/mime.types <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    /etc/nginx/nginx.conf
+</span></span></span><span style="display:flex;"><span>    /etc/nginx/sites-available/* <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    /etc/nginx/mime.types <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    /etc/nginx/nginx.conf
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># OSMC (given that it makes backups in this folder)</span>
 </span></span><span style="display:flex;"><span>cp /home/osmc/backups/* $workingdir/
@@ -2227,15 +2227,15 @@
 </span></span><span style="display:flex;"><span>$ sudo docker pull ghcr.io/home-assistant/home-assistant:stable
 </span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Re-create the container&#34;</span>
 </span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --name homeassistant <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --network hub <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --ip 172.18.0.100 <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/homeassistant:/config <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /opt/wolpipe:/config/wolpipe <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -p 1400:1400 <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    ghcr.io/home-assistant/home-assistant:stable
+</span></span></span><span style="display:flex;"><span>    --name homeassistant <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --network hub <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --ip 172.18.0.100 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/homeassistant:/config <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /opt/wolpipe:/config/wolpipe <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -p 1400:1400 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    ghcr.io/home-assistant/home-assistant:stable
 </span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;If it fails with no matching manifest, then instead of :stable you will need to find the latest tag version that is still supported for your target architecture&#34;</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Start all the containers back: `sudo docker start </span><span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span><span style="color:#e6db74">`&#34;</span>
@@ -2245,27 +2245,27 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker rm mosquitto
 </span></span><span style="display:flex;"><span>$ sudo docker pull eclipse-mosquitto:latest
 </span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --name mosquitto <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --network hub <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/mosquitto/config:/mosquitto/config <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/mosquitto/data:/mosquitto/data <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/mosquitto/log:/mosquitto/log <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    eclipse-mosquitto
+</span></span></span><span style="display:flex;"><span>    --name mosquitto <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --network hub <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/mosquitto/config:/mosquitto/config <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/mosquitto/data:/mosquitto/data <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/mosquitto/log:/mosquitto/log <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    eclipse-mosquitto
 </span></span></code></pre></div><p>and here&rsquo;s for Zigbee2MQTT:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker rm zigbee2mqtt
 </span></span><span style="display:flex;"><span>$ sudo docker pull ghcr.io/koenkk/zigbee2mqtt:latest
 </span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --name zigbee2mqtt <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --network hub <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --ip 172.18.0.101 <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --device<span style="color:#f92672">=</span>/dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_20240218135838-if00:/dev/ttyACM0 <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/zigbee2mqtt/data:/app/data <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/zigbee2mqtt/logs:/app/logs <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    ghcr.io/koenkk/zigbee2mqtt
+</span></span></span><span style="display:flex;"><span>    --name zigbee2mqtt <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --network hub <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --ip 172.18.0.101 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --device<span style="color:#f92672">=</span>/dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_20240218135838-if00:/dev/ttyACM0 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/zigbee2mqtt/data:/app/data <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/zigbee2mqtt/logs:/app/logs <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    ghcr.io/koenkk/zigbee2mqtt
 </span></span></code></pre></div><h1 id="performance-monitoring-with-btop">Performance monitoring with btop</h1>
 <p>As a bonus part, I wanted to install <a href="https://github.com/aristocratos/btop">btop</a> tool for watching the system CPU load.</p>
 <p>There is no(?) pre-built package for btop on Debian, so I had to build it from sources, and for that it needs some tools and dependencies to be installed first, out of which CMake I also had to build from sources, because packaged version <code>3.18.4</code> is a bit old, and btop requires at least <code>3.24</code>:</p>
@@ -2305,7 +2305,7 @@
 <p>Like I <a href="#docker">said</a>, installing anything via a script from the internet is a condemned practice, so I was happy to learn that Docker now has an <a href="https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository">APT repository</a>. It could have always been the case, but I am almost sure that it wasn&rsquo;t there when I was looking.</p>
 <p>First they recommend to uninstall &ldquo;unofficial&rdquo; (<em>as they call them</em>) packages that could have been installed from default repositories:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ <span style="color:#66d9ef">for</span> pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    <span style="color:#66d9ef">do</span> sudo apt remove $pkg; <span style="color:#66d9ef">done</span>
+</span></span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">do</span> sudo apt remove $pkg; <span style="color:#66d9ef">done</span>
 </span></span></code></pre></div><p>Then you can add their repository to your system sources:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt update
 </span></span><span style="display:flex;"><span>$ sudo apt install ca-certificates curl
@@ -2314,8 +2314,8 @@
 </span></span><span style="display:flex;"><span>$ sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 </span></span><span style="display:flex;"><span>$ sudo chmod a+r /etc/apt/keyrings/docker.asc
 </span></span><span style="display:flex;"><span>$ echo <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    <span style="color:#e6db74">&#34;deb [arch=</span><span style="color:#66d9ef">$(</span>dpkg --print-architecture<span style="color:#66d9ef">)</span><span style="color:#e6db74"> signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian </span><span style="color:#66d9ef">$(</span>. /etc/os-release <span style="color:#f92672">&amp;&amp;</span> echo <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>VERSION_CODENAME<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74"> stable&#34;</span> | <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
+</span></span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;deb [arch=</span><span style="color:#66d9ef">$(</span>dpkg --print-architecture<span style="color:#66d9ef">)</span><span style="color:#e6db74"> signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian </span><span style="color:#66d9ef">$(</span>. /etc/os-release <span style="color:#f92672">&amp;&amp;</span> echo <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>VERSION_CODENAME<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74"> stable&#34;</span> | <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
 </span></span></code></pre></div><p>And install Docker:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt update
 </span></span><span style="display:flex;"><span>$ sudo apt install docker-ce docker-ce-cli containerd.io
@@ -2366,8 +2366,8 @@
 </span></span></code></pre></div><p>Having browsed the <a href="https://discourse.osmc.tv/">OSMC forum</a>, I&rsquo;ve read that it is actually planned to switch to this x64 &ldquo;userland&rdquo; thingy, so that&rsquo;s good news, but the timeline for that is unclear. I also saw that Vero V is in fact capable of runing x64 executables already, even with this x32 &ldquo;userland&rdquo;, so I probably could have just tried to reinstall the Docker using a hardcoded x64 architecture in <code>/etc/apt/sources.list.d/docker.list</code>.</p>
 <p>But first I thought maybe I can just try to keep Docker x32 and instead specify the image architecture with <code>--platform</code>, like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker pull <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --platform linux/arm64 <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    ghcr.io/home-assistant/home-assistant:stable
+</span></span></span><span style="display:flex;"><span>    --platform linux/arm64 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    ghcr.io/home-assistant/home-assistant:stable
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo docker images
 </span></span><span style="display:flex;"><span>REPOSITORY                              TAG       IMAGE ID       CREATED         SIZE
@@ -2385,15 +2385,15 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker stop homeassistant
 </span></span><span style="display:flex;"><span>$ sudo docker rm homeassistant
 </span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --name homeassistant <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#ae81ff"></span>    --platform linux/arm64 <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --network hub <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --ip 172.18.0.100 <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /root/homeassistant:/config <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -v /opt/wolpipe:/config/wolpipe <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    ghcr.io/home-assistant/home-assistant:stable
+</span></span></span><span style="display:flex;"><span>    --name homeassistant <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span>    --platform linux/arm64 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --network hub <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --ip 172.18.0.100 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /root/homeassistant:/config <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -v /opt/wolpipe:/config/wolpipe <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    ghcr.io/home-assistant/home-assistant:stable
 </span></span></code></pre></div><p>And it did execute that, but the container did not actually work, as it was constantly restarting with no logs or errors reported anywhere:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker ps
 </span></span><span style="display:flex;"><span>CONTAINER ID   IMAGE                        COMMAND                  CREATED         STATUS                            PORTS      NAMES
@@ -2402,25 +2402,25 @@
 </span></span><span style="display:flex;"><span>e1a65d0a6cfd   eclipse-mosquitto            <span style="color:#e6db74">&#34;/docker-entrypoint.…&#34;</span>   <span style="color:#ae81ff">4</span> weeks ago     Up <span style="color:#ae81ff">5</span> minutes                      1883/tcp   mosquitto
 </span></span></code></pre></div><p>So apparently this naive approach doesn&rsquo;t work, and one really has to install exactly x64 Docker. Since I installed mine with <a href="#docker">the script</a>, then re-installation procedure was:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt remove <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    docker-ce <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    docker-ce-cli <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    containerd.io <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    docker-compose-plugin <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    docker-ce-rootless-extras <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    docker-buildx-plugin
+</span></span></span><span style="display:flex;"><span>    docker-ce <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    docker-ce-cli <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    containerd.io <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    docker-compose-plugin <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    docker-ce-rootless-extras <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    docker-buildx-plugin
 </span></span><span style="display:flex;"><span>$ sudo apt autoremove
 </span></span><span style="display:flex;"><span>$ sudo rm -rf /var/lib/docker
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#39;Placing hardcoded architecture into APT sources list&#39;</span>
 </span></span><span style="display:flex;"><span>$ echo <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    <span style="color:#e6db74">&#34;deb [arch=arm64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian </span><span style="color:#66d9ef">$(</span>. /etc/os-release <span style="color:#f92672">&amp;&amp;</span> echo $VERSION_CODENAME<span style="color:#66d9ef">)</span><span style="color:#e6db74"> stable&#34;</span> | <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
+</span></span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;deb [arch=arm64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian </span><span style="color:#66d9ef">$(</span>. /etc/os-release <span style="color:#f92672">&amp;&amp;</span> echo $VERSION_CODENAME<span style="color:#66d9ef">)</span><span style="color:#e6db74"> stable&#34;</span> | <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo apt update
 </span></span><span style="display:flex;"><span>$ sudo apt install <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    docker-ce <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    docker-ce-cli <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    containerd.io
+</span></span></span><span style="display:flex;"><span>    docker-ce <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    docker-ce-cli <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    containerd.io
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ docker --version
 </span></span><span style="display:flex;"><span>Docker version 29.1.2, build 890dcca

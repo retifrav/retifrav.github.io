@@ -225,11 +225,11 @@
 <p>and that&rsquo;s NGINX config:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">location</span> <span style="color:#e6db74">/packages/conan/</span> {
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e"># Conan server has its own authentication
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">#auth_basic           &#34;restricted area&#34;;
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">#auth_basic_user_file /etc/nginx/packages.htpasswd;
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://127.0.0.1:9300/</span>;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#auth_basic           &#34;restricted area&#34;;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#auth_basic_user_file /etc/nginx/packages.htpasswd;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://127.0.0.1:9300/</span>;
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e"># these might not be needed
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#f92672">proxy_http_version</span> <span style="color:#ae81ff">1</span><span style="color:#e6db74">.1</span>;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_http_version</span> <span style="color:#ae81ff">1</span><span style="color:#e6db74">.1</span>;
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Upgrade</span> $http_upgrade;
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Connection</span> <span style="color:#e6db74">keep-alive</span>;
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Host</span> $host;
@@ -438,7 +438,7 @@
 <p>You can of course set different installation prefixes for Debug/Release configurations, but we need them in one folder (<em>that way you also avoid duplication of some files between configurations</em>).</p>
 <p>On GNU/Linux the build step is somewhat less simple:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>mkdir build
 </span></span><span style="display:flex;"><span>mkdir install
 </span></span><span style="display:flex;"><span>
@@ -468,13 +468,13 @@
 </span></span><span style="display:flex;"><span>    ]</span></span></code></pre></div>
 <p>But that&rsquo;s not enough, because E57Format&rsquo;s <code>CMakeLists.txt</code> does not contain required commands for running Conan stuff, and that means that we need to make a patch (<em><code>dependencies-resources/e57format/patches/2.2.0/CMakeLists.txt.patch</code></em>) for adding them:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-patch" data-lang="patch"><span style="display:flex;"><span><span style="color:#75715e">44a45,47
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#a6e22e">&gt; include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">&gt; include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 </span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">&gt; conan_basic_setup()
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span>&gt;
+</span></span></span><span style="display:flex;"><span>&gt;
 </span></span><span style="display:flex;"><span><span style="color:#75715e">106c109
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#f92672">&lt;         DEBUG_POSTFIX &#34;-d&#34;
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="font-weight:bold">---
-</span></span></span><span style="display:flex;"><span><span style="font-weight:bold"></span><span style="color:#a6e22e">&gt;         DEBUG_POSTFIX &#34;d&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;         DEBUG_POSTFIX &#34;-d&#34;
+</span></span></span><span style="display:flex;"><span><span style="font-weight:bold">---
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">&gt;         DEBUG_POSTFIX &#34;d&#34;
 </span></span></span></code></pre></div>
 <p>Here we also override their hardcoded <code>DEBUG_POSTFIX</code>, because we use <code>d</code> in our libraries and we would like this to be consistent. By the way, that hardcoding is a good example of doing bad things in CMake, because in that case user loses the ability to override this value with a <code>-D</code> argument (<em>so a better patch would be to delete this line instead of replacing it</em>).</p>
 <p>The build step for E57Format project in CI/CD looks like this:</p>
@@ -521,7 +521,7 @@
 <p>Removing the package (<em><code>conan remove</code></em>) from <a href="https://docs.conan.io/en/latest/cheatsheet.html?highlight=cache#the-local-cache">local cache</a> after publishing it to Artifactory is optional.</p>
 <p>As usual, on Mac OS Bash commands behave differently, so you&rsquo;ll need to adjust <code>sed</code> arguments and use <code>rsync</code> instead of <code>cp</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>mkdir ./package-debug
 </span></span><span style="display:flex;"><span>sed -i <span style="color:#e6db74">&#34;&#34;</span> -E <span style="color:#e6db74">&#39;s/.*install\///g&#39;</span> ./install-manifest-debug.txt
 </span></span><span style="display:flex;"><span>
@@ -808,7 +808,7 @@
 </span></span><span style="display:flex;"><span>graph_info<span style="color:#f92672">.</span>json</span></span></code></pre></div>
 <p>The <code>conanbuildinfo.cmake</code> contains auto-generated CMake instructions for finding all the installed dependencies, and you need to add it to your project&rsquo;s <code>CMakeLists.txt</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>include(<span style="color:#f92672">${</span>CMAKE_CURRENT_BINARY_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/conanbuildinfo.cmake</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>conan_basic_setup()</span></span></code></pre></div>
+</span></span></span><span style="display:flex;"><span>conan_basic_setup()</span></span></code></pre></div>
 <p>After that you can call <code>find_package()</code> as usual, for example:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>find_package(<span style="color:#e6db74">glfw3</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)</span></span></code></pre></div>
 <p>And this is it, the project is ready to build, and it will only build its own sources and link to pre-built dependencies.</p>
@@ -816,7 +816,7 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd $_
 </span></span><span style="display:flex;"><span>$ conan install .. --profile artifactory -r YOUR-CONAN-REMOTE
 </span></span><span style="display:flex;"><span>$ cmake -G Ninja -DCMAKE_BUILD_TYPE<span style="color:#f92672">=</span>Release -DCMAKE_INSTALL_PREFIX<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../install&#34;</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    -DUSING_CONAN<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> -DCONAN_DISABLE_CHECK_COMPILER<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> ..
+</span></span></span><span style="display:flex;"><span>    -DUSING_CONAN<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> -DCONAN_DISABLE_CHECK_COMPILER<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> ..
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ time cmake --build . --target install
 </span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>3/4<span style="color:#f92672">]</span> Install the project...

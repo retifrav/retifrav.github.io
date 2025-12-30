@@ -596,7 +596,7 @@ Even though it has its own installation guide, for me that wasn’t enough, so h
 <h2 id="unprotecting-rss-feed">Unprotecting RSS feed</h2>
 <p>One sad drawback of enabling authentication is that RSS clients won&rsquo;t be able to read the feed. A not so secure workaround for that would be to exclude the RSS route <code>/gollum/feed/</code> from <code>protected_routes</code> in <code>config.rb</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span><span style="color:#f92672">-  :protected_routes =&gt; [&#39;/*&#39;],
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+  :protected_routes =&gt; [
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+  :protected_routes =&gt; [
 </span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+    /^\/(?!gollum\/feed\/)(.*)/
 </span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+  ],
 </span></span></span></code></pre></div><p>However, by default Gollum will fail to start with this:</p>
@@ -607,7 +607,7 @@ Even though it has its own installation guide, for me that wasn’t enough, so h
 </span></span><span style="display:flex;"><span>}
 </span></span></code></pre></div><p>but I could not <a href="https://github.com/gollum/gollum/issues/2097">figure out</a> where exactly in <code>config.rb</code> that should be set. So instead I just changed the default value in the original <code>mustermann/regular.rb</code> that is mentioned in the error message (<em>which of course will get reverted on the next update</em>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span><span style="color:#f92672">-    def initialize(string, check_anchors: true, **options)
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+    def initialize(string, check_anchors: false, **options)
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+    def initialize(string, check_anchors: false, **options)
 </span></span></span></code></pre></div><p>Alternatively, I could probably come up with a different regular expression to exclude the <code>/gollum/feed/</code> route, which wouldn&rsquo;t rely on <code>^</code>, but so far I failed with that too.</p>
       </div>
     </article>

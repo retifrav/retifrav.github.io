@@ -1593,7 +1593,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>...
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QFontDatabase&gt;</span><span style="color:#75715e">
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QFont&gt;</span><span style="color:#75715e">
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> main(<span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>argv[])
 </span></span><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    QGuiApplication <span style="color:#a6e22e">app</span>(argc, argv);
@@ -1636,49 +1636,49 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 <p>Why cannot it just take care of this on its own, so one could get a working build out of the box - I don&rsquo;t know, apparently one just can not. Well, actually, if you are using qmake, then it will work out of the box (<em>but here&rsquo;s also <a href="https://doc.qt.io/qt-5/plugins-howto.html#static-plugins">some documentation</a> on the matter, just in case</em>), and you won&rsquo;t need to change anything in your project file, but with CMake that is not the case.</p>
 <p>When using Qt static build and CMake, one needs to call <a href="https://doc.qt.io/qt-5/qtqml-cmake-qt5-import-qml-plugins.html">qt5_import_qml_plugins</a> function in his project:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>get_target_property(<span style="color:#e6db74">QT_TARGET_TYPE</span> <span style="color:#e6db74">Qt5::Core</span> <span style="color:#e6db74">TYPE</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>if(<span style="color:#f92672">${</span>QT_TARGET_TYPE<span style="color:#f92672">}</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;STATIC_LIBRARY&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    find_package(<span style="color:#e6db74">Qt5QmlImportScanner</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    qt5_import_qml_plugins(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()</span></span></code></pre></div>
+</span></span></span><span style="display:flex;"><span>if(<span style="color:#f92672">${</span>QT_TARGET_TYPE<span style="color:#f92672">}</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;STATIC_LIBRARY&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>    find_package(<span style="color:#e6db74">Qt5QmlImportScanner</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>    qt5_import_qml_plugins(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>endif()</span></span></code></pre></div>
 <p>Hopefully, there is also <code>qt6_import_qml_plugins</code> in Qt 6, at least it is mentioned in <a href="https://bugreports.qt.io/browse/QTBUG-86827">QTBUG-86827</a>.</p>
 <p>This function is available only from Qt 5.14, but for versions older than 5.14 there seems to be nothing for that in the official resources, but fortunately there is this external <a href="https://github.com/OlivierLDff/QtStaticCMake">CMake module</a>. I did <a href="https://github.com/retifrav/color-corners/blob/master/cmake/QtStaticPlugins.cmake">some modifications</a> to it, and here&rsquo;s how I used it in my project:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>get_target_property(<span style="color:#e6db74">QT_TARGET_TYPE</span> <span style="color:#e6db74">Qt</span><span style="color:#f92672">${</span>QT_VERSION_MAJOR<span style="color:#f92672">}</span><span style="color:#e6db74">::Core</span> <span style="color:#e6db74">TYPE</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>if(<span style="color:#f92672">${</span>QT_TARGET_TYPE<span style="color:#f92672">}</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;STATIC_LIBRARY&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;This Qt is static&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>if(<span style="color:#f92672">${</span>QT_TARGET_TYPE<span style="color:#f92672">}</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;STATIC_LIBRARY&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>    message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;This Qt is static&#34;</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    <span style="color:#75715e"># from 5.14 there is a standard function for this
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    set(<span style="color:#e6db74">QT_VERSION_WITH_QML_IMPORTS</span> <span style="color:#e6db74">5.14</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    if(<span style="color:#f92672">${</span>QT_VERSION<span style="color:#f92672">}</span> <span style="color:#e6db74">VERSION_EQUAL</span> <span style="color:#f92672">${</span>QT_VERSION_WITH_QML_IMPORTS<span style="color:#f92672">}</span>
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e"># from 5.14 there is a standard function for this
+</span></span></span><span style="display:flex;"><span>    set(<span style="color:#e6db74">QT_VERSION_WITH_QML_IMPORTS</span> <span style="color:#e6db74">5.14</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>    if(<span style="color:#f92672">${</span>QT_VERSION<span style="color:#f92672">}</span> <span style="color:#e6db74">VERSION_EQUAL</span> <span style="color:#f92672">${</span>QT_VERSION_WITH_QML_IMPORTS<span style="color:#f92672">}</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#e6db74">OR</span> <span style="color:#f92672">${</span>QT_VERSION<span style="color:#f92672">}</span> <span style="color:#e6db74">VERSION_GREATER</span> <span style="color:#f92672">${</span>QT_VERSION_WITH_QML_IMPORTS<span style="color:#f92672">}</span>
 </span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;This Qt version (${QT_VERSION}) is newer than ${QT_VERSION_WITH_QML_IMPORTS}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        find_package(<span style="color:#e6db74">Qt5QmlImportScanner</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        qt5_import_qml_plugins(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    else() <span style="color:#75715e"># use a custom module
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;This Qt version (${QT_VERSION}) is older than ${QT_VERSION_WITH_QML_IMPORTS}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        include(<span style="color:#e6db74">QtStaticPlugins</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        <span style="color:#75715e"># this adds lots of unused modules and actually is not needed at all, as it seems
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">#qt_generate_plugin_import(${CMAKE_PROJECT_NAME}
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">#    OUTPUT &#34;${CMAKE_PROJECT_NAME}_plugin_import.cpp&#34;
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">#    OUTPUT_DIR &#34;${PROJECT_BINARY_DIR}&#34;
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">#    #VERBOSE
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">#)
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        qt_generate_qml_plugin_import(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+</span></span></span><span style="display:flex;"><span>        message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;This Qt version (${QT_VERSION}) is newer than ${QT_VERSION_WITH_QML_IMPORTS}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>        find_package(<span style="color:#e6db74">Qt5QmlImportScanner</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>        qt5_import_qml_plugins(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>    else() <span style="color:#75715e"># use a custom module
+</span></span></span><span style="display:flex;"><span>        message(<span style="color:#e6db74">STATUS</span> <span style="color:#e6db74">&#34;This Qt version (${QT_VERSION}) is older than ${QT_VERSION_WITH_QML_IMPORTS}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>        include(<span style="color:#e6db74">QtStaticPlugins</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>        <span style="color:#75715e"># this adds lots of unused modules and actually is not needed at all, as it seems
+</span></span></span><span style="display:flex;"><span>        <span style="color:#75715e">#qt_generate_plugin_import(${CMAKE_PROJECT_NAME}
+</span></span></span><span style="display:flex;"><span>        <span style="color:#75715e">#    OUTPUT &#34;${CMAKE_PROJECT_NAME}_plugin_import.cpp&#34;
+</span></span></span><span style="display:flex;"><span>        <span style="color:#75715e">#    OUTPUT_DIR &#34;${PROJECT_BINARY_DIR}&#34;
+</span></span></span><span style="display:flex;"><span>        <span style="color:#75715e">#    #VERBOSE
+</span></span></span><span style="display:flex;"><span>        <span style="color:#75715e">#)
+</span></span></span><span style="display:flex;"><span>        qt_generate_qml_plugin_import(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
 </span></span><span style="display:flex;"><span>            <span style="color:#e6db74">QML_DIR</span> <span style="color:#e6db74">&#34;${QT_HOME}/qml&#34;</span>
 </span></span><span style="display:flex;"><span>            <span style="color:#e6db74">QML_SRC</span> <span style="color:#e6db74">&#34;${CMAKE_CURRENT_SOURCE_DIR}&#34;</span>
 </span></span><span style="display:flex;"><span>            <span style="color:#e6db74">OUTPUT</span> <span style="color:#e6db74">&#34;${CMAKE_PROJECT_NAME}_qml_plugin_import.cpp&#34;</span>
 </span></span><span style="display:flex;"><span>            <span style="color:#e6db74">OUTPUT_DIR</span> <span style="color:#e6db74">&#34;${PROJECT_BINARY_DIR}&#34;</span>
 </span></span><span style="display:flex;"><span>            <span style="color:#75715e">#VERBOSE
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        )<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>        )<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>    endif()<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    if(<span style="color:#e6db74">TARGET</span> <span style="color:#e6db74">Qt</span><span style="color:#f92672">${</span>QT_VERSION_MAJOR<span style="color:#f92672">}</span><span style="color:#e6db74">::QmlWorkerScript</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>        target_link_libraries(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+</span></span></span><span style="display:flex;"><span>    if(<span style="color:#e6db74">TARGET</span> <span style="color:#e6db74">Qt</span><span style="color:#f92672">${</span>QT_VERSION_MAJOR<span style="color:#f92672">}</span><span style="color:#e6db74">::QmlWorkerScript</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>        target_link_libraries(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
 </span></span><span style="display:flex;"><span>            <span style="color:#e6db74">PRIVATE</span>
 </span></span><span style="display:flex;"><span>                <span style="color:#e6db74">Qt</span><span style="color:#f92672">${</span>QT_VERSION_MAJOR<span style="color:#f92672">}</span><span style="color:#e6db74">::QmlWorkerScript</span>
 </span></span><span style="display:flex;"><span>        )<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    endif()<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()</span></span></code></pre></div>
+</span></span></span><span style="display:flex;"><span>    endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>endif()</span></span></code></pre></div>
 <p>The last bit about linking to <code>QmlWorkerScript</code> is a required crutch, otherwise you&rsquo;ll get the following error on linking:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>Undefined symbols <span style="color:#66d9ef">for</span> architecture x86_64:
 </span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;qml_register_types_QtQml_WorkerScript()&#34;</span>, referenced from:
@@ -1688,7 +1688,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </span></span><span style="display:flex;"><span>      non<span style="color:#f92672">-</span><span style="color:#66d9ef">virtual</span> thunk to QtQuick2Plugin<span style="color:#f92672">::</span>registerTypes(<span style="color:#66d9ef">char</span> <span style="color:#66d9ef">const</span><span style="color:#f92672">*</span>) in libqtquick2plugin.a(plugin.o)</span></span></code></pre></div>
 <p>With my glorious <a href="https://github.com/retifrav/color-corners">Color Corners</a> application as an example, both the standard function and this module produced identical <code>.cpp</code> files in the build directory:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;QtPlugin&gt;</span><span style="color:#75715e">
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>Q_IMPORT_PLUGIN(QtQuick2Plugin)
 </span></span><span style="display:flex;"><span>Q_IMPORT_PLUGIN(QtQuick2WindowPlugin)
 </span></span><span style="display:flex;"><span>Q_IMPORT_PLUGIN(QtQuickLayoutsPlugin)
@@ -1914,13 +1914,13 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span>diff --git a/src/plugins/platforms/cocoa/qiosurfacegraphicsbuffer.h b/src/plugins/platforms/cocoa/qiosurfacegraphicsbuffer.h
 </span></span><span style="display:flex;"><span>index 5d4b6d6a71..cc7193d8b7 100644
 </span></span><span style="display:flex;"><span><span style="color:#f92672">--- a/src/plugins/platforms/cocoa/qiosurfacegraphicsbuffer.h
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+++ b/src/plugins/platforms/cocoa/qiosurfacegraphicsbuffer.h
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span><span style="color:#75715e">@@ -43,6 +43,7 @@
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> #include &lt;qpa/qplatformgraphicsbuffer.h&gt;
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+++ b/src/plugins/platforms/cocoa/qiosurfacegraphicsbuffer.h
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">@@ -43,6 +43,7 @@
+</span></span></span><span style="display:flex;"><span> #include &lt;qpa/qplatformgraphicsbuffer.h&gt;
 </span></span><span style="display:flex;"><span> #include &lt;private/qcore_mac_p.h&gt;
 </span></span><span style="display:flex;"><span> 
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">+#include &lt;CoreGraphics/CGColorSpace.h&gt;
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span> #include &lt;IOSurface/IOSurface.h&gt;
+</span></span></span><span style="display:flex;"><span> #include &lt;IOSurface/IOSurface.h&gt;
 </span></span><span style="display:flex;"><span> 
 </span></span><span style="display:flex;"><span> QT_BEGIN_NAMESPACE
 </span></span></code></pre></div>
@@ -2069,7 +2069,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">Built</span> <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">Windows32</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">Copyright</span> <span style="color:#f92672">(</span>C<span style="color:#f92672">)</span> <span style="color:#ae81ff">1988</span><span style="color:#f92672">-</span><span style="color:#ae81ff">2022</span> <span style="color:#a6e22e">Free</span> <span style="color:#a6e22e">Software</span> <span style="color:#a6e22e">Foundation</span><span style="color:#f92672">,</span> <span style="color:#a6e22e">Inc</span><span style="color:#f92672">.</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">License</span> <span style="color:#a6e22e">GPLv3</span><span style="color:#f92672">+:</span> <span style="color:#a6e22e">GNU</span> <span style="color:#a6e22e">GPL</span> version <span style="color:#ae81ff">3</span> or later <span style="color:#f92672">&lt;</span>https<span style="color:#66d9ef">:</span><span style="color:#75715e">//gnu.org/licenses/gpl.html&gt;
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#a6e22e">This</span> is free software<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">you</span> <span style="color:#66d9ef">are</span> <span style="color:#66d9ef">free</span> <span style="color:#66d9ef">to</span> <span style="color:#66d9ef">change</span> <span style="color:#66d9ef">and</span> <span style="color:#66d9ef">redistribute</span> <span style="color:#66d9ef">it.</span>
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">This</span> is free software<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">you</span> <span style="color:#66d9ef">are</span> <span style="color:#66d9ef">free</span> <span style="color:#66d9ef">to</span> <span style="color:#66d9ef">change</span> <span style="color:#66d9ef">and</span> <span style="color:#66d9ef">redistribute</span> <span style="color:#66d9ef">it.</span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">There</span> <span style="color:#66d9ef">is</span> <span style="color:#66d9ef">NO</span> <span style="color:#66d9ef">WARRANTY</span><span style="color:#f92672">,</span> to the extent permitted by law<span style="color:#f92672">.</span></span></span></code></pre></div>
 <p>Set an &ldquo;alias&rdquo; for <code>make</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ export <span style="color:#a6e22e">MAKE</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;mingw32-make&#34;</span></span></span></code></pre></div>
@@ -2463,16 +2463,16 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">|</span>                                              <span style="color:#f92672">^~~~~~~~~~~~</span></span></span></code></pre></div>
 <p>To <a href="https://stackoverflow.com/a/74173736/1688203">fix those</a> edit <code>e:\tools\qt\src\5.15.2\qtdeclarative\src\plugins\scenegraph\d3d12\qsgd3d12engine.cpp</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#75715e">// ...
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">#</span>include <span style="color:#f92672">&lt;</span>d3d12sdklayers<span style="color:#f92672">.</span>h<span style="color:#f92672">&gt;</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">// ...
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">//HRESULT hr = D3D12CreateDevice(adapter.Get(), fl, _uuidof(ID3D12Device), nullptr);
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#a6e22e">HRESULT</span> hr <span style="color:#66d9ef">=</span> D3D12CreateDevice<span style="color:#f92672">(</span>adapter<span style="color:#f92672">.</span><span style="color:#a6e22e">Get</span><span style="color:#f92672">(),</span> fl<span style="color:#f92672">,</span> <span style="color:#a6e22e">__uuidof</span><span style="color:#f92672">(</span><span style="color:#a6e22e">ID3D12Device</span><span style="color:#f92672">),</span> nullptr<span style="color:#f92672">);</span>
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">HRESULT</span> hr <span style="color:#66d9ef">=</span> D3D12CreateDevice<span style="color:#f92672">(</span>adapter<span style="color:#f92672">.</span><span style="color:#a6e22e">Get</span><span style="color:#f92672">(),</span> fl<span style="color:#f92672">,</span> <span style="color:#a6e22e">__uuidof</span><span style="color:#f92672">(</span><span style="color:#a6e22e">ID3D12Device</span><span style="color:#f92672">),</span> nullptr<span style="color:#f92672">);</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">//if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), fl, _uuidof(ID3D12Device), nullptr))) {
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#a6e22e">SUCCEEDED</span><span style="color:#f92672">(</span>D3D12CreateDevice<span style="color:#f92672">(</span>adapter<span style="color:#f92672">.</span><span style="color:#a6e22e">Get</span><span style="color:#f92672">(),</span> fl<span style="color:#f92672">,</span> <span style="color:#a6e22e">__uuidof</span><span style="color:#f92672">(</span><span style="color:#a6e22e">ID3D12Device</span><span style="color:#f92672">),</span> nullptr<span style="color:#f92672">)))</span> <span style="color:#f92672">{</span>
+</span></span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span><span style="color:#a6e22e">SUCCEEDED</span><span style="color:#f92672">(</span>D3D12CreateDevice<span style="color:#f92672">(</span>adapter<span style="color:#f92672">.</span><span style="color:#a6e22e">Get</span><span style="color:#f92672">(),</span> fl<span style="color:#f92672">,</span> <span style="color:#a6e22e">__uuidof</span><span style="color:#f92672">(</span><span style="color:#a6e22e">ID3D12Device</span><span style="color:#f92672">),</span> nullptr<span style="color:#f92672">)))</span> <span style="color:#f92672">{</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">//</span> <span style="color:#f92672">...</span></span></span></code></pre></div>
 <p>&hellip;or you could probably just reconfigure Qt with <code>-no-feature-d3d12</code>, especially if you or/and your users will be building applications for running on machines <a href="#d3d12dll-is-missing">without DirectX 12</a>.</p>
@@ -2648,7 +2648,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 <p>I couldn&rsquo;t find answers on the internets, so I just inspected the qmake output and I saw that it links to a lot of stuff, out of which the following seemed to be the most relevant: <code>E:/tools/qt/5.15.2-static-x32-mingw/lib/libQt5Core.a</code>, <code>-lzstd</code> and <code>-lz</code>. So I added those to CMake project:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># if you remove QtCore from linking, it will still complain about missing zstd,
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"># even though -lzstd is present here
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>target_link_libraries(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
+</span></span></span><span style="display:flex;"><span>target_link_libraries(<span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PRIVATE</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#e6db74">Qt</span><span style="color:#f92672">${</span>QT_VERSION_MAJOR<span style="color:#f92672">}</span><span style="color:#e6db74">::Core</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#e6db74">-lz</span>
@@ -2767,7 +2767,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </span></span><span style="display:flex;"><span><span style="color:#f92672">/</span>Applications<span style="color:#f92672">/</span>Xcode.app<span style="color:#f92672">/</span>Contents<span style="color:#f92672">/</span>Developer<span style="color:#f92672">/</span>Toolchains<span style="color:#f92672">/</span>XcodeDefault.xctoolchain<span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>bin<span style="color:#f92672">/</span>c<span style="color:#f92672">++</span> <span style="color:#f92672">-</span>DPROTOBUF_USE_DLLS <span style="color:#f92672">-</span>I<span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>programs<span style="color:#f92672">/</span>qt<span style="color:#f92672">/</span>src<span style="color:#f92672">/</span><span style="color:#ae81ff">6.5.1</span><span style="color:#f92672">/</span>qtgrpc<span style="color:#f92672">/</span>src<span style="color:#f92672">/</span>tools<span style="color:#f92672">/</span>qtprotoccommon <span style="color:#f92672">-</span>isystem <span style="color:#f92672">/</span>opt<span style="color:#f92672">/</span>homebrew<span style="color:#f92672">/</span>include <span style="color:#f92672">-</span>DNDEBUG <span style="color:#f92672">-</span>O2 <span style="color:#f92672">-</span>std<span style="color:#f92672">=</span>gnu<span style="color:#f92672">++</span><span style="color:#ae81ff">17</span> <span style="color:#f92672">-</span>arch arm64 <span style="color:#f92672">-</span>isysroot <span style="color:#f92672">/</span>Applications<span style="color:#f92672">/</span>Xcode.app<span style="color:#f92672">/</span>Contents<span style="color:#f92672">/</span>Developer<span style="color:#f92672">/</span>Platforms<span style="color:#f92672">/</span>MacOSX.platform<span style="color:#f92672">/</span>Developer<span style="color:#f92672">/</span>SDKs<span style="color:#f92672">/</span>MacOSX14<span style="color:#ae81ff">.0</span>.sdk <span style="color:#f92672">-</span>mmacosx<span style="color:#f92672">-</span>version<span style="color:#f92672">-</span>min<span style="color:#f92672">=</span><span style="color:#ae81ff">11.0</span> <span style="color:#f92672">-</span>fPIC <span style="color:#f92672">-</span>Wall <span style="color:#f92672">-</span>Wextra <span style="color:#f92672">-</span>MD <span style="color:#f92672">-</span>MT qtgrpc<span style="color:#f92672">/</span>src<span style="color:#f92672">/</span>tools<span style="color:#f92672">/</span>qtprotoccommon<span style="color:#f92672">/</span>CMakeFiles<span style="color:#f92672">/</span>QtProtocCommon.dir<span style="color:#f92672">/</span>generatorbase.cpp.o <span style="color:#f92672">-</span>MF qtgrpc<span style="color:#f92672">/</span>src<span style="color:#f92672">/</span>tools<span style="color:#f92672">/</span>qtprotoccommon<span style="color:#f92672">/</span>CMakeFiles<span style="color:#f92672">/</span>QtProtocCommon.dir<span style="color:#f92672">/</span>generatorbase.cpp.o.d <span style="color:#f92672">-</span>o qtgrpc<span style="color:#f92672">/</span>src<span style="color:#f92672">/</span>tools<span style="color:#f92672">/</span>qtprotoccommon<span style="color:#f92672">/</span>CMakeFiles<span style="color:#f92672">/</span>QtProtocCommon.dir<span style="color:#f92672">/</span>generatorbase.cpp.o <span style="color:#f92672">-</span>c <span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>programs<span style="color:#f92672">/</span>qt<span style="color:#f92672">/</span>src<span style="color:#f92672">/</span><span style="color:#ae81ff">6.5.1</span><span style="color:#f92672">/</span>qtgrpc<span style="color:#f92672">/</span>src<span style="color:#f92672">/</span>tools<span style="color:#f92672">/</span>qtprotoccommon<span style="color:#f92672">/</span>generatorbase.cpp
 </span></span><span style="display:flex;"><span><span style="color:#f92672">/</span>Users<span style="color:#f92672">/</span>vasya<span style="color:#f92672">/</span>programs<span style="color:#f92672">/</span>qt<span style="color:#f92672">/</span>src<span style="color:#f92672">/</span><span style="color:#ae81ff">6.5.1</span><span style="color:#f92672">/</span>qtgrpc<span style="color:#f92672">/</span>src<span style="color:#f92672">/</span>tools<span style="color:#f92672">/</span>qtprotoccommon<span style="color:#f92672">/</span>generatorbase.cpp:<span style="color:#ae81ff">8</span><span style="color:#f92672">:</span><span style="color:#ae81ff">10</span><span style="color:#f92672">:</span> fatal error: <span style="color:#960050;background-color:#1e0010">&#39;</span>google<span style="color:#f92672">/</span>protobuf<span style="color:#f92672">/</span>stubs<span style="color:#f92672">/</span>logging.h<span style="color:#960050;background-color:#1e0010">&#39;</span> file not found
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;google/protobuf/stubs/logging.h&gt;</span><span style="color:#75715e">
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>         <span style="color:#f92672">^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span></span></span></code></pre></div>
+</span></span></span><span style="display:flex;"><span>         <span style="color:#f92672">^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span></span></span></code></pre></div>
 <p>I thought this is because I don&rsquo;t have protobuf installed:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ brew install protobuf</span></span></code></pre></div>
 <p>but no, I did have it. Then I checked what headers it has in <code>/opt/homebrew/include/google/protobuf/stubs/</code>, and <code>logging.h</code> wasn&rsquo;t there. As it turned out, protobof migrated to a <a href="https://github.com/protocolbuffers/protobuf/commit/a9f1ea6371c108876649f27a5940a59cc8594768">different logger</a>, so I needed to downgrade my protobuf to <a href="https://github.com/protocolbuffers/protobuf/tree/f0dc78d7e6e331b8c6bb2d5283e06aa26883ca7c/src/google/protobuf/stubs">version 21.12</a>:</p>
@@ -3192,18 +3192,18 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PLUGIN_TYPE</span> <span style="color:#e6db74">multimedia</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">SOURCES</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#75715e"># ...
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#e6db74">INCLUDE_DIRECTORIES</span>
+</span></span></span><span style="display:flex;"><span>    <span style="color:#e6db74">INCLUDE_DIRECTORIES</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#75715e"># ...
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#e6db74">LIBRARIES</span>
+</span></span></span><span style="display:flex;"><span>    <span style="color:#e6db74">LIBRARIES</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#75715e"># ...
-</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#75715e"></span>    <span style="color:#e6db74">DEFINES</span>
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#e6db74">DEFINES</span>
 </span></span><span style="display:flex; background-color:#3c3d38"><span>        <span style="color:#e6db74">&#34;_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION&#34;</span>
 </span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
 <p>it didn&rsquo;t help. Then I tried this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>qt_internal_extend_target(<span style="color:#e6db74">QDarwinMediaPlugin</span> <span style="color:#e6db74">CONDITION</span> <span style="color:#e6db74">NOT</span> <span style="color:#e6db74">TVOS</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">SOURCES</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#75715e"># ...
-</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#75715e"></span>    <span style="color:#e6db74">DEFINES</span>
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#e6db74">DEFINES</span>
 </span></span><span style="display:flex; background-color:#3c3d38"><span>        <span style="color:#e6db74">&#34;_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION&#34;</span>
 </span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
 <p>it didn&rsquo;t help either. Then I tried this:</p>
@@ -3213,7 +3213,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
 <p>but that didn&rsquo;t help either. Then I just edited <code>/path/to/qt/qtmultimedia/src/plugins/multimedia/darwin/camera/avfcamerautility.mm</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span><span style="color:#f92672">-struct FormatHasNoFPSRange : std::unary_function&lt;AVCaptureDeviceFormat *, bool&gt;
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+struct FormatHasNoFPSRange : std::__unary_function&lt;AVCaptureDeviceFormat *, bool&gt;
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+struct FormatHasNoFPSRange : std::__unary_function&lt;AVCaptureDeviceFormat *, bool&gt;
 </span></span></span></code></pre></div>
 <p>And that did help, the build continued and then succeeded. Installation too:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cmake <span style="color:#f92672">--</span>install <span style="color:#f92672">.</span></span></span></code></pre></div>
@@ -3357,29 +3357,29 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span>diff --git a/mkspecs/features/toolchain.prf b/mkspecs/features/toolchain.prf
 </span></span><span style="display:flex;"><span>index 0040b6c..bfad10d 100644
 </span></span><span style="display:flex;"><span><span style="color:#f92672">--- a/mkspecs/features/toolchain.prf
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+++ b/mkspecs/features/toolchain.prf
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span><span style="color:#75715e">@@ -288,9 +288,12 @@
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>                 }
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+++ b/mkspecs/features/toolchain.prf
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">@@ -288,9 +288,12 @@
+</span></span></span><span style="display:flex;"><span>                 }
 </span></span><span style="display:flex;"><span>             }
 </span></span><span style="display:flex;"><span>         }
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-        isEmpty(QMAKE_DEFAULT_LIBDIRS)|isEmpty(QMAKE_DEFAULT_INCDIRS): \
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+        isEmpty(QMAKE_DEFAULT_INCDIRS): \
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span>             !integrity: \
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+        isEmpty(QMAKE_DEFAULT_INCDIRS): \
+</span></span></span><span style="display:flex;"><span>             !integrity: \
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-                error(&#34;failed to parse default search paths from compiler output&#34;)
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+                error(&#34;failed to parse default include paths from compiler output&#34;)
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+                error(&#34;failed to parse default include paths from compiler output&#34;)
 </span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+        isEmpty(QMAKE_DEFAULT_LIBDIRS): \
 </span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+            !integrity:!darwin: \
 </span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+                error(&#34;failed to parse default library paths from compiler output&#34;)
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span>         QMAKE_DEFAULT_LIBDIRS = $$unique(QMAKE_DEFAULT_LIBDIRS)
+</span></span></span><span style="display:flex;"><span>         QMAKE_DEFAULT_LIBDIRS = $$unique(QMAKE_DEFAULT_LIBDIRS)
 </span></span><span style="display:flex;"><span>     } else: ghs {
 </span></span><span style="display:flex;"><span>         cmd = $$QMAKE_CXX $$QMAKE_CXXFLAGS -$${LITERAL_HASH} -o /tmp/fake_output /tmp/fake_input.cpp
 </span></span><span style="display:flex;"><span><span style="color:#75715e">@@ -411,7 +414,7 @@
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>         QMAKE_DEFAULT_INCDIRS = $$split(INCLUDE, $$QMAKE_DIRLIST_SEP)
+</span></span></span><span style="display:flex;"><span>         QMAKE_DEFAULT_INCDIRS = $$split(INCLUDE, $$QMAKE_DIRLIST_SEP)
 </span></span><span style="display:flex;"><span>     }
 </span></span><span style="display:flex;"><span> 
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-    unix:if(!cross_compile|host_build) {
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+    unix:!darwin:if(!cross_compile|host_build) {
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span>         isEmpty(QMAKE_DEFAULT_INCDIRS): QMAKE_DEFAULT_INCDIRS = /usr/include /usr/local/include
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+    unix:!darwin:if(!cross_compile|host_build) {
+</span></span></span><span style="display:flex;"><span>         isEmpty(QMAKE_DEFAULT_INCDIRS): QMAKE_DEFAULT_INCDIRS = /usr/include /usr/local/include
 </span></span><span style="display:flex;"><span>         isEmpty(QMAKE_DEFAULT_LIBDIRS): QMAKE_DEFAULT_LIBDIRS = /lib /usr/lib
 </span></span><span style="display:flex;"><span>     }
 </span></span></code></pre></div><p>Also, even though that was on Apple M2 Pro, I didn&rsquo;t need to provide <code>QMAKE_APPLE_DEVICE_ARCHS=arm64</code>.</p>
@@ -3396,9 +3396,9 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span>diff --git a/src/corelib/global/qcompilerdetection.h b/src/corelib/global/qcompilerdetection.h
 </span></span><span style="display:flex;"><span>index 2a48c82..f374c53 100644
 </span></span><span style="display:flex;"><span><span style="color:#f92672">--- a/src/corelib/global/qcompilerdetection.h
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+++ b/src/corelib/global/qcompilerdetection.h
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span><span style="color:#75715e">@@ -1065,6 +1065,11 @@
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> // Also disable &lt;atomic&gt;, since it&#39;s clearly not there
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+++ b/src/corelib/global/qcompilerdetection.h
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">@@ -1065,6 +1065,11 @@
+</span></span></span><span style="display:flex;"><span> // Also disable &lt;atomic&gt;, since it&#39;s clearly not there
 </span></span><span style="display:flex;"><span> #  undef Q_COMPILER_ATOMICS
 </span></span><span style="display:flex;"><span> # endif
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">+# if defined(Q_CC_CLANG) &amp;&amp; defined(Q_OS_MAC) &amp;&amp; defined(__cpp_lib_memory_resource) \
@@ -3406,21 +3406,21 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+    || (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) &amp;&amp; __IPHONE_OS_VERSION_MIN_REQUIRED &lt; 170000))
 </span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+#  undef __cpp_lib_memory_resource // Only supported on macOS 14 and iOS 17
 </span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+# endif
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span> # if defined(Q_CC_CLANG) &amp;&amp; defined(Q_CC_INTEL) &amp;&amp; Q_CC_INTEL &gt;= 1500
+</span></span></span><span style="display:flex;"><span> # if defined(Q_CC_CLANG) &amp;&amp; defined(Q_CC_INTEL) &amp;&amp; Q_CC_INTEL &gt;= 1500
 </span></span><span style="display:flex;"><span> // ICC 15.x and 16.0 have their own implementation of std::atomic, which is activated when in Clang mode
 </span></span><span style="display:flex;"><span> // (probably because libc++&#39;s &lt;atomic&gt; on OS X failed to compile), but they&#39;re missing some
 </span></span></code></pre></div><p>and <code>/path/to/qt/src/5.15.12/qtbase/src/corelib/tools/qduplicatetracker_p.h</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span>diff --git a/src/corelib/tools/qduplicatetracker_p.h b/src/corelib/tools/qduplicatetracker_p.h
 </span></span><span style="display:flex;"><span>index 8f51751..26e7051 100644
 </span></span><span style="display:flex;"><span><span style="color:#f92672">--- a/src/corelib/tools/qduplicatetracker_p.h
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+++ b/src/corelib/tools/qduplicatetracker_p.h
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span><span style="color:#75715e">@@ -52,7 +52,7 @@
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> 
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+++ b/src/corelib/tools/qduplicatetracker_p.h
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">@@ -52,7 +52,7 @@
+</span></span></span><span style="display:flex;"><span> 
 </span></span><span style="display:flex;"><span> #include &lt;qglobal.h&gt;
 </span></span><span style="display:flex;"><span> 
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-#if QT_HAS_INCLUDE(&lt;memory_resource&gt;) &amp;&amp; __cplusplus &gt; 201402L
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+#ifdef __cpp_lib_memory_resource
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span> #  include &lt;unordered_set&gt;
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+#ifdef __cpp_lib_memory_resource
+</span></span></span><span style="display:flex;"><span> #  include &lt;unordered_set&gt;
 </span></span><span style="display:flex;"><span> #  include &lt;memory_resource&gt;
 </span></span><span style="display:flex;"><span> #else
 </span></span></code></pre></div><h3 id="no-template-named-unary_function-in-namespace-std">No template named unary_function in namespace std</h3>
@@ -3435,7 +3435,7 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </span></span><span style="display:flex;"><span><span style="color:#ae81ff">1</span> error generated<span style="color:#f92672">.</span>
 </span></span></code></pre></div><p>That one I&rsquo;ve seen <a href="#compilation-error-unary-function">before</a>, you&rsquo;ll need to edit <code>/path/to/qt/src/5.15.12/qtmultimedia/src/plugins/avfoundation/camera/avfcamerautility.mm</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span><span style="color:#f92672">-struct FormatHasNoFPSRange : std::unary_function&lt;AVCaptureDeviceFormat *, bool&gt;
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+struct FormatHasNoFPSRange : std::__unary_function&lt;AVCaptureDeviceFormat *, bool&gt;
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+struct FormatHasNoFPSRange : std::__unary_function&lt;AVCaptureDeviceFormat *, bool&gt;
 </span></span></span></code></pre></div>
 <h3 id="no-member-named-move-in-namespace-std">No member named move in namespace std</h3>
 <p>Having fixed the previous problem, I got some other errors later:</p>
@@ -3474,22 +3474,22 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 <p>With Qt 6.7.1 dynamic build on Windows I noticed that <a href="#mingw">this set</a> of runtime dependencies is no longer(?) correct, and it could have been so for quite some time now.</p>
 <p>First of all, since we are all using CMake, right, here&rsquo;s how one can try to use CMake for collecting all the application&rsquo;s runtime dependencies:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e">#get_target_property(QT_TARGET_TYPE Qt${QT_VERSION_MAJOR}::Core TYPE)
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>if(<span style="color:#e6db74">&#34;${CMAKE_SYSTEM_NAME}&#34;</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;Windows&#34;</span>) <span style="color:#75715e"># `AND NOT ${QT_TARGET_TYPE} STREQUAL &#34;STATIC_LIBRARY&#34;` or `AND ${QT_TARGET_TYPE} STREQUAL &#34;INTERFACE_LIBRARY&#34;`?
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">#file(GENERATE OUTPUT debug/dlls.txt CONTENT $&lt;TARGET_RUNTIME_DLLS:${CMAKE_PROJECT_NAME}&gt;)
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    if(<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">EXISTS</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_PREFIX<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>EXECUTABLE_INSTALLATION_PATH<span style="color:#f92672">}</span>) <span style="color:#75715e"># it doesn&#39;t exist before the very first installation yet
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">#install(DIRECTORY DESTINATION ${CMAKE_INSTALL_PREFIX}/${EXECUTABLE_INSTALLATION_PATH}) # still too late, because add_custom_command() will execute before that
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        file(<span style="color:#e6db74">MAKE_DIRECTORY</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_PREFIX<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>EXECUTABLE_INSTALLATION_PATH<span style="color:#f92672">}</span>) <span style="color:#75715e"># but at least this one will execute before add_custom_command()
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    endif()<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>    add_custom_command(
+</span></span></span><span style="display:flex;"><span>if(<span style="color:#e6db74">&#34;${CMAKE_SYSTEM_NAME}&#34;</span> <span style="color:#e6db74">STREQUAL</span> <span style="color:#e6db74">&#34;Windows&#34;</span>) <span style="color:#75715e"># `AND NOT ${QT_TARGET_TYPE} STREQUAL &#34;STATIC_LIBRARY&#34;` or `AND ${QT_TARGET_TYPE} STREQUAL &#34;INTERFACE_LIBRARY&#34;`?
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#file(GENERATE OUTPUT debug/dlls.txt CONTENT $&lt;TARGET_RUNTIME_DLLS:${CMAKE_PROJECT_NAME}&gt;)
+</span></span></span><span style="display:flex;"><span>    if(<span style="color:#e6db74">NOT</span> <span style="color:#e6db74">EXISTS</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_PREFIX<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>EXECUTABLE_INSTALLATION_PATH<span style="color:#f92672">}</span>) <span style="color:#75715e"># it doesn&#39;t exist before the very first installation yet
+</span></span></span><span style="display:flex;"><span>        <span style="color:#75715e">#install(DIRECTORY DESTINATION ${CMAKE_INSTALL_PREFIX}/${EXECUTABLE_INSTALLATION_PATH}) # still too late, because add_custom_command() will execute before that
+</span></span></span><span style="display:flex;"><span>        file(<span style="color:#e6db74">MAKE_DIRECTORY</span> <span style="color:#f92672">${</span>CMAKE_INSTALL_PREFIX<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>EXECUTABLE_INSTALLATION_PATH<span style="color:#f92672">}</span>) <span style="color:#75715e"># but at least this one will execute before add_custom_command()
+</span></span></span><span style="display:flex;"><span>    endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>    add_custom_command(
 </span></span><span style="display:flex;"><span>        <span style="color:#e6db74">TARGET</span> <span style="color:#f92672">${</span>CMAKE_PROJECT_NAME<span style="color:#f92672">}</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#e6db74">POST_BUILD</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#e6db74">COMMAND</span> <span style="color:#f92672">${</span>CMAKE_COMMAND<span style="color:#f92672">}</span> <span style="color:#e6db74">-E</span> <span style="color:#e6db74">copy_if_different</span>
 </span></span><span style="display:flex;"><span>            <span style="color:#f92672">$&lt;</span>TARGET_RUNTIME_DLLS:${CMAKE_PROJECT_NAME}<span style="color:#f92672">&gt;</span> <span style="color:#75715e"># locate DLLs (might discover some redundant ones too)
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>            <span style="color:#f92672">${</span>CMAKE_INSTALL_PREFIX<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>EXECUTABLE_INSTALLATION_PATH<span style="color:#f92672">}</span> <span style="color:#75715e"># where to copy them
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#e6db74">COMMAND_EXPAND_LISTS</span>
+</span></span></span><span style="display:flex;"><span>            <span style="color:#f92672">${</span>CMAKE_INSTALL_PREFIX<span style="color:#f92672">}</span><span style="color:#e6db74">/</span><span style="color:#f92672">${</span>EXECUTABLE_INSTALLATION_PATH<span style="color:#f92672">}</span> <span style="color:#75715e"># where to copy them
+</span></span></span><span style="display:flex;"><span>        <span style="color:#e6db74">COMMAND_EXPAND_LISTS</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#e6db74">COMMENT</span> <span style="color:#e6db74">&#34;Copying runtime dependencies (DLLs)&#34;</span>
 </span></span><span style="display:flex;"><span>    )<span style="color:#960050;background-color:#1e0010">
-</span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010"></span>endif()<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span>endif()<span style="color:#960050;background-color:#1e0010">
 </span></span></span></code></pre></div><p>Sadly, it doesn&rsquo;t always find all the dependencies, and in case of Qt for one of my applications it only copied the following set:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>├─Qt6Core.dll
 </span></span><span style="display:flex;"><span>├─Qt6Gui.dll
@@ -3551,24 +3551,24 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span>diff --git a/qtbase/mkspecs/common/mac.conf b/qtbase/mkspecs/common/mac.conf
 </span></span><span style="display:flex;"><span>index 61bea95..9ba38d9 100644
 </span></span><span style="display:flex;"><span><span style="color:#f92672">--- a/qtbase/mkspecs/common/mac.conf
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+++ b/qtbase/mkspecs/common/mac.conf
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span><span style="color:#75715e">@@ -18,8 +18,7 @@ QMAKE_LIBDIR            =
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+++ b/qtbase/mkspecs/common/mac.conf
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">@@ -18,8 +18,7 @@ QMAKE_LIBDIR            =
+</span></span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span> # sdk.prf will prefix the proper SDK sysroot
 </span></span><span style="display:flex;"><span> QMAKE_INCDIR_OPENGL     = \
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-    /System/Library/Frameworks/OpenGL.framework/Headers \
 </span></span></span><span style="display:flex;"><span><span style="color:#f92672">-    /System/Library/Frameworks/AGL.framework/Headers/
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+    /System/Library/Frameworks/OpenGL.framework/Headers
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span>
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+    /System/Library/Frameworks/OpenGL.framework/Headers
+</span></span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span> QMAKE_FIX_RPATH         = install_name_tool -id
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">@@ -30,7 +29,7 @@ QMAKE_LFLAGS_REL_RPATH  =
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> QMAKE_REL_RPATH_BASE    = @loader_path
+</span></span></span><span style="display:flex;"><span> QMAKE_REL_RPATH_BASE    = @loader_path
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span> QMAKE_LIBS_DYNLOAD      =
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-QMAKE_LIBS_OPENGL       = -framework OpenGL -framework AGL
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+QMAKE_LIBS_OPENGL       = -framework OpenGL
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span> QMAKE_LIBS_THREAD       =
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+QMAKE_LIBS_OPENGL       = -framework OpenGL
+</span></span></span><span style="display:flex;"><span> QMAKE_LIBS_THREAD       =
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span> QMAKE_INCDIR_WAYLAND    =
 </span></span></code></pre></div><p>After applying that patch, the configuration succeeded. Then the build started fine and was okay for quite a long time, but eventually failed with this error:</p>
@@ -3577,40 +3577,40 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span>diff --git a/qtdeclarative/src/3rdparty/masm/wtf/MathExtras.h b/qtdeclarative/src/3rdparty/masm/wtf/MathExtras.h
 </span></span><span style="display:flex;"><span>index 6af108c..d049e3f 100644
 </span></span><span style="display:flex;"><span><span style="color:#f92672">--- a/src/5.15.17/qtdeclarative/src/3rdparty/masm/wtf/MathExtras.h
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+++ b/src/5.15.17/qtdeclarative/src/3rdparty/masm/wtf/MathExtras.h
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span><span style="color:#75715e">@@ -80,12 +80,12 @@ const float piOverFourFloat = static_cast&lt;float&gt;(M_PI_4);
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> #endif
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+++ b/src/5.15.17/qtdeclarative/src/3rdparty/masm/wtf/MathExtras.h
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">@@ -80,12 +80,12 @@ const float piOverFourFloat = static_cast&lt;float&gt;(M_PI_4);
+</span></span></span><span style="display:flex;"><span> #endif
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span> #if OS(DARWIN)
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+/*
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span> // Work around a bug in the Mac OS X libc where ceil(-0.1) return +0.
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+/*
+</span></span></span><span style="display:flex;"><span> // Work around a bug in the Mac OS X libc where ceil(-0.1) return +0.
 </span></span><span style="display:flex;"><span> inline double wtf_ceil(double x) { return copysign(ceil(x), x); }
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span> #define ceil(x) wtf_ceil(x)
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+*/
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span> #endif
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+*/
+</span></span></span><span style="display:flex;"><span> #endif
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span> #if OS(SOLARIS) &amp;&amp; __cplusplus &lt; 201103L
 </span></span></code></pre></div><p>and here:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span>diff --git a/qtscript/src/3rdparty/javascriptcore/JavaScriptCore/wtf/MathExtras.h b/qtscript/src/3rdparty/javascriptcore/JavaScriptCore/wtf/MathExtras.h
 </span></span><span style="display:flex;"><span>index bea5896..93151df 100644
 </span></span><span style="display:flex;"><span><span style="color:#f92672">--- a/qtscript/src/3rdparty/javascriptcore/JavaScriptCore/wtf/MathExtras.h
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+++ b/qtscript/src/3rdparty/javascriptcore/JavaScriptCore/wtf/MathExtras.h
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span><span style="color:#75715e">@@ -69,12 +69,12 @@ const float piOverFourFloat = static_cast&lt;float&gt;(M_PI_4);
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> #endif
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+++ b/qtscript/src/3rdparty/javascriptcore/JavaScriptCore/wtf/MathExtras.h
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">@@ -69,12 +69,12 @@ const float piOverFourFloat = static_cast&lt;float&gt;(M_PI_4);
+</span></span></span><span style="display:flex;"><span> #endif
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span> #if OS(DARWIN)
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+/*
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span> // Work around a bug in the Mac OS X libc where ceil(-0.1) return +0.
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+/*
+</span></span></span><span style="display:flex;"><span> // Work around a bug in the Mac OS X libc where ceil(-0.1) return +0.
 </span></span><span style="display:flex;"><span> inline double wtf_ceil(double x) { return copysign(ceil(x), x); }
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span> #define ceil(x) wtf_ceil(x)
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+*/
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span> #endif
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+*/
+</span></span></span><span style="display:flex;"><span> #endif
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span> #if OS(SOLARIS) &amp;&amp; __cplusplus &lt; 201103L
 </span></span></code></pre></div><p>After that the build was going for a little bit longer and then failed with a different error:</p>
@@ -3620,29 +3620,29 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span>diff --git a/qtlocation/src/3rdparty/mapbox-gl-native/deps/boost/1.65.1/include/boost/mpl/aux_/integral_wrapper.hpp b/qtlocation/src/3rdparty/mapbox-gl-native/deps/boost/1.65.1/include/boost/mpl/aux_/integral_wrapper.hpp
 </span></span><span style="display:flex;"><span>index 8123c13..6bc05f7 100644
 </span></span><span style="display:flex;"><span><span style="color:#f92672">--- a/qtlocation/src/3rdparty/mapbox-gl-native/deps/boost/1.65.1/include/boost/mpl/aux_/integral_wrapper.hpp
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+++ b/qtlocation/src/3rdparty/mapbox-gl-native/deps/boost/1.65.1/include/boost/mpl/aux_/integral_wrapper.hpp
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span><span style="color:#75715e">@@ -56,7 +56,7 @@ struct AUX_WRAPPER_NAME
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> // have to #ifdef here: some compilers don&#39;t like the &#39;N + 1&#39; form (MSVC),
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+++ b/qtlocation/src/3rdparty/mapbox-gl-native/deps/boost/1.65.1/include/boost/mpl/aux_/integral_wrapper.hpp
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">@@ -56,7 +56,7 @@ struct AUX_WRAPPER_NAME
+</span></span></span><span style="display:flex;"><span> // have to #ifdef here: some compilers don&#39;t like the &#39;N + 1&#39; form (MSVC),
 </span></span><span style="display:flex;"><span> // while some other don&#39;t like &#39;value + 1&#39; (Borland), and some don&#39;t like
 </span></span><span style="display:flex;"><span> // either
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-#if BOOST_WORKAROUND(__EDG_VERSION__, &lt;= 243)
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+#if BOOST_WORKAROUND(__EDG_VERSION__, &lt;= 243) || __cplusplus &gt;= 201703L
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span>  private:
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+#if BOOST_WORKAROUND(__EDG_VERSION__, &lt;= 243) || __cplusplus &gt;= 201703L
+</span></span></span><span style="display:flex;"><span>  private:
 </span></span><span style="display:flex;"><span>     BOOST_STATIC_CONSTANT(AUX_WRAPPER_VALUE_TYPE, next_value = BOOST_MPL_AUX_STATIC_CAST(AUX_WRAPPER_VALUE_TYPE, (N + 1)));
 </span></span><span style="display:flex;"><span>     BOOST_STATIC_CONSTANT(AUX_WRAPPER_VALUE_TYPE, prior_value = BOOST_MPL_AUX_STATIC_CAST(AUX_WRAPPER_VALUE_TYPE, (N - 1)));
 </span></span></code></pre></div><p>but that didn&rsquo;t help, so I reverted that patch and took the <a href="https://github.com/microsoft/vcpkg/blob/1a7377e3691bd7c6d4d71e2008d7caacf818742e/ports/qt5-location/disable-enum-warning.patch">one</a> from the Microsoft&rsquo;s vcpkg port instead:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span>diff --git a/qtlocation/src/3rdparty/mapbox-gl-native/mapbox-gl-native.pro b/qtlocation/src/3rdparty/mapbox-gl-native/mapbox-gl-native.pro
 </span></span><span style="display:flex;"><span>index ed974db..f17d45a 100644
 </span></span><span style="display:flex;"><span><span style="color:#f92672">--- a/qtlocation/src/3rdparty/mapbox-gl-native/mapbox-gl-native.pro
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+++ b/qtlocation/src/3rdparty/mapbox-gl-native/mapbox-gl-native.pro
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span><span style="color:#75715e">@@ -34,6 +34,9 @@ android|gcc {
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> }
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+++ b/qtlocation/src/3rdparty/mapbox-gl-native/mapbox-gl-native.pro
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">@@ -34,6 +34,9 @@ android|gcc {
+</span></span></span><span style="display:flex;"><span> }
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span> darwin {
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">+    QMAKE_CXXFLAGS += \
 </span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+        -Wno-enum-constexpr-conversion
 </span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span>     LIBS += \
+</span></span></span><span style="display:flex;"><span>     LIBS += \
 </span></span><span style="display:flex;"><span>         -framework Foundation
 </span></span><span style="display:flex;"><span> }
 </span></span></code></pre></div><p>That did help, and the build continued. The next error was:</p>
@@ -3652,14 +3652,14 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span>diff --git a/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/layout/symbol_projection.cpp b/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/layout/symbol_projection.cpp
 </span></span><span style="display:flex;"><span>index 6c6a35e..ef669c6 100644
 </span></span><span style="display:flex;"><span><span style="color:#f92672">--- a/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/layout/symbol_projection.cpp
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+++ b/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/layout/symbol_projection.cpp
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span><span style="color:#75715e">@@ -95,7 +95,7 @@ namespace mbgl {
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>     PointAndCameraDistance project(const Point&lt;float&gt;&amp; point, const mat4&amp; matrix) {
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+++ b/qtlocation/src/3rdparty/mapbox-gl-native/src/mbgl/layout/symbol_projection.cpp
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">@@ -95,7 +95,7 @@ namespace mbgl {
+</span></span></span><span style="display:flex;"><span>     PointAndCameraDistance project(const Point&lt;float&gt;&amp; point, const mat4&amp; matrix) {
 </span></span><span style="display:flex;"><span>         vec4 pos = {{ point.x, point.y, 0, 1 }};
 </span></span><span style="display:flex;"><span>         matrix::transformMat4(pos, pos, matrix);
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-        return {{ static_cast&lt;float&gt;(pos[0] / pos[3]), static_cast&lt;float&gt;(pos[1] / pos[3]) }, pos[3] };
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+        return {{ static_cast&lt;float&gt;(pos[0] / pos[3]), static_cast&lt;float&gt;(pos[1] / pos[3]) }, static_cast&lt;float&gt;(pos[3]) };
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span>     }
+</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+        return {{ static_cast&lt;float&gt;(pos[0] / pos[3]), static_cast&lt;float&gt;(pos[1] / pos[3]) }, static_cast&lt;float&gt;(pos[3]) };
+</span></span></span><span style="display:flex;"><span>     }
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>     float evaluateSizeForFeature(const ZoomEvaluatedSize&amp; zoomEvaluatedSize, const PlacedSymbol&amp; placedSymbol) {
 </span></span></code></pre></div><p>Then there was this error:</p>
@@ -3668,12 +3668,12 @@ But not anymore, because I finally overcame my fears/stupidity/laziness, RTFMed 
 </span></span><span style="display:flex;"><span>   <span style="color:#ae81ff">51</span> | <span style="color:#75715e">#include &lt;hunspell/hunspell.h&gt;</span>
 </span></span></code></pre></div><p>and at that point I got really fucking tired of all this bullshit (<em>also didn&rsquo;t find a suitable patch quickly enough</em>), so I just re-configured Qt to exclude this crap with <code>-skip qtvirtualkeyboard</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ../configure -static -release -no-pch <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  -prefix <span style="color:#e6db74">&#34;/Users/vasya/programs/qt/5.15.17-static&#34;</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  -skip qtwebengine <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#ae81ff"></span>  -skip qtvirtualkeyboard <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  -nomake tests <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  -nomake examples <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  -nomake tools
+</span></span></span><span style="display:flex;"><span>  -prefix <span style="color:#e6db74">&#34;/Users/vasya/programs/qt/5.15.17-static&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>  -skip qtwebengine <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex; background-color:#3c3d38"><span>  -skip qtvirtualkeyboard <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>  -nomake tests <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>  -nomake examples <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>  -nomake tools
 </span></span></code></pre></div><p>I&rsquo;ve never needed it anyway, so it has always been wasting resources building without being used (<em>just like WebEngine, which I have always had disabled</em>). And then the build finally succeeded:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ time make -j12
 </span></span><span style="display:flex;"><span>...
