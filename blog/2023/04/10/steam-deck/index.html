@@ -67,7 +67,7 @@
 </svg> 2023-04-10 14:24:31 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 133 min read</div>
+</svg> 136 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -203,10 +203,13 @@
                 <li><a href="#figuring-out-why-a-game-does-not-launch">Figuring out why a game does not launch</a>
                   <ul>
                     <li><a href="#verify-that-the-executable-is-not-corrupted">Verify that the executable is not corrupted</a></li>
-                    <li><a href="#check-the-logs">Check the logs</a></li>
-                    <li><a href="#redirect-the-output">Redirect the output</a></li>
-                    <li><a href="#try-a-different-opengl-driver">Try a different OpenGL driver</a></li>
+                    <li><a href="#check-the-logs">Check the logs</a>
+                      <ul>
+                        <li><a href="#redirect-the-output">Redirect the output</a></li>
+                      </ul>
+                    </li>
                     <li><a href="#try-installing-potentially-missing-runtimes-and-frameworks">Try installing potentially missing runtimes and frameworks</a></li>
+                    <li><a href="#try-a-different-opengl-driver">Try a different OpenGL driver</a></li>
                     <li><a href="#you-might-have-just-gotten-a-shitty-release">You might have just gotten a shitty release</a></li>
                   </ul>
                 </li>
@@ -225,6 +228,7 @@
                     <li><a href="#cannot-enter-text-in-the-input-fields">Cannot enter text in the input fields</a></li>
                   </ul>
                 </li>
+                <li><a href="#simgangster">simGangster</a></li>
                 <li><a href="#emulators">Emulators</a></li>
               </ul>
             </li>
@@ -2121,7 +2125,7 @@
 </p>
 <p>After the installation is done, I changed the <code>TARGET</code> from the installer <code>.exe</code> to the installed game <code>.exe</code> and tried to launch the game, but it didn&rsquo;t launch and didn&rsquo;t show any error dialogs.</p>
 <h4 id="figuring-out-why-a-game-does-not-launch">Figuring out why a game does not launch</h4>
-<p>That&rsquo;s how I got familiar with various techniques of figuring out why a game does not launch. None of these actually helped in this particular case, as you&rsquo;ll see later, but they are useful nonetheless, and you should at least know how you can try to find out possible launch problems.</p>
+<p>That&rsquo;s how I got familiar with various techniques of figuring out why a game does not launch. None of these are specific to this particular game, so you can apply them to any other game or application.</p>
 <h5 id="verify-that-the-executable-is-not-corrupted">Verify that the executable is not corrupted</h5>
 <p>If you have a native GNU/Linux game, and it crashes with <code>Segmentation fault</code> right on launch, then aside from many other reasons why, it could be that the executable got corrupted somehow. For example, once I downloaded a game from my <a href="/blog/2016/04/15/seedbox/">seedbox</a> using a FTP/SFTP client, which was set to transfer files without extension as ASCII, while those were actually binaries, and that resulted in a corrupted segfaulting executable.</p>
 <p>As a symptom of a corrupted executable, <code>ldd</code> command will exit with a non-zero code (<em>by the way, using <code>ldd</code> you can also check for potentially missing runtime dependencies</em>), and <code>file</code> command will output something like <code>missing section headers at 41318600</code>. So if possible, compare the checksums of your downloaded file and the original one with <code>sha1sum</code>, and if they are different, then re-download the original file with a proper client.</p>
@@ -2129,7 +2133,7 @@
 <p>The first thing you should check is the game&rsquo;s own logs, which might be written to a file in the game installation folder or somewhere inside the prefix. I didn&rsquo;t find any for this game, though.</p>
 <p>Secondly, you can check Proton logs. They are disabled by default, so go to <code>/home/deck/.local/share/Steam/steamapps/common/Proton - Experimental/</code> (<em>or whichever version is used to run the game</em>) and rename <code>user_settings.sample.py</code> to <code>user_settings.py</code>. Or set <code>PROTON_LOG=1</code> environment variable in the game launch options (<em>by the way, here are some more <a href="https://github.com/ValveSoftware/Proton#runtime-config-options">Proton options</a></em>).</p>
 <p>Having enabled the logs, you will get them written to <code>/home/deck/steam-SOME-ID.log</code>. Sadly, I didn&rsquo;t find any useful output there relevant to my problem.</p>
-<h5 id="redirect-the-output">Redirect the output</h5>
+<h6 id="redirect-the-output">Redirect the output</h6>
 <p>Another thing one can try is to redirect the game output:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">%</span>command<span style="color:#f92672">%</span> <span style="color:#f92672">&gt;</span> <span style="color:#f92672">/</span>tmp<span style="color:#f92672">/</span>batman<span style="color:#f92672">.</span>log</span></span></code></pre></div>
 <p>If the file will be empty, then it might be because errors are printed to <code>stderr</code> and not <code>stdout</code>, so you will need to redirect it too:</p>
@@ -2162,15 +2166,15 @@
 </span></span><span style="display:flex;"><span>pid <span style="color:#ae81ff">40728</span> !<span style="color:#f92672">=</span> 40727, skipping destruction <span style="color:#f92672">(</span>fork without exec?<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>Same errors, but the game works fine. So apparently these are not actual errors, and there is probably no need to set <code>LD_PRELOAD</code>.</p>
 <p>By that moment I was out of ideas where else I can find logs / error messages, so scientific approach came to an end, and it was time for shamanic rituals.</p>
+<h5 id="try-installing-potentially-missing-runtimes-and-frameworks">Try installing potentially missing runtimes and frameworks</h5>
+<p>It could be that the game/application is missing some runtime dependencies, and I did try to install DirectX, Visual C++ runtime and .NET Framework, having downloaded them from Microsoft&rsquo;s website, and I tried the versions that were available around 2015 too (<em>probably should&rsquo;ve tried even older ones?</em>), and I also tried installing <a href="https://en.wikipedia.org/wiki/PhysX">PhysX</a>, but none of those helped.</p>
+<p>I tried using different Proton versions, and even <a href="https://github.com/GloriousEggroll/proton-ge-custom#native">installed Proton GE</a> (<em>speaking of which, there is <a href="#how-to-run-an-application-with-proton">no need</a> to involve 3rd-party installers/helpers like <a href="https://davidotek.github.io/protonup-qt/">ProtonUp-Qt</a>, which you&rsquo;ll often see being recommended</em>), but that didn&rsquo;t help either.</p>
 <h5 id="try-a-different-opengl-driver">Try a different OpenGL driver</h5>
 <p>Not sure if this will ever help with anything, but if you are completely out of other options, you might try to switch <a href="https://wiki.archlinux.org/title/OpenGL#Mesa">OpenGL driver</a> by setting <code>MESA_LOADER_DRIVER_OVERRIDE</code> environment variable. For example:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>MESA_LOADER_DRIVER_OVERRIDE<span style="color:#f92672">=</span>radeonsi %command% &gt; /tmp/batman.log 2&gt;&amp;<span style="color:#ae81ff">1</span>
 </span></span></code></pre></div><p>or:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>MESA_LOADER_DRIVER_OVERRIDE<span style="color:#f92672">=</span>zink %command% &gt; /tmp/batman.log 2&gt;&amp;<span style="color:#ae81ff">1</span>
-</span></span></code></pre></div><h5 id="try-installing-potentially-missing-runtimes-and-frameworks">Try installing potentially missing runtimes and frameworks</h5>
-<p>It could be that the game/application is missing some runtime dependencies, and I did try to install DirectX, Visual C++ runtime and .NET Framework, having downloaded them from Microsoft&rsquo;s website, and I tried the versions that were available around 2015 too (<em>probably should&rsquo;ve tried even older ones?</em>), and I also tried installing <a href="https://en.wikipedia.org/wiki/PhysX">PhysX</a>, but none of those helped.</p>
-<p>I tried using different Proton versions, and even <a href="https://github.com/GloriousEggroll/proton-ge-custom#native">installed Proton GE</a> (<em>speaking of which, there is <a href="#how-to-run-an-application-with-proton">no need</a> to involve 3rd-party installers/helpers like <a href="https://davidotek.github.io/protonup-qt/">ProtonUp-Qt</a>, which you&rsquo;ll often see being recommended</em>), but that didn&rsquo;t help either.</p>
-<h5 id="you-might-have-just-gotten-a-shitty-release">You might have just gotten a shitty release</h5>
+</span></span></code></pre></div><h5 id="you-might-have-just-gotten-a-shitty-release">You might have just gotten a shitty release</h5>
 <p>And yet people <a href="https://protondb.com/app/208650">are reporting</a> that the game runs on Steam Deck, so the only remaining reason why mine doesn&rsquo;t is that I&rsquo;ve downloaded a crap of a version. Which wouldn&rsquo;t be a big surprise, given its horrendous &ldquo;installer&rdquo;.</p>
 <p>And only then I discovered that this game is actually <a href="https://gog.com/en/game/batman_arkham_knight_premium_edition">available on GOG</a>! I searched on RuTracker some more and found that version under the ID <code>5976829</code>. That one installs and runs just fine, zero fucking about required.</p>
 <p>Of course, now that I know that the game is available on GOG without Denuvo crap, I have no arguments against paying for it. And so if I&rsquo;ll like it, I will certainly pay for it.</p>
@@ -2342,6 +2346,39 @@
     <img class="image-post" loading="lazy" src="/blog/2023/04/10/steam-deck/images/gzdoom-onscreen-keyboard.jpg" alt="GZDoom, onscreen keyboard">
 
 <p>To type with it just click on the letters/symbols and in the end click on the Enter/Return symbol.</p>
+<h4 id="simgangster">simGangster</h4>
+<p>There was a <a href="https://steamcommunity.com/app/1675200/discussions/0/686367878797136209/">thread</a> on Steam forums about an old game <a href="https://myabandonware.com/game/simgangster-jpv">simGangster</a>. The problem with this one is that it isn&rsquo;t really a game but a Windows Forms (<em>or MFC?</em>) application (<em>created with Visual Basic, according to Detect It Easy?</em>), and it spawns several windows/modals, which works fine in Desktop mode, but it does not work all that fine in Gaming mode, as after some initial dialog windows and a splash loading screen it just &ldquo;goes to black&rdquo;.</p>
+<p>The game is running though, because you can hear the intro music playing. Moreover, if you try to <a href="#2024-11-05--steam-game-recording">record</a> the game, Steam will miraculously capture the game/application content:</p>
+
+
+
+
+
+
+
+<video  controls="yes"   class="video">
+    <source src="https://files.decovar.dev/public/blog/steam-deck/simgangster-steam-deck-recording.mp4" type="video/mp4">
+</video>
+
+<p class="video-fallback">If video doesn't play in your browser, you can download it <a href="https://files.decovar.dev/public/blog/steam-deck/simgangster-steam-deck-recording.mp4">here</a>.</p>
+
+
+<p>Due to the fact that it shows fine in Desktop mode (<em>and that Steam is capable of capturing the application window on recording</em>), I am guessing that something is wrong with how Gamescope handles those numerous windows/modals of the game. Having googled for a while, I got to <a href="https://github.com/ValveSoftware/gamescope/issues/1341">this issue</a>, which contained a <a href="https://github.com/ValveSoftware/gamescope/issues/1341#issuecomment-2209183397">workaround</a>. Of course, this game has nothing to do with Flatpak, but the problem description looked very similar.</p>
+<p>In short, what happens is that the main game/application window loses focus (<em>probably because of those other windows/modals</em>) and the Gamescope windows/layers order gets screwed up, resulting in that black screen being &ldquo;on top&rdquo; of the game. From what I understood, this (<em>only?</em>) happens with non-Steam games, as sometimes their child windows do not get the game ID assigned to them, otherwise I reckon this layers ordering would have been sorted out correctly.</p>
+<p>To verify that this indeed is the case, you can run the following command (<em>having launched the game and connected to Steam Deck via SSH</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ xprop -d :0 -root | grep GAMESCOPECTRL_BASELAYER_APPID | cut -d <span style="color:#e6db74">&#34;=&#34;</span> -f <span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span> 413091, 769, <span style="color:#ae81ff">2179609064</span>
+</span></span></code></pre></div><p>here:</p>
+<ul>
+<li><code>413091</code> - I don&rsquo;t know what it is, but this layer is always first, so this is correct;</li>
+<li><code>769</code> - this is Steam&rsquo;s(?) &ldquo;black screen&rdquo;, and it is not correct, because it is now on top of the game window;</li>
+<li><code>2179609064</code> - this is our game/application window (<em>and in case of a non-Steam game that ID is a bit <a href="#proton-prefixes">non-trivial</a> to find</em>).</li>
+</ul>
+<p>In the original comment there was also a 4th value, but I only got these 3, and I guess only the game ID is what matters anyway. So in my case the correct order of layers/windows should be <code>413091, 2179609064, 769</code>, which can be set with the following command:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ xprop -d :0 -root -f GAMESCOPECTRL_BASELAYER_APPID 32co -set GAMESCOPECTRL_BASELAYER_APPID <span style="color:#e6db74">&#34;413091, 2179609064, 769&#34;</span>
+</span></span></code></pre></div><p>Right after I executed that command, the game window appeared on the screen, hallelujah. But not for long, because as it turned out this was not the main game window yet, and when I clicked on the Start button, the game switched to the actual game window, which caused the game to &ldquo;go black&rdquo; again, as the layers/windows order became <code>413091, 769, 2179609064</code> again. But then I simply executed the same reordering command again and got the game window visible once more, and after that there were no new windows, so the layers/windows order remained correct.</p>
+<p>So yes, this is a working workaround, but obviously it is far from being convenient, as one would need to execute that <code>xprop</code> command every time the game is started (<em>and also every time it messes up the layers/windows order during the gameplay</em>). Moreover, I am not sure how would that work if one would try to do this from Konsole running in parallel with the game, as then Konsole&rsquo;s own window would also get added into the mix. And keeping one more device around just to execute SSH commands to play a game is not a very enjoyable experience.</p>
+<p>I imagine, this can be automated with some &ldquo;daemon&rdquo; script that would query the layers/windows order (<em>every second?</em>) and auto-correct it if needed, but then there comes the hassle of starting that daemon together with the game and properly shutting it down when the game exits, which is something I am not looking forward to implementing at the moment. Hopefully, the original Gamescope issue gets resolved eventually, so then there would be no need for any of this altogether.</p>
 <h4 id="emulators">Emulators</h4>
 <p>That&rsquo;s something I myself have almost zero interest in, but for many people this is a very big deal, so I have to at least mention it.</p>
 <p>So, Steam Deck seems to be a very good fit for running emulators of various gaming consoles (<em>including Nintendo Switch, hehe</em>). It has more than enough computing power for it, controls ergonomics are simply the best, and the installation procedure can be as simple as downloading an <a href="https://flathub.org/apps/search/emulator">emulator</a> from Discover catalog.</p>
