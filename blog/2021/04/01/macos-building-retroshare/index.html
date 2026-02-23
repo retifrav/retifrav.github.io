@@ -130,7 +130,7 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
 <h1 id="environment">Environment</h1>
 <p>RetroShare is based on Qt and currently it uses <code>qmake</code>. So as the very minimum, aside from cloning <a href="https://github.com/RetroShare/RetroShare">the repository</a>, you need to have Qt installed in your system. If anything, I <a href="https://retifrav.github.io/blog/2020/12/04/qt-without-installer/">built</a> mine from sources, but it will most likely just as well work if you&rsquo;ll get it using <a href="https://www.qt.io/download-qt-installer">official installer</a>.</p>
 <p>Just in case, here&rsquo;s my environment:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sw_vers -productVersion
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sw_vers -productVersion
 </span></span><span style="display:flex;"><span>10.15.7
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ xcrun --sdk macosx --show-sdk-version
@@ -155,12 +155,12 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
 <p>Building without plugins is easier, because it has less 3rd-party dependencies. And I would say, 3rd-party dependencies is the main difficulty of building RetroShare from sources.</p>
 <h2 id="without-plugins">Without plugins</h2>
 <p>There is <a href="https://retrosharedocs.readthedocs.io/en/latest/developer/compilation/#compilation-on-macos">some documentation</a> on the matter (<em>more about that <a href="#documentation-isnt-great">later</a></em>), from which I got to know that I need to install the following dependencies:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ brew install openssl
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ brew install openssl
 </span></span><span style="display:flex;"><span>$ brew install miniupnpc
 </span></span><span style="display:flex;"><span>$ brew install libmicrohttpd</span></span></code></pre></div>
 <h3 id="sdk-resolving-issue">SDK resolving issue</h3>
 <p>Let&rsquo;s try to configure it now:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/rapidshare/src
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/rapidshare/src
 </span></span><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd $_
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ qmake ..
@@ -173,7 +173,7 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
 </span></span><span style="display:flex;"><span>Project ERROR: Could not resolve SDK SDKVersion <span style="color:#66d9ef">for</span> <span style="color:#e6db74">&#39;macosx10.11&#39;</span> using --show-sdk-version</span></span></code></pre></div>
 <p>So right from the very beginning you are getting this fantastic error in your face. Smells like something is hardcoded somewhere.</p>
 <p>And indeed, if you open <code>/path/to/retroshare/src/retroshare.pri</code>, there is this weird block at the line 129:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># To select your MacOsX version append the following assignation to qmake</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># To select your MacOsX version append the following assignation to qmake</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># command line &#34;CONFIG+=rs_macos10.11&#34; where 10.11 depends your version</span>
 </span></span><span style="display:flex;"><span>macx:CONFIG *<span style="color:#f92672">=</span> rs_macos10.11
 </span></span><span style="display:flex;"><span>rs_macos10.8:CONFIG -<span style="color:#f92672">=</span> rs_macos10.11
@@ -184,7 +184,7 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
 </span></span><span style="display:flex;"><span>rs_macos10.14:CONFIG -<span style="color:#f92672">=</span> rs_macos10.11
 </span></span><span style="display:flex;"><span>rs_macos10.15:CONFIG -<span style="color:#f92672">=</span> rs_macos10.11</span></span></code></pre></div>
 <p>This hardcoded list of versions doesn&rsquo;t look good at all. And no matter what values I provided to <code>CONFIG</code>, the configuration was always failing with the same error. Certainly can&rsquo;t tell what grand plan original developer had behind it, but it definitely does not make sense to me. So I ended up editing this block manually like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>macx:CONFIG *<span style="color:#f92672">=</span> rs_macos11.1
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>macx:CONFIG *<span style="color:#f92672">=</span> rs_macos11.1
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#rs_macos10.8:CONFIG -= rs_macos10.11</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#rs_macos10.9:CONFIG -= rs_macos10.11</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#rs_macos10.10:CONFIG -= rs_macos10.11</span>
@@ -194,11 +194,11 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#rs_macos10.15:CONFIG -= rs_macos10.11</span></span></span></code></pre></div>
 <p>Why <code>11.1</code>? Because that&rsquo;s what <code>xcrun</code> reports in my system, and apparently that&rsquo;s what is getting checked against during configuration.</p>
 <p>Now the project configures fine, so we can build:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ qmake ..
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ qmake ..
 </span></span><span style="display:flex;"><span>$ make -j12</span></span></code></pre></div>
 <h3 id="missing-openssl-headers-paths">Missing OpenSSL headers paths</h3>
 <p>But during the build I got these errors:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>../../../openpgpsdk/src/openpgpsdk/packet.h:32:10: fatal error: <span style="color:#e6db74">&#39;openssl/bn.h&#39;</span> file not found
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>../../../openpgpsdk/src/openpgpsdk/packet.h:32:10: fatal error: <span style="color:#e6db74">&#39;openssl/bn.h&#39;</span> file not found
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#include &lt;openssl/bn.h&gt;</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>../../../libretroshare/src/pqi/pqihash.h:26:10: fatal error: <span style="color:#e6db74">&#39;openssl/sha.h&#39;</span> file not found
@@ -207,9 +207,9 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
 </span></span><span style="display:flex;"><span>../../../retroshare-gui/src/TorControl/CryptoKey.cpp:41:10: fatal error: <span style="color:#e6db74">&#39;openssl/bn.h&#39;</span> file not found
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#include &lt;openssl/bn.h&gt;</span></span></span></code></pre></div>
 <p>That can be solved by explicitly providing paths to OpenSSL headers:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ qmake INCLUDEPATH<span style="color:#f92672">+=</span><span style="color:#e6db74">&#34;/usr/local/opt/openssl/include&#34;</span> ..</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ qmake INCLUDEPATH<span style="color:#f92672">+=</span><span style="color:#e6db74">&#34;/usr/local/opt/openssl/include&#34;</span> ..</span></span></code></pre></div>
 <p>By the way, Homebrew had a warning about something similar:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>openssl@1.1 is keg-only, which means it was not symlinked into /usr/local,
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>openssl@1.1 is keg-only, which means it was not symlinked into /usr/local,
 </span></span><span style="display:flex;"><span>because macOS provides LibreSSL.
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>If you need to have openssl@1.1 first in your PATH, run:
@@ -222,29 +222,29 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
 </span></span><span style="display:flex;"><span>For pkg-config to find openssl@1.1 you may need to set:
 </span></span><span style="display:flex;"><span>  export PKG_CONFIG_PATH<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/usr/local/opt/openssl@1.1/lib/pkgconfig&#34;</span></span></span></code></pre></div>
 <p>and I tried to do so in my <code>~/.bash_profile</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>export PATH<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/usr/local/opt/openssl/bin:</span>$PATH<span style="color:#e6db74">&#34;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>export PATH<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/usr/local/opt/openssl/bin:</span>$PATH<span style="color:#e6db74">&#34;</span>
 </span></span><span style="display:flex;"><span>export LDFLAGS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;-L/usr/local/opt/openssl/lib&#34;</span>
 </span></span><span style="display:flex;"><span>export CPPFLAGS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;-I/usr/local/opt/openssl/include&#34;</span>
 </span></span><span style="display:flex;"><span>export PKG_CONFIG_PATH<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/usr/local/opt/openssl/lib/pkgconfig&#34;</span></span></span></code></pre></div>
 <p>but that didn&rsquo;t help. And providing paths via <code>qmake</code> CLI parameters did help, so that&rsquo;s what I will be doing going forward.</p>
 <h3 id="missing-dependencies">Missing dependencies</h3>
 <p>Next error I got was this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>../../../libretroshare/src/util/rsjson.h:24:10: fatal error: <span style="color:#e6db74">&#39;rapidjson/document.h&#39;</span> file not found
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>../../../libretroshare/src/util/rsjson.h:24:10: fatal error: <span style="color:#e6db74">&#39;rapidjson/document.h&#39;</span> file not found
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#include &lt;rapidjson/document.h&gt;</span></span></span></code></pre></div>
 <p>That is solved by installing <a href="https://miloyip.github.io/rapidjson/">RapidJSON</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ brew install rapidjson</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ brew install rapidjson</span></span></code></pre></div>
 <p>Then there was this error:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>../../../libretroshare/src/rsserver/p3face-info.cc:31:11: fatal error: <span style="color:#e6db74">&#39;sqlcipher/sqlite3.h&#39;</span> file not found
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>../../../libretroshare/src/rsserver/p3face-info.cc:31:11: fatal error: <span style="color:#e6db74">&#39;sqlcipher/sqlite3.h&#39;</span> file not found
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># include &lt;sqlcipher/sqlite3.h&gt;</span></span></span></code></pre></div>
 <p>That is solved by installing <a href="https://www.zetetic.net/sqlcipher/">SQLCipher</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ brew install sqlcipher</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ brew install sqlcipher</span></span></code></pre></div>
 <h3 id="missing-paths-to-linked-libraries">Missing paths to linked libraries</h3>
 <p>After that everything finally built, but failed on linking stage:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>ld: library not found <span style="color:#66d9ef">for</span> -lsqlcipher
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>ld: library not found <span style="color:#66d9ef">for</span> -lsqlcipher
 </span></span><span style="display:flex;"><span>ld: library not found <span style="color:#66d9ef">for</span> -lminiupnpc
 </span></span><span style="display:flex;"><span>ld: library not found <span style="color:#66d9ef">for</span> -lssl</span></span></code></pre></div>
 <p>That is because providing just include paths is not enough, you also need to provide paths to linked libraries binaries. So, the final sequence of commands to configure and build RetroShare (<em>without plugins</em>) is this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/rapidshare/src
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/rapidshare/src
 </span></span><span style="display:flex;"><span>$ mkdir build <span style="color:#f92672">&amp;&amp;</span> cd $_
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ qmake <span style="color:#ae81ff">\
@@ -262,7 +262,7 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
 <li>not sure what <code>use_native_dialogs</code> does, but it is disabled by default, and having enabled it I seem to get more responsive GUI dialogs in the application</li>
 </ul>
 <p>So my configuration looks like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ qmake <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ qmake <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>INCLUDEPATH<span style="color:#f92672">+=</span><span style="color:#e6db74">&#34;/usr/local/opt/openssl/include&#34;</span> QMAKE_LIBDIR<span style="color:#f92672">+=</span><span style="color:#e6db74">&#34;/usr/local/opt/openssl/lib&#34;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>QMAKE_LIBDIR<span style="color:#f92672">+=</span><span style="color:#e6db74">&#34;/usr/local/opt/sqlcipher/lib&#34;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>QMAKE_LIBDIR<span style="color:#f92672">+=</span><span style="color:#e6db74">&#34;/usr/local/opt/miniupnpc/lib&#34;</span> <span style="color:#ae81ff">\
@@ -275,21 +275,21 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
 <h2 id="with-plugins">With plugins</h2>
 <p>RetroShare has some plugins as part of the main repository, and there are also plugins in separate repositories (<em>for example, <a href="https://github.com/RetroShare/RetroChess">RetroChess</a></em>).</p>
 <p>To enable building RetroShare with plugins, you need to set this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ qmake CONFIG<span style="color:#f92672">+=</span>retroshare_plugins ..</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ qmake CONFIG<span style="color:#f92672">+=</span>retroshare_plugins ..</span></span></code></pre></div>
 <p>If you want to build more plugins than just the ones from main repository, clone their repositories and copy sources to <code>/path/to/retroshare/src/plugins</code> folder and add them in <code>plugins.pro</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">SUBDIRS</span> <span style="color:#f92672">+=</span> \
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">SUBDIRS</span> <span style="color:#f92672">+=</span> \
 </span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">VOIP</span> \
 </span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">FeedReader</span> \
 </span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">RetroChess</span> <span style="color:#66d9ef">#</span> added</span></span></code></pre></div>
 <p>Before building you need to install required dependencies:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ brew install ffmpeg
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ brew install ffmpeg
 </span></span><span style="display:flex;"><span>$ brew install speex
 </span></span><span style="display:flex;"><span>$ brew install speexdsp
 </span></span><span style="display:flex;"><span>$ brew install opencv</span></span></code></pre></div>
 <p>The last one, <a href="https://opencv.org/">OpenCV</a>, is one crazy package. It drags a whole bunch of dependencies of its own, which in turn drag a lot more on their own, including by the way Qt. You can see the full list for yourself:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ brew deps --tree --installed opencv</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ brew deps --tree --installed opencv</span></span></code></pre></div>
 <p>Anyway, having installed all the dependencies, you can now build the project. Needless to say, you&rsquo;ll face errors about missing headers and linked libraries, so to save you some time, here are all of them:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ qmake <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ qmake <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>INCLUDEPATH<span style="color:#f92672">+=</span><span style="color:#e6db74">&#34;/usr/local/opt/openssl/include&#34;</span> QMAKE_LIBDIR<span style="color:#f92672">+=</span><span style="color:#e6db74">&#34;/usr/local/opt/openssl/lib&#34;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>QMAKE_LIBDIR<span style="color:#f92672">+=</span><span style="color:#e6db74">&#34;/usr/local/opt/sqlcipher/lib&#34;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>QMAKE_LIBDIR<span style="color:#f92672">+=</span><span style="color:#e6db74">&#34;/usr/local/opt/miniupnpc/lib&#34;</span> <span style="color:#ae81ff">\
@@ -300,7 +300,7 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
 </span></span></span><span style="display:flex;"><span>CONFIG<span style="color:#f92672">+=</span>retroshare_plugins <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>..</span></span></code></pre></div>
 <p>&hellip;Yet, you will still get errors, though different ones this time. Here&rsquo;s the first one:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Undefined symbols <span style="color:#66d9ef">for</span> architecture x86_64:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Undefined symbols <span style="color:#66d9ef">for</span> architecture x86_64:
 </span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;cv::VideoCapture::VideoCapture(int, int)&#34;</span>, referenced from:
 </span></span><span style="display:flex;"><span>      QVideoInputDevice::start<span style="color:#f92672">()</span> in QVideoDevice.o
 </span></span><span style="display:flex;"><span>ld: symbol<span style="color:#f92672">(</span>s<span style="color:#f92672">)</span> not found <span style="color:#66d9ef">for</span> architecture x86_64
@@ -310,11 +310,11 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
 </span></span><span style="display:flex;"><span>make: *** <span style="color:#f92672">[</span>plugins-make_first<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">2</span></span></span></code></pre></div>
 <p>This one is happening because RetroShare doesn&rsquo;t link to one of the libraries from OpenCV. To find out which one, you can google for <code>cv::VideoCapture</code> and discover that it&rsquo;s part of <a href="https://docs.opencv.org/3.4/d8/dfe/classcv_1_1VideoCapture.html">videoio</a>, so you need to add that missing link with <code>LIBS+=-lopencv_videoio</code>.</p>
 <p>Next error was more difficult to figure out:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>usr/include/libxslt/xslt.h:83:22: error: default initialization of an object of const type <span style="color:#e6db74">&#39;const int&#39;</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>usr/include/libxslt/xslt.h:83:22: error: default initialization of an object of const type <span style="color:#e6db74">&#39;const int&#39;</span></span></span></code></pre></div>
 <p>Luckily, I&rsquo;ve encountered something similar (<em><a href="https://github.com/ffi/ffi/issues/791#issuecomment-645594873">not exactly</a></em>) before, so soon enough I suspected that it&rsquo;s yet again Mac OS providing an obsolete version of a library. And indeed, after I installed and used the latest <a href="http://xmlsoft.org/XSLT/">XSLT</a> library:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ brew install libxslt</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ brew install libxslt</span></span></code></pre></div>
 <p>the problem was gone. So, here&rsquo;s the final configuration command (<em>with the <a href="#features">features</a> I&rsquo;ve enabled</em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ qmake <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ qmake <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>INCLUDEPATH<span style="color:#f92672">+=</span><span style="color:#e6db74">&#34;/usr/local/opt/openssl/include&#34;</span> QMAKE_LIBDIR<span style="color:#f92672">+=</span><span style="color:#e6db74">&#34;/usr/local/opt/openssl/lib&#34;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>QMAKE_LIBDIR<span style="color:#f92672">+=</span><span style="color:#e6db74">&#34;/usr/local/opt/sqlcipher/lib&#34;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>QMAKE_LIBDIR<span style="color:#f92672">+=</span><span style="color:#e6db74">&#34;/usr/local/opt/miniupnpc/lib&#34;</span> <span style="color:#ae81ff">\
@@ -338,7 +338,7 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
 <h2 id="what-about-building-from-qt-creator">What about building from Qt Creator</h2>
 <p>You might ask, why building with bare <code>qmake</code> from CLI, why not building from Qt Creator?</p>
 <p>Well, first of all, building from CLI is just faster and actually more convenient. But also here&rsquo;s what I get when I try to build the RetroShare project from Qt Creator:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>/bin/sh: cmake: command not found
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>/bin/sh: cmake: command not found
 </span></span><span style="display:flex;"><span>make<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: *** <span style="color:#f92672">[</span>../../supportlibs/udp-discovery-cpp/libudp-discovery.a<span style="color:#f92672">]</span> Error <span style="color:#ae81ff">127</span></span></span></code></pre></div>
 <p>And I&rsquo;ve no idea what this is about. I have CMake discoverable in my PATH, and also it is added in Qt Creator settings, and also I can build other CMake projects from Qt Creator just fine. Yeah, no idea.</p>
 <h1 id="deployment">Deployment</h1>
@@ -350,7 +350,7 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
     <img class="image-post" loading="lazy" src="/blog/2021/04/01/macos-building-retroshare/images/retroshare-bubble-style.png" alt="RetroShare chat styles">
 
 <p>Bundling stuff into application bundle on Mac OS with <code>qmake</code> is done via <a href="https://doc.qt.io/qt-5/qmake-variable-reference.html#qmake-bundle-data">QMAKE_BUNDLE_DATA</a>. In <code>/path/to/retroshare/src/retroshare-gui/src/retroshare-gui.pro</code> on line 275 there is a block for <code>macx</code> <a href="https://doc.qt.io/qt-5/qmake-language.html#scopes-and-conditions">scope</a> - that&rsquo;s where the application icon is getting bundled, by the way. To bundle styles (<em>or other resources</em>) too, add the following lines:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>dplQSS.files <span style="color:#f92672">=</span> $$PWD/qss
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>dplQSS.files <span style="color:#f92672">=</span> $$PWD/qss
 </span></span><span style="display:flex;"><span>dplQSS.path <span style="color:#f92672">=</span> Contents/Resources
 </span></span><span style="display:flex;"><span>QMAKE_BUNDLE_DATA <span style="color:#f92672">+=</span> dplQSS
 </span></span><span style="display:flex;"><span>
@@ -360,7 +360,7 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
 </span></span><span style="display:flex;"><span>dplChatStyles.path <span style="color:#f92672">=</span> Contents/Resources/stylesheets
 </span></span><span style="display:flex;"><span>QMAKE_BUNDLE_DATA <span style="color:#f92672">+=</span> dplChatStyles</span></span></code></pre></div>
 <p>Having configured and built the application, you should get the following contents in your RetroShare application bundle:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ tree -L <span style="color:#ae81ff">2</span> /path/to/retroshare/src/build/retroshare-gui/src/RetroShare.app/Contents/Resources/
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ tree -L <span style="color:#ae81ff">2</span> /path/to/retroshare/src/build/retroshare-gui/src/RetroShare.app/Contents/Resources/
 </span></span><span style="display:flex;"><span>├── empty.lproj
 </span></span><span style="display:flex;"><span>├── qss
 </span></span><span style="display:flex;"><span>│   ├── blacknight/
@@ -395,7 +395,7 @@ I found this peculiar, so I decided to try to build it from sources myself. It a
 <p>Why DMG? No particular reason, really. It can just as well be a ZIP archive, but DMG seem to be more common for distributing applications on Mac OS.</p>
 <p>In order to find and copy all the required libraries and frameworks, I would recommend to use <a href="https://doc.qt.io/qt-5/macos-deployment.html#macdeploy">macdeployqt</a>. Actually, I would not recommend it, as it seem to bundle some redundant things as well, for example <a href="https://doc.qt.io/qt-5/qtvirtualkeyboard-index.html">Virtual Keyboard</a>, which I don&rsquo;t think is used in RetroShare. But still - it does the job, so it&rsquo;s easier to copy all the dependencies with <code>macdeployqt</code> than to find and copy them manually. Though RetroShare plugins do need to be copied manually.</p>
 <p>Conveniently enough, <code>macdeployqt</code> can also make a DMG. So here&rsquo;s the entire chain of commands for deployment:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>retroshare<span style="color:#f92672">/</span>src<span style="color:#f92672">/</span>build
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>retroshare<span style="color:#f92672">/</span>src<span style="color:#f92672">/</span>build
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ cp \
 </span></span><span style="display:flex;"><span><span style="color:#f92672">./</span>plugins<span style="color:#f92672">/</span><span style="color:#a6e22e">FeedReader</span><span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>libFeedReader<span style="color:#f92672">.</span>dylib \

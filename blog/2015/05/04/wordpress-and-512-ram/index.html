@@ -95,16 +95,16 @@
 <h1 id="проблема">Проблема</h1>
 <p>Началось с того, что вдруг вырубился <strong>MySQL</strong> и отказался стартовать обратно обратно. Хотя конфиг я не изменял и вообще ничего не трогал, просто запустил сайт для общего доступа (до этого заходил на него только я один). Дальше буду приводить все свои действия по решению.</p>
 <p>Запускал я его такой командой:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo /etc/init.d/mysql restart</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo /etc/init.d/mysql restart</span></span></code></pre></div>
 <p>На что он мне выдавал:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Can<span style="color:#e6db74">&#39;t connect to local MySQL server through socket &#39;</span>/var/run/mysqld/mysqld.sock<span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#f92672">(</span>111<span style="color:#f92672">)</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Can<span style="color:#e6db74">&#39;t connect to local MySQL server through socket &#39;</span>/var/run/mysqld/mysqld.sock<span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#f92672">(</span>111<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>Так как конфиги я не трогал, то все рецепты по их редактированию я пропускал. Если у вас ситуация другая, то посмотрите <a href="http://softodom.com/516/mysql-cant-connect-through-socket-reshenie-problemy.html">тут ещё</a>. Через некоторое время после чтения этой статьи и форумов выяснилось, что проблема&hellip; в нехватке оперативной памяти либо места на диске. Так как места на диске завались, то остаётся оперативка.</p>
 <h1 id="мониторинг-потребления-памяти">Мониторинг потребления памяти</h1>
 <p>Информацию лучше браит непосредственно на самом сервере. Потому для мониторинга потребления оперативки на сервере, а также для получения статуса MySQL (ещё жив или уже слёг) я запилил себе <a href="/blog/2015/05/12/telegram-server-status/">отправку состояния сервера через Telegram</a>.</p>
 <p>Команда проверки использования памяти:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>free -m</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>free -m</span></span></code></pre></div>
 <p>Результат (в мегабайтах) выдаётся примерно такой:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>             total       used       free     shared    buffers     cached
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>             total       used       free     shared    buffers     cached
 </span></span><span style="display:flex;"><span>Mem:           <span style="color:#ae81ff">994</span>        <span style="color:#ae81ff">596</span>        <span style="color:#ae81ff">397</span>         <span style="color:#ae81ff">64</span>         <span style="color:#ae81ff">29</span>        <span style="color:#ae81ff">261</span>
 </span></span><span style="display:flex;"><span>-/+ buffers/cache:        <span style="color:#ae81ff">305</span>        <span style="color:#ae81ff">688</span></span></span></code></pre></div>
 <p>Вот у меня картина была такая, что из 512 метров свободно два, а то и вообще один.</p>
@@ -112,14 +112,14 @@
 <p>Вроде стало получше, но от перегрузок всё равно не спасало. Также при помощи команды <code>top</code> выяснилось, что память жрёт не только <strong>MySQL</strong>, но и <strong>Apache</strong>, только он-то не падает, а вот база - да.</p>
 <h1 id="использование-swap">Использование swap</h1>
 <p>Далее я создал <strong>swap</strong> по исправленной инструкции <a href="http://www.webtrafficexchange.com/solved-mysql-crash-fatal-error-cannot-allocate-memory-buffer-pool">отсюда</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>dd <span style="color:#66d9ef">if</span><span style="color:#f92672">=</span>/dev/zero of<span style="color:#f92672">=</span>/swap.dat bs<span style="color:#f92672">=</span><span style="color:#ae81ff">1024</span> count<span style="color:#f92672">=</span>512k
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>dd <span style="color:#66d9ef">if</span><span style="color:#f92672">=</span>/dev/zero of<span style="color:#f92672">=</span>/swap.dat bs<span style="color:#f92672">=</span><span style="color:#ae81ff">1024</span> count<span style="color:#f92672">=</span>512k
 </span></span><span style="display:flex;"><span>mkswap /swap.dat
 </span></span><span style="display:flex;"><span>swapon /swap.dat</span></span></code></pre></div>
 <p>После первой команды он немного подумает, так как будет создаваться swap-файл на 512 метров.</p>
 <p>И добавил в файл <code>/etc/fstab</code> строку:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>/swap.dat      none    swap    sw      <span style="color:#ae81ff">0</span>       <span style="color:#ae81ff">0</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>/swap.dat      none    swap    sw      <span style="color:#ae81ff">0</span>       <span style="color:#ae81ff">0</span></span></span></code></pre></div>
 <p>Не могу сказать, насколько это вообще хоть на что-то повлияло. Потому через некоторое время (после установки <strong>nginx</strong>) я его выключил:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>swapoff -a
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>swapoff -a
 </span></span><span style="display:flex;"><span>rm /swap.dat</span></span></code></pre></div>
 <p>И удалил строку из <code>/etc/fstab</code>.</p>
 <h1 id="плагины-wordpress">Плагины Wordpress</h1>
@@ -158,7 +158,7 @@
 <p>Итак, сначала надо поставить плагин <a href="https://wordpress.org/plugins/permalink-fix-disable-canonical-redirects-pack/">Permalink Fix &amp; Disable Canonical Redirects Pack</a>, который исправляет что-то там с перенаправлениями в <strong>Permalinks</strong>.</p>
 <h2 id="настройки-apache">Настройки Apache</h2>
 <p>Сначала <code>/etc/apache2/apache2.conf</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-apache" data-lang="apache"><span style="display:flex;"><span>ServerRoot <span style="color:#e6db74">&#34;/etc/apache2&#34;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-apache" data-lang="apache"><span style="display:flex;"><span>ServerRoot <span style="color:#e6db74">&#34;/etc/apache2&#34;</span>
 </span></span><span style="display:flex;"><span>Mutex file:${APACHE_LOCK_DIR} default
 </span></span><span style="display:flex;"><span>PidFile ${APACHE_PID_FILE}
 </span></span><span style="display:flex;"><span>Timeout <span style="color:#ae81ff">300</span>
@@ -247,7 +247,7 @@
 </span></span><span style="display:flex;"><span>    MaxRequestsPerChild   <span style="color:#ae81ff">1000</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;/IfModule&gt;</span></span></span></code></pre></div>
 <p>Теперь <code>/etc/apache2/ports.conf</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-apache" data-lang="apache"><span style="display:flex;"><span>Listen <span style="color:#ae81ff">127.0.0.1</span>:8080
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-apache" data-lang="apache"><span style="display:flex;"><span>Listen <span style="color:#ae81ff">127.0.0.1</span>:8080
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">&lt;IfModule</span> <span style="color:#e6db74">ssl_module</span><span style="color:#f92672">&gt;</span>
 </span></span><span style="display:flex;"><span>  Listen <span style="color:#ae81ff">443</span>
@@ -259,13 +259,13 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># vim: syntax=apache ts=4 sw=4 sts=4 sr noet</span></span></span></code></pre></div>
 <p>Перезапускаем сервер:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>service apache2 restart</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>service apache2 restart</span></span></code></pre></div>
 <p>Теперь он работает на порту 8080, и сайт ваш стал недоступен из интернета. Даже если вы попробуете открыть его как <code>example.com:8080</code>.</p>
 <h2 id="настройки-nginx">Настройки nginx</h2>
 <p>Установка:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install nginx</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install nginx</span></span></code></pre></div>
 <p>Пишем конфиг для сайта - просто файл без расширения - <code>/etc/nginx/sites-enabled/mysite</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span>;
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">server_name</span> <span style="color:#e6db74">example.com</span>;
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">root</span> <span style="color:#e6db74">/var/www</span>;
@@ -301,7 +301,7 @@
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Теперь конфиг всего сервера <code>/etc/nginx/nginx.conf</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">user</span> <span style="color:#e6db74">www-data</span>;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">user</span> <span style="color:#e6db74">www-data</span>;
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">worker_processes</span> <span style="color:#ae81ff">1</span>;
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">pid</span> <span style="color:#e6db74">/run/nginx.pid</span>;
 </span></span><span style="display:flex;"><span>
@@ -341,11 +341,11 @@
 </span></span><span style="display:flex;"><span>	<span style="color:#f92672">include</span> <span style="color:#e6db74">/etc/nginx/sites-enabled/*</span>;
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Запуск сервера и перезагрузка настроек:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>service nginx start
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>service nginx start
 </span></span><span style="display:flex;"><span>nginx -s reload</span></span></code></pre></div>
 <p>Всё, <strong>nginx</strong> работает и раздаёт сайт.</p>
 <p>Проверить текущий веб-сервер можно командой:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>curl -s -I example.com|awk <span style="color:#e6db74">&#39;$1~/Server:/ {print $2}&#39;</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>curl -s -I example.com|awk <span style="color:#e6db74">&#39;$1~/Server:/ {print $2}&#39;</span></span></span></code></pre></div>
 <p>В результате ваще этого всего - не то, чтобы я заметил драматическое снижение потребления оперативки, но падать от нехватки оной база перестала. Я уменьшил дроплет обратно с 1 ГБ до 512 МБ - всё огонь. Конечно, если одновременно подключится несколько десятков пользователей, то в какой-то момент некоторым начнёт выдаваться <strong>502 Bad Gateway</strong>, но база не падает, и как только нагрузка снизится, сайт будет отдаваться нормально.</p>
 <p>Короче, можно сказать, что для выживания <strong>WordPress</strong> на 512 МБ оперативной памяти необходим <strong>nginx</strong> и корректные настройки для него, <strong>Apache</strong> и <strong>MySQL</strong>. По желанию также можно попробовать различные припарки вроде <strong>swap</strong>-файла и плагина <strong>WP Super Cache</strong>.</p>
       </div>

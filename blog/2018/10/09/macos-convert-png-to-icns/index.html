@@ -89,10 +89,10 @@ It is actually not so hard, but there are some tricky moments. I’ll cover thos
 <h1 id="how-to-convert-png-to-icns">How to convert PNG to ICNS</h1>
 <p>There is an out-of-the-box Mac OS tool for such conversion - <a href="http://www.manpagez.com/man/1/iconutil/">iconutil</a> (<em>documentation for which is nowhere to find at <a href="https://developer.apple.com/library/archive/documentation/Darwin/Reference/ManPages/man1/iconutil.1.html">Apple&rsquo;s website</a>, so this brief <code>man</code> page is all we have</em>).</p>
 <p>However, you cannot just take a random PNG and feed it to <code>iconutil</code>. I mean, you can, but it will give you the following error:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ iconutil -c icns some.png
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ iconutil -c icns some.png
 </span></span><span style="display:flex;"><span>some.png:Iconset not found.</span></span></code></pre></div>
 <p>Because <code>iconutil</code> takes only specially named folders. Just how am I supposed to know about that? And it shows similar short and useless error messages for other things it doesn&rsquo;t like. For example, here&rsquo;s an output for the situation when files inside iconset folder are not named &ldquo;properly&rdquo; or have &ldquo;wrong&rdquo; dimensions:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ iconutil -c icns some.iconset
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ iconutil -c icns some.iconset
 </span></span><span style="display:flex;"><span>some.iconset:Failed to generate ICNS.</span></span></code></pre></div>
 <p>Go figure.</p>
 <p>After a set of trials and browsing the internet I found out (<em>hopefully</em>) all the requirements:</p>
@@ -101,9 +101,9 @@ It is actually not so hard, but there are some tricky moments. I’ll cover thos
 <li>Pictures from this set should be named in a <strong>certain way</strong> and have <strong>specific dimensions</strong>.</li>
 </ol>
 <p>Correct dimensions can be found in <a href="https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon#app-icon-sizes">Apple Guidelines</a>. So it&rsquo;s 5 different dimensions, but actually 10 &ldquo;physical&rdquo; files as each dimension is represented twice (<em>you&rsquo;ll see why</em>). And these files have to be named according to the following format:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>icon_<span style="color:#f92672">{</span>width<span style="color:#f92672">}</span>x<span style="color:#f92672">{</span>height<span style="color:#f92672">}[</span>@<span style="color:#f92672">{</span>scale<span style="color:#f92672">}</span>x<span style="color:#f92672">]</span>.png</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>icon_<span style="color:#f92672">{</span>width<span style="color:#f92672">}</span>x<span style="color:#f92672">{</span>height<span style="color:#f92672">}[</span>@<span style="color:#f92672">{</span>scale<span style="color:#f92672">}</span>x<span style="color:#f92672">]</span>.png</span></span></code></pre></div>
 <p>So here&rsquo;s the full list of proper filenames:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ tree some.iconset/
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ tree some.iconset/
 </span></span><span style="display:flex;"><span>some.iconset/
 </span></span><span style="display:flex;"><span>├── icon_128x128.png
 </span></span><span style="display:flex;"><span>├── icon_128x128@2x.png
@@ -119,9 +119,9 @@ It is actually not so hard, but there are some tricky moments. I’ll cover thos
 </span></span><span style="display:flex;"><span><span style="color:#ae81ff">0</span> directories, <span style="color:#ae81ff">10</span> files</span></span></code></pre></div>
 <h2 id="script-to-automate-the-process">Script to automate the process</h2>
 <p>But that&rsquo;s rather boring to create all those files manually in some graphics editor, right? So let&rsquo;s use <a href="https://ss64.com/osx/sips.html">sips</a> utility (<em>although, I recommend using ImageMagick, as it gives <a href="/blog/2019/12/12/imagemagick-vs-sips-resize/">better quality</a> results</em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sips -z <span style="color:#ae81ff">16</span> <span style="color:#ae81ff">16</span> some.png --out icon_16x16.png</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sips -z <span style="color:#ae81ff">16</span> <span style="color:#ae81ff">16</span> some.png --out icon_16x16.png</span></span></code></pre></div>
 <p>Better, but still - we have to run it 10 times. So let&rsquo;s write a Python script for that:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#75715e"># a class to store icon parameters: its size and scale factor</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#75715e"># a class to store icon parameters: its size and scale factor</span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IconParameters</span>():
 </span></span><span style="display:flex;"><span>    width <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
 </span></span><span style="display:flex;"><span>    scale <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
@@ -171,7 +171,7 @@ It is actually not so hard, but there are some tricky moments. I’ll cover thos
     <img class="image-post" loading="lazy" src="/blog/2018/10/09/macos-convert-png-to-icns/images/apple.png" alt="Apple logo">
 
 <p>Pass picture path to the script like that:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>python generate-iconset.py ~/Desktop/apple.png</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>python generate-iconset.py ~/Desktop/apple.png</span></span></code></pre></div>
 <p>The script will:</p>
 <ol>
 <li>Create a folder <code>~/Desktop/apple.iconset</code>;</li>
@@ -187,7 +187,7 @@ It is actually not so hard, but there are some tricky moments. I’ll cover thos
 <h1 id="setting-icon-for-a-qt-based-application-on-mac-os">Setting icon for a Qt-based application on Mac OS</h1>
 <p>And now the bonus part - how to use <code>.icns</code> as an icon for a Qt-based application.</p>
 <p>As I said, it&rsquo;s deadly simple: put <code>apple.icns</code> into your Qt project folder and add the following line into <code>your-project.pro</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ICON <span style="color:#f92672">=</span> apple.icns</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ICON <span style="color:#f92672">=</span> apple.icns</span></span></code></pre></div>
 <p>And that&rsquo;s it:</p>
 
 

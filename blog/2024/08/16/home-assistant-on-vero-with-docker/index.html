@@ -222,11 +222,11 @@
 <p>Out of all the <a href="https://home-assistant.io/installation/#advanced-installation-methods">possible ways</a> of installing Home Assistant I chose <a href="https://docker.com">Docker</a>. Mainly because I have never used Docker for anything (<em>aside from doing some tutorials</em>), so this seemed like a good opportunity to finally try it out for something actually useful. Secondly, from the little I knew about Docker, one of its distinguishing features is the ability to run stuff in an isolated environment, which was just the thing I needed, as I didn&rsquo;t want to disrupt the default Vero/OSMC environment too much, especially given that some of the Home Assistant components are run with godawful things like <a href="https://nodejs.org/">Node.js</a>.</p>
 <p>One thing you should be aware of is that going with Docker way of installing Home Assistant you will lose certain features such as <a href="https://home-assistant.io/addons">addons</a> out of the box. That would be a major disadvantage or even a show-stopper, but actually it&rsquo;s no worries, because those addons turned out to be&hellip; also Docker containers, which in other types of Home Assistant installation are just managed by the Home Assistant itself, so you absolutely can do the same on your own (<em>and probably better too</em>).</p>
 <p>First you will need to install Docker, as it isn&rsquo;t preinstalled in OSMC by default. Following the trend of running random Bash scripts from the internet, Docker installation is supposed to be carried out that way too:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkdir ~/downloads <span style="color:#f92672">&amp;&amp;</span> cd $_
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkdir ~/downloads <span style="color:#f92672">&amp;&amp;</span> cd $_
 </span></span><span style="display:flex;"><span>$ curl -fsSL https://get.docker.com -o get-docker.sh
 </span></span><span style="display:flex;"><span>$ less ./get-docker.sh
 </span></span></code></pre></div><p>I scrolled the script contents and didn&rsquo;t see anything concerning enough, so I gave up and just ran it, but I certainly condemn this retarded practice. The &ldquo;installation&rdquo;:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo sh ./get-docker.sh --dry-run
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo sh ./get-docker.sh --dry-run
 </span></span><span style="display:flex;"><span>$ sudo sh ./get-docker.sh
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo systemctl enable docker.service
@@ -234,21 +234,21 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo docker run hello-world
 </span></span></code></pre></div><p>After the installation it is probably a good idea to limit Docker logs size right away. The following should limit logs to the maximum of 5 files, each being 10 MB of size:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /etc/docker/daemon.json
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /etc/docker/daemon.json
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;log-driver&#34;</span>: <span style="color:#e6db74">&#34;json-file&#34;</span>,
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;log-opts&#34;</span>: {
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;max-size&#34;</span>: <span style="color:#e6db74">&#34;10m&#34;</span>,
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;max-file&#34;</span>: <span style="color:#e6db74">&#34;5&#34;</span>
 </span></span><span style="display:flex;"><span>  }
 </span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ dockerd --validate --config-file<span style="color:#f92672">=</span>/etc/docker/daemon.json
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ dockerd --validate --config-file<span style="color:#f92672">=</span>/etc/docker/daemon.json
 </span></span><span style="display:flex;"><span>configuration OK
 </span></span></code></pre></div><p>Also, you might want to run Docker from a <a href="https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user">non-root user</a>, but for simplicity I decided to go with root, at least in the beginning, and I will probably make it non-root later.</p>
 <h2 id="home-assistant">Home Assistant</h2>
 <p>The installation or rather deployment procedure for anything Docker-based is to create a <a href="https://docs.docker.com/guides/docker-concepts/the-basics/what-is-a-container/">container</a> from a specified <a href="https://docs.docker.com/guides/docker-concepts/the-basics/what-is-an-image/">image</a>. If you don&rsquo;t have the image available locally already, it will get fetched from <a href="https://hub.docker.com">Docker Hub</a>. Which begs the question whether one can get images and host them somewhere locally and independently from Docker Hub, and fortunately that seems to be <a href="https://docker.com/blog/how-to-use-your-own-registry-2/">supported</a> too.</p>
 <p>The process of creating/running a Home Assistant container is the following:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --name homeassistant <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
@@ -258,7 +258,7 @@
 <p>In <a href="https://home-assistant.io/installation/linux#platform-installation">their manual</a> they also set <code>--privileged</code> and <code>--network=host</code>, but there is no need for that, as well as there is probably no need for <code>-v /run/dbus:/run/dbus:ro</code> (<em>if you don&rsquo;t intend to use Bluetooth</em>). The Home Assistant team probably added those options to reduce the number of users complaining that &ldquo;<em>nothing works</em>&rdquo;, but in general these parameters certainly aren&rsquo;t great for something that is supposed to be running isolated from the main/host environment.</p>
 <h3 id="ip-address-of-the-running-container">IP address of the running container</h3>
 <p>In order to interact with Home Assistant, you will need to know the local IP address of its container. One of the ways to get it is to inspect the container:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker inspect -f <span style="color:#e6db74">&#39;{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}&#39;</span> homeassistant
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker inspect -f <span style="color:#e6db74">&#39;{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}&#39;</span> homeassistant
 </span></span><span style="display:flex;"><span>172.17.0.2
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ ping 172.17.0.2
@@ -267,7 +267,7 @@
 </span></span><span style="display:flex;"><span><span style="color:#ae81ff">64</span> bytes from 172.17.0.2: seq<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> ttl<span style="color:#f92672">=</span><span style="color:#ae81ff">64</span> time<span style="color:#f92672">=</span>0.263 ms
 </span></span><span style="display:flex;"><span>^C
 </span></span></code></pre></div><p>You can also try to query it with cURL by sending a <code>HEAD</code> request to the default Home Assistant port <code>8123</code>, and it should reply that <code>HEAD</code> method is not allowed (<em>if you haven&rsquo;t performed the initial configuration/onboarding already</em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -I 172.17.0.2:8123
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -I 172.17.0.2:8123
 </span></span><span style="display:flex;"><span>HTTP/1.1 <span style="color:#ae81ff">405</span> Method Not Allowed
 </span></span><span style="display:flex;"><span>Content-Type: text/plain; charset<span style="color:#f92672">=</span>utf-8
 </span></span><span style="display:flex;"><span>Allow: GET
@@ -278,7 +278,7 @@
 </span></span><span style="display:flex;"><span>Content-Length: <span style="color:#ae81ff">23</span>
 </span></span><span style="display:flex;"><span>Date: Mon, <span style="color:#ae81ff">22</span> Jul <span style="color:#ae81ff">2024</span> 19:42:29 GMT
 </span></span></code></pre></div><p>The <code>GET</code> request should return something like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -v 172.17.0.2:8123
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -v 172.17.0.2:8123
 </span></span><span style="display:flex;"><span>*   Trying 172.17.0.2:8123...
 </span></span><span style="display:flex;"><span>* Connected to 172.17.0.2 <span style="color:#f92672">(</span>172.17.0.2<span style="color:#f92672">)</span> port <span style="color:#ae81ff">8123</span> <span style="color:#f92672">(</span><span style="color:#75715e">#0)</span>
 </span></span><span style="display:flex;"><span>&gt; GET / HTTP/1.1
@@ -300,7 +300,7 @@
 </span></span><span style="display:flex;"><span>* Connection <span style="color:#75715e">#0 to host 172.17.0.2 left intact</span>
 </span></span></code></pre></div><p>So yes, this IP address is definitely from the running Home Assistant container.</p>
 <p>However, on the next restart/reboot the container might get a different IP address, but we need it to persist. Better yet, it would be great if there was some &ldquo;internal&rdquo; DNS - to be able to address containers by their names instead of IP addresses, especially when it comes to other containers &ldquo;talking&rdquo; to each other within their network. Sadly, by default the name resolution is disabled, and you can test it right now by spawning a new container:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ sudo docker run -it --rm alpine /bin/ash
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ sudo docker run -it --rm alpine /bin/ash
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>/ # ip route get 1 | awk &#39;{print $NF;exit}&#39;
 </span></span><span style="display:flex;"><span>172.17.0.3
@@ -322,14 +322,14 @@
 </span></span><span style="display:flex;"><span>/ # exit
 </span></span></code></pre></div><p>As you can see, this new temporary (<em>because of <code>--rm</code></em>) container got an IP address in the same network (<em><code>172.17.0.3</code></em>) and it could reach the <code>homeassistant</code> container by IP address, but could not reach it by hostname.</p>
 <p>Fortunately, the name resolution can be enabled after all, it just isn&rsquo;t enabled in the default network. Check what networks you already have:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker network list
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker network list
 </span></span><span style="display:flex;"><span>NETWORK ID     NAME      DRIVER    SCOPE
 </span></span><span style="display:flex;"><span>f7dc4c461ccb   bridge    bridge    local
 </span></span><span style="display:flex;"><span>e6e7d7a437b4   host      host      local
 </span></span><span style="display:flex;"><span>ecc68fac9a4b   none      null      local
 </span></span></code></pre></div><p>The one with <code>bridge</code> driver is the default network (<em><code>172.17.x.x</code></em>) where new containers are created, and that is where <code>homeassistant</code> container is running now too.</p>
 <p>But if you <a href="https://docs.docker.com/network/network-tutorial-standalone/#use-user-defined-bridge-networks">create a new network</a> with the same <code>bridge</code> driver:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker network create --driver bridge hub
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker network create --driver bridge hub
 </span></span><span style="display:flex;"><span>5dfbe1989378e089d5548ae21e4b48b055108b570be7ac717a0d9ad034b79817
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo docker network list
@@ -339,7 +339,7 @@
 </span></span><span style="display:flex;"><span>5dfbe1989378   hub       bridge    local
 </span></span><span style="display:flex;"><span>ecc68fac9a4b   none      null      local
 </span></span></code></pre></div><p>then it will be a &ldquo;<em>user-created network</em>&rdquo;, and these have &ldquo;<em>automatic service discovery</em>&rdquo; - that very same DNS that we need. Now you can re-create your container in that new network (<em><code>--network hub</code></em>) or you can just move it from the default network (<em><code>172.17.x.x</code></em>) to this new one (<em><code>172.18.x.x</code></em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker network inspect bridge
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker network inspect bridge
 </span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">{</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;Name&#34;</span>: <span style="color:#e6db74">&#34;bridge&#34;</span>,
@@ -449,7 +449,7 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">]</span>
 </span></span></code></pre></div><p>If you now create a new temporary container in the <code>hub</code> network, then you should be able to reach the <code>homeassistant</code> container from it by both IP and hostname:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ sudo docker run -it --rm --network hub alpine /bin/ash
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ sudo docker run -it --rm --network hub alpine /bin/ash
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>/ # ip route get 1 | awk &#39;{print $NF;exit}&#39;
 </span></span><span style="display:flex;"><span>172.18.0.3
@@ -475,7 +475,7 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>/ # exit
 </span></span></code></pre></div><p>While that works, it doesn&rsquo;t mean that you will also be able to reach that container by hostname from your host environment too, because you won&rsquo;t:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -I http://homeassistant:8123 -v
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -I http://homeassistant:8123 -v
 </span></span><span style="display:flex;"><span>* Could not resolve host: homeassistant
 </span></span><span style="display:flex;"><span>* Closing connection <span style="color:#ae81ff">0</span>
 </span></span><span style="display:flex;"><span>curl: <span style="color:#f92672">(</span>6<span style="color:#f92672">)</span> Could not resolve host: homeassistant
@@ -483,7 +483,7 @@
 <h2 id="nginx">NGINX</h2>
 <p>Alright, Home Assistant is running and other containers can reach it. But you as a user are not able to reach it yet, because its port <code>8123</code> isn&rsquo;t exposed from the host.</p>
 <p>There are several ways of exposing a container port from the host, and I prefer the one with NGINX being a <a href="https://en.wikipedia.org/wiki/Reverse_proxy">reverse proxy</a>. So let&rsquo;s <a href="http://nginx.org/en/linux_packages.html#Debian">install NGINX</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt install curl gnupg2 ca-certificates lsb-release debian-archive-keyring
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt install curl gnupg2 ca-certificates lsb-release debian-archive-keyring
 </span></span><span style="display:flex;"><span>$ curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg &gt;/dev/null
 </span></span><span style="display:flex;"><span>$ gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg
 </span></span><span style="display:flex;"><span>
@@ -496,8 +496,8 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo chown -R www-data:www-data /var/www
 </span></span></code></pre></div><p>The site config for Home Assistant would be the following:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /etc/nginx/sites-available/homeassistant
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#75715e"># this is supposed to be used for WebSocket connections,
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /etc/nginx/sites-available/homeassistant
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#75715e"># this is supposed to be used for WebSocket connections,
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"># although it might require a separate `location` block
 </span></span></span><span style="display:flex;"><span><span style="color:#66d9ef">map</span> $http_upgrade $connection_upgrade {
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">default</span> <span style="color:#e6db74">upgrade</span>;
@@ -518,7 +518,7 @@
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_cache_bypass</span> $http_upgrade;
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo ln -s /etc/nginx/sites-<span style="color:#f92672">{</span>available,enabled<span style="color:#f92672">}</span>/homeassistant
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo ln -s /etc/nginx/sites-<span style="color:#f92672">{</span>available,enabled<span style="color:#f92672">}</span>/homeassistant
 </span></span><span style="display:flex;"><span>$ sudo systemctl restart nginx.service
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ ip route get <span style="color:#ae81ff">1</span> | sed -n <span style="color:#e6db74">&#39;s/^.*src \([0-9.]*\) .*$/\1/p&#39;</span>
@@ -526,7 +526,7 @@
 </span></span></code></pre></div><p>Now you should be able to open <a href="http://192.168.1.35:8123/">http://192.168.1.35:8123/</a> (<em>or whichever IP address you have for your device/server</em>) from a web-browser on your computer/tablet/phone (<em>as long as they are in the same network</em>). Obviously, this IP address needs to be statically assigned to the device/server (<em>Vero V in my case</em>) in your home network DHCP server (<em>a router, usually</em>).</p>
 <h3 id="what-if-container-ip-address-will-change">What if container IP address will change</h3>
 <p>But what to do if container IP will change on the next restart/reboot? Since the container&rsquo;s hostname isn&rsquo;t resolving in the host environment (<em>as we know, it resolves only within a user-defined Docker network</em>), we&rsquo;ll have to rely in the &ldquo;bare&rdquo; IP address. But we at least can make it &ldquo;static&rdquo;, so container doesn&rsquo;t get a different address on the next restart/reboot:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker network disconnect hub homeassistant
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker network disconnect hub homeassistant
 </span></span><span style="display:flex;"><span>$ sudo docker network connect --ip 172.18.0.100 hub homeassistant
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo docker inspect -f <span style="color:#e6db74">&#39;{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}&#39;</span> homeassistant
@@ -535,10 +535,10 @@
 <p>Don&rsquo;t forget to edit NGINX config and change the IP address from <code>172.18.0.2</code> to <code>172.18.0.100</code>.</p>
 <h4 id="user-configured-subnet">User-configured subnet</h4>
 <p>Some time later on a different host I suddenly got this error trying to run a container with specified <code>--ip</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>docker: Error response from daemon: invalid config for network hub: invalid endpoint settings:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>docker: Error response from daemon: invalid config for network hub: invalid endpoint settings:
 </span></span><span style="display:flex;"><span>user specified IP address is supported only when connecting to networks with user configured subnets
 </span></span></code></pre></div><p>Not sure what this is about, maybe something changed in later Docker versions, but apparently now one needs to explicitly specify a subnet for the network, so I had to recreate my network:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker network rm hub
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker network rm hub
 </span></span><span style="display:flex;"><span>$ sudo docker network create --driver bridge --subnet<span style="color:#f92672">=</span>172.18.0.0/16 hub
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo docker network inspect hub
@@ -562,7 +562,7 @@
 <h3 id="https">HTTPS</h3>
 <p>I don&rsquo;t plan to expose my Home Assistant instance to the internet, at least not without a VPN, so I intend to use it from the local home network only, but even there it is still worth to encrypt the traffic, so credentials aren&rsquo;t sent in plain text.</p>
 <p>A self-signed certificate should be enough for this purpose:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo mkdir /opt/certificates
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo mkdir /opt/certificates
 </span></span><span style="display:flex;"><span>$ mkdir /tmp/crts <span style="color:#f92672">&amp;&amp;</span> cd $_
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ openssl req -x509 -newkey rsa:2048 -nodes -sha256 <span style="color:#ae81ff">\
@@ -578,14 +578,14 @@
 </span></span><span style="display:flex;"><span>$ sudo mv ./*.pem /opt/certificates/
 </span></span><span style="display:flex;"><span>$ sudo chown -R www-data:www-data /opt/certificates
 </span></span></code></pre></div><p>Again, the <code>192.168.1.35</code> is the (<em>static</em>) IP address of your hub/device, which in my case is Vero V. The <code>subjectAltName=IP:192.168.1.35,DNS:homeassistant.local</code> might be just the IP, if you don&rsquo;t have a DNS record for it in your home network. I actually don&rsquo;t have it, and as a matter of fact, you can probably just drop the entire line altogether, so the command becomes:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ openssl req -x509 -newkey rsa:2048 -nodes -sha256 <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ openssl req -x509 -newkey rsa:2048 -nodes -sha256 <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -subj <span style="color:#e6db74">&#39;/CN=Home Assistant&#39;</span> -extensions EXT -config &lt;<span style="color:#f92672">(</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    printf <span style="color:#e6db74">&#34;[dn]\nCN=Home Assistant\n[req]\ndistinguished_name=dn\n[EXT]\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth&#34;</span><span style="color:#f92672">)</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -days <span style="color:#ae81ff">1111</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -out fullchain.pem -keyout key.pem
 </span></span></code></pre></div><p>Then to enable HTTPS in NGINX site config:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /etc/nginx/sites-available/homeassistant
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /etc/nginx/sites-available/homeassistant
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">8123</span> <span style="color:#e6db74">ssl</span>;
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">ssl_certificate</span> <span style="color:#e6db74">/opt/certificates/fullchain.pem</span>;
@@ -593,9 +593,9 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...
 </span></span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo systemctl restart nginx.service
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo systemctl restart nginx.service
 </span></span></code></pre></div><p>Check the certificate expiration date from some other machine:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ echo | openssl s_client -connect 192.168.1.35:8123 2&gt;&amp;<span style="color:#ae81ff">1</span> | openssl x509 -noout -dates
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ echo | openssl s_client -connect 192.168.1.35:8123 2&gt;&amp;<span style="color:#ae81ff">1</span> | openssl x509 -noout -dates
 </span></span><span style="display:flex;"><span>notBefore<span style="color:#f92672">=</span>Jul <span style="color:#ae81ff">30</span> 09:40:32 <span style="color:#ae81ff">2024</span> GMT
 </span></span><span style="display:flex;"><span>notAfter<span style="color:#f92672">=</span>Aug <span style="color:#ae81ff">15</span> 09:40:32 <span style="color:#ae81ff">2027</span> GMT
 </span></span></code></pre></div><p>Open <a href="https://YOUR-VERO-IP:8123/">https://YOUR-VERO-IP:8123/</a> (<em>note that it&rsquo;s <code>https://</code> now, as <code>http://</code> won&rsquo;t work anymore</em>). Since it&rsquo;s a self-signed certificate, web-browsers will give you warnings, and mobile applications will do so too:</p>
@@ -614,7 +614,7 @@
 
 </div>
 <p>printing this useless error message to the console:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">Firefox</span> can&#39;t establish a connection to the server at wss<span style="color:#66d9ef">:</span><span style="color:#75715e">//192.168.1.35:8123/api/websocket. core.7weG3TqZ_G4.js:1:65105
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">Firefox</span> can&#39;t establish a connection to the server at wss<span style="color:#66d9ef">:</span><span style="color:#75715e">//192.168.1.35:8123/api/websocket. core.7weG3TqZ_G4.js:1:65105
 </span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">Uncaught</span> <span style="color:#f92672">(</span>in promise<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span> 
 </span></span></code></pre></div><p>Mobile applications will fail to connect to, but you&rsquo;ll get a more informative error message there:</p>
 <div class="vertical-image-centered-scaled">
@@ -636,7 +636,7 @@
 <h2 id="eclipse-mosquitto">Eclipse Mosquitto</h2>
 <p>Zigbee coordinator manages Zigbee traffic from/to devices, but it also needs to be able to talk to Home Assistant and the other way around. For that type of communication it uses <a href="https://en.wikipedia.org/wiki/MQTT">MQTT</a> protocol, so we will need an MQTT broker.</p>
 <p>One such broker is <a href="https://mosquitto.org">Eclipse Mosquitto</a>. It can be installed as a Docker container too, and the image is <a href="https://hub.docker.com/_/eclipse-mosquitto/">here</a>. Setting up a container:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --name mosquitto <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -v /root/mosquitto/config:/mosquitto/config <span style="color:#ae81ff">\
@@ -645,12 +645,12 @@
 </span></span></span><span style="display:flex;"><span>    eclipse-mosquitto
 </span></span></code></pre></div><p>Again, the <code>-v</code> arguments here tell the container which host paths will be mapped to which container paths, so when Mosquitto binary inside container will need to read its &ldquo;local&rdquo; <code>/mosquitto/config/mosquitto.conf</code> file, it will actually read the <code>/root/mosquitto/config/mosquitto.conf</code> file in the host filesystem.</p>
 <p>Speaking about the config, it needs to be <a href="https://mosquitto.org/man/mosquitto-conf-5.html">created</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /root/mosquitto/config/mosquitto.conf
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#a6e22e">persistence true</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /root/mosquitto/config/mosquitto.conf
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#a6e22e">persistence true</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">persistence_location /mosquitto/data</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">log_dest file /mosquitto/log/mosquitto.log</span>
 </span></span></code></pre></div><p>Now start the container (<em>not sure why it hasn&rsquo;t started on <code>docker run</code>, but probably because of the missing config</em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker ps
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker ps
 </span></span><span style="display:flex;"><span>CONTAINER ID   IMAGE                                          COMMAND   CREATED        STATUS       PORTS     NAMES
 </span></span><span style="display:flex;"><span>7e9bc60ef0f8   ghcr.io/home-assistant/home-assistant:stable   <span style="color:#e6db74">&#34;/init&#34;</span>   <span style="color:#ae81ff">19</span> hours ago   Up <span style="color:#ae81ff">4</span> hours             homeassistant
 </span></span><span style="display:flex;"><span>
@@ -663,7 +663,7 @@
 </span></span><span style="display:flex;"><span>7e9bc60ef0f8   ghcr.io/home-assistant/home-assistant:stable   <span style="color:#e6db74">&#34;/init&#34;</span>                  <span style="color:#ae81ff">19</span> hours ago    Up <span style="color:#ae81ff">4</span> hours                homeassistant
 </span></span><span style="display:flex;"><span>osmc@vero:~$ mc
 </span></span></code></pre></div><p>Move it to the same network where <code>homeassistant</code> container is:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker inspect -f <span style="color:#e6db74">&#39;{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}&#39;</span> mosquitto
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker inspect -f <span style="color:#e6db74">&#39;{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}&#39;</span> mosquitto
 </span></span><span style="display:flex;"><span>172.17.0.2
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo docker network inspect hub
@@ -716,7 +716,7 @@
 </span></span><span style="display:flex;"><span>172.18.0.2
 </span></span></code></pre></div><p>&hellip;Or you could&rsquo;ve just provided <code>--network hub</code> to <code>docker run</code> on setting up the container.</p>
 <p>There is no need to assign a static IP address to it, because <code>homeassistant</code> container will be addressing it by <a href="#ip-address-of-the-running-container">hostname</a>. And actually, let&rsquo;s check that it is in fact reachable that way:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker exec -it homeassistant bash
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker exec -it homeassistant bash
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>7e9bc60ef0f8:/config# ping -c <span style="color:#ae81ff">2</span> 172.18.0.2
 </span></span><span style="display:flex;"><span>PING 172.18.0.2 <span style="color:#f92672">(</span>172.18.0.2<span style="color:#f92672">)</span>: <span style="color:#ae81ff">56</span> data bytes
@@ -734,12 +734,12 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>7e9bc60ef0f8:/config# exit
 </span></span></code></pre></div><p>So it is reachable, however the port <code>1883</code> (<em>default MQTT port</em>) isn&rsquo;t open (<em>as <a href="https://en.wikipedia.org/wiki/Netcat">netcat</a> returns non-zero exit code</em>). At first I didn&rsquo;t understand, why is that, because that port is listed here:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker container ls --format <span style="color:#e6db74">&#34;table {{.ID}}\t{{.Names}}\t{{.Ports}}&#34;</span> -a
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker container ls --format <span style="color:#e6db74">&#34;table {{.ID}}\t{{.Names}}\t{{.Ports}}&#34;</span> -a
 </span></span><span style="display:flex;"><span>CONTAINER ID   NAMES           PORTS
 </span></span><span style="display:flex;"><span>8941202da971   mosquitto       1883/tcp
 </span></span><span style="display:flex;"><span>7e9bc60ef0f8   homeassistant
 </span></span></code></pre></div><p>At the same time, checking for <code>8123</code> port on <code>homeassistant</code> from <code>mosquitto</code> container succeeds, even though this port is not listed in the table above:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ sudo docker exec -it mosquitto sh
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ sudo docker exec -it mosquitto sh
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>/ # nc homeassistant 8123 &lt; /dev/null
 </span></span><span style="display:flex;"><span>/ # echo $?
@@ -748,8 +748,8 @@
 </span></span><span style="display:flex;"><span>/ # exit
 </span></span></code></pre></div><p>I&rsquo;m guessing that the ports listed in the table above are just what is specified in the Docker image, which doesn&rsquo;t necessarily mean that they will be actually open.</p>
 <p>Anyway, by default Mosquitto doesn&rsquo;t seem to be listening on any ports, so you need to explicitly set them in the config:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /root/mosquitto/config/mosquitto.conf
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#a6e22e">persistence true</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /root/mosquitto/config/mosquitto.conf
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#a6e22e">persistence true</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">persistence_location /mosquitto/data</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">log_dest file /mosquitto/log/mosquitto.log</span>
 </span></span><span style="display:flex;"><span>
@@ -758,9 +758,9 @@
 </span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#a6e22e">listener 9001 0.0.0.0</span>
 </span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#a6e22e">protocol websockets</span>
 </span></span></code></pre></div><p>and restart the Mosquitto container:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker restart mosquitto
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker restart mosquitto
 </span></span></code></pre></div><p>Check the ports again:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ sudo docker exec -it homeassistant sh
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ sudo docker exec -it homeassistant sh
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>/config # nc mosquitto 1883 &lt; /dev/null
 </span></span><span style="display:flex;"><span>/config # echo $?
@@ -772,12 +772,12 @@
 </span></span><span style="display:flex;"><span>/config # exit
 </span></span></code></pre></div><p>Now netcat returns zero for both <code>1883</code> and <code>9001</code>, so the ports are open.</p>
 <p>If you had a question about why the <code>listener</code> is set to <code>0.0.0.0</code> in the config, as you probably thought that this will make the ports exposed from the host, then worry not, you just got confused like I did, and <code>0.0.0.0</code> here is this particular container within the <code>hub</code> network, so it is not the ports of the actual host. You can check for yourself what will happen if you set the <code>listener</code> to <code>127.0.0.1</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /root/mosquitto/config/mosquitto.conf
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /root/mosquitto/config/mosquitto.conf
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">listener 9001 127.0.0.1</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">protocol websockets</span>
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ sudo docker restart mosquitto
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ sudo docker restart mosquitto
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo docker exec -it homeassistant sh
 </span></span><span style="display:flex;"><span>
@@ -788,7 +788,7 @@
 </span></span><span style="display:flex;"><span>/config # exit
 </span></span></code></pre></div><p>As you can see, binding <code>listener</code> to <code>127.0.0.1</code> made that port <code>9001</code> to be open only on localhost of the container itself, so now that port is not available for other containers and it isn&rsquo;t available for the host either (<em>let alone being exposed from the host</em>). And when <code>listener</code> is bound to <code>0.0.0.0</code>, then this port becomes available for other containers (<em>in that Docker network</em>) and for the host too, but it still isn&rsquo;t exposed <em>from</em> the host (<em>which you can verify by running <code>ss -lntup</code></em>). Perfectly splendid, isn&rsquo;t it. By the way, don&rsquo;t forget to revert that <code>listener</code> back to <code>0.0.0.0</code>.</p>
 <p>Finally, Mosquitto instance should have authentication:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ sudo docker exec -it mosquitto sh
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ sudo docker exec -it mosquitto sh
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>/ # mosquitto_passwd -c /mosquitto/config/pswds SOME-USERNAME
 </span></span><span style="display:flex;"><span>Password:
@@ -797,14 +797,14 @@
 </span></span><span style="display:flex;"><span>/ # exit
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo nano /root/mosquitto/config/mosquitto.conf
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">listener 9001 0.0.0.0</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">protocol websockets</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#a6e22e">allow_anonymous false</span>
 </span></span><span style="display:flex; background-color:#3c3d38"><span><span style="color:#a6e22e">password_file /mosquitto/config/pswds</span>
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker restart mosquitto
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker restart mosquitto
 </span></span></code></pre></div><p>Now it is ready to be added to Home Assistant. Open <strong>Settings</strong> → <strong>Devices &amp; Services</strong> → <strong>Integrations</strong> and click on <strong>Add Integration</strong>. Search for <code>mqtt</code>:</p>
 <div class="vertical-image-centered-scaled">
 
@@ -828,11 +828,11 @@
 </div>
 <p>As you can see, since containers are reachable by their hostnames in our network, instead of specifying the <code>mosquitto</code>&rsquo;s container IP address we can just use its hostname.</p>
 <p>On successful configuration the Mosquitto logs (<em><code>/root/mosquitto/log/mosquitto.log</code></em>) should get something like:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>1721766257: New connection from 172.18.0.100:33859 on port 1883.
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>1721766257: New connection from 172.18.0.100:33859 on port 1883.
 </span></span><span style="display:flex;"><span>1721766257: New client connected from 172.18.0.100:33859 as SOME-ID-HERE <span style="color:#f92672">(</span>p2, c1, k60, u<span style="color:#e6db74">&#39;SOME-USERNAME&#39;</span><span style="color:#f92672">)</span>.
 </span></span><span style="display:flex;"><span>1721766347: Saving in-memory database to /mosquitto/data/mosquitto.db
 </span></span></code></pre></div><p>To <a href="https://home-assistant.io/integrations/mqtt/#testing-your-setup">test</a> that it actually works, go to MQTT settings in your Home Assistant and subscribe to everything by setting a special <code>#</code> topic. Then open <code>mosquitto</code> container shell and publish a message with <a href="https://mosquitto.org/man/mosquitto_pub-1.html">mosquitto_pub</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ sudo docker exec -it mosquitto sh
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>$ sudo docker exec -it mosquitto sh
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>/ # mosquitto_pub -h 127.0.0.1 -t homeassistant/switch/1/on -m <span style="color:#e6db74">&#34;Switch is ON&#34;</span>
 </span></span><span style="display:flex;"><span>Connection error: Connection Refused: not authorised.
@@ -848,9 +848,9 @@
 
 <h2 id="zigbee2mqtt">Zigbee2MQTT</h2>
 <p>Now when <a href="#eclipse-mosquitto">MQTT broker</a> is running, it&rsquo;s time to launch Zigbee2MQTT. Create a config:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo mkdir -p /root/zigbee2mqtt/<span style="color:#f92672">{</span>data,logs<span style="color:#f92672">}</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo mkdir -p /root/zigbee2mqtt/<span style="color:#f92672">{</span>data,logs<span style="color:#f92672">}</span>
 </span></span><span style="display:flex;"><span>$ sudo nano /root/zigbee2mqtt/data/configuration.yaml
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#75715e"># Home Assistant integration (MQTT discovery)</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#75715e"># Home Assistant integration (MQTT discovery)</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">homeassistant</span>: <span style="color:#66d9ef">true</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># https://zigbee2mqtt.io/guide/configuration/frontend.html</span>
@@ -893,7 +893,7 @@
 </span></span><span style="display:flex;"><span>    - <span style="color:#ae81ff">console</span>
 </span></span><span style="display:flex;"><span>    - <span style="color:#ae81ff">file</span>
 </span></span></code></pre></div><p>Configure and run a Docker container:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --name zigbee2mqtt <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --network hub <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
@@ -903,7 +903,7 @@
 </span></span></span><span style="display:flex;"><span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    koenkk/zigbee2mqtt
 </span></span></code></pre></div><p>If you specified incorrect <code>--device</code> path, or if the device (<em>Zigbee adapter/coordinator</em>) is not connected, then you&rsquo;ll see errors like these in the log:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker container logs zigbee2mqtt
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker container logs zigbee2mqtt
 </span></span><span style="display:flex;"><span>...
 </span></span><span style="display:flex;"><span>info:     z2m: Starting Zigbee2MQTT version 1.39.0 <span style="color:#f92672">(</span>commit <span style="color:#75715e">#0326926)</span>
 </span></span><span style="display:flex;"><span>info:     z2m: Starting zigbee-herdsman <span style="color:#f92672">(</span>0.50.1<span style="color:#f92672">)</span>
@@ -915,10 +915,10 @@
 </span></span><span style="display:flex;"><span>error:    z2m: Exiting...
 </span></span><span style="display:flex;"><span>error:    z2m: Error: Error: No such file or directory, cannot open /dev/ttyACM0
 </span></span></code></pre></div><p>If you are sure that you specified everything correctly and your device is connected, then check that you have <code>/dev/serial/</code> at all:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ls -lah /dev/serial
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ls -lah /dev/serial
 </span></span></code></pre></div><p>If you don&rsquo;t, then you <a href="https://reddit.com/r/debian/comments/1331wlr/devserialbyid_suddenly_missing/ji8ah9b/">might</a> need to edit <code>/usr/lib/udev/rules.d/60-serial.rules</code> and apply <a href="https://github.com/systemd/systemd/pull/25246/files">this fix</a>.</p>
 <p>For me that wasn&rsquo;t the case - I just haven&rsquo;t connected the adaptor yet. After I did, here&rsquo;s what <code>dmesg</code> printed out:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo dmesg -w
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo dmesg -w
 </span></span><span style="display:flex;"><span>...
 </span></span><span style="display:flex;"><span>usb 1-2: new full-speed USB device number <span style="color:#ae81ff">5</span> using xhci-hcd
 </span></span><span style="display:flex;"><span>usb 1-2: New USB device found, idVendor<span style="color:#f92672">=</span>1a86, idProduct<span style="color:#f92672">=</span>55d4
@@ -928,7 +928,7 @@
 </span></span><span style="display:flex;"><span>usb 1-2: SerialNumber: SERIAL-NUMBER-HERE
 </span></span><span style="display:flex;"><span>cdc_acm 1-2:1.0: ttyACM0: USB ACM device
 </span></span></code></pre></div><p>and I got it in <code>/dev/serial/</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ls -lah /dev/serial/by-id/
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ls -lah /dev/serial/by-id/
 </span></span><span style="display:flex;"><span>drwxr-xr-x <span style="color:#ae81ff">2</span> root root <span style="color:#ae81ff">60</span> Aug  <span style="color:#ae81ff">5</span> 10:17 .
 </span></span><span style="display:flex;"><span>drwxr-xr-x <span style="color:#ae81ff">4</span> root root <span style="color:#ae81ff">80</span> Aug  <span style="color:#ae81ff">5</span> 10:17 ..
 </span></span><span style="display:flex;"><span>lrwxrwxrwx <span style="color:#ae81ff">1</span> root root <span style="color:#ae81ff">13</span> Aug  <span style="color:#ae81ff">5</span> 10:17 usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_SERIAL-NUMBER-HERE-if00 -&gt; ../../ttyACM0
@@ -938,7 +938,7 @@
 </span></span><span style="display:flex;"><span>drwxr-xr-x <span style="color:#ae81ff">4</span> root root <span style="color:#ae81ff">80</span> Aug  <span style="color:#ae81ff">5</span> 10:17 ..
 </span></span><span style="display:flex;"><span>lrwxrwxrwx <span style="color:#ae81ff">1</span> root root <span style="color:#ae81ff">13</span> Aug  <span style="color:#ae81ff">5</span> 10:17 platform-xhci-hcd.0.auto-usb-0:2:1.0 -&gt; ../../ttyACM0
 </span></span></code></pre></div><p>That <code>usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_SERIAL-NUMBER-HERE-if00</code> value is what you need to put into <code>--device</code> mapping on creating/running the container. Since I have already created a container without providing a correct value and I don&rsquo;t know how to update an already existing container with a correct mapping, I just re-created it:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker stop zigbee2mqtt
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker stop zigbee2mqtt
 </span></span><span style="display:flex;"><span>$ sudo docker rm zigbee2mqtt
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
@@ -951,14 +951,14 @@
 </span></span></span><span style="display:flex;"><span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    koenkk/zigbee2mqtt
 </span></span></code></pre></div><p>Successful launch will manifest itself in the log like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>info:     z2m: Starting Zigbee2MQTT version 1.39.0 <span style="color:#f92672">(</span>commit <span style="color:#75715e">#0326926)</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>info:     z2m: Starting Zigbee2MQTT version 1.39.0 <span style="color:#f92672">(</span>commit <span style="color:#75715e">#0326926)</span>
 </span></span><span style="display:flex;"><span>info:     z2m: Starting zigbee-herdsman <span style="color:#f92672">(</span>0.50.1<span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span>info:     zh:zstack:znp: Opening SerialPort with <span style="color:#f92672">{</span><span style="color:#e6db74">&#34;path&#34;</span>:<span style="color:#e6db74">&#34;/dev/ttyACM0&#34;</span>,<span style="color:#e6db74">&#34;baudRate&#34;</span>:115200,<span style="color:#e6db74">&#34;rtscts&#34;</span>:false,<span style="color:#e6db74">&#34;autoOpen&#34;</span>:false<span style="color:#f92672">}</span>
 </span></span><span style="display:flex;"><span>info:     zh:zstack:znp: Serialport opened
 </span></span><span style="display:flex;"><span>info:     zh:zstack:znp: Writing CC2530/CC2531 skip bootloader payload
 </span></span><span style="display:flex;"><span>info:     zh:zstack:znp: Skip bootloader <span style="color:#66d9ef">for</span> CC2652/CC1352
 </span></span></code></pre></div><p>&hellip;however, after that I got a different error:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>error:    z2m: Error <span style="color:#66d9ef">while</span> starting zigbee-herdsman
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>error:    z2m: Error <span style="color:#66d9ef">while</span> starting zigbee-herdsman
 </span></span><span style="display:flex;"><span>error:    z2m: Failed to start zigbee
 </span></span><span style="display:flex;"><span>error:    z2m: Check https://www.zigbee2mqtt.io/guide/installation/20_zigbee2mqtt-fails-to-start.html <span style="color:#66d9ef">for</span> possible solutions
 </span></span><span style="display:flex;"><span>error:    z2m: Exiting...
@@ -969,7 +969,7 @@
 </span></span><span style="display:flex;"><span>    at Controller.start <span style="color:#f92672">(</span>/app/lib/controller.ts:139:27<span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span>    at start <span style="color:#f92672">(</span>/app/index.js:154:5<span style="color:#f92672">)</span>
 </span></span></code></pre></div><p>Possible reasons are listed <a href="https://zigbee2mqtt.io/guide/installation/20_zigbee2mqtt-fails-to-start.html#error-srsp-sys-ping-after-6000ms">here</a>, and I suspected that in my case it was an obsolete firmware, but then I saw <a href="https://youtu.be/4y_dDgo0i2g?feature=shared&amp;t=277">this video</a>, which is exactly about SONOFF Zigbee 3.0 USB Dongle Plus-E, and there I noticed the <code>adapter: ezsp</code> setting, which I did not have in my config. So I added it:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">serial</span>:
 </span></span><span style="display:flex;"><span>  <span style="color:#75715e"># where Zigbee adapter is connected to</span>
@@ -977,7 +977,7 @@
 </span></span><span style="display:flex; background-color:#3c3d38"><span>  <span style="color:#75715e"># if you have SONOFF Zigbee 3.0 USB Dongle Plus-E</span>
 </span></span><span style="display:flex; background-color:#3c3d38"><span>  <span style="color:#f92672">adapter</span>: <span style="color:#ae81ff">ezsp</span>
 </span></span></code></pre></div><p>And then it finally launched (<em>almost</em>) fine:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>info:     z2m: Starting Zigbee2MQTT version 1.39.0 <span style="color:#f92672">(</span>commit <span style="color:#75715e">#0326926)</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>info:     z2m: Starting Zigbee2MQTT version 1.39.0 <span style="color:#f92672">(</span>commit <span style="color:#75715e">#0326926)</span>
 </span></span><span style="display:flex;"><span>info:     z2m: Starting zigbee-herdsman <span style="color:#f92672">(</span>0.50.1<span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span>warning:     zh:ezsp: Deprecated driver <span style="color:#e6db74">&#39;ezsp&#39;</span> currently in use, <span style="color:#e6db74">&#39;ember&#39;</span> will become the officially supported EmberZNet driver in next release. If using Zigbee2MQTT see https://github.com/Koenkk/zigbee2mqtt/discussions/21462
 </span></span><span style="display:flex;"><span>error:     zh:ezsp:ezsp: Failure to init network
@@ -994,7 +994,7 @@
 </span></span><span style="display:flex;"><span>info:     z2m: Connected to MQTT server
 </span></span><span style="display:flex;"><span>info:     z2m: Zigbee2MQTT started!
 </span></span></code></pre></div><p>One of the warnings says that <code>ezsp</code> is a deprecated driver, and instead it should be <code>ember</code>. So I tried that:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">serial</span>:
 </span></span><span style="display:flex;"><span>  <span style="color:#75715e"># where Zigbee adapter is connected to</span>
@@ -1002,7 +1002,7 @@
 </span></span><span style="display:flex;"><span>  <span style="color:#75715e"># if you have SONOFF Zigbee 3.0 USB Dongle Plus-E</span>
 </span></span><span style="display:flex; background-color:#3c3d38"><span>  <span style="color:#f92672">adapter</span>: <span style="color:#ae81ff">ember</span>
 </span></span></code></pre></div><p>but it failed to launch:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>info:     z2m: Starting Zigbee2MQTT version 1.39.0 <span style="color:#f92672">(</span>commit <span style="color:#75715e">#0326926)</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>info:     z2m: Starting Zigbee2MQTT version 1.39.0 <span style="color:#f92672">(</span>commit <span style="color:#75715e">#0326926)</span>
 </span></span><span style="display:flex;"><span>info:     z2m: Starting zigbee-herdsman <span style="color:#f92672">(</span>0.50.1<span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span>info:     zh:ember: Using default stack config.
 </span></span><span style="display:flex;"><span>info:     zh:ember: <span style="color:#f92672">========</span> Ember Adapter Starting <span style="color:#f92672">========</span>
@@ -1033,14 +1033,14 @@
 </span></span><span style="display:flex;"><span>    at start <span style="color:#f92672">(</span>/app/index.js:154:5<span style="color:#f92672">)</span>
 </span></span></code></pre></div><p>From what I see here, to make it work with <code>ember</code>, apparently I need flash my Zigbee adapter with a different/newer firmware. However, for now I decided not to, and I just reverted the config back to <code>ezsp</code>, as that one seemed to be already working as it is.</p>
 <p>To access the frontend I exposed its port (<em><code>8080</code> by default</em>) from the host the <a href="#nginx">same way</a> I did it with Home Assistant container (<em>static IP and reverse proxy</em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker network disconnect hub zigbee2mqtt
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker network disconnect hub zigbee2mqtt
 </span></span><span style="display:flex;"><span>$ sudo docker network connect --ip 172.18.0.101 hub zigbee2mqtt
 </span></span><span style="display:flex;"><span>$ sudo docker inspect -f <span style="color:#e6db74">&#39;{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}&#39;</span> zigbee2mqtt
 </span></span><span style="display:flex;"><span>172.18.0.101
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo cp /etc/nginx/sites-available/<span style="color:#f92672">{</span>homeassistant,zigbee2mqtt<span style="color:#f92672">}</span>
 </span></span><span style="display:flex;"><span>$ sudo nano /etc/nginx/sites-available/zigbee2mqtt
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">map</span> $http_upgrade $connection_upgrade {
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">map</span> $http_upgrade $connection_upgrade {
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">default</span> <span style="color:#e6db74">upgrade</span>;
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#39;&#39;</span> <span style="color:#e6db74">close</span>;
 </span></span><span style="display:flex;"><span>}
@@ -1061,7 +1061,7 @@
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_cache_bypass</span> $http_upgrade;
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo ln -s /etc/nginx/sites-<span style="color:#f92672">{</span>available,enabled<span style="color:#f92672">}</span>/zigbee2mqtt
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo ln -s /etc/nginx/sites-<span style="color:#f92672">{</span>available,enabled<span style="color:#f92672">}</span>/zigbee2mqtt
 </span></span><span style="display:flex;"><span>$ sudo systemctl restart nginx.service
 </span></span></code></pre></div><p>Once I&rsquo;ve logged-in to my Zigbee2MQTT frontend, I could see that my Zigbee adapter/coordinator revision is <code>6.10.3.0 build 297</code>:</p>
 
@@ -1203,7 +1203,7 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/automation-mqtt-publish-every-minute.png" alt="Home Assistant, automation for publishing MQTT message every minute" style="border:1px solid black;">
 
 <p>and the same in YAML:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">time_pattern</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">hours</span>: <span style="color:#e6db74">&#34;*&#34;</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">minutes</span>: <span style="color:#e6db74">&#34;*&#34;</span>
@@ -1232,7 +1232,7 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/ledvance-smart-compact-outdoor-plug-ota-update.png" alt="Home Assistant, LEDVANCE smart plug OTA update" style="border:1px solid black;">
 
 <p>Looking at the changelog for the updates, I saw that something related seemed to have been fixed already in the March 2025 update (<em>while I was struggling with it in July 2025</em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>echo <span style="color:#e6db74">&#39;Their backend requires POST&#39;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>echo <span style="color:#e6db74">&#39;Their backend requires POST&#39;</span>
 </span></span><span style="display:flex;"><span>$ curl -X POST https://update.ledvance.com/firmware-overview/releasenotes?name<span style="color:#f92672">=</span>PLUG_COMPACT_EU_EM_T-0x00E6-0x033D3674-MF_DIS.OTA
 </span></span><span style="display:flex;"><span>RELEASE NOTES - PLUG_COMPACT_EU_EM_T-0x00E6-0x033D3674-MF_DIS.OTA
 </span></span><span style="display:flex;"><span>Date: Thursday, <span style="color:#ae81ff">13</span> March <span style="color:#ae81ff">2025</span>
@@ -1278,7 +1278,7 @@
 
 <p>So whenever I double-tap the cube on the table (<em>or wherever it is</em>), while its top side is <code>1</code>, all the devices labeled with <code>lights</code> in the <code>Living room</code> area will be toggled on/off.</p>
 <p>Here it is a code too:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">💡 1 | Toggle lights on 2nd floor</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">💡 1 | Toggle lights on 2nd floor</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">description</span>: <span style="color:#e6db74">&#34;&#34;</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">trigger</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">platform</span>: <span style="color:#ae81ff">device</span>
@@ -1321,7 +1321,7 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/nimly-zigbee2mqtt.png" alt="nimly Touch Pro in Zigbee2MQTT" style="border:1px solid black;">
 
 <p>I also got it in Home Assistant, but nothing seemed to actually work. The commands that I tried to send to it (<em>such as lock/unlock</em>) were failing, as there was no reaction on the lock itself, and the logs had errors like:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>zh:ezsp:ezsp: Frame changeSourceRouteHandler parsing error: RangeError: Attempt to access memory outside buffer bounds at new NodeError <span style="color:#f92672">(</span>node:internal/errors:405:5<span style="color:#f92672">)</span> at boundsError <span style="color:#f92672">(</span>node:internal/buffer:86:11<span style="color:#f92672">)</span> at Buffer.readUInt16LE <span style="color:#f92672">(</span>node:internal/buffer:245:5<span style="color:#f92672">)</span> at Buffer.readUIntLE <span style="color:#f92672">(</span>node:internal/buffer:182:17<span style="color:#f92672">)</span> at Function.deserialize <span style="color:#f92672">(</span>/app/node_modules/zigbee-herdsman/src/adapter/ezsp/driver/types/basic.ts:19:67<span style="color:#f92672">)</span> at new EZSPFrameData <span style="color:#f92672">(</span>/app/node_modules/zigbee-herdsman/src/adapter/ezsp/driver/ezsp.ts:180:54<span style="color:#f92672">)</span> at /app/node_modules/zigbee-herdsman/src/adapter/ezsp/driver/ezsp.ts:154:23 at Array.every <span style="color:#f92672">(</span>&lt;anonymous&gt;<span style="color:#f92672">)</span> at Function.createFrame <span style="color:#f92672">(</span>/app/node_modules/zigbee-herdsman/src/adapter/ezsp/driver/ezsp.ts:148:15<span style="color:#f92672">)</span> at Ezsp.onFrameReceived <span style="color:#f92672">(</span>/app/node_modules/zigbee-herdsman/src/adapter/ezsp/driver/ezsp.ts:439:35<span style="color:#f92672">)</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>zh:ezsp:ezsp: Frame changeSourceRouteHandler parsing error: RangeError: Attempt to access memory outside buffer bounds at new NodeError <span style="color:#f92672">(</span>node:internal/errors:405:5<span style="color:#f92672">)</span> at boundsError <span style="color:#f92672">(</span>node:internal/buffer:86:11<span style="color:#f92672">)</span> at Buffer.readUInt16LE <span style="color:#f92672">(</span>node:internal/buffer:245:5<span style="color:#f92672">)</span> at Buffer.readUIntLE <span style="color:#f92672">(</span>node:internal/buffer:182:17<span style="color:#f92672">)</span> at Function.deserialize <span style="color:#f92672">(</span>/app/node_modules/zigbee-herdsman/src/adapter/ezsp/driver/types/basic.ts:19:67<span style="color:#f92672">)</span> at new EZSPFrameData <span style="color:#f92672">(</span>/app/node_modules/zigbee-herdsman/src/adapter/ezsp/driver/ezsp.ts:180:54<span style="color:#f92672">)</span> at /app/node_modules/zigbee-herdsman/src/adapter/ezsp/driver/ezsp.ts:154:23 at Array.every <span style="color:#f92672">(</span>&lt;anonymous&gt;<span style="color:#f92672">)</span> at Function.createFrame <span style="color:#f92672">(</span>/app/node_modules/zigbee-herdsman/src/adapter/ezsp/driver/ezsp.ts:148:15<span style="color:#f92672">)</span> at Ezsp.onFrameReceived <span style="color:#f92672">(</span>/app/node_modules/zigbee-herdsman/src/adapter/ezsp/driver/ezsp.ts:439:35<span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span>zh:ezsp:ezsp: Unparsed frame 0xc4. Skipped
 </span></span><span style="display:flex;"><span>z2m: Publish <span style="color:#e6db74">&#39;set&#39;</span> <span style="color:#e6db74">&#39;state&#39;</span> to <span style="color:#e6db74">&#39;nimly Touch Pro&#39;</span> failed: <span style="color:#e6db74">&#39;Error: ZCL command IEEE-ADDRESS-HERE/11 closuresDoorLock.lockDoor({&#34;pincodevalue&#34;:&#34;&#34;}, {&#34;timeout&#34;:10000,&#34;disableResponse&#34;:false,&#34;disableRecovery&#34;:false,&#34;disableDefaultResponse&#34;:true,&#34;direction&#34;:0,&#34;srcEndpoint&#34;:null,&#34;reservedBits&#34;:0,&#34;manufacturerCode&#34;:null,&#34;transactionSequenceNumber&#34;:null,&#34;writeUndiv&#34;:false}) failed (Timeout - 57813 - 11 - 52 - 257 - 0 after 10000ms)&#39;</span>
 </span></span></code></pre></div><p>Also its sensors were reporting <code>None</code> in Home Assistant:</p>
@@ -1371,7 +1371,7 @@
 
 <p>It will work with bulbs and plugs, despite them being different types of devices, because they all support <a href="https://home-assistant.io/integrations/switch/">switch</a> actions.</p>
 <p>Here&rsquo;s also this automation as code:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Turn ON lights on 2nd floor</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Turn ON lights on 2nd floor</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">description</span>: <span style="color:#e6db74">&#34;&#34;</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">trigger</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">platform</span>: <span style="color:#ae81ff">time</span>
@@ -1395,11 +1395,11 @@
 
 <p>For example, if you drive away somewhere and forget to close your garage door, you probably would want to get notified about that. So one thing you need is a sensor that would report that the door is open and second thing is sending a notification after it has been open for longer than a certain period of time.</p>
 <p>Setting-up an automation that would send a notification after some period of time is rather trivial, but the complicating factor here is that you drove away from your home, so you are now on mobile internet outside of your house local network. So the notification will have to be via some online service, such as <a href="/blog/2017/10/01/telegram-bot-en/">Telegram bot</a>. No need to create a service and implement any commands, just get the token, send <code>/start</code> to the bot and then test it with cURL:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -s -X POST -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -s -X POST -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -d <span style="color:#e6db74">&#39;{&#34;chat_id&#34;: &#34;CHAT-ID-OR-CHANNEL-NAME&#34;, &#34;text&#34;: &#34;ololo&#34;}&#39;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    https://api.telegram.org/YOUR-TELEGRAM-BOT-TOKEN/sendMessage
 </span></span></code></pre></div><p>Then add a <a href="https://home-assistant.io/integrations/rest_command/">RESTful Command</a> in your <code>configuration.yaml</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">rest_command</span>:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">rest_command</span>:
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">telegram_notification</span>:
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">url</span>: <span style="color:#e6db74">&#34;https://api.telegram.org/YOUR-TELEGRAM-BOT-TOKEN/sendMessage&#34;</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">method</span>: <span style="color:#ae81ff">POST</span>
@@ -1414,7 +1414,7 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/automation-garage-door-with-telegram-notification.png" alt="Home Assistant, automation for garage door being open with a Telegram notification" style="border:1px solid black;">
 
 <p>here it is also in YAML:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">type</span>: <span style="color:#ae81ff">opened</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">device_id</span>: <span style="color:#ae81ff">DEVICE-ID</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">entity_id</span>: <span style="color:#ae81ff">ENTITY-ID</span>
@@ -1450,7 +1450,7 @@
 <li>Add an action to start that timer again after sending notifications.</li>
 </ol>
 <p>The message text can be then a bit more informative, such as stating when the door was opened and how much time has passed since then. So the updated automation would look like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Гаражная дверь открыта</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Гаражная дверь открыта</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">description</span>: <span style="color:#e6db74">&#34;&#34;</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">state</span>
@@ -1485,7 +1485,7 @@
 <p>To further extend Home Assistant capabilities, you can add <a href="https://hacs.xyz">Home Assistant Community Store</a> (<em>HACS</em>) to it.</p>
 <p>The HACS is supposed to be installed into <code>/path/to/home-assistant/config/custom_components/</code>, which in case of Docker container would mean creating this folder inside the container, but fortunately we have already mounted/mapped this path on <a href="#home-assistant">container creation</a>, and it points to <code>/root/homeassistant/</code> in the host filesystem.</p>
 <p>As for the installation itself, yet again it is expected that you will download and run <a href="https://get.hacs.xyz">their script</a>, but this time I couldn&rsquo;t tolerate that, so I just picked out the relevant commads from it. Essentially, it just downloads a ZIP archive and extracts it to <code>/path/to/home-assistant/config/custom_components/hacs/</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /tmp
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /tmp
 </span></span><span style="display:flex;"><span>$ wget <span style="color:#e6db74">&#34;https://github.com/hacs/integration/releases/latest/download/hacs.zip&#34;</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ export HOMEASSISTANT_PATH<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/root/homeassistant&#34;</span>
@@ -1513,7 +1513,7 @@
 </span></span><span style="display:flex;"><span>$ sudo mkdir -p <span style="color:#e6db74">&#34;</span>$HOMEASSISTANT_PATH<span style="color:#e6db74">/custom_components/hacs&#34;</span>
 </span></span><span style="display:flex;"><span>$ sudo unzip /tmp/hacs.zip -d $HOMEASSISTANT_PATH/custom_components/hacs
 </span></span></code></pre></div><p>Restart the container:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker restart homeassistant
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker restart homeassistant
 </span></span></code></pre></div><p>And then you should get HACS <a href="https://hacs.xyz/docs/configuration/basic">available</a> in the integrations list:</p>
 <div class="vertical-image-centered-scaled">
 
@@ -1592,7 +1592,7 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/aqara-cube-automation-dyson-mode.png" alt="Aqara Cube automation, toggling Dyson mode" style="border:1px solid black;">
 
 <p>Here&rsquo;s the same as code:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">🪭 6 | Toggle Auto/Normal mode</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">🪭 6 | Toggle Auto/Normal mode</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">description</span>: <span style="color:#e6db74">&#34;&#34;</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">trigger</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">platform</span>: <span style="color:#ae81ff">device</span>
@@ -1685,7 +1685,7 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/nord-pool-chart.png" alt="Home Assistant, Nord Pool data with ApexCharts">
 
 <p>The code for it:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">custom:apexcharts-card</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">custom:apexcharts-card</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">graph_span</span>: <span style="color:#ae81ff">46h</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">header</span>:
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">title</span>: <span style="color:#ae81ff">Цены на электричество по часам</span>
@@ -1733,7 +1733,7 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/nord-pool-markdown.png" alt="Home Assistant, Nord Pool data with Markdown">
 
 <p>The code for it (<em>based on someone else&rsquo;s code that I found in <a href="https://community.home-assistant.io/t/any-good-ideas-are-welcome-nordpool-energy-price-per-hour/34646">this thread</a></em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">vertical-stack</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">vertical-stack</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">cards</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">type</span>: <span style="color:#ae81ff">markdown</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">alignment</span>: <span style="color:#ae81ff">justify</span>
@@ -1820,7 +1820,7 @@
 
 <p>Don&rsquo;t let &ldquo;Wi-Fi&rdquo; here confuse you - this setting applies to the Ethernet connection too, because without this setting being enabled my cable-connected TV did not react to Wake-on-LAN requests.</p>
 <p>To verify that it works at all, execute the following (<em>replace <code>AA:BB:CC:DD:EE:FF</code> with your actual TV&rsquo;s MAC address</em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt install wakeonlan
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt install wakeonlan
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ wakeonlan -i 192.168.1.255 AA:BB:CC:DD:EE:FF
 </span></span><span style="display:flex;"><span>Sending magic packet to 192.168.1.255:9 with AA:BB:CC:DD:EE:FF
@@ -1829,15 +1829,15 @@
 <p>Speaking about host not belonging to the same network where your TV is - that is exactly the case with Home Assistant running in a Docker container, as Docker containers network is isolated from the host network, so they cannot reach hosts in your home network. This is quite obvious and very much expected, but I totally forgot about it and have spent a lot of time trying to figure out why none of my Wake-on-LAN scripts/automations worked, until I realized that this was the reason.</p>
 <p>And <a href="https://community.home-assistant.io/t/wake-on-lan-for-those-running-home-assistant-in-docker/189376/14">one of the solutions</a> here is to create a <a href="https://en.wikipedia.org/wiki/Named_pipe">named pipe</a>, which will allow to send data from Home Assistant container to the host environment, where it will be then passed to <code>wakeonlan</code> call. Hopefully, exposing a named pipe like that doesn&rsquo;t also introduce any security issues.</p>
 <p>At first I created the pipe in <code>/root/homeassistant/</code> (<em>because I reckoned that in this case I would not need to map this location with <code>-v</code></em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo mkfifo /root/homeassistant/wolpipe
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo mkfifo /root/homeassistant/wolpipe
 </span></span></code></pre></div><p>Check the access rights for it:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo stat -c %a /root/homeassistant/wolpipe
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo stat -c %a /root/homeassistant/wolpipe
 </span></span><span style="display:flex;"><span><span style="color:#ae81ff">644</span>
 </span></span></code></pre></div><p>If it isn&rsquo;t <code>644</code>, then make it so:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo chmod <span style="color:#ae81ff">644</span> /root/homeassistant/wolpipe
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo chmod <span style="color:#ae81ff">644</span> /root/homeassistant/wolpipe
 </span></span></code></pre></div><p>Next create a systemd service to listen for Wake-on-LAN requests from that pipe:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /etc/systemd/system/docker-wol.service
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#66d9ef">[Unit]</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo nano /etc/systemd/system/docker-wol.service
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#66d9ef">[Unit]</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">Description</span><span style="color:#f92672">=</span><span style="color:#e6db74">Listen for Wake-On-LAN from Docker via pipe</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">[Service]</span>
@@ -1848,7 +1848,7 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">[Install]</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">WantedBy</span><span style="color:#f92672">=</span><span style="color:#e6db74">multi-user.target</span>
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo systemctl enable docker-wol
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo systemctl enable docker-wol
 </span></span><span style="display:flex;"><span>Created symlink /etc/systemd/system/multi-user.target.wants/docker-wol.service → /etc/systemd/system/docker-wol.service.
 </span></span><span style="display:flex;"><span>$ sudo systemctl start docker-wol
 </span></span><span style="display:flex;"><span>
@@ -1865,21 +1865,21 @@
 </span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 16:48:27 vero systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: docker-wol.service: Failed with result <span style="color:#e6db74">&#39;exit-code&#39;</span>.
 </span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 16:48:27 vero systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: Failed to start Listen <span style="color:#66d9ef">for</span> Wake-On-LAN from Docker via pipe.
 </span></span></code></pre></div><p>So the service failed to start. Checking the logs:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ journalctl -u docker-wol.service
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ journalctl -u docker-wol.service
 </span></span><span style="display:flex;"><span>...
 </span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 16:48:26 vero wakeonlan<span style="color:#f92672">[</span>16150<span style="color:#f92672">]</span>: open : Permission denied at /usr/bin/wakeonlan line 138.
 </span></span></code></pre></div><p>shows that there are some access problems, which is very likely because <code>/root/homeassistant/wolpipe</code> is inside <code>root</code> folder, and <code>nobody</code> does not have access there. Don&rsquo;t know what I expected.</p>
 <p>So I re-created the pipe in a different location and granted <code>nobody</code> access to it:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo rm /root/homeassistant/wolpipe
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo rm /root/homeassistant/wolpipe
 </span></span><span style="display:flex;"><span>$ sudo mkfifo /opt/wolpipe
 </span></span><span style="display:flex;"><span>$ sudo chown nobody:root /opt/wolpipe
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo nano /etc/systemd/system/docker-wol.service
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">ExecStart</span><span style="color:#f92672">=</span><span style="color:#e6db74">/usr/bin/wakeonlan -f /opt/wolpipe</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
 </span></span></code></pre></div><p>And that worked out fine:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo systemctl daemon-reload
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo systemctl daemon-reload
 </span></span><span style="display:flex;"><span>$ sudo systemctl restart docker-wol.service
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo systemctl status docker-wol.service
@@ -1894,13 +1894,13 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 19:51:22 vero systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: Started Listen <span style="color:#66d9ef">for</span> Wake-On-LAN from Docker via pipe.
 </span></span></code></pre></div><p>However, in the logs there was this warning:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ journalctl -u docker-wol.service | tail -2
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ journalctl -u docker-wol.service | tail -2
 </span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 19:51:21 vero systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: /etc/systemd/system/docker-wol.service:6: Special user nobody configured, this is not safe!
 </span></span><span style="display:flex;"><span>Oct <span style="color:#ae81ff">12</span> 19:51:22 vero systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: Started Listen <span style="color:#66d9ef">for</span> Wake-On-LAN from Docker via pipe.
 </span></span></code></pre></div><p>As a remedy to that, I replaced <code>User=nodoby</code> with <code>DynamicUser=yes</code> in <code>/etc/systemd/system/docker-wol.service</code> and also returned the pipe file back to root, just in case:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo chown root:root /opt/wolpipe
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo chown root:root /opt/wolpipe
 </span></span></code></pre></div><p>And since <code>/opt/wolpipe</code> is not inside <code>/root/homeassistant/</code>, it needs to be mapped with <code>-v</code>, so I had to re-create the container:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker stop homeassistant
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker stop homeassistant
 </span></span><span style="display:flex;"><span>$ sudo docker rm homeassistant
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
@@ -1913,7 +1913,7 @@
 </span></span></span><span style="display:flex; background-color:#3c3d38"><span>    -v /opt/wolpipe:/config/wolpipe <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    ghcr.io/home-assistant/home-assistant:stable
 </span></span></code></pre></div><p>Check what you have in the <code>/config/</code> now:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker exec -it homeassistant bash
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker exec -it homeassistant bash
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># pwd</span>
 </span></span><span style="display:flex;"><span>/config
@@ -1939,12 +1939,12 @@
 </span></span><span style="display:flex; background-color:#3c3d38"><span>wolpipe
 </span></span><span style="display:flex;"><span>www
 </span></span></code></pre></div><p>Here it is! Now try to send the command:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span># echo &#39;AA:BB:CC:DD:EE:FF&#39; &gt; /config/wolpipe
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span># echo &#39;AA:BB:CC:DD:EE:FF&#39; &gt; /config/wolpipe
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span># exit
 </span></span></code></pre></div><p>And the TV should turn on. Hallelujah.</p>
 <p>In order to control it with utmost convenience from Home Assistant dashboards, add a custom <a href="https://home-assistant.io/integrations/switch/">switch</a> entity to your <code>configuration.yaml</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">wake_on_lan</span>: <span style="color:#75715e"># enable waking devices by sending a magic network packet</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">wake_on_lan</span>: <span style="color:#75715e"># enable waking devices by sending a magic network packet</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">shell_command</span>:
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">wol_lg_oled_g3</span>: <span style="color:#e6db74">&#34;/bin/echo &#39;AA:BB:CC:DD:EE:FF&#39; &gt; /config/wolpipe&#34;</span>
@@ -1968,7 +1968,7 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            mdi:television-off
 </span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          {% endif %}</span>
 </span></span></code></pre></div><p>And then you will be able to add it to your dashboards as a button:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">button</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">button</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">entity</span>: <span style="color:#ae81ff">switch.lg_oled_g3</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">tap_action</span>:
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">action</span>: <span style="color:#ae81ff">toggle</span>
@@ -1995,34 +1995,34 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/automation-webhook-trigger.png" alt="Home Assistant, automation webhook trigger">
 
 <p>and also here it is in YAML:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">webhook</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">allowed_methods</span>:
 </span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">POST</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">local_only</span>: <span style="color:#66d9ef">true</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">webhook_id</span>: <span style="color:#ae81ff">osdr54-ftFGiuKKK57OL9B9_WYH0Yx</span>
 </span></span></code></pre></div><p>Now you can add whatever action you&rsquo;d like in that automation, such as turning on the lights in some room, and then every time this webhook would trigger, that room lights will be turning on (<em>or off</em>). To trigger this webhook you&rsquo;d need to send the following <code>POST</code> request from any other device in your local network:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X POST -k https://YOUR-VERO-IP:8123/api/webhook/osdr54-ftFGiuKKK57OL9B9_WYH0Yx
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X POST -k https://YOUR-VERO-IP:8123/api/webhook/osdr54-ftFGiuKKK57OL9B9_WYH0Yx
 </span></span></code></pre></div><p>The <code>-k</code> argument is here to skip the verification of our <a href="#https">self-signed certificate</a>.</p>
 <h2 id="sending-data-with-a-webhook">Sending data with a webhook</h2>
 <p>Webhooks can also contain a JSON payload, which makes them even more useful. In particular, you can create a virtual <a href="https://home-assistant.io/integrations/template/#state-based-template-entities">template sensor</a> to monitor whatever metric you&rsquo;d like.</p>
 <p>For example, I have a Raspberry Pi device running some services, and I would like to monitor its temperature. Since Raspberry Pi isn&rsquo;t really a Zigbee-enabled thermometer that could be added to Home Assistant by the <a href="#philips-hue-smart-plug">usual means</a>, the other way you can get its temperature is by submitting it with a webhook.</p>
 <p>To begin with, the <code>POST</code> request with a JSON payload would look like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X POST <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X POST <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> -d <span style="color:#e6db74">&#39;{&#34;temperature&#34;:50}&#39;</span> -k <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    https://YOUR-VERO-IP:8123/api/webhook/monitoring-raspberry-temperature
 </span></span></code></pre></div><p>Like I said, the <code>monitoring-raspberry-temperature</code> value can be anything, so you might prefer to use human-readable identifiers (<em>but don&rsquo;t neglect the <a href="https://home-assistant.io/docs/automation/trigger/#webhook-security">security</a> aspect</em>).</p>
 <p>The temperature of Raspberry Pi running Raspbian (<em>Raspberry Pi OS</em>) can be queried like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ vcgencmd measure_temp | awk -F <span style="color:#e6db74">&#34;[=&#39;]&#34;</span> <span style="color:#e6db74">&#39;{print($2)}&#39;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ vcgencmd measure_temp | awk -F <span style="color:#e6db74">&#34;[=&#39;]&#34;</span> <span style="color:#e6db74">&#39;{print($2)}&#39;</span>
 </span></span><span style="display:flex;"><span>60.4
 </span></span></code></pre></div><p>Combining everything together, the final command (<em>using <code>jq</code> to format the JSON payload/body</em>) will be this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ jq -nc --argjson msg <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ jq -nc --argjson msg <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">$(</span>vcgencmd measure_temp | awk -F <span style="color:#e6db74">&#34;[=&#39;]&#34;</span> <span style="color:#e6db74">&#39;{print($2)}&#39;</span><span style="color:#66d9ef">)</span> <span style="color:#e6db74">&#39;{&#34;temperature&#34;:$msg}&#39;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    | curl -X POST <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> -d @- -k <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    https://YOUR-VERO-IP:8123/api/webhook/monitoring-raspberry-temperature
 </span></span></code></pre></div><p>Note the <code>--argjson</code>, because if you use the <code>--arg</code> instead, then the temperature value will be in quotes:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>jq -nc --argjson msg <span style="color:#66d9ef">$(</span>vcgencmd measure_temp | awk -F <span style="color:#e6db74">&#34;[=&#39;]&#34;</span> <span style="color:#e6db74">&#39;{print($2)}&#39;</span><span style="color:#66d9ef">)</span> <span style="color:#e6db74">&#39;{&#34;temperature&#34;:$msg}&#39;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>jq -nc --argjson msg <span style="color:#66d9ef">$(</span>vcgencmd measure_temp | awk -F <span style="color:#e6db74">&#34;[=&#39;]&#34;</span> <span style="color:#e6db74">&#39;{print($2)}&#39;</span><span style="color:#66d9ef">)</span> <span style="color:#e6db74">&#39;{&#34;temperature&#34;:$msg}&#39;</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">{</span><span style="color:#e6db74">&#34;temperature&#34;</span>:57.6<span style="color:#f92672">}</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ jq -nc --arg msg <span style="color:#66d9ef">$(</span>vcgencmd measure_temp | awk -F <span style="color:#e6db74">&#34;[=&#39;]&#34;</span> <span style="color:#e6db74">&#39;{print($2)}&#39;</span><span style="color:#66d9ef">)</span> <span style="color:#e6db74">&#39;{&#34;temperature&#34;:$msg}&#39;</span>
@@ -2040,7 +2040,7 @@
 </ol>
 <h3 id="automation-and-dispatched-event">Automation and dispatched event</h3>
 <p>A sensor getting the data from an event trigger can be defined like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">triggers</span>:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">triggers</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">event</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">event_type</span>: <span style="color:#ae81ff">new_raspberry_pi_temperature_value</span>
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">sensor</span>:
@@ -2054,7 +2054,7 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/automation-webhook-trigger-event.png" alt="Home Assistant, automation webhook trigger dispatching an event">
 
 <p>also here it is in YAML:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">webhook</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">allowed_methods</span>:
 </span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">POST</span>
@@ -2073,7 +2073,7 @@
 
 <h3 id="direct-webhook-trigger-based-sensor">Direct webhook trigger-based sensor</h3>
 <p>This one looks almost the <a href="#automation-and-dispatched-event">same way</a>, but now instead of an event the trigger is a webhook and the value is extracted directly from the JSON payload:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">triggers</span>:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">triggers</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">webhook</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">webhook_id</span>: <span style="color:#e6db74">&#34;monitoring-raspberry-temperature&#34;</span>
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">sensor</span>:
@@ -2086,7 +2086,7 @@
 <h3 id="using-data-from-different-triggers-for-different-sensors">Using data from different triggers for different sensors</h3>
 <p>Oh yeah, that was quite a WTF moment for me. As you can see in the examples above, sensor is attached to its trigger and it gets the data from <code>trigger.json.temperature</code>. But what if there will be more than one trigger? How does sensor know which <code>trigger.json.temperature</code> is from what trigger?</p>
 <p>At first I naively tried to do the following:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">webhook</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">webhook_id</span>: <span style="color:#ae81ff">my-super-secret-webhook-1</span>
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">webhook</span>
@@ -2102,7 +2102,7 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">state</span>: <span style="color:#e6db74">&#34;{{ trigger.json.temperature }}&#34;</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">unit_of_measurement</span>: <span style="color:#ae81ff">°C</span>
 </span></span></code></pre></div><p>But sending a <code>POST</code> request to either of the webhooks:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X POST <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X POST <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -d <span style="color:#e6db74">&#39;{&#34;temperature&#34;:5}&#39;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    https://YOUR-VERO-IP:8123/api/webhook/my-super-secret-webhook-1 <span style="color:#75715e"># or my-super-secret-webhook-2</span>
@@ -2112,7 +2112,7 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/template-sensors-states.png" alt="Home Assistant, template sensors states" style="border:1px solid black;">
 
 <p>I couldn&rsquo;t figure out how to resolve this, so I posted a <a href="https://community.home-assistant.io/t/multiple-trigger-based-sensors-using-json-data-from-different-webhooks/914573">question</a> at the Home Assistant forum, and from there I learned that first of all I was lacking the understanding of <a href="http://thomasloven.com/blog/2018/08/YAML-For-Nonprogrammers/">dictionaries and lists in YAML</a> and more importantly the fact that <code>templates.yaml</code> format can be <u>either of those</u> (<em>u fukken wat</em>). Secondly, such triggers and sensor should be &ldquo;grouped&rdquo; in a &ldquo;tandem&rdquo;, like so:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">triggers</span>:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">triggers</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">webhook</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">webhook_id</span>: <span style="color:#ae81ff">my-super-secret-webhook-1</span>
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">sensor</span>:
@@ -2141,7 +2141,7 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/layout-card-grid.png" alt="Home Assistant, dashboard with grid layout">
 
 <p>The code for this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">views</span>:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">views</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">title</span>: <span style="color:#ae81ff">Home</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">cards</span>:
 </span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">...</span>
@@ -2176,9 +2176,9 @@
 <h2 id="backups">Backups</h2>
 <p>Having configured so many things, you should definitely think about backups.</p>
 <p>I&rsquo;ve come up with the following script:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkdir /root/_backups
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkdir /root/_backups
 </span></span><span style="display:flex;"><span>$ sudo nano /root/_backups/backup.sh
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash
 </span></span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>dt<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">$(</span>date +%Y.%m.%d-%H%M%S<span style="color:#66d9ef">)</span><span style="color:#e6db74">&#34;</span>
 </span></span><span style="display:flex;"><span>backupname<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;vero-backup_</span>$dt<span style="color:#e6db74">&#34;</span>
@@ -2206,18 +2206,18 @@
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># the script itself</span>
 </span></span><span style="display:flex;"><span>cp /root/_backups/backup.sh $workingdir/
 </span></span></code></pre></div><p>and made it run on schedule:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo crontab -e
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#ae81ff">1</span> <span style="color:#ae81ff">1</span> */20 * * /root/_backups/backup.sh
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo crontab -e
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#ae81ff">1</span> <span style="color:#ae81ff">1</span> */20 * * /root/_backups/backup.sh
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># or with Healthchecks reporting: https://github.com/retifrav/scraps/blob/master/_linux/installing-healthchecks/index.md</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#1 1 */20 * * /root/_backups/backup.sh &gt; /dev/null 2&gt;&amp;1 &amp;&amp; /usr/bin/curl -X POST -fsS -m 10 --retry 5 -o /dev/null https://healthchecks.YOUR.DOMAIN/ping/ID/vero-backup</span>
 </span></span></code></pre></div><p>It would also be a good idea to upload/download the backups from the device to some reliable external storage.</p>
 <p>Before making a backup, you might want to stop the containers, so files wouldn&rsquo;t change during the backup procedure:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker stop <span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker stop <span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span>
 </span></span><span style="display:flex;"><span>$ sudo /root/_backups/backup.sh
 </span></span><span style="display:flex;"><span>$ sudo docker start <span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span>
 </span></span></code></pre></div><h2 id="updating">Updating</h2>
 <p>In general, the procedure of updating something (<em>that is run in a Docker container</em>) is to get the latest Docker image and re-create the container. So with Home Assistant as an example in my particular network setup (<em>note the <code>--network</code> and <code>--ip</code> arguments</em>), the steps would be:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Stop all the containers for making a backup&#34;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Stop all the containers for making a backup&#34;</span>
 </span></span><span style="display:flex;"><span>$ sudo docker stop <span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span>
 </span></span><span style="display:flex;"><span>$ sudo /root/_backups/backup.sh
 </span></span><span style="display:flex;"><span>
@@ -2242,7 +2242,7 @@
 </span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;...unless you&#39;d like to update other images too&#34;</span>
 </span></span></code></pre></div><p>As you already know, thanks to Home Assistant data being stored in a mapped volume location, it is totally fine to destroy and re-create its container literally whenever, which makes updating Home Assistant a very simple procedure.</p>
 <p>Updating other images goes the same way (<em>assuming that you have already stopped their containers</em>). Here&rsquo;s for Mosquitto:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker rm mosquitto
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker rm mosquitto
 </span></span><span style="display:flex;"><span>$ sudo docker pull eclipse-mosquitto:latest
 </span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --name mosquitto <span style="color:#ae81ff">\
@@ -2254,7 +2254,7 @@
 </span></span></span><span style="display:flex;"><span>    -v /root/mosquitto/log:/mosquitto/log <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    eclipse-mosquitto
 </span></span></code></pre></div><p>and here&rsquo;s for Zigbee2MQTT:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker rm zigbee2mqtt
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker rm zigbee2mqtt
 </span></span><span style="display:flex;"><span>$ sudo docker pull ghcr.io/koenkk/zigbee2mqtt:latest
 </span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --name zigbee2mqtt <span style="color:#ae81ff">\
@@ -2269,7 +2269,7 @@
 </span></span></code></pre></div><h1 id="performance-monitoring-with-btop">Performance monitoring with btop</h1>
 <p>As a bonus part, I wanted to install <a href="https://github.com/aristocratos/btop">btop</a> tool for watching the system CPU load.</p>
 <p>There is no(?) pre-built package for btop on Debian, so I had to build it from sources, and for that it needs some tools and dependencies to be installed first, out of which CMake I also had to build from sources, because packaged version <code>3.18.4</code> is a bit old, and btop requires at least <code>3.24</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt install build-essential libssl-dev ninja-build
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt install build-essential libssl-dev ninja-build
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ cd ~/downloads
 </span></span><span style="display:flex;"><span>$ wget https://github.com/Kitware/CMake/releases/download/v3.30.2/cmake-3.30.2.tar.gz
@@ -2282,7 +2282,7 @@
 </span></span><span style="display:flex;"><span>$ make -j<span style="color:#66d9ef">$(</span>nproc<span style="color:#66d9ef">)</span>
 </span></span><span style="display:flex;"><span>$ sudo make install
 </span></span></code></pre></div><p>Then building <code>btop</code> itself:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd ~/programs
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd ~/programs
 </span></span><span style="display:flex;"><span>$ git clone https://github.com/aristocratos/btop
 </span></span><span style="display:flex;"><span>$ cd ./btop
 </span></span><span style="display:flex;"><span>$ git checkout v1.3.2
@@ -2304,10 +2304,10 @@
 <h2 id="2025-09-02--installing-docker-from-apt-repository">2025-09-02 | Installing Docker from APT repository</h2>
 <p>Like I <a href="#docker">said</a>, installing anything via a script from the internet is a condemned practice, so I was happy to learn that Docker now has an <a href="https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository">APT repository</a>. It could have always been the case, but I am almost sure that it wasn&rsquo;t there when I was looking.</p>
 <p>First they recommend to uninstall &ldquo;unofficial&rdquo; (<em>as they call them</em>) packages that could have been installed from default repositories:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ <span style="color:#66d9ef">for</span> pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ <span style="color:#66d9ef">for</span> pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">do</span> sudo apt remove $pkg; <span style="color:#66d9ef">done</span>
 </span></span></code></pre></div><p>Then you can add their repository to your system sources:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt update
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt update
 </span></span><span style="display:flex;"><span>$ sudo apt install ca-certificates curl
 </span></span><span style="display:flex;"><span>$ stat -c %a /etc/apt/keyrings
 </span></span><span style="display:flex;"><span><span style="color:#ae81ff">755</span>
@@ -2317,7 +2317,7 @@
 </span></span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;deb [arch=</span><span style="color:#66d9ef">$(</span>dpkg --print-architecture<span style="color:#66d9ef">)</span><span style="color:#e6db74"> signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian </span><span style="color:#66d9ef">$(</span>. /etc/os-release <span style="color:#f92672">&amp;&amp;</span> echo <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>VERSION_CODENAME<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74"> stable&#34;</span> | <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
 </span></span></code></pre></div><p>And install Docker:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt update
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt update
 </span></span><span style="display:flex;"><span>$ sudo apt install docker-ce docker-ce-cli containerd.io
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ docker --version
@@ -2333,7 +2333,7 @@
 <blockquote>This system is running on a 32-bit operating system (armv7), which has been deprecated and will no longer receive updates after the release of Home Assistant 2025.12. Check if your system is capable of running a 64-bit operating system. If not, you will need to migrate to new hardware.</blockquote>
 <p>I&rsquo;ve been ignoring it for months, but today I decided to finally deal with it.</p>
 <p>So, it claims that my host is apparently x32, which is very surprising to see, because Vero V CPU is x64:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ uname -m
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ uname -m
 </span></span><span style="display:flex;"><span>aarch64
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ lscpu
@@ -2353,19 +2353,19 @@
 </span></span><span style="display:flex;"><span>BogoMIPS:            48.00
 </span></span><span style="display:flex;"><span>Flags:               fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp asimddp
 </span></span></code></pre></div><p>But as it turns out, it is actually a 32-bit <a href="https://en.wikipedia.org/wiki/User_space_and_kernel_space">userland</a> OS on a 64-bit kernel, which this output apparently confirms:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ dpkg-architecture --query DEB_HOST_ARCH
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ dpkg-architecture --query DEB_HOST_ARCH
 </span></span><span style="display:flex;"><span>armhf
 </span></span></code></pre></div><p>I swear to god, every day I am dealing with software is a day when I am learning something new, and almost always it happens against my will. I don&rsquo;t consider myself to be a total stranger to GNU/Linux, but I have never heard about such a thing as some fucking &ldquo;useland&rdquo;, let alone a miraculous possibility for it to have a different architecture.</p>
 <p>Anyway, this made me realise that I have a x32 variant of Docker too:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt install file
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt install file
 </span></span><span style="display:flex;"><span>$ file <span style="color:#66d9ef">$(</span>which docker<span style="color:#66d9ef">)</span>
 </span></span><span style="display:flex;"><span>/usr/bin/docker: ELF 32-bit LSB pie executable, ARM, EABI5 version <span style="color:#ae81ff">1</span> <span style="color:#f92672">(</span>SYSV<span style="color:#f92672">)</span>, dynamically linked, interpreter /lib/ld-linux-armhf.so.3, BuildID<span style="color:#f92672">[</span>sha1<span style="color:#f92672">]=</span>b0ba3b879f2499d945afd5aca44f687fd0e2b447, <span style="color:#66d9ef">for</span> GNU/Linux 3.2.0, with debug_info, not stripped
 </span></span></code></pre></div><p>And that apparently happened because the <a href="https://get.docker.com/">installation script</a> checks for the architecture with:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ dpkg --print-architecture
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ dpkg --print-architecture
 </span></span><span style="display:flex;"><span>armhf
 </span></span></code></pre></div><p>Having browsed the <a href="https://discourse.osmc.tv/">OSMC forum</a>, I&rsquo;ve read that it is actually planned to switch to this x64 &ldquo;userland&rdquo; thingy, so that&rsquo;s good news, but the timeline for that is unclear. I also saw that Vero V is in fact capable of runing x64 executables already, even with this x32 &ldquo;userland&rdquo;, so I probably could have just tried to reinstall the Docker using a hardcoded x64 architecture in <code>/etc/apt/sources.list.d/docker.list</code>.</p>
 <p>But first I thought maybe I can just try to keep Docker x32 and instead specify the image architecture with <code>--platform</code>, like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker pull <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker pull <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --platform linux/arm64 <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    ghcr.io/home-assistant/home-assistant:stable
 </span></span><span style="display:flex;"><span>
@@ -2382,7 +2382,7 @@
 </span></span><span style="display:flex;"><span>$ sudo docker image inspect --format <span style="color:#e6db74">&#39;{{.Architecture}}&#39;</span> ba578e7d7f0d
 </span></span><span style="display:flex;"><span>arm64
 </span></span></code></pre></div><p>Okay, so then adding the same <code>--platform linux/arm64</code> would probably get the container to run with x64 image:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker stop homeassistant
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker stop homeassistant
 </span></span><span style="display:flex;"><span>$ sudo docker rm homeassistant
 </span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --name homeassistant <span style="color:#ae81ff">\
@@ -2395,13 +2395,13 @@
 </span></span></span><span style="display:flex;"><span>    -v /opt/wolpipe:/config/wolpipe <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    ghcr.io/home-assistant/home-assistant:stable
 </span></span></code></pre></div><p>And it did execute that, but the container did not actually work, as it was constantly restarting with no logs or errors reported anywhere:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker ps
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker ps
 </span></span><span style="display:flex;"><span>CONTAINER ID   IMAGE                        COMMAND                  CREATED         STATUS                            PORTS      NAMES
 </span></span><span style="display:flex;"><span>6d14ede11ff9   ba578e7d7f0d                 <span style="color:#e6db74">&#34;/init&#34;</span>                  <span style="color:#ae81ff">2</span> minutes ago   Restarting <span style="color:#f92672">(</span>159<span style="color:#f92672">)</span> <span style="color:#ae81ff">16</span> seconds ago              homeassistant
 </span></span><span style="display:flex;"><span>dd5854612e36   ghcr.io/koenkk/zigbee2mqtt   <span style="color:#e6db74">&#34;docker-entrypoint.s…&#34;</span>   <span style="color:#ae81ff">4</span> weeks ago     Up <span style="color:#ae81ff">5</span> minutes                                 zigbee2mqtt
 </span></span><span style="display:flex;"><span>e1a65d0a6cfd   eclipse-mosquitto            <span style="color:#e6db74">&#34;/docker-entrypoint.…&#34;</span>   <span style="color:#ae81ff">4</span> weeks ago     Up <span style="color:#ae81ff">5</span> minutes                      1883/tcp   mosquitto
 </span></span></code></pre></div><p>So apparently this naive approach doesn&rsquo;t work, and one really has to install exactly x64 Docker. Since I installed mine with <a href="#docker">the script</a>, then re-installation procedure was:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt remove <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt remove <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    docker-ce <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    docker-ce-cli <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    containerd.io <span style="color:#ae81ff">\
@@ -2428,7 +2428,7 @@
 </span></span><span style="display:flex;"><span>$ file <span style="color:#66d9ef">$(</span>which docker<span style="color:#66d9ef">)</span>
 </span></span><span style="display:flex;"><span>/usr/bin/docker: ELF 64-bit LSB pie executable, ARM aarch64, version <span style="color:#ae81ff">1</span> <span style="color:#f92672">(</span>SYSV<span style="color:#f92672">)</span>, dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, BuildID<span style="color:#f92672">[</span>sha1<span style="color:#f92672">]=</span>cc104f6c0020a2200f4a18532bd71ff63fc9f0bf, with debug_info, not stripped
 </span></span></code></pre></div><p>That all went fine, except that the service was dead, because there was something wrong with <code>containerd</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo systemctl status docker.service
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo systemctl status docker.service
 </span></span><span style="display:flex;"><span>...
 </span></span><span style="display:flex;"><span>Active: failed <span style="color:#f92672">(</span>Result: exit-code<span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span>
@@ -2436,14 +2436,14 @@
 </span></span><span style="display:flex;"><span>...
 </span></span><span style="display:flex;"><span>failed to start daemon: failed to get containerd plugins: Unavailable: connection error: desc <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;transport: Error while dialing: dial unix:///run/containerd/containerd.sock: timeout
 </span></span></span></code></pre></div><p>So I checked the <code>containerd.service</code> logs, and it says there that the executable has crashed:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ journalctl -u containerd.service
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ journalctl -u containerd.service
 </span></span><span style="display:flex;"><span>...
 </span></span><span style="display:flex;"><span>Starting containerd container runtime...
 </span></span><span style="display:flex;"><span>SIGILL: illegal instruction
 </span></span><span style="display:flex;"><span>PC<span style="color:#f92672">=</span>0x5563010310 m<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> sigcode<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>
 </span></span><span style="display:flex;"><span>instruction bytes: 0x0 0x6 0x38 0xd5 0xe0 0x7 0x0 0xf9 0xc0 0x3 0x5f 0xd6 0x0 0x0 0x0 0x0
 </span></span></code></pre></div><p>And actually even trying to simply run <code>containerd</code> directly causes the crash already:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ file <span style="color:#66d9ef">$(</span>which containerd<span style="color:#66d9ef">)</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ file <span style="color:#66d9ef">$(</span>which containerd<span style="color:#66d9ef">)</span>
 </span></span><span style="display:flex;"><span>/usr/bin/containerd: ELF 64-bit LSB pie executable, ARM aarch64, version <span style="color:#ae81ff">1</span> <span style="color:#f92672">(</span>SYSV<span style="color:#f92672">)</span>, dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, BuildID<span style="color:#f92672">[</span>sha1<span style="color:#f92672">]=</span>610634625a29564945088f195339fc0d2e086623, <span style="color:#66d9ef">for</span> GNU/Linux 3.7.0, stripped
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ containerd --help
@@ -2468,14 +2468,14 @@
 <h3 id="adding-sonos-speaker-to-home-assistant">Adding Sonos speaker to Home Assistant</h3>
 <p>Having bought the device, I tried to add it to Home Assistant with the <a href="https://home-assistant.io/integrations/sonos/">Sonos integration</a>, but it told me that there are no devices available. As it turned out, to be able to auto-discover Sonos devices, Home Assistant needs to have access to the host network, but my instance is running in a Docker container inside a <a href="#ip-address-of-the-running-container">bridge network</a>. In addition to that, Home Assistant also needs to expose <code>1400</code> port for Sonos devices to be able to talk back to it.</p>
 <p>I was almost ready to move Home Assistant container to the host network, but then I noticed that it is <a href="https://home-assistant.io/integrations/sonos/#advanced-use">still possible</a> to make it all work as it is by simply specifying the Sonos device IP address manually in <code>configuration.yaml</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">sonos</span>:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">sonos</span>:
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">media_player</span>:
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">hosts</span>:
 </span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">192.168.1.60</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">advertise_addr</span>: <span style="color:#ae81ff">192.168.1.35</span>
 </span></span></code></pre></div><p>Here <code>192.168.1.60</code> is the IP address of my Sonos speaker and <code>192.168.1.35</code> is the IP address of my Vero V host, which is supposedly for Home Assistant to announce/advertise it to Sonos, although I am not sure if that is actually needed.</p>
 <p>As for the port - that is simply a matter of adding <code>-p 1400:1400</code> on container creation. To verify that you have it open, you can run the following command:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo ss -lntup | grep <span style="color:#ae81ff">1400</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo ss -lntup | grep <span style="color:#ae81ff">1400</span>
 </span></span><span style="display:flex;"><span>0.0.0.0:1400       0.0.0.0:*    users:<span style="color:#f92672">((</span><span style="color:#e6db74">&#34;docker-proxy&#34;</span>,pid<span style="color:#f92672">=</span>3453,fd<span style="color:#f92672">=</span>7<span style="color:#f92672">))</span>
 </span></span><span style="display:flex;"><span>      *:1400             *:*    users:<span style="color:#f92672">((</span><span style="color:#e6db74">&#34;docker-proxy&#34;</span>,pid<span style="color:#f92672">=</span>3459,fd<span style="color:#f92672">=</span>7<span style="color:#f92672">))</span>
 </span></span></code></pre></div><h3 id="playing-media-from-home-assistant-on-sonos-speaker">Playing media from Home Assistant on Sonos speaker</h3>
@@ -2486,14 +2486,14 @@
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/home-assistant-media-sonos.png" alt="Home Assistant, Media, Sonos" style="border:1px solid black;">
 
 <p>I couldn&rsquo;t find any error messages, so I had no clue what is wrong, and only by accident I noticed that when Sonos mobile application is open then it actually shows error messages in there every time playback is failing to execute from Home Assistant:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>Couldn&#39;t play <span style="color:#e6db74">&#34;Something.flac?authSig=SOME-TOKEN&#34;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmd" data-lang="cmd"><span style="display:flex;"><span>Couldn&#39;t play <span style="color:#e6db74">&#34;Something.flac?authSig=SOME-TOKEN&#34;</span>
 </span></span></code></pre></div>
 
     <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/sonos-authsig.png" alt="Sonos, authSig" style="border:1px solid black;">
 
 <p>So I got an error message, buy it wasn&rsquo;t helpful at all.</p>
 <p>Having spent some time trying different things, I stumbled about some forum thread, where someone mentioned self-signed certificates, and only then realized that this was the actual reason, because I do use a <a href="#https">self-signed certificate</a> to serve my Home Assistant instance via HTTPS in my local network. So then the solution would be to either (<em>get a proper certificate or</em>) disable HTTPS for Home Assistant or serve media files via HTTP. Since I only needed to play small sound alerts, I went with the latter and simply added a config to NGINX to serve static files from <code>/var/www/html/media/sounds/</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span>;
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#e6db74">[::]:80</span>;
 </span></span><span style="display:flex;"><span>
@@ -2508,7 +2508,7 @@
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}
 </span></span></code></pre></div><p>Then to use that in automations I can add the following action:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">action</span>: <span style="color:#ae81ff">media_player.play_media</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">action</span>: <span style="color:#ae81ff">media_player.play_media</span>
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">metadata</span>: {}
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">data</span>:
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">media</span>:
@@ -2518,7 +2518,7 @@
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">target</span>:
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">entity_id</span>: <span style="color:#ae81ff">media_player.sonos</span>
 </span></span></code></pre></div><p>For example, I&rsquo;ve assigned an <a href="#ikea-remote-controls">IKEA remote control</a> button to start/stop playing current media (<em>such as online radio</em>) on Sonos speaker, and actions in that automation are accompanied with sound alerts to confirm that the command has been successfully executed:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Sonos | Play/pause</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Sonos | Play/pause</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">description</span>: <span style="color:#e6db74">&#34;&#34;</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">domain</span>: <span style="color:#ae81ff">mqtt</span>

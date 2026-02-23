@@ -146,20 +146,20 @@
 <p>So the first task is to export users e-mails from each of those and merge them into one list.</p>
 <h2 id="in-house-cms">In-house CMS</h2>
 <p>This one is the easiest, as it uses our own SQLite database, and all the users e-mails get be queried like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> email <span style="color:#66d9ef">FROM</span> users;</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> email <span style="color:#66d9ef">FROM</span> users;</span></span></code></pre></div>
 <p>Or, if we want to exclude our team (<em>roles <code>1</code> and <code>2</code></em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">DISTINCT</span>(email) <span style="color:#66d9ef">FROM</span> users <span style="color:#66d9ef">AS</span> u
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> <span style="color:#66d9ef">DISTINCT</span>(email) <span style="color:#66d9ef">FROM</span> users <span style="color:#66d9ef">AS</span> u
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">LEFT</span> <span style="color:#66d9ef">JOIN</span> users_roles <span style="color:#66d9ef">AS</span> r <span style="color:#66d9ef">ON</span> r.user_id <span style="color:#f92672">=</span> u.id
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> r.role_id <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">OR</span> r.role_id <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">IN</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>);</span></span></code></pre></div>
 <p>For convenience, that could be done in one line via SSH:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ssh cms.our-company.com <span style="color:#e6db74">&#34;sqlite3 /data/cms.our-company.com/database.db &#39;SELECT DISTINCT(email) FROM users AS u LEFT JOIN users_roles AS r ON r.user_id = u.id WHERE r.role_id IS NULL OR r.role_id NOT IN (1, 2);&#39;&#34;</span> &gt; emails-cms.txt</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ssh cms.our-company.com <span style="color:#e6db74">&#34;sqlite3 /data/cms.our-company.com/database.db &#39;SELECT DISTINCT(email) FROM users AS u LEFT JOIN users_roles AS r ON r.user_id = u.id WHERE r.role_id IS NULL OR r.role_id NOT IN (1, 2);&#39;&#34;</span> &gt; emails-cms.txt</span></span></code></pre></div>
 <p>Of course, all that is unlikely to be directly applicable to your infrastructure, but it might be somewhat useful still, so I decided to mention this too.</p>
 <h2 id="gitlab">GitLab</h2>
 <p>Users profiles can be fetched using GitLab&rsquo;s <a href="https://docs.gitlab.com/ee/api/#rest-api">REST API</a>, for example:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl <span style="color:#e6db74">&#34;https://gitlab.our-company.com/api/v4/users?per_page=100&amp;page=1&#34;</span> -H <span style="color:#e6db74">&#39;Authorization: Bearer ADMIN-TOKEN-HERE&#39;</span> -o ./users-gitlab.json</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl <span style="color:#e6db74">&#34;https://gitlab.our-company.com/api/v4/users?per_page=100&amp;page=1&#34;</span> -H <span style="color:#e6db74">&#39;Authorization: Bearer ADMIN-TOKEN-HERE&#39;</span> -o ./users-gitlab.json</span></span></code></pre></div>
 <p>Results are paginated, and one page can only have 100 items maximum, so you&rsquo;ll have to execute as many requests as there are pages (<em><code>&amp;page=1</code>, <code>&amp;page=2</code>, etc</em>). If you have too many pages, perhaps you&rsquo;d want to automate the pages iteration too.</p>
 <p>This endpoint returns the entire users profiles, not just e-mails, so you&rsquo;ll need to write some script to extract just the e-mails, for example <code>extract-emails-from-api-results.py</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> sys
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> sys
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> json
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> pathlib
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># common auxiliary module</span>
@@ -199,7 +199,7 @@
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">with</span> open(<span style="color:#e6db74">&#34;./emails.txt&#34;</span>, <span style="color:#e6db74">&#34;w&#34;</span>) <span style="color:#66d9ef">as</span> f:
 </span></span><span style="display:flex;"><span>    f<span style="color:#f92672">.</span>write(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">.</span>join(usersEmails))</span></span></code></pre></div>
 <p>The <code>etc.py</code> script contains some shared code that could be used by other scripts, such as blacklisting users from your team so they don&rsquo;t add &ldquo;noise&rdquo; into visitors analytics:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>yourCompanyUsers <span style="color:#f92672">=</span> [
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>yourCompanyUsers <span style="color:#f92672">=</span> [
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;witch.doctor@your-company.com&#34;</span>,
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;phantom.assassin@your-company.com&#34;</span>,
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;bounty.hunter@your-company.com&#34;</span>,
@@ -218,60 +218,60 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">else</span>:
 </span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">False</span></span></span></code></pre></div>
 <p>And then you can extract the e-mails like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ python /path/to/extract-emails-from-api-results.py ./users-gitlab.json</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ python /path/to/extract-emails-from-api-results.py ./users-gitlab.json</span></span></code></pre></div>
 <p>Alternatively, one can likely extract users e-mails directly from the database (<em>given that he has access to it</em>).</p>
 <h2 id="jfrog-artifactory">JFrog Artifactory</h2>
 <p>The Artifactory also has a <a href="https://jfrog.com/confluence/display/JFROG/Artifactory+REST+API">REST API</a>, and here&rsquo;s how you can get users profiles:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -u admin:TOKEN-HERE https://artifactory.our-company.com/artifactory/api/security/users -o ./users-artifactory.json</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -u admin:TOKEN-HERE https://artifactory.our-company.com/artifactory/api/security/users -o ./users-artifactory.json</span></span></code></pre></div>
 <p>You can use the same <code>extract-emails-from-api-results.py</code> script as with <a href="#gitlab">GitLab</a>, just replace <code>user[&quot;email&quot;]</code> with <code>user[&quot;name&quot;]</code> and:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ python /path/to/extract-emails-from-api-results.py ./users-artifactory.json</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ python /path/to/extract-emails-from-api-results.py ./users-artifactory.json</span></span></code></pre></div>
 <p>Some usernames in the Artifactory might not be e-mails, for example if you are also using local Active Directory authentication for your team or manually created accounts for external users. In that case you&rsquo;d need to get e-mails for each of such users from a <a href="https://jfrog.com/confluence/display/JFROG/Artifactory+REST+API#ArtifactoryRESTAPI-GetUserDetails">different endpoint/method</a>, which is tiresome. Luckily, we are not really interested in such users, as all the SAML SSO users do have e-mails as their usernames, so we can just filter out non-emails strings with <code>^[^@]*$</code> RegEx, either in a text editor or with <code>sed</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sed -i <span style="color:#e6db74">&#34;/^[^@]*</span>$<span style="color:#e6db74">/d&#34;</span> /path/to/emails-artifactory.txt</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sed -i <span style="color:#e6db74">&#34;/^[^@]*</span>$<span style="color:#e6db74">/d&#34;</span> /path/to/emails-artifactory.txt</span></span></code></pre></div>
 <p>And again, instead of all that, one can probably just extract users e-mails directly from the database.</p>
 <h2 id="merging-e-mails-lists">Merging e-mails lists</h2>
 <p>Now when we have 3 lists of e-mails from all the websites, we can copy-paste them, for example, into Sublime Text and execute <code>Edit</code> → <code>Permute lines</code> → <code>Unique</code>, to get a merged list of unique e-mails.</p>
 <p>Alternatively, you can try to do this with standard CLI tools. First merge all of them into one:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sort -u ./emails-cms.txt ./emails-gitlab.txt ./emails-artifactory.txt &gt; ./merged.txt</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sort -u ./emails-cms.txt ./emails-gitlab.txt ./emails-artifactory.txt &gt; ./merged.txt</span></span></code></pre></div>
 <p>and then, for some weird reason, you&rsquo;d need to open the <code>merged.txt</code> and save it again without any modifications. Only after that the following will work properly:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ uniq ./merged.txt ./unique-emails.txt</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ uniq ./merged.txt ./unique-emails.txt</span></span></code></pre></div>
 <p>At least, that&rsquo;s how it was for me on Mac OS.</p>
 <h1 id="querying-microsoft-graph">Querying Microsoft Graph</h1>
 <p>Once you have a list of e-mails, you can query users data from Microsoft Graph.</p>
 <h2 id="api-access-token">API access token</h2>
 <p>Sign in to <a href="https://developer.microsoft.com/en-us/graph/graph-explorer">Graph Explorer</a> with your company&rsquo;s Office 365 account, open your browser&rsquo;s developer tools, go to <code>Network</code> tab and then click on <code>Run query</code> on the page. In the list of requests on the <code>Network</code> tab you&rsquo;ll be able to extract the <code>Authorization</code> header from one of the newly appeared GET requests. Or just copy it from <code>Access token</code> tab in the query editor on the page.</p>
 <p>Having the token you&rsquo;ll be able to send requests to Microsoft Graph:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl <span style="color:#e6db74">&#34;https://graph.microsoft.com/v1.0/me/&#34;</span> -H <span style="color:#e6db74">&#39;Authorization: Bearer HERE-GOES-THE-BEARER-TOKEN-VALUE&#39;</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl <span style="color:#e6db74">&#34;https://graph.microsoft.com/v1.0/me/&#34;</span> -H <span style="color:#e6db74">&#39;Authorization: Bearer HERE-GOES-THE-BEARER-TOKEN-VALUE&#39;</span></span></span></code></pre></div>
 <p>Microsoft&rsquo;s <a href="https://docs.microsoft.com/en-us/graph/auth/auth-concepts">documentation</a> and <a href="https://developer.microsoft.com/en-us/graph/quick-start">samples</a> suggest to register an application and obtain a permanent(?) access token, but for our purpose this looked like an overcomplicated overkill, while quickly getting a temporary access token in a manner that is described above was much easier.</p>
 <h2 id="some-queries-examples">Some queries examples</h2>
 <p>Knowing users e-mails (<em>or GUIDs</em>), you can query quite a lot of information about them. Perhaps, in your case this might be restricted by your company&rsquo;s Office 365 / Azure AD administrators, but I think this is the same information that is available when you hover over a user profile in Outlook or Teams clients, so chances are that this kind of data is always available to anyone (<em>within your organization, of course</em>).</p>
 <h3 id="get-user-by-e-mail">Get user by e-mail</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl <span style="color:#e6db74">&#34;https://graph.microsoft.com/v1.0/users(&#39;someone@our-company.com&#39;)&#34;</span> <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl <span style="color:#e6db74">&#34;https://graph.microsoft.com/v1.0/users(&#39;someone@our-company.com&#39;)&#34;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>     -H <span style="color:#e6db74">&#39;Authorization: Bearer HERE-GOES-THE-BEARER-TOKEN-VALUE&#39;</span></span></span></code></pre></div>
 <p>From there you can get the user <code>id</code> (<em>which is his GUID</em>) and use it for the other queries (<em>or just continue to use the e-mail</em>).</p>
 <h3 id="get-users-manager">Get user&rsquo;s manager</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl <span style="color:#e6db74">&#34;https://graph.microsoft.com/v1.0/users/USER-EMAIL-OR-GUID-HERE/manager&#34;</span> <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl <span style="color:#e6db74">&#34;https://graph.microsoft.com/v1.0/users/USER-EMAIL-OR-GUID-HERE/manager&#34;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>     -H <span style="color:#e6db74">&#39;Authorization: Bearer HERE-GOES-THE-BEARER-TOKEN-VALUE&#39;</span></span></span></code></pre></div>
 <h4 id="get-users-full-managers-chain">Get user&rsquo;s full managers chain</h4>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl <span style="color:#e6db74">&#34;https://graph.microsoft.com/v1.0/users/USER-EMAIL-OR-GUID-HERE?</span>$expand<span style="color:#e6db74">=manager(</span>$levels<span style="color:#e6db74">%3Dmax%3B</span>$select<span style="color:#e6db74">%3Dmail)&amp;</span>$select<span style="color:#e6db74">=id,displayName&amp;</span>$count<span style="color:#e6db74">=true&#34;</span> <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl <span style="color:#e6db74">&#34;https://graph.microsoft.com/v1.0/users/USER-EMAIL-OR-GUID-HERE?</span>$expand<span style="color:#e6db74">=manager(</span>$levels<span style="color:#e6db74">%3Dmax%3B</span>$select<span style="color:#e6db74">%3Dmail)&amp;</span>$select<span style="color:#e6db74">=id,displayName&amp;</span>$count<span style="color:#e6db74">=true&#34;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>     -H <span style="color:#e6db74">&#39;Authorization: Bearer HERE-GOES-THE-BEARER-TOKEN-VALUE&#39;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>     -H <span style="color:#e6db74">&#39;ConsistencyLevel: eventual&#39;</span></span></span></code></pre></div>
 <h3 id="get-a-selected-set-of-users-properties">Get a selected set of user&rsquo;s properties</h3>
 <p>Specified user&rsquo;s <a href="https://docs.microsoft.com/en-us/graph/api/resources/user?view=graph-rest-1.0">properties</a> and his manager:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl <span style="color:#e6db74">&#34;https://graph.microsoft.com/v1.0/users/USER-EMAIL-OR-GUID-HERE?</span>$select<span style="color:#e6db74">=id,mail,displayName,createdDateTime,country,city,usageLocation,officeLocation,companyName,department,jobTitle&amp;</span>$expand<span style="color:#e6db74">=manager(</span>$select<span style="color:#e6db74">%3Did,mail,displayName)&#34;</span> <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl <span style="color:#e6db74">&#34;https://graph.microsoft.com/v1.0/users/USER-EMAIL-OR-GUID-HERE?</span>$select<span style="color:#e6db74">=id,mail,displayName,createdDateTime,country,city,usageLocation,officeLocation,companyName,department,jobTitle&amp;</span>$expand<span style="color:#e6db74">=manager(</span>$select<span style="color:#e6db74">%3Did,mail,displayName)&#34;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>     -H <span style="color:#e6db74">&#39;Authorization: Bearer HERE-GOES-THE-BEARER-TOKEN-VALUE&#39;</span></span></span></code></pre></div>
 <p>This is the query that we&rsquo;ll be using <a href="#fetching-information-about-users">below</a> for fetching users data.</p>
 <h3 id="get-all-users-groups">Get all user&rsquo;s groups</h3>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl <span style="color:#e6db74">&#34;https://graph.microsoft.com/v1.0/users/USER-EMAIL-OR-GUID-HERE/memberOf/microsoft.graph.group?</span>$count<span style="color:#e6db74">=true&amp;</span>$orderby<span style="color:#e6db74">=displayName&amp;</span>$select<span style="color:#e6db74">=id,displayName&#34;</span> <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl <span style="color:#e6db74">&#34;https://graph.microsoft.com/v1.0/users/USER-EMAIL-OR-GUID-HERE/memberOf/microsoft.graph.group?</span>$count<span style="color:#e6db74">=true&amp;</span>$orderby<span style="color:#e6db74">=displayName&amp;</span>$select<span style="color:#e6db74">=id,displayName&#34;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>     -H <span style="color:#e6db74">&#39;Authorization: Bearer HERE-GOES-THE-BEARER-TOKEN-VALUE&#39;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>     -H <span style="color:#e6db74">&#39;ConsistencyLevel: eventual&#39;</span></span></span></code></pre></div>
 <h4 id="get-only-meaningful-users-groups">Get only meaningful user&rsquo;s groups</h4>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X <span style="color:#e6db74">&#34;POST&#34;</span> <span style="color:#e6db74">&#34;https://graph.microsoft.com/v1.0/users/USER-EMAIL-OR-GUID-HERE/getMemberGroups&#34;</span> <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X <span style="color:#e6db74">&#34;POST&#34;</span> <span style="color:#e6db74">&#34;https://graph.microsoft.com/v1.0/users/USER-EMAIL-OR-GUID-HERE/getMemberGroups&#34;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>     -H <span style="color:#e6db74">&#39;Authorization: Bearer HERE-GOES-THE-BEARER-TOKEN-VALUE&#39;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>     -H <span style="color:#e6db74">&#39;Content-Type: application/json; charset=utf-8&#39;</span> <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>     -d <span style="color:#e6db74">$&#39;{&#34;securityEnabledOnly&#34;: true}&#39;</span></span></span></code></pre></div>
 <h2 id="fetching-information-about-users">Fetching information about users</h2>
 <p>The querying of users data can be performed like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> sys
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> sys
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> json
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> time
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> pandas
@@ -431,7 +431,7 @@
 <li>Less likely, but still: just an error with the request, sending it again might succeed.</li>
 </ol>
 <p>To execute the script:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ python /path/to/lookup-users-in-microsoft-graph.py /path/to/unique-emails.txt</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ python /path/to/lookup-users-in-microsoft-graph.py /path/to/unique-emails.txt</span></span></code></pre></div>
 <p>The results will be saved to <code>users-table.pkl</code> pandas pickle, which we will then use to make charts/graphs for analytics.</p>
 <h1 id="analytics">Analytics</h1>
 <h2 id="data-normalization">Data normalization</h2>
@@ -443,7 +443,7 @@
 <li>Job titles, to &ldquo;merge&rdquo; all the &ldquo;senior developer&rdquo;, &ldquo;backend developer&rdquo;, &ldquo;mega-dev-engineer&rdquo;, etc into just the &ldquo;developer&rdquo;.</li>
 </ol>
 <p>Such normalization can be performed like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> pandas
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> pandas
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> pathlib
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>tbl <span style="color:#f92672">=</span> pandas<span style="color:#f92672">.</span>read_pickle(<span style="color:#e6db74">&#34;/path/to/users-table.pkl&#34;</span>)
@@ -580,7 +580,7 @@
 <h2 id="charts">Charts</h2>
 <h3 id="users-by-countries">Users by countries</h3>
 <p>The script:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> pandas
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#66d9ef">as</span> plt
@@ -626,7 +626,7 @@
 
 <h3 id="users-heatmap-by-countries">Users heatmap by countries</h3>
 <p>The script (<em>based on <a href="https://stackoverflow.com/a/59301096/1688203">this</a></em>):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> pandas
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#66d9ef">as</span> plt
@@ -688,7 +688,7 @@
 <p>So yeah, I did not enjoy working with Plotly.</p>
 <h3 id="users-count-by-companies">Users count by companies</h3>
 <p>The script:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> pandas
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#66d9ef">as</span> plt
@@ -739,7 +739,7 @@
 <p>The companies names/teams/departments are blurred, so it&rsquo;s not very useful to you, but still let it be.</p>
 <h3 id="joint-countries-and-companies-heatmap">Joint countries and companies heatmap</h3>
 <p>Now that we have both countries and companies users numbers, we can visualize them as an <a href="https://matplotlib.org/stable/gallery/images_contours_and_fields/image_annotated_heatmap.html">annotated heatmap</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> pandas
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#66d9ef">as</span> plt
@@ -827,7 +827,7 @@
 
 <h3 id="users-by-job-titles">Users by job titles</h3>
 <p>The script:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> pandas
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#66d9ef">as</span> plt
@@ -920,7 +920,7 @@
 <h4 id="composing-a-newick-tree">Composing a Newick tree</h4>
 <p>Right away I would like to state that the code below is most definitely not the most optimal one, and most likely it&rsquo;s rather bad, inefficient and perhaps even dumb. I&rsquo;m really &ldquo;challenged&rdquo; when it comes to trees, graphs, algorithms and so on, so for me it&rsquo;s already a great achievement that I&rsquo;ve managed to come up with at least something that actually works.</p>
 <p>And here it comes:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> pandas
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>tblNormalized <span style="color:#f92672">=</span> pandas<span style="color:#f92672">.</span>read_pickle(<span style="color:#e6db74">&#34;./users-table-normalized.pkl&#34;</span>)
@@ -1016,7 +1016,7 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>jsonTree <span style="color:#f92672">=</span> managersTreeReduced</span></span></code></pre></div>
 <p>As a result we will have a <code>jsonTree</code> string that looks like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;some@our-company.com&#34;</span>:
 </span></span><span style="display:flex;"><span>    {
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;max-levels&#34;</span>: <span style="color:#ae81ff">3</span>,
@@ -1050,7 +1050,7 @@
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>To turn such a JSON into a Newick string I&rsquo;ve come up with the following functions:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getLevelValues</span>(jsonDict, depth, withLengths <span style="color:#f92672">=</span> <span style="color:#66d9ef">False</span>):
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getLevelValues</span>(jsonDict, depth, withLengths <span style="color:#f92672">=</span> <span style="color:#66d9ef">False</span>):
 </span></span><span style="display:flex;"><span>    newickString <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> k <span style="color:#f92672">in</span> jsonDict:
 </span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> len(jsonDict[k]) <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>:
@@ -1146,9 +1146,9 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e">#     return f&#34;{newickString};&#34;</span></span></span></code></pre></div>
 <p>Depending on the number of managers in your organization, you may choose between <code>json2newick1()</code> and <code>json2newick2()</code> functions. The first one joins all the managers chains under one common &ldquo;artificial&rdquo; manager, and the second one makes a list of chains, meaning that you&rsquo;ll get not just one tree graph but several graphs (<em>each in its own file</em>).</p>
 <p>In our case we don&rsquo;t have that many managers, so we are using <code>json2newick1()</code> function. The resulting Newick string for our example will look like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#f92672">((((</span>another.again@our-company.com,some.one@our-company.com<span style="color:#f92672">)</span>yet.another@our-company.com<span style="color:#f92672">)</span>another@our-company.com<span style="color:#f92672">)</span>some@our-company.com,yet.some@our-company.com<span style="color:#f92672">)</span>OurCompany;</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#f92672">((((</span>another.again@our-company.com,some.one@our-company.com<span style="color:#f92672">)</span>yet.another@our-company.com<span style="color:#f92672">)</span>another@our-company.com<span style="color:#f92672">)</span>some@our-company.com,yet.some@our-company.com<span style="color:#f92672">)</span>OurCompany;</span></span></code></pre></div>
 <p>or, for better readability:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#f92672">(</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#f92672">(</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">(</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">(</span>
 </span></span><span style="display:flex;"><span>            <span style="color:#f92672">(</span>
@@ -1166,12 +1166,12 @@
 <p>It is now ready to be visualized with ETE.</p>
 <h4 id="ete-graphs">ETE graphs</h4>
 <p>First you need to install the <a href="https://pypi.org/project/ete3/">package</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ pip install ete3</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ pip install ete3</span></span></code></pre></div>
 <p>And even though it depends on <a href="https://pypi.org/project/PyQt5/">PyQt5</a>, weirdly enough it doesn&rsquo;t install it on its own (<em>package not configured properly?</em>), so you&rsquo;ll need to install it explicitly:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ pip install PyQt5</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ pip install PyQt5</span></span></code></pre></div>
 <h5 id="a-simple-tree-graph">A simple tree graph</h5>
 <p>To get familiar with ETE, let&rsquo;s first visualize a simple tree:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> ete3
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">import</span> ete3
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#t = ete3.Tree(&#34;(A,B,(C,D)E)F;&#34;, format=8)</span>
 </span></span><span style="display:flex;"><span>t <span style="color:#f92672">=</span> ete3<span style="color:#f92672">.</span>Tree(<span style="color:#e6db74">&#34;(A:0.1,B:0.2,(C:0.3,D:0.4)E:0.5)F;&#34;</span>, format<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
@@ -1233,9 +1233,9 @@
 
 <h5 id="rendering-problems-on-different-platforms">Rendering problems on different platforms</h5>
 <p>ETE renders fine to PDF (<em>on all platforms?</em>), but rendering to raster formats such as PNG has some problems. For instance, on Windows 10 with Python 3.10.5 the <code>t.render()</code> and <code>t.show()</code> commands fail for me <a href="https://github.com/etetoolkit/ete/issues/616">like this</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>t<span style="color:#f92672">.</span>render(<span style="color:#e6db74">&#34;./tree.png&#34;</span>, w<span style="color:#f92672">=</span><span style="color:#ae81ff">1920</span>, units<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;px&#34;</span>)
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>t<span style="color:#f92672">.</span>render(<span style="color:#e6db74">&#34;./tree.png&#34;</span>, w<span style="color:#f92672">=</span><span style="color:#ae81ff">1920</span>, units<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;px&#34;</span>)
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#t.show()</span></span></span></code></pre></div>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>TypeError: arguments did not match any overloaded call:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>TypeError: arguments did not match any overloaded call:
 </span></span><span style="display:flex;"><span>  QImage<span style="color:#f92672">()</span>: too many arguments
 </span></span><span style="display:flex;"><span>  QImage<span style="color:#f92672">(</span>QSize, QImage.Format<span style="color:#f92672">)</span>: argument <span style="color:#ae81ff">1</span> has unexpected type <span style="color:#e6db74">&#39;int&#39;</span>
 </span></span><span style="display:flex;"><span>  QImage<span style="color:#f92672">(</span>int, int, QImage.Format<span style="color:#f92672">)</span>: argument <span style="color:#ae81ff">2</span> has unexpected type <span style="color:#e6db74">&#39;float&#39;</span>
@@ -1248,9 +1248,9 @@
 </span></span><span style="display:flex;"><span>  QImage<span style="color:#f92672">(</span>QImage<span style="color:#f92672">)</span>: argument <span style="color:#ae81ff">1</span> has unexpected type <span style="color:#e6db74">&#39;int&#39;</span>
 </span></span><span style="display:flex;"><span>  QImage<span style="color:#f92672">(</span>Any<span style="color:#f92672">)</span>: too many arguments</span></span></code></pre></div>
 <p>If I explicitly provide the height value too, then it fails differently:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>t<span style="color:#f92672">.</span>render(<span style="color:#e6db74">&#34;./tree.png&#34;</span>, w<span style="color:#f92672">=</span><span style="color:#ae81ff">1920</span>, h<span style="color:#f92672">=</span><span style="color:#ae81ff">1080</span>, units<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;px&#34;</span>)
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>t<span style="color:#f92672">.</span>render(<span style="color:#e6db74">&#34;./tree.png&#34;</span>, w<span style="color:#f92672">=</span><span style="color:#ae81ff">1920</span>, h<span style="color:#f92672">=</span><span style="color:#ae81ff">1080</span>, units<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;px&#34;</span>)
 </span></span><span style="display:flex;"><span><span style="color:#75715e">#t.show()</span></span></span></code></pre></div>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>    <span style="color:#ae81ff">752</span> ii<span style="color:#f92672">=</span> QImage<span style="color:#f92672">(</span>w, h, QImage.Format_ARGB32<span style="color:#f92672">)</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>    <span style="color:#ae81ff">752</span> ii<span style="color:#f92672">=</span> QImage<span style="color:#f92672">(</span>w, h, QImage.Format_ARGB32<span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">753</span> ii.fill<span style="color:#f92672">(</span>QColor<span style="color:#f92672">(</span>Qt.white<span style="color:#f92672">)</span>.rgb<span style="color:#f92672">())</span>
 </span></span><span style="display:flex;"><span>--&gt; <span style="color:#ae81ff">754</span> ii.setDotsPerMeterX<span style="color:#f92672">(</span>dpi / 0.0254<span style="color:#f92672">)</span> <span style="color:#75715e"># Convert inches to meters</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">755</span> ii.setDotsPerMeterY<span style="color:#f92672">(</span>dpi / 0.0254<span style="color:#f92672">)</span>
@@ -1261,7 +1261,7 @@
 <p>On Mac OS all the same works fine with Python 3.9.13.</p>
 <h5 id="managers-tree-graph">Managers tree graph</h5>
 <p>Finally, here&rsquo;s how our Newick string with managers can be visualized as an ETE graph:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>newickWithLehgths <span style="color:#f92672">=</span> <span style="color:#66d9ef">False</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>newickWithLehgths <span style="color:#f92672">=</span> <span style="color:#66d9ef">False</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>newickString <span style="color:#f92672">=</span> json2newick1(jsonTree, newickWithLehgths)
 </span></span><span style="display:flex;"><span>print(newickString)

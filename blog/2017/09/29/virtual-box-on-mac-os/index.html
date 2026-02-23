@@ -98,30 +98,30 @@ The aim is to get a Linux guest-machine running in a fullscreen mode on a dedica
 <p>Having done that you might notice that you can only have maximum 1024x768 resolution. To have more you need to <a href="https://www.virtualbox.org/wiki/Downloads">download</a> <strong>Extension Pack</strong> for VirtualBox (and install <strong>Guest Additions</strong> for guest-machine).</p>
 <h1 id="install-guest-additions">Install Guest Additions</h1>
 <p>Open terminal in your guest-machine and install necessary packages:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install build-essential linux-headers-<span style="color:#66d9ef">$(</span>uname -r<span style="color:#66d9ef">)</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install build-essential linux-headers-<span style="color:#66d9ef">$(</span>uname -r<span style="color:#66d9ef">)</span></span></span></code></pre></div>
 <p>Insert <strong>Guest Additions</strong> image:</p>
 
 
     <img class="image-post" loading="lazy" src="/blog/2017/09/29/virtual-box-on-mac-os/images/virtualbox-guest-additions.png" alt="VirtualBox, inserting Guest Additions">
 
 <p>It will get mounted as a CD-ROM. Open it and copy <code>VBoxLinuxAdditions.run</code> from there to <code>/tmp/</code>. Go there in terminal and execute:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>chmod +x VBoxLinuxAdditions.run
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>chmod +x VBoxLinuxAdditions.run
 </span></span><span style="display:flex;"><span>./VBoxLinuxAdditions.run</span></span></code></pre></div>
 <p>It might give you some warning about session manager and some unsupported protocols, but for me it didn&rsquo;t affect anything. Reboot the guest-machine and you&rsquo;ll have a proper screen resolution.</p>
 <h1 id="extend-the-size-of-your-vdi">Extend the size of your VDI</h1>
 <p>I miscalculated the size of my virtual disk image (VDI). I gave it 20 GB initially, but having installed the stuff I wanted (Qt with Device Creation packages), I discovered that I have only ~4 GB left, but I needed to install even more stuff, which meant I needed to increase my VDI to at least 30 GB (add 10 GB more). But here&rsquo;s problem - I created a fixed size VDI (I always create fixed ones), which is a bit problematic to resize (<em>fixed</em>, eh). But it is still possible.</p>
 <p>Shutdown the guest-machine and exit VirtualBox app. Open Terminal, find <code>VBoxManage</code> and run modification command:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>cd /Applications/VirtualBox.app/Contents/Resources/VirtualBoxVM.app/Contents/MacOS/
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>cd /Applications/VirtualBox.app/Contents/Resources/VirtualBoxVM.app/Contents/MacOS/
 </span></span><span style="display:flex;"><span>./VBoxManage modifyhd --resize <span style="color:#ae81ff">30000</span> <span style="color:#e6db74">&#34;/Users/YOURNAME/VirtualBox VMs/debian/debian.vdi&#34;</span></span></span></code></pre></div>
 <p>Oh shit, I forgot (again) that I have a fixed VDI, so I got this error:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Progress state: VBOX_E_NOT_SUPPORTED
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Progress state: VBOX_E_NOT_SUPPORTED
 </span></span><span style="display:flex;"><span>VBoxManage: error: Resize medium operation <span style="color:#66d9ef">for</span> this format is not implemented yet!</span></span></code></pre></div>
 <p>You need to clone the disk first:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>./VBoxManage clonehd <span style="color:#e6db74">&#34;/Users/YOURNAME/VirtualBox VMs/debian/debian.vdi&#34;</span> <span style="color:#e6db74">&#34;/Users/YOURNAME/VirtualBox VMs/debian/debian-dyn.vdi&#34;</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>./VBoxManage clonehd <span style="color:#e6db74">&#34;/Users/YOURNAME/VirtualBox VMs/debian/debian.vdi&#34;</span> <span style="color:#e6db74">&#34;/Users/YOURNAME/VirtualBox VMs/debian/debian-dyn.vdi&#34;</span></span></span></code></pre></div>
 <p>Now you can resize the cloned disk, because by default new disks are dynamic ones:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>./VBoxManage modifyhd --resize <span style="color:#ae81ff">30000</span> <span style="color:#e6db74">&#34;/Users/YOURNAME/VirtualBox VMs/debian/debian-dyn.vdi&#34;</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>./VBoxManage modifyhd --resize <span style="color:#ae81ff">30000</span> <span style="color:#e6db74">&#34;/Users/YOURNAME/VirtualBox VMs/debian/debian-dyn.vdi&#34;</span></span></span></code></pre></div>
 <p>And after that make a fixed clone of it:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>./VBoxManage clonehd <span style="color:#e6db74">&#34;/Users/YOURNAME/VirtualBox VMs/debian/debian-dyn.vdi&#34;</span> <span style="color:#e6db74">&#34;/Users/YOURNAME/VirtualBox VMs/debian/debian-fix.vdi&#34;</span> --variant fixed</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>./VBoxManage clonehd <span style="color:#e6db74">&#34;/Users/YOURNAME/VirtualBox VMs/debian/debian-dyn.vdi&#34;</span> <span style="color:#e6db74">&#34;/Users/YOURNAME/VirtualBox VMs/debian/debian-fix.vdi&#34;</span> --variant fixed</span></span></code></pre></div>
 <p>Now go to your guest-machine settings and delete old disk from SATA controller. And then delete it from <strong>Virtual Media Manager</strong>. And now add your new extended disk to your machine&rsquo;s SATA controller:</p>
 
 
@@ -130,7 +130,7 @@ The aim is to get a Linux guest-machine running in a fullscreen mode on a dedica
 <p>But then you need to edit partitions <em>inside</em> the guest-machine to extend old ones to the free space. You can use <a href="https://gparted.org/livecd.php">GParted</a> for that. And better to do it from a Live CD.</p>
 <p>In my case GParted didn&rsquo;t allow me to extend existing partition to the free space because I had <code>swap</code> area between them. So I deleted it, extended the main partition and re-created <code>swap</code> area back.</p>
 <p>But after that I got the following error during the boot:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>a start job is running <span style="color:#66d9ef">for</span> dev-disk-by...</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>a start job is running <span style="color:#66d9ef">for</span> dev-disk-by...</span></span></code></pre></div>
 <p>It&rsquo;s nothing serious, because after 90 seconds OS boots normally. But anyway it&rsquo;s better to <a href="https://askubuntu.com/a/753571/423703">fix it</a>: wait for the system to boot and edit <code>/etc/fstab</code> file: updating the GUID of deleted <code>swap</code> partition with the new value (you can look for it in the GParted).</p>
 <p>By the way, don&rsquo;t forget to right-click on <code>swap</code> partition at GParted and set <code>Swapon</code> option (on the screenshot it is already pressed, so you can see <code>Swapoff</code>):</p>
 
@@ -139,7 +139,7 @@ The aim is to get a Linux guest-machine running in a fullscreen mode on a dedica
 
 <h1 id="switch-to-lxde">Switch to LXDE</h1>
 <p>So, I got my guest-machine running in fullscreen, I managed to extend its disk, but there was an annoying feeling that it wasn&rsquo;t performing well. It wasn&rsquo;t very responsive and even mouse pointer was moving with delays. But it was tolerable. Till the moment I ran a Knoppix Live CD, and it was really fast, so immediately I suspected my <strong>Xfce</strong> DE and decided to try some other (<strong>LXDE</strong>). Turns out, it&rsquo;s quite an easy thing to do:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install lxde lxsession</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install lxde lxsession</span></span></code></pre></div>
 <p>And that&rsquo;s it. Now simply reboot you guest-machine and choose LXDE at logon screen. For me performance of guest-machine got significantly improved.</p>
 <p>So, that was the last of my problems and now I can easily switch between my Mac OS host and Linux virtual machine using 3-finger swipe just like this:</p>
 
@@ -183,9 +183,9 @@ The aim is to get a Linux guest-machine running in a fullscreen mode on a dedica
     <img class="image-post" loading="lazy" src="/blog/2017/09/29/virtual-box-on-mac-os/images/virtualbox-host-only-adapter.png" alt="VirtualBox host-only adapter">
 
 <p>Start your guest machine and edit network interfaces:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>vi /etc/network/interfaces</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>vi /etc/network/interfaces</span></span></code></pre></div>
 <p>Add this to the end of the file:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>auto enp0s8
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>auto enp0s8
 </span></span><span style="display:flex;"><span>iface enp0s8 inet static
 </span></span><span style="display:flex;"><span>address <span style="color:#ae81ff">192.168</span><span style="color:#f92672">.</span><span style="color:#ae81ff">56.105</span>
 </span></span><span style="display:flex;"><span>netmask <span style="color:#ae81ff">255.255</span><span style="color:#f92672">.</span><span style="color:#ae81ff">255.0</span></span></span></code></pre></div>
@@ -194,30 +194,30 @@ The aim is to get a Linux guest-machine running in a fullscreen mode on a dedica
 <h2 id="sftp">SFTP</h2>
 <p>If simply connecting to the host via SSH under your username doesn&rsquo;t work, then you&rsquo;ll need to set-up an SSH server. I used <a href="https://devtidbits.com/2011/06/29/implement-a-sftp-service-for-ubuntudebian-with-a-chrooted-isolated-file-directory/">this instruction</a>.</p>
 <p>Most probably you already have SSH server installed in your guest machine. If not, then install it:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install openssh-server</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install openssh-server</span></span></code></pre></div>
 <p>Add a new group and include your user (mine is <code>vasya</code>) to it (or you can create a new user, but that&rsquo;s just a virtual machine, so I prefer to keep things easy):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>groupadd sftpgroup
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>groupadd sftpgroup
 </span></span><span style="display:flex;"><span>usermod -a -G sftpgroup vasya</span></span></code></pre></div>
 <p>Now create a folder, that will be accessed via SFTP, and then create a <em>share</em> folder inside it and make <code>vasya:sftpgroup</code> its owner:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>mkdir /var/sftp
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>mkdir /var/sftp
 </span></span><span style="display:flex;"><span>cd /var/sftp
 </span></span><span style="display:flex;"><span>mkdir share
 </span></span><span style="display:flex;"><span>chown vasya:sftpgroup share</span></span></code></pre></div>
 <p>Edit SSH server config:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>vi /etc/ssh/sshd_config</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>vi /etc/ssh/sshd_config</span></span></code></pre></div>
 <p>Find <code>Subsystem sftp</code> string, comment default value and add new one:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#66d9ef">#</span><span style="color:#a6e22e">Subsystem</span> sftp <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>openssh<span style="color:#f92672">/</span>sftp<span style="color:#f92672">-</span>server
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#66d9ef">#</span><span style="color:#a6e22e">Subsystem</span> sftp <span style="color:#f92672">/</span>usr<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>openssh<span style="color:#f92672">/</span>sftp<span style="color:#f92672">-</span>server
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">Subsystem</span> sftp internal<span style="color:#f92672">-</span>sftp</span></span></code></pre></div>
 <p>Go to the very end of file (it is important) and add settings for your share folder:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">Match</span> group sftpgroup
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">Match</span> group sftpgroup
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">ChrootDirectory</span> <span style="color:#f92672">/</span><span style="color:#66d9ef">var</span><span style="color:#f92672">/</span>sftp
 </span></span><span style="display:flex;"><span>X11Forwarding no
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">AllowTcpForwarding</span> no
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">ForceCommand</span> internal<span style="color:#f92672">-</span>sftp</span></span></code></pre></div>
 <p>Save the file and restart SSH server:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>systemctl restart ssh.service</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>systemctl restart ssh.service</span></span></code></pre></div>
 <p>If you didn&rsquo;t place <code>Match</code> section in the very end of the config, then you will get an error like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>directive <span style="color:#e6db74">&#39;printmotd&#39;</span> is not allowed within a match block</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>directive <span style="color:#e6db74">&#39;printmotd&#39;</span> is not allowed within a match block</span></span></code></pre></div>
 <p>Pay attention, will you? Go back and fix it.</p>
 <p>After SSH server will restart successfully, you will be able to connect to your guest machine via any FTP client (that supports SFTP) from your host:</p>
 

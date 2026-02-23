@@ -103,7 +103,7 @@ If video doesn’t play in your browser, you can download it here.">
 <h1 id="problem">Problem</h1>
 <p>The full script is published <a href="https://gist.github.com/retifrav/b884ce647c8ef26678c2b6408d4b8306">here</a>.</p>
 <p>To run the script I installed only <strong>matplotlib</strong> and <strong>numpy</strong> packages, so the environment on all 3 systems (Windows, Linux, Mac OS) should be the same. Just in case, here they are:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#66d9ef">#</span> <span style="color:#a6e22e">Windows</span> <span style="color:#f92672">(</span><span style="color:#ae81ff">10.19041</span><span style="color:#f92672">.</span><span style="color:#ae81ff">450</span><span style="color:#f92672">,</span> x64<span style="color:#f92672">)</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#66d9ef">#</span> <span style="color:#a6e22e">Windows</span> <span style="color:#f92672">(</span><span style="color:#ae81ff">10.19041</span><span style="color:#f92672">.</span><span style="color:#ae81ff">450</span><span style="color:#f92672">,</span> x64<span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-</span> <span style="color:#a6e22e">Python</span> <span style="color:#ae81ff">3.7</span><span style="color:#f92672">.</span><span style="color:#ae81ff">2</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-</span> matplotlib <span style="color:#ae81ff">3.3</span><span style="color:#f92672">.</span><span style="color:#ae81ff">1</span>
@@ -126,18 +126,18 @@ If video doesn’t play in your browser, you can download it here.">
 <p>After submitting a question at <a href="https://stackoverflow.com/questions/63722669/matplotlib-animation-works-on-windows-and-linux-but-not-on-mac-os">Stack Overflow</a> and also at <a href="https://discourse.matplotlib.org/t/matplotlib-animation-works-on-windows-and-linux-but-not-on-mac-os/21530">matplotlib forum</a>, I thought about reading <a href="https://matplotlib.org/contents.html">the documentation</a> (<em>classic</em>).</p>
 <h2 id="the-right-backend">The right backend</h2>
 <p>There I soon enough discovered the <a href="https://matplotlib.org/tutorials/introductory/usage.html#what-is-a-backend">backends section</a>. That helped me to google some more ideas, for instance <a href="https://stackoverflow.com/a/46878070/1688203">this answer</a> shown what&rsquo;s needed to make animation from my script work in Jupyter notebook - just a single line in the very beginning of the script:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">%</span>matplotlib Tk
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">%</span>matplotlib Tk
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy <span style="color:#66d9ef">as</span> np
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#66d9ef">as</span> plt
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib.animation <span style="color:#66d9ef">as</span> animation
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span></span></span></code></pre></div>
 <p>And then animation started to work. Okay, so what backend does Jupyter uses in this case then:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>print(<span style="color:#e6db74">&#34;backend:&#34;</span>, plt<span style="color:#f92672">.</span>rcParams[<span style="color:#e6db74">&#34;backend&#34;</span>])</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>print(<span style="color:#e6db74">&#34;backend:&#34;</span>, plt<span style="color:#f92672">.</span>rcParams[<span style="color:#e6db74">&#34;backend&#34;</span>])</span></span></code></pre></div>
 <p>It returned <code>TkAgg</code> - so that&rsquo;s what can show animations in my script! Now I only need to set the same backend in my standalone script.</p>
 <p>By the way, if you are curious, without <code>%matplotlib Tk</code> Jupyter reports <code>module://ipykernel.pylab.backend_inline</code> value for backend.</p>
 <h3 id="with-pyplotrcparams">With pyplot.rcParams</h3>
 <p>Using the same print statement, I&rsquo;ve discovered what backend is used by default when running my script in terminal: <code>MacOSX</code>. Right then, so this backend is incapable to run my animation for some reason. But since I now know the backend that is capable, I&rsquo;ve set it like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy <span style="color:#66d9ef">as</span> np
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy <span style="color:#66d9ef">as</span> np
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#66d9ef">as</span> plt
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib.animation <span style="color:#66d9ef">as</span> animation
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> math
@@ -153,7 +153,7 @@ If video doesn’t play in your browser, you can download it here.">
 <p>So setting the backend via <code>plt.rcParams[&quot;backend&quot;]</code> isn&rsquo;t supported? That&rsquo;s a bit unexpected, as according to <a href="https://matplotlib.org/tutorials/introductory/usage.html#selecting-a-backend">the documentation</a>, it should be.</p>
 <h3 id="with-matplotlibuse">With matplotlib.use</h3>
 <p>Anyway, after some more googling I&rsquo;ve found <a href="https://stackoverflow.com/a/32082076/1688203">this answer</a>, and that was what finally worked:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy <span style="color:#66d9ef">as</span> np
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#66d9ef">as</span> plt
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib.animation <span style="color:#66d9ef">as</span> animation
@@ -164,7 +164,7 @@ If video doesn’t play in your browser, you can download it here.">
 </span></span><span style="display:flex;"><span>matplotlib<span style="color:#f92672">.</span>use(<span style="color:#e6db74">&#34;TkAgg&#34;</span>)
 </span></span><span style="display:flex;"><span>print(<span style="color:#e6db74">&#34;backend&#34;</span>, plt<span style="color:#f92672">.</span>rcParams[<span style="color:#e6db74">&#34;backend&#34;</span>])</span></span></code></pre></div>
 <p>Now my script runs and shows the animation. It also prints the following warning to the output:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ python chart<span style="color:#f92672">.</span>py
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ python chart<span style="color:#f92672">.</span>py
 </span></span><span style="display:flex;"><span>backend <span style="color:#a6e22e">MacOSX</span>
 </span></span><span style="display:flex;"><span>backend <span style="color:#a6e22e">TkAgg</span>
 </span></span><span style="display:flex;"><span>stability r<span style="color:#66d9ef">:</span> <span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">0</span>
@@ -180,7 +180,7 @@ If video doesn’t play in your browser, you can download it here.">
 
 <p>As it was pointed out in the <a href="https://github.com/matplotlib/matplotlib/issues/18451#issuecomment-694397747">bugreport</a>, the <code>line</code> is added anew to the plot each time inside <code>animate()</code> function, instead of modifying existing line, and that&rsquo;s what was causing the chart to go all rainbowy.</p>
 <p>After fixing the script like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>line, <span style="color:#f92672">=</span> ax[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>plot(x, u)
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>line, <span style="color:#f92672">=</span> ax[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>plot(x, u)
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">animate</span>(it):
 </span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">global</span> tmp0, tmp1
