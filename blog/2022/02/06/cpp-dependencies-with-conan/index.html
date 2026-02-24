@@ -65,7 +65,7 @@
 </svg> 2022-02-06 14:47:47 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 57 min read</div>
+</svg> 62 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -129,6 +129,7 @@
             <li><a href="#building-packages-from-source-in-conan-2x">Building packages from source in Conan 2.x</a>
               <ul>
                 <li><a href="#making-sure-that-build-missing-works">Making sure that build missing works</a></li>
+                <li><a href="#making-sure-that-requirements-use-proper-cmake-configs">Making sure that requirements use proper CMake configs</a></li>
               </ul>
             </li>
             <li><a href="#and-so-how-is-it">And so how is it</a></li>
@@ -878,7 +879,7 @@
 <p>However, from time to time we get requests to provide Conan packages for some of our libraries, and by now we accumulated enough of those requests so it became important enough and worth putting effort into.</p>
 <p>Meanwhile, Conan has got version <a href="https://docs.conan.io/2/changelog.html#feb-2023">2.0</a>, which introduced <a href="https://docs.conan.io/2/whatsnew.html">certain changes</a>, so it was a good opportunity to give it another go with the modern version and this time try building packages from sources instead of just packing pre-built binaries.</p>
 <h3 id="building-packages-from-source-in-conan-1x">Building packages from source in Conan 1.x</h3>
-<p>To warm-up, let&rsquo;s see how we could have done with Conan 1.x. Specifically, the version I&rsquo;ll be using in the example below is <a href="https://docs.conan.io/1/changelog.html#dec-2024">1.66.0</a> (<em>the latest in the 1.x branch at the moment</em>).</p>
+<p>To warm-up, let&rsquo;s see how we could have done with Conan 1.x. Specifically, the version I&rsquo;ll be using in the example below is <a href="https://docs.conan.io/1/changelog.html#dec-2024">1.66.0</a> (<em>the latest in the 1.x branch at the moment</em>). And the example itself will be making a package for <a href="https://zlib.net/">zlib</a>.</p>
 <p>The very first thing is naturally the sources, which we of course will be getting from Git repositories via SSH. It is assumed that you already have SSH connection established, so your <code>~/.ssh/config</code> contains a record for your Git host (<em>and you have the keys in place too</em>).</p>
 <p>Also, despite what I said about self-hosting earlier, in the examples below I will be using GitHub, but do keep in mind that this is just for the sake of demonstration/simplicity, and in production you should really consider relying on your own Git hosting.</p>
 <p>Alright, how does one tell Conan where to get the sources from? Well, one way is to use a special file - <a href="https://docs.conan.io/en/1.66/reference/config_files/conandata.yml.html">conandata.yml</a> - where sources URLs can be nicely listed, and it looked so nice that I wrongly assumed that I can list the cloning URLs and commit hashes in there too, like so:</p>
@@ -1865,7 +1866,7 @@
 </span></span><span style="display:flex;"><span>Install finished successfully</span></span></code></pre></div>
 </details>
 <p>Fucking finally! The full updated/corrected recipe file is <a href="https://github.com/retifrav/conan-recipes/blob/127f1c86c37c33f9e937ebc4b3c1488c674797d2/zlib/conanfile.py">here</a>.</p>
-<p>One last thing, I promise, only because we are so curious: how does one build a shared/dynamic library? Quick googling revealed that merely adding <code>-o *:shared=True</code> should be enough:</p>
+<p>One more thing, because we are so curious: how to build/make a package with a shared/dynamic library? Quick googling revealed that merely adding <code>-o *:shared=True</code> should be enough:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ conan create . -s build_type<span style="color:#f92672">=</span>Release -o *:shared<span style="color:#f92672">=</span>True
 </span></span></code></pre></div><p>but no, it still produced <code>libz.a</code>, which is a static library. I&rsquo;d like to be wrong, but apparently (<em>every</em>) recipe must explicitly <a href="https://github.com/retifrav/conan-recipes/commit/777f2c07332aeb4af70c42fcd5b2a468e0eccd34">state</a> that it cares about this option, otherwise <code>-o *:shared=True</code> has no effect on it:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>options <span style="color:#f92672">=</span> {
@@ -1905,11 +1906,105 @@
 </span></span><span style="display:flex;"><span>-- The C compiler identification is AppleClang 17.0.0.17000603
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
 </span></span></code></pre></div><p>but that is probably okay.</p>
+<h4 id="making-sure-that-requirements-use-proper-cmake-configs">Making sure that requirements use proper CMake configs</h4>
+<p>I was about to start celebrating, but then I discovered another nasty thing. If one generates and exports CMake configs as a part of the <a href="https://github.com/retifrav/conan-recipes/blob/209148df29894c0b979bfe8431a4cd3605ef650f/_cmake/Installing.cmake#L25-L74">installation steps</a> when building the project with CMake, then one will be very surprised to learn that by default Conan does not use those configs.</p>
+<p>For instance, let&rsquo;s make a package for <a href="https://libpng.org/pub/png/libpng.html">png</a>, whose only dependency is zlib, which is going to be discovered in png&rsquo;s CMake project like this, as one would expect:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>find_package(<span style="color:#e6db74">zlib</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>Then in the png&rsquo;s Conan recipe we declare the dependency like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">requirements</span>(self):
+</span></span><span style="display:flex;"><span>    self<span style="color:#f92672">.</span>requires(<span style="color:#e6db74">&#34;zlib/1.3.1@your-prefix/public&#34;</span>)
+</span></span></code></pre></div><p>But even though our zlib package does contains proper CMake configs (<em>as you could see above in the <code>/Users/USERNAME/.conan2/p/b/zlib1f9e8e16e0f1d/p</code> tree</em>), the Conan-managed build of png failed to discover those CMake configs for zlib:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>png/1.6.53@your-prefix/public: Running CMake.configure<span style="color:#f92672">()</span>
+</span></span><span style="display:flex;"><span>png/1.6.53@your-prefix/public: RUN: cmake -G <span style="color:#e6db74">&#34;Ninja&#34;</span> -DCMAKE_TOOLCHAIN_FILE<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;generators/conan_toolchain.cmake&#34;</span> -DCMAKE_INSTALL_PREFIX<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/Users/USERNAME/.conan2/p/b/pngdb349cb03f4e6/p&#34;</span> -DCMAKE_POLICY_DEFAULT_CMP0091<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;NEW&#34;</span> -DCMAKE_BUILD_TYPE<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Debug&#34;</span> -DPNG_TESTS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;0&#34;</span> -DPNG_TOOLS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;0&#34;</span> -DPNG_STATIC<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;1&#34;</span> -DPNG_SHARED<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;0&#34;</span> <span style="color:#e6db74">&#34;/Users/USERNAME/.conan2/p/b/pngdb349cb03f4e6/b/src&#34;</span>
+</span></span><span style="display:flex;"><span>-- Using Conan toolchain: /Users/USERNAME/.conan2/p/b/png624dddf43c215/b/build/Debug/generators/conan_toolchain.cmake
+</span></span><span style="display:flex;"><span>-- Conan toolchain: Defining libcxx as C++ flags: -stdlib<span style="color:#f92672">=</span>libc++
+</span></span><span style="display:flex;"><span>-- Conan toolchain: C++ Standard <span style="color:#ae81ff">17</span> with extensions ON
+</span></span><span style="display:flex;"><span>-- Conan toolchain: Setting BUILD_SHARED_LIBS <span style="color:#f92672">=</span> OFF
+</span></span><span style="display:flex;"><span>-- The C compiler identification is AppleClang 17.0.0.17000603
+</span></span><span style="display:flex;"><span>-- Detecting C compiler ABI info
+</span></span><span style="display:flex;"><span>-- Detecting C compiler ABI info - <span style="color:#66d9ef">done</span>
+</span></span><span style="display:flex;"><span>-- Check <span style="color:#66d9ef">for</span> working C compiler: /opt/homebrew/opt/ccache/libexec/cc - skipped
+</span></span><span style="display:flex;"><span>-- Detecting C compile features
+</span></span><span style="display:flex;"><span>-- Detecting C compile features - <span style="color:#66d9ef">done</span>
+</span></span><span style="display:flex;"><span>-- Building <span style="color:#66d9ef">for</span> target architecture: arm64
+</span></span><span style="display:flex; background-color:#3c3d38"><span>CMake Error at CMakeLists.txt:120 <span style="color:#f92672">(</span>find_package<span style="color:#f92672">)</span>:
+</span></span><span style="display:flex; background-color:#3c3d38"><span>  Could not find a package configuration file provided by <span style="color:#e6db74">&#34;zlib&#34;</span> with any of
+</span></span><span style="display:flex; background-color:#3c3d38"><span>  the following names:
+</span></span><span style="display:flex; background-color:#3c3d38"><span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    zlibConfig.cmake
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    zlib-config.cmake
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Add the installation prefix of <span style="color:#e6db74">&#34;zlib&#34;</span> to CMAKE_PREFIX_PATH or set
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;zlib_DIR&#34;</span> to a directory containing one of the above files.  If <span style="color:#e6db74">&#34;zlib&#34;</span>
+</span></span><span style="display:flex;"><span>  provides a separate development package or SDK, be sure it has been
+</span></span><span style="display:flex;"><span>  installed.
+</span></span></code></pre></div><p>That felt somewhat surreal, because this is the last kind of error I&rsquo;d expect to see using a <em>package manager</em>, whose job is to make <em>resolving dependencies</em> easier, not more difficult. I ran to documentation faster than light, and surely enough it turned out that it was just me being stupid, because if I wanted to <a href="https://docs.conan.io/2/tutorial/creating_packages/add_dependencies_to_packages.html">resolve dependencies</a>, then <code>requirements()</code> alone is not good enough, and I should have <em>also</em> declared <a href="https://docs.conan.io/2/reference/tools/cmake/cmakedeps.html#conan-tools-cmakedeps">CMakeDeps</a> generator in the png&rsquo;s recipe:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>generators <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;CMakeDeps&#34;</span>
+</span></span></code></pre></div><p>Or, actually, looks like it should be <a href="https://docs.conan.io/2/reference/tools/cmake/cmakeconfigdeps.html#conan-tools-cmakeconfigdeps">CMakeConfigDeps</a> instead, because apparently there is something wrong with <code>CMakeDeps</code>, but at the same time <code>CMakeConfigDeps</code> is marked as experimental, sooooo what do I&hellip; jesus christ, I guess I&rsquo;ll go with <code>CMakeDeps</code>.</p>
+<p>So I added that, and then the build progressed further, but failed with a different error - something I have expected even less:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>png/1.6.53@your-prefix/public: Running CMake.build<span style="color:#f92672">()</span>
+</span></span><span style="display:flex;"><span>png/1.6.53@your-prefix/public: RUN: cmake --build <span style="color:#e6db74">&#34;/Users/USERNAME/.conan2/p/b/png098b4bf951dc7/b/build/Release&#34;</span> -- -j12
+</span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>6/32<span style="color:#f92672">]</span> Generating pnglibconf.out
+</span></span><span style="display:flex;"><span>FAILED: <span style="color:#f92672">[</span>code<span style="color:#f92672">=</span>1<span style="color:#f92672">]</span> pnglibconf.out /Users/USERNAME/.conan2/p/b/png098b4bf951dc7/b/build/Release/pnglibconf.out
+</span></span><span style="display:flex;"><span>cd /Users/USERNAME/.conan2/p/b/png098b4bf951dc7/b/build/Release <span style="color:#f92672">&amp;&amp;</span> /opt/homebrew/bin/cmake -DINPUT<span style="color:#f92672">=</span>/Users/USERNAME/.conan2/p/b/png098b4bf951dc7/b/build/Release/pnglibconf.c -DOUTPUT<span style="color:#f92672">=</span>/Users/USERNAME/.conan2/p/b/png098b4bf951dc7/b/build/Release/pnglibconf.out -P /Users/USERNAME/.conan2/p/b/png098b4bf951dc7/b/build/Release/scripts/cmake/genout.cmake
+</span></span><span style="display:flex;"><span>/Users/USERNAME/.conan2/p/b/png098b4bf951dc7/b/build/Release/pnglibconf.c:34:11: fatal error: <span style="color:#e6db74">&#39;zlib/zlib.h&#39;</span> file not found
+</span></span><span style="display:flex;"><span>   <span style="color:#ae81ff">34</span> | <span style="color:#75715e"># include &lt;zlib/zlib.h&gt;</span>
+</span></span><span style="display:flex;"><span>      |           ^~~~~~~~~~~~~
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">1</span> error generated.
+</span></span><span style="display:flex;"><span>CMake Error at scripts/cmake/genout.cmake:88 <span style="color:#f92672">(</span>message<span style="color:#f92672">)</span>:
+</span></span><span style="display:flex;"><span>  Failed to generate
+</span></span><span style="display:flex;"><span>  /Users/USERNAME/.conan2/p/b/png098b4bf951dc7/b/build/Release/pnglibconf.out.tf1
+</span></span></code></pre></div><p>The <code>zlib/zlib.h</code> include pattern is <a href="https://github.com/retifrav/conan-recipes/blob/d3f72a83b729e5686cf355d62257915d4c5a368b/png/patches/1.6.53/001-single-unsuffixed-target-dependencies-installation.patch#L401-L439">my doing</a>, because I don&rsquo;t like every other library trying to take a dump with its headers into the top level of <code>include</code> - fuck that noise, no bare files without subfolder allowed in there. And that is addressed in CMake configs that are generated in my zlib package, which means that Conan still did not use CMake configs from the package. But what did it use then, since <code>find_package(zlib CONFIG REQUIRED)</code> succeeded?</p>
+<p>Conan output contains a hint:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>png/1.6.53@your-prefix/public: Generator <span style="color:#e6db74">&#39;CMakeDeps&#39;</span> calling <span style="color:#e6db74">&#39;generate()&#39;</span>
+</span></span><span style="display:flex;"><span>png/1.6.53@your-prefix/public: CMakeDeps necessary find_package<span style="color:#f92672">()</span> and targets <span style="color:#66d9ef">for</span> your CMakeLists.txt
+</span></span><span style="display:flex;"><span>    find_package<span style="color:#f92672">(</span>zlib<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    target_link_libraries<span style="color:#f92672">(</span>... zlib::zlib<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>png/1.6.53@your-prefix/public: Calling generate<span style="color:#f92672">()</span>
+</span></span><span style="display:flex;"><span>png/1.6.53@your-prefix/public: Generators folder: /Users/USERNAME/.conan2/p/b/png098b4bf951dc7/b/build/Release/generators
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span></code></pre></div><p>Whaaaat the fuck is this <code>find_package(zlib)</code>, where are <code>CONFIG</code> and <code>REQUIRED</code> keywords/options? Why the target name is <code>zlib::zlib</code>, I never called it so (<em>although, in general, namespaced targets is a good practice, just not when they are set against my will</em>). And what is this bunch of crap:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ls -L1 /Users/USERNAME/.conan2/p/b/png098b4bf951dc7/b/build/Release/generators
+</span></span><span style="display:flex;"><span>cmakedeps_macros.cmake
+</span></span><span style="display:flex;"><span>CMakePresets.json
+</span></span><span style="display:flex;"><span>conan_toolchain.cmake
+</span></span><span style="display:flex;"><span>conanbuild.sh
+</span></span><span style="display:flex;"><span>conanbuildenv-release-armv8.sh
+</span></span><span style="display:flex;"><span>conandeps_legacy.cmake
+</span></span><span style="display:flex;"><span>conanrun.sh
+</span></span><span style="display:flex;"><span>conanrunenv-release-armv8.sh
+</span></span><span style="display:flex;"><span>deactivate_conanbuild.sh
+</span></span><span style="display:flex;"><span>deactivate_conanbuildenv-release-armv8.sh
+</span></span><span style="display:flex;"><span>deactivate_conanrun.sh
+</span></span><span style="display:flex;"><span>zlib-config-version.cmake
+</span></span><span style="display:flex;"><span>zlib-config.cmake
+</span></span><span style="display:flex;"><span>zlib-release-armv8-data.cmake
+</span></span><span style="display:flex;"><span>zlib-Target-release.cmake
+</span></span><span style="display:flex;"><span>zlibTargets.cmake
+</span></span></code></pre></div><p>I could barely believe it - motherfucker generated its own CMake configs! In those configs it creates <code>zlib::zlib</code> target and it is this one who gets <code>INTERFACE_INCLUDE_DIRECTORIES</code> target property with the path to headers, but in the png&rsquo;s CMake project I link to <code>zlib</code> target, which simply does not exist in those configs, so compiler does not get to know where to find <code>zlib/zlib.h</code> header.</p>
+<p>Sweet suffering Jehovah, whose dick do I gotta suck to get Conan use my pre-made CMake configs from the package instead of those smart-ass-generated ones? But as it has already become a recurring theme, that was just me being stupid again, because documentation <a href="https://docs.conan.io/2/reference/tools/cmake/cmakedeps.html#disable-cmakedeps-for-installed-cmake-configuration-files">clearly describes</a> this exact scenario:</p>
+<blockquote>Some projects may want to disable the <code>CMakeDeps</code> generator for downstream consumers. This can be done by settings <code>cmake_find_mode</code> to <code>none</code>. If the project wants to provide its own configuration targets, it should append them to the <code>buildirs</code> attribute of <code>cpp_info</code>.</blockquote>
+<p>I&rsquo;d probably replace &ldquo;<em>Some projects may want to</em>&rdquo; with &ldquo;<em>Everyone should absolutely</em>&rdquo;, but that&rsquo;s just me (<em>being stupid</em>). Next, that last part about appending targets I did not understand at first, as it does not make sense, but later I realized that they actually meant not targets but folders inside the package where your CMake configs are. Specifically, <a href="https://github.com/retifrav/conan-recipes/commit/41d0f23704f61ee5701db3b7b1af40fc2ef6843a">this</a> is what needs to be done:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">package_info</span>(self):
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># do not let Conan try to be smarter than CMake or/and maintainer,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># otherwise it will generate some bizarre CMake configs of its own</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># based on god knows what</span>
+</span></span><span style="display:flex;"><span>    self<span style="color:#f92672">.</span>cpp_info<span style="color:#f92672">.</span>set_property(<span style="color:#e6db74">&#34;cmake_find_mode&#34;</span>, <span style="color:#e6db74">&#34;none&#34;</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># this is required too, otherwise consumers won&#39;t be able to find CMake configs,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># and obviously if you are installing package configs to a different path,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># then you will need to replace `share` with whichever you are using</span>
+</span></span><span style="display:flex;"><span>    self<span style="color:#f92672">.</span>cpp_info<span style="color:#f92672">.</span>builddirs<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;share&#34;</span>)
+</span></span></code></pre></div><p>After re-making and re-publishing this updated zlib package I could then make a png package, as it finally used CMake configs from the package.</p>
+<p>In case it isn&rsquo;t obvious, the <a href="https://github.com/retifrav/conan-recipes/tree/d3f72a83b729e5686cf355d62257915d4c5a368b/png">png package</a> itself (<em>and any other package, for that matter</em>) also needs to perform the <a href="https://github.com/retifrav/conan-recipes/blob/d3f72a83b729e5686cf355d62257915d4c5a368b/png/conanfile.py#L117-L119">same ritual passes</a> in its <code>package_info()</code> method, otherwise its own CMake configs are going to suffer the same fate.</p>
 <h3 id="and-so-how-is-it">And so how is it</h3>
 <p>Indeed, building packages from sources is definitily the way to go. Bare packing of pre-built binaries with <code>export-pkg</code> <a href="/blog/2022/10/30/cpp-dependencies-with-vcpkg/#why-we-didnt-proceed-with-conan">won&rsquo;t get you far</a>, so we really did take a wrong approach to it back then.</p>
 <p>Presumably, that was the main reason why we did not proceed with Conan and chose vcpkg instead. However, with all the current knowledge that I have now, if I needed to choose between Conan and vcpkg today, I would absolutely pick vcpkg again. The reasons are still the <a href="/blog/2022/10/30/cpp-dependencies-with-vcpkg/#overall-impression">same</a>: vcpkg is more intuitive (<em>it is for me, at least</em>), and I had considerably fewer &ldquo;chances&rdquo; to do something wrong, as most of the time things just made sense and felt like a natural way to go.</p>
 <p>With Conan, those dances around <code>export_sources()</code> and <code>source()</code> alone were tiresome enough. I had a hard time wrapping my head around what goes where and how do I place additional files into the sources (<em>which I still don&rsquo;t know how it is supposed to be done without introducing intermediate crutches</em>).</p>
 <p>I&rsquo;d say that Conan being less intuitive was the major slowdown again, as way too often I needed to either browse the documentation, or go through their <a href="https://github.com/conan-io/conan/issues">issue tracker</a>, or just google the wild internets (<em>the latter has proven to be the least useful</em>). With zlib as a concrete example, it took me about 3 days to make a Conan recipe/package for it (<em>first for version 1.x and then adapting it to 2.x</em>), while when I was learning vcpkg my zlib port was done in about half a day, as I recall.</p>
+<p>What especially threw me off the trail is how Conan <a href="#making-sure-that-requirements-use-proper-cmake-configs">tries to be a smart-ass</a> and generates its own CMake configs instead of using pre-made ones from the packages. That was a real WTF moment for me, though perhaps this is due to my perception being somewhat deformed in that regard (<em>spent too much time with CMake</em>).</p>
 <p>Figuring out the way patches are supposed to work was rather difficult too. And by the way, while I was struggling with that, I stumbled upon this <a href="https://github.com/conan-io/conan-center-index/blob/919d894e778c287cb597be248a81c67089e26409/docs/adding_packages/sources_and_patches.md#policy-on-patches">majestic policy</a> of Conan Center:</p>
 <blockquote>In general, patches to source code should be avoided and only done as a last resort.
 <p>[&hellip;]</p>
