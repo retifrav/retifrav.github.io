@@ -72,36 +72,36 @@
       <div class="post-content">
         <p>So, I finally decided to stop ignoring warnings about obsolete <a href="https://en.wikipedia.org/wiki/Ubuntu_(operating_system)">Ubuntu</a> version on my server and upgrade it from <strong>14.04</strong> to <strong>16.04</strong>. Right after the upgrade my website on <a href="https://en.wikipedia.org/wiki/WordPress">WordPress</a> stopped working.</p>
 <p>So, what I did:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get update
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get update
 </span></span><span style="display:flex;"><span>apt-get upgrade
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">do</span>-release-upgrade</span></span></code></pre></div>
 <p>That got my Ubuntu to be upgraded to 16.04. After that Apache web-server couldn&rsquo;t start:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apache2: Syntax error on line <span style="color:#ae81ff">13</span> of /etc/apache2/apache2.conf: Syntax error on line <span style="color:#ae81ff">1</span> of /etc/apache2/mods-enabled/php5.load: Cannot load /usr/lib/apache2/modules/libphp5.so into server: /usr/lib/apache2/modules/libphp5.so: cannot open shared object file: No such file or directory</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apache2: Syntax error on line <span style="color:#ae81ff">13</span> of /etc/apache2/apache2.conf: Syntax error on line <span style="color:#ae81ff">1</span> of /etc/apache2/mods-enabled/php5.load: Cannot load /usr/lib/apache2/modules/libphp5.so into server: /usr/lib/apache2/modules/libphp5.so: cannot open shared object file: No such file or directory</span></span></code></pre></div>
 <p>Having googled it, I discovered that it&rsquo;s because of missing <code>libapache2-mod-php5</code>, so I tried to install it:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install libapache2-mod-php5</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install libapache2-mod-php5</span></span></code></pre></div>
 <p>But that failed:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Package <span style="color:#e6db74">`</span>libapache2-mod-php5<span style="color:#e6db74">`</span> has no installation candidate</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Package <span style="color:#e6db74">`</span>libapache2-mod-php5<span style="color:#e6db74">`</span> has no installation candidate</span></span></code></pre></div>
 <p>And the reason for that is this module is no longer available in Ubuntu 16.04 repositories, because <strong>PHP 5</strong> is considered to be obsolete, apparently. So, you need to add some custom repository that has it.</p>
 <p>But first, check, if you have <strong>PHP 7</strong> installed in the system:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>php -v</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>php -v</span></span></code></pre></div>
 <p>If it doesn&rsquo;t show a version but complains instead, then it&rsquo;s fine. If it does show the version 7.x, then delete it:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get purge php7.*</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get purge php7.*</span></span></code></pre></div>
 <p>You also need to disable (and delete) old PHP modules from Apache. Take a look at them:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ls -l /etc/apache2/mods-enabled/
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ls -l /etc/apache2/mods-enabled/
 </span></span><span style="display:flex;"><span>...
 </span></span><span style="display:flex;"><span>lrwxrwxrwx <span style="color:#ae81ff">1</span> root root <span style="color:#ae81ff">34</span> Apr <span style="color:#ae81ff">19</span>  <span style="color:#ae81ff">2016</span> negotiation.load -&gt; ../mods-available/negotiation.load
 </span></span><span style="display:flex;"><span>lrwxrwxrwx <span style="color:#ae81ff">1</span> root root <span style="color:#ae81ff">27</span> Apr <span style="color:#ae81ff">19</span>  <span style="color:#ae81ff">2016</span> php5.conf -&gt; ../mods-available/php5.conf
 </span></span><span style="display:flex;"><span>lrwxrwxrwx <span style="color:#ae81ff">1</span> root root <span style="color:#ae81ff">27</span> Apr <span style="color:#ae81ff">19</span>  <span style="color:#ae81ff">2016</span> php5.load -&gt; ../mods-available/php5.load
 </span></span><span style="display:flex;"><span>...</span></span></code></pre></div>
 <p>And disable them:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>a2dismod php5
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>a2dismod php5
 </span></span><span style="display:flex;"><span>rm /etc/apache2/mods-enabled/php5.*</span></span></code></pre></div>
 <p>Okay, now add a new repository that has <strong>PHP 5</strong> and install it from there (this should add the corresponding Apache module automatically):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install python-software-properties
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install python-software-properties
 </span></span><span style="display:flex;"><span>add-apt-repository ppa:ondrej/php
 </span></span><span style="display:flex;"><span>apt-get update</span></span></code></pre></div>
 <p>It can give you that:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Err:4 http://ppa.launchpad.net/ondrej/php/ubuntu xenial InRelease
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Err:4 http://ppa.launchpad.net/ondrej/php/ubuntu xenial InRelease
 </span></span><span style="display:flex;"><span>  The following signatures couldn<span style="color:#e6db74">&#39;t be verified because the public key is not available: NO_PUBKEY 4F4EA0AAE5267A6C
 </span></span></span><span style="display:flex;"><span><span style="color:#e6db74">Reading package lists... Done
 </span></span></span><span style="display:flex;"><span><span style="color:#e6db74">W: GPG error: http://ppa.launchpad.net/ondrej/php/ubuntu xenial InRelease: The following signatures couldn&#39;</span>t be verified because the public key is not available: NO_PUBKEY 4F4EA0AAE5267A6C
@@ -109,7 +109,7 @@
 </span></span><span style="display:flex;"><span>N: Updating from such a repository can<span style="color:#960050;background-color:#1e0010">&#39;</span>t be <span style="color:#66d9ef">done</span> securely, and is therefore disabled by default.
 </span></span><span style="display:flex;"><span>N: See apt-secure<span style="color:#f92672">(</span>8<span style="color:#f92672">)</span> manpage <span style="color:#66d9ef">for</span> repository creation and user configuration details.</span></span></code></pre></div>
 <p>In that case add the key it wants:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C
 </span></span><span style="display:flex;"><span>Executing: /tmp/tmp.4F4cqgAm8F/gpg.1.sh --keyserver
 </span></span><span style="display:flex;"><span>keyserver.ubuntu.com
 </span></span><span style="display:flex;"><span>--recv-keys
@@ -119,37 +119,37 @@
 </span></span><span style="display:flex;"><span>gpg: Total number processed: <span style="color:#ae81ff">1</span>
 </span></span><span style="display:flex;"><span>gpg:               imported: <span style="color:#ae81ff">1</span>  <span style="color:#f92672">(</span>RSA: 1<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>Now you can run:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get update
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get update
 </span></span><span style="display:flex;"><span>apt-get install php5.6</span></span></code></pre></div>
 <p>Note, that specifying explicitly <code>5.6</code> is important, pay attention here. Check the PHP version after installation (<code>php -v</code>) and also check new Apache modules:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ls -l /etc/apache2/mods-enabled/
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ls -l /etc/apache2/mods-enabled/
 </span></span><span style="display:flex;"><span>...
 </span></span><span style="display:flex;"><span>lrwxrwxrwx <span style="color:#ae81ff">1</span> root root <span style="color:#ae81ff">34</span> Apr <span style="color:#ae81ff">19</span>  <span style="color:#ae81ff">2016</span> negotiation.load -&gt; ../mods-available/negotiation.load
 </span></span><span style="display:flex;"><span>lrwxrwxrwx <span style="color:#ae81ff">1</span> root root <span style="color:#ae81ff">29</span> Jun  <span style="color:#ae81ff">7</span> 14:50 php5.6.conf -&gt; ../mods-available/php5.6.conf
 </span></span><span style="display:flex;"><span>lrwxrwxrwx <span style="color:#ae81ff">1</span> root root <span style="color:#ae81ff">29</span> Jun  <span style="color:#ae81ff">7</span> 14:50 php5.6.load -&gt; ../mods-available/php5.6.load
 </span></span><span style="display:flex;"><span>...</span></span></code></pre></div>
 <p>Okay, you have the right PHP in the system. Now try to install <code>libapache2-mod-php5</code> again, but explicitly specify that it is version <code>5.6</code>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get --reinstall install libapache2-mod-php5.6</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get --reinstall install libapache2-mod-php5.6</span></span></code></pre></div>
 <p>Try to restart Apache:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>service apache2 restart</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>service apache2 restart</span></span></code></pre></div>
 <p>Now it should start without problems. However, if you would open your WordPress website, you&rsquo;ll most probably see this error in browser:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Your PHP installation appears to be missing the MySQL extension which is required by WordPress</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Your PHP installation appears to be missing the MySQL extension which is required by WordPress</span></span></code></pre></div>
 <p>Install it and restart Apache again (note the <code>5.6</code> part):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install php5.6-mysql
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install php5.6-mysql
 </span></span><span style="display:flex;"><span>service apache2 restart</span></span></code></pre></div>
 <p>Refresh the page in browser. Now it actually works, but some images are not displayed. And if you would open any of them in a separate tab, you&rsquo;ll see the error:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>GD Library Error: imagecreatetruecolor does not exist - please contact your webhost and ask them to install the GD library</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>GD Library Error: imagecreatetruecolor does not exist - please contact your webhost and ask them to install the GD library</span></span></code></pre></div>
 <p>Install it and restart Apache again (note the <code>5.6</code> part):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install php5.6-gd
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install php5.6-gd
 </span></span><span style="display:flex;"><span>service apache2 restart</span></span></code></pre></div>
 <p>Refresh the page - now everything seems to be fine at last.</p>
 <p>However, most probably your WordPress plugins are complaining about something, for example like this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>No CURL Found - Social Networks AutoPoster needs the CURL PHP extension</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>No CURL Found - Social Networks AutoPoster needs the CURL PHP extension</span></span></code></pre></div>
 <p>That means PHP extension for cURL has been lost during the upgrade too. You need to install it back (and restart Apache).</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install curl libcurl3 libcurl3-dev php5.6-curl
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install curl libcurl3 libcurl3-dev php5.6-curl
 </span></span><span style="display:flex;"><span>service apache2 restart</span></span></code></pre></div>
 <p>Check if it&rsquo;s there:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ls -l /etc/php/5.6/mods-available/
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ls -l /etc/php/5.6/mods-available/
 </span></span><span style="display:flex;"><span>php -i | grep curl</span></span></code></pre></div>
 <p>Now you&rsquo;re all set.</p>
       </div>

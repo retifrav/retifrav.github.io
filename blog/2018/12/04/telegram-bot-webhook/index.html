@@ -114,12 +114,12 @@
 <h2 id="server-part">Server part</h2>
 <p>Server part was a bit more difficult. I modified my current <a href="https://github.com/eternnoir/pyTelegramBotAPI">pyTelegramBotAPI</a> bot implementation using <a href="https://github.com/eternnoir/pyTelegramBotAPI/blob/master/examples/webhook_examples/webhook_aiohttp_echo_bot.py">an example</a> for <a href="https://aiohttp.readthedocs.io/">AIOHTTP</a>.</p>
 <p>Install the required packages:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>pip install pyTelegramBotAPI
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>pip install pyTelegramBotAPI
 </span></span><span style="display:flex;"><span>pip install aiohttp
 </span></span><span style="display:flex;"><span>pip install cchardet
 </span></span><span style="display:flex;"><span>pip install aiodns</span></span></code></pre></div>
 <p>And here&rsquo;s a short version of modified bot implementation:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>import config
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>import config
 </span></span><span style="display:flex;"><span>import telebot
 </span></span><span style="display:flex;"><span>from aiohttp import web
 </span></span><span style="display:flex;"><span>import ssl
@@ -181,40 +181,40 @@
 <li>the code for removing and setting the webhook is deleted.</li>
 </ul>
 <p>Since I&rsquo;m not executing the bot script under root user, my service started to fail with the following error:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>: Traceback <span style="color:#f92672">(</span>most recent call last<span style="color:#f92672">)</span>:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>: Traceback <span style="color:#f92672">(</span>most recent call last<span style="color:#f92672">)</span>:
 </span></span><span style="display:flex;"><span>python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>:   File <span style="color:#e6db74">&#34;/usr/local/bin/bot/bot.py&#34;</span>, line 142, in &lt;module&gt;
 </span></span><span style="display:flex;"><span>python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>:     context.load_cert_chain<span style="color:#f92672">(</span>WEBHOOK_SSL_CERT, WEBHOOK_SSL_PRIV<span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span>python-bot<span style="color:#f92672">[</span>1824<span style="color:#f92672">]</span>: PermissionError: <span style="color:#f92672">[</span>Errno 13<span style="color:#f92672">]</span> Permission denied
 </span></span><span style="display:flex;"><span>systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: telegram-bot.service: Main process exited, code<span style="color:#f92672">=</span>exited, status<span style="color:#f92672">=</span>1/FAILURE
 </span></span><span style="display:flex;"><span>systemd<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: telegram-bot.service: Failed with result <span style="color:#e6db74">&#39;exit-code&#39;</span>.</span></span></code></pre></div>
 <p>Turns out this other user doesn&rsquo;t have access to <code>/etc/letsencrypt/</code>, so he cannot open the certificate file. I tried to grand access to this folder to a new group, having included this user to its members:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>groupadd letsencrypt
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>groupadd letsencrypt
 </span></span><span style="display:flex;"><span>usermod -a -G letsencrypt userforbot
 </span></span><span style="display:flex;"><span>chgrp -R letsencrypt /etc/letsencrypt/</span></span></code></pre></div>
 <p>But he couldn&rsquo;t open these files anyway, even simple <code>ls</code> was giving permission denied. So, either my Linux skills suck dick, or. In the end I simply set this user as an owner of the folder:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>chown -R userforbot:letsencrypt /etc/letsencrypt/</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>chown -R userforbot:letsencrypt /etc/letsencrypt/</span></span></code></pre></div>
 <p>After that there were no problems with the access and service started normally.</p>
 <h2 id="registration">Registration</h2>
 <p>Now the most difficult part - register the bot endpoint at Telegram. It was difficult for me as I misunderstood the principle of forming the endpoint address, and also there were some issues with checking the certificate.</p>
 <p>In order to register/set the webhook you need to send the following HTTP request (you can just open this URL in web-browser):</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/setWebhook?url</span><span style="color:#f92672">=</span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//YOUR.DOMAIN:</span><span style="color:#960050;background-color:#1e0010">8443</span><span style="color:#66d9ef">/YOUR-TOKEN/</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/setWebhook?url</span><span style="color:#f92672">=</span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//YOUR.DOMAIN:</span><span style="color:#960050;background-color:#1e0010">8443</span><span style="color:#66d9ef">/YOUR-TOKEN/</span></span></span></code></pre></div>
 <p>While I was experimenting and studying the endpoint format, Telegram was sending me normal result:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Webhook was set&#34;</span>,
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">true</span>,
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;result&#34;</span>: <span style="color:#66d9ef">true</span>
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>But then apparently it got sick of me, because I started to get the following result:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">false</span>,
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;error_code&#34;</span>: <span style="color:#ae81ff">504</span>,
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Gateway Timeout&#34;</span>
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Nevertheless, it turned out that such a result is not a problem as webhook was successfully set anyway, so there is no even need to wait for timeout, you can just cancel request after a couple of seconds.</p>
 <p>To check the webhook status, send this request:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/getWebhookInfo</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/getWebhookInfo</span></span></span></code></pre></div>
 <p>If everything is fine, you should get this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">true</span>,
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;result&#34;</span>: {
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;https://YOUR.DOMAIN:8443/YOUR-TOKEN/&#34;</span>,
@@ -225,7 +225,7 @@
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>As you can see, <code>url</code> field contains our endpoint.</p>
 <p>However, right now I get this:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">true</span>,
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;result&#34;</span>: {
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;https://YOUR.DOMAIN:8443/YOUR-TOKEN/&#34;</span>,
@@ -238,9 +238,9 @@
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Which points to some problems with certificate. Despite this, bot works fine, so this error has no actual consequences. Although, if I replace <code>fullchain.pem</code> with <code>cert.pem</code> (like it was by default), then bot will stop working.</p>
 <p>It is also worth to mention that if you set the webhook, then <code>getUpdates</code> method will stop working. To remove the webhook you need to send the same request you used for setting it, but this time send it without <code>url</code> parameter:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/setWebhook</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/setWebhook</span></span></span></code></pre></div>
 <p>You should get the following answer:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;ok&#34;</span>: <span style="color:#66d9ef">true</span>,
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;result&#34;</span>: <span style="color:#66d9ef">true</span>,
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;Webhook was deleted&#34;</span>
