@@ -65,7 +65,7 @@
 </svg> 2022-02-06 14:47:47 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 64 min read</div>
+</svg> 66 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -129,6 +129,7 @@
             <li><a href="#building-packages-from-source-in-conan-2x">Building packages from source in Conan 2.x</a>
               <ul>
                 <li><a href="#making-sure-that-build-missing-works">Making sure that build missing works</a></li>
+                <li><a href="#building-a-shareddynamic-library">Building a shared/dynamic library</a></li>
                 <li><a href="#making-sure-that-requirements-use-proper-cmake-configs">Making sure that requirements use proper CMake configs</a></li>
               </ul>
             </li>
@@ -1869,7 +1870,8 @@
 </span></span><span style="display:flex;"><span>Install finished successfully</span></span></code></pre></div>
 </details>
 <p>Fucking finally! The full updated/corrected recipe file is <a href="https://github.com/retifrav/conan-recipes/blob/127f1c86c37c33f9e937ebc4b3c1488c674797d2/zlib/conanfile.py">here</a>.</p>
-<p>One more thing, because we are so curious: how to build/make a package with a shared/dynamic library? Quick googling revealed that merely adding <code>-o *:shared=True</code> should be enough:</p>
+<h4 id="building-a-shareddynamic-library">Building a shared/dynamic library</h4>
+<p>Another question is how to build/make a package with a shared/dynamic library? Quick googling revealed that merely adding <code>-o *:shared=True</code> should be enough:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ conan create . -s build_type<span style="color:#f92672">=</span>Release -o *:shared<span style="color:#f92672">=</span>True
 </span></span></code></pre></div><p>but no, it still produced <code>libz.a</code>, which is a static library. I&rsquo;d like to be wrong, but apparently (<em>every</em>) recipe must explicitly <a href="https://github.com/retifrav/conan-recipes/commit/777f2c07332aeb4af70c42fcd5b2a468e0eccd34">state</a> that it cares about this option, otherwise <code>-o *:shared=True</code> has no effect on it:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>options <span style="color:#f92672">=</span> {
@@ -1909,7 +1911,53 @@
 </span></span><span style="display:flex;"><span>-- The C compiler identification is AppleClang 17.0.0.17000603
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
 </span></span></code></pre></div><p>but that is probably okay.</p>
-<h4 id="making-sure-that-requirements-use-proper-cmake-configs">Making sure that requirements use proper CMake configs</h4>
+<p>Going deeper, what if some library needs to be limited to building only static variant under certain conditions? Specifically, if it does not export symbols for making a DLL on Windows (<em>one such example is <a href="https://github.com/ulfjack/ryu/tree/1264a946ba66eab320e927bfd2362e0c8580c42f">ryu</a> library</em>), then it should always build as static library on Windows but keep building as shared library on other platforms.</p>
+<p>My first guess was to introduce this limitation in <code>configure()</code> method:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">configure</span>(self):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>settings<span style="color:#f92672">.</span>os <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;Windows&#34;</span> <span style="color:#f92672">and</span> self<span style="color:#f92672">.</span>options<span style="color:#f92672">.</span>shared:
+</span></span><span style="display:flex;"><span>        self<span style="color:#f92672">.</span>options<span style="color:#f92672">.</span>shared <span style="color:#f92672">=</span> <span style="color:#66d9ef">False</span>
+</span></span></code></pre></div><p>but that failed with:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>ConanException: Incorrect attempt to modify option <span style="color:#e6db74">&#39;shared&#39;</span> from <span style="color:#e6db74">&#39;True&#39;</span> to <span style="color:#e6db74">&#39;False&#39;</span>
+</span></span></code></pre></div><p>Fucking okay, in <code>config_options()</code> then:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">config_options</span>(self):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>settings<span style="color:#f92672">.</span>os <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;Windows&#34;</span> <span style="color:#f92672">and</span> self<span style="color:#f92672">.</span>options<span style="color:#f92672">.</span>shared:
+</span></span><span style="display:flex;"><span>        self<span style="color:#f92672">.</span>options<span style="color:#f92672">.</span>shared <span style="color:#f92672">=</span> <span style="color:#66d9ef">False</span>
+</span></span></code></pre></div><p>And that didn&rsquo;t fail, but it also did not do jack shit, as the build still got <code>BUILD_SHARED_LIBS = ON</code>.</p>
+<p>Then I remembered that I read somewhere something about <em>removing</em> options, so I tried that:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">config_options</span>(self):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>settings<span style="color:#f92672">.</span>os <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;Windows&#34;</span> <span style="color:#f92672">and</span> self<span style="color:#f92672">.</span>options<span style="color:#f92672">.</span>shared:
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">del</span> self<span style="color:#f92672">.</span>options<span style="color:#f92672">.</span>shared
+</span></span></code></pre></div><p>But that too did not prevent it from building a shared/dynamic library on Windows. <del>Motherf</del>Finally, I also remembered reading about a <em>different kind</em> of options removal (<em>does it really need to be more than one?</em>), which happens not in <code>config_options()</code> but in&hellip; <code>configure()</code>, back where I started:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">configure</span>(self):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>settings<span style="color:#f92672">.</span>os <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;Windows&#34;</span> <span style="color:#f92672">and</span> self<span style="color:#f92672">.</span>options<span style="color:#f92672">.</span>shared:
+</span></span><span style="display:flex;"><span>        self<span style="color:#f92672">.</span>options<span style="color:#f92672">.</span>rm_safe(<span style="color:#e6db74">&#34;shared&#34;</span>)
+</span></span></code></pre></div><p>And that one <a href="https://github.com/retifrav/conan-recipes/blob/f4445ed64d30dc84314171ce8cf5e2b374521db6/recipes/ryu/conanfile.py#L46-L58">did work</a> - building on Windows got limited to static-only. Fucking hell.</p>
+<p>If you will need to do something based on that option in &ldquo;lower&rdquo; methods (<em>such as <code>build()</code></em>) down the <a href="https://docs.conan.io/2/reference/commands/create.html#methods-execution-order">execution line</a>, then you will have to use <code>get_safe()</code> function, because the option could be already removed at that point. With <a href="https://github.com/open-source-parsers/jsoncpp/blob/89e2973c754a9c02a49974d839779b151e95afd6/CMakeLists.txt#L82-L83">JsonCpp</a> as an example, it might look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">build</span>(self):
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    JSONCPP_STATIC <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    JSONCPP_SHARED <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># the `shared` option might be already removed in the &#34;higher&#34; methods,</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># so you can&#39;t access it like this</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">#self.options.shared:</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>options<span style="color:#f92672">.</span>get_safe(<span style="color:#e6db74">&#34;shared&#34;</span>, default<span style="color:#f92672">=</span><span style="color:#66d9ef">False</span>):
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e"># checking `self.settings.os != &#34;Windows&#34;` should not be required,</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e"># assuming that `configure()` already removed the option for Windows</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>        JSONCPP_STATIC <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>        JSONCPP_SHARED <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    cmake <span style="color:#f92672">=</span> CMake(self)
+</span></span><span style="display:flex;"><span>    cmake<span style="color:#f92672">.</span>configure(
+</span></span><span style="display:flex;"><span>        build_script_folder<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;src&#34;</span>,
+</span></span><span style="display:flex;"><span>        variables<span style="color:#f92672">=</span>{
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;JSONCPP_WITH_TESTS&#34;</span>: <span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;JSONCPP_WITH_EXAMPLE&#34;</span>: <span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>            <span style="color:#e6db74">&#34;BUILD_SHARED_LIBS&#34;</span>: JSONCPP_SHARED,
+</span></span><span style="display:flex; background-color:#3c3d38"><span>            <span style="color:#e6db74">&#34;BUILD_STATIC_LIBS&#34;</span>: JSONCPP_STATIC
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    )
+</span></span><span style="display:flex;"><span>    cmake<span style="color:#f92672">.</span>build()
+</span></span></code></pre></div><h4 id="making-sure-that-requirements-use-proper-cmake-configs">Making sure that requirements use proper CMake configs</h4>
 <p>I was about to start celebrating, but then I discovered another nasty thing. If one generates and exports CMake configs as a part of the <a href="https://github.com/retifrav/conan-recipes/blob/209148df29894c0b979bfe8431a4cd3605ef650f/_cmake/Installing.cmake#L25-L74">installation steps</a> when building the project with CMake, then one will be very surprised to learn that by default Conan does not use those configs.</p>
 <p>For instance, let&rsquo;s make a package for <a href="https://libpng.org/pub/png/libpng.html">png</a>, whose only dependency is zlib, which is going to be discovered in png&rsquo;s CMake project like this, as one would expect:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>find_package(<span style="color:#e6db74">zlib</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
