@@ -76,7 +76,11 @@
 <p>I&rsquo;ve heard about vcpkg before and even tried to make a vcpkg package for one library a couple of years ago, but back then I didn&rsquo;t find documentation for this (<em>as I now understand, that&rsquo;s because one does not really create a &ldquo;package&rdquo;</em>) and abandonned the task. I never thought I&rsquo;ll be looking at vcpkg again, but recently I discovered that some teams have been switching from Conan to vcpkg, which sounded intriguing and promising, as we still needed a package manager for our projects.</p>
 <nav id="TableOfContents">
   <ul>
-    <li><a href="#why-we-didnt-proceed-with-conan">Why we didn&rsquo;t proceed with Conan</a></li>
+    <li><a href="#why-we-didnt-proceed-with-conan">Why we didn&rsquo;t proceed with Conan</a>
+      <ul>
+        <li><a href="#an-update-after-a-second-attempt">An update after a second attempt</a></li>
+      </ul>
+    </li>
     <li><a href="#about-vcpkg">About vcpkg</a>
       <ul>
         <li><a href="#installation">Installation</a></li>
@@ -293,6 +297,9 @@
 <p>Anyway, having covered dependencies of the pilot project (<em>one of our libraries</em>) with Conan, we invited a couple of other teams to test it out, and immediately it turned out that they use a different combination of platforms/compilers, which we didn&rsquo;t pre-build for, and so they had to force/override specific versions (<em>for example, with <code>-s compiler.toolset=&quot;v142&quot;</code> and <code>-DCONAN_DISABLE_CHECK_COMPILER=1</code></em>), as they were not able to build missing binaries (<em>because we did not implement the <code>build()</code> method in recipes</em>).</p>
 <p>But even that was not all, as users (<em>understandably</em>) wanted to fetch 3rd-party dependencies from Conan Center and our packages from our Artifactory, while we were fetching everything from our Artifactory (<em>using different <code>user/channel</code> values too</em>), and such a situation isn&rsquo;t handled too nicely with Conan (<em>or we didn&rsquo;t find a way</em>).</p>
 <p>Finally, not everyone in our team liked the idea of complicating the build toolchain by adding yet another tool, because not only one needs to run one more thing before building the project, but also the installation of that thing isn&rsquo;t very straightforward, as one needs to have Python, pip and only then Conan can be installed. Yes, it is rather a trivial setup, and yet some have managed to struggle even with this. You really shouldn&rsquo;t underestimate how common the question/challenge of installing pip is.</p>
+<h2 id="an-update-after-a-second-attempt">An update after a second attempt</h2>
+<p>Some years later I <a href="/blog/2022/02/06/cpp-dependencies-with-conan/#2026-02-23--giving-it-another-go-with-modern-conan">came back</a> and did try implementing proper Conan recipes with <code>--build missing</code> support, both for Conan 1.x and for the latest Conan 2.x version.</p>
+<p>Indeed, without a doubt, building packages from sources is the way to go, so that is how we should have done it from the beginning. However, all the other points in <a href="#so-how-is-vcpkg-comparing-with-conan">Conan vs vcpkg</a> comparison still stand, and even with the modern Conan 2.x (<em>where they had a chance to improve things from 1.x</em>) I got all the same Vietnam flashbacks from struggling with it years back and this time got traumatized <a href="/blog/2022/02/06/cpp-dependencies-with-conan/#and-so-how-is-it">some more</a>. So I&rsquo;d say that this second attempt only highlighted how Conan is more confusing, less intuitive and in general is &ldquo;slower&rdquo; than vcpkg.</p>
 <h1 id="about-vcpkg">About vcpkg</h1>
 <p>In short, vcpkg is a combination of a <a href="https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html">CMake toolchain</a> and a <a href="https://github.com/microsoft/vcpkg-tool">CLI tool</a>. Together they handle the following:</p>
 <ul>
@@ -3540,10 +3547,9 @@
 <li><a href="https://vcpkg.readthedocs.io/en/latest/README/index.html">https://vcpkg.readthedocs.io/</a>.</li>
 </ol>
 <h2 id="overall-impression">Overall impression</h2>
-<p>It seems to me that pretty much everything that vcpkg can do, Conan can do too (<em>or maybe even more, thanks to Python</em>). But somehow with Conan it just didn&rsquo;t take off. I cannot really list clear and exact reasons why I wasn&rsquo;t entirely happy with Conan. I guess, vcpkg just <em>feels</em> better, if one can take a &ldquo;feeling&rdquo; as a base for making such an important decision about one&rsquo;s build system.</p>
-<p>Yet again I&rsquo;d like to say once more that our less fortunate experience with Conan might be because we used it wrong, and probably we should have spent some more time reading the documentation. But at the same time with vcpkg we were on the right track from the very beginning, so perhaps one could say that vcpkg is more intuitive to use (<em>when you already have good enough experience with CMake</em>).</p>
-<p>I cannot say that Conan is worse. Even though we <a href="#why-we-didnt-proceed-with-conan">did not proceed</a> with it for all our projects, I did add it to some of our smaller projects, mostly tools and demos, where it wasn&rsquo;t so time-consuming to integrate, and there it was doing the job quite nicely. But now we have decided to go with integrating vcpkg in all our projects.</p>
-<p>With that said, it&rsquo;s surely nice to have alternatives, and so it&rsquo;s only great that C++ developers have more than one package manager to choose from.</p>
+<p>It seems to me that pretty much everything that vcpkg can do, Conan can do too (<em>or maybe even more, thanks to Python</em>), but it just didn&rsquo;t take off with Conan. I can perhaps summarize my overall impression by saying that vcpkg is more straightforward, down-to-earth and just &ldquo;based&rdquo;.</p>
+<p>Our less fortunate experience with Conan might be because we used it wrong in some regard, and we probably should have spent some more time on researching it and trying things out. On the other hand, with vcpkg we were on the right track from the very beginning, so it would be fair to say that vcpkg is more intuitive (<em>especially if you already have some experience with CMake</em>).</p>
+<p>Either way, it surely is nice to have alternatives, and so it is only great that C++ developers have more than one package manager to choose from.</p>
 <hr class="updates-separator">
 <h1 id="updates">Updates</h1>
 <h2 id="2023-09-01--build-time-improvements">2023-09-01 | Build time improvements</h2>
@@ -4195,7 +4201,7 @@
                 <a
                     href="https://web.libera.chat/##decovar"
                     title="IRC channel on Libera.Chat"
-                    style="font-size:1em; text-shadow:#ff8 0px 0px 25px;"
+                    style="font-size:1em; text-shadow:#f100ff 0px 0px 25px;"
                 >
                     irc.libera.chat:6697/##decovar
                 </a>
