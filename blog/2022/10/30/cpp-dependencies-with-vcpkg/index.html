@@ -64,7 +64,7 @@
 </svg> 2022-10-30 16:09:08 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 149 min read</div>
+</svg> 151 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -286,6 +286,7 @@
         <li><a href="#2025-09-04--caching-in-gitea">2025-09-04 | Caching in Gitea</a></li>
         <li><a href="#2025-09-23--modifications-in-the-original-sources-without-updating-the-port">2025-09-23 | Modifications in the original sources without updating the port</a></li>
         <li><a href="#2025-09-30--top-retarded-cmake-projects">2025-09-30 | Top retarded CMake projects</a></li>
+        <li><a href="#2026-03-22--vcpkg_root-is-no-longer-available-in-windows-triplets">2026-03-22 | VCPKG_ROOT is no longer available in Windows triplets</a></li>
       </ul>
     </li>
   </ul>
@@ -2732,7 +2733,11 @@
 </span></span></span><span style="display:flex;"><span>set(<span style="color:#e6db74">VCPKG_LOAD_VCVARS_ENV</span> <span style="color:#e6db74">1</span>)</span></span></code></pre></div>
 <p>Two things are important to note here:</p>
 <ul>
-<li><code>VCPKG_ROOT</code> environment variable needs to be passed through, otherwise chainloaded toolchain won&rsquo;t have it;</li>
+<li><code>VCPKG_ROOT</code> environment variable needs to be passed through, otherwise chainloaded toolchain won&rsquo;t have it;
+<ul>
+<li>be aware that starting with vcpkg tool version <a href="https://github.com/microsoft/vcpkg-tool/releases/tag/2026-03-04">2026-03-04</a> the <code>VCPKG_ROOT</code> environment variable is no longer available in Windows triplets - more details <a href="#2026-03-22--vcpkg_root-is-no-longer-available-in-windows-triplets">here</a>;</li>
+</ul>
+</li>
 <li>unless you&rsquo;ve read about this in <a href="https://learn.microsoft.com/en-us/vcpkg/users/triplets#vcpkg_load_vcvars_env">documentation</a>, you wouldn&rsquo;t know that in case of chainloaded toolchains the <code>VCPKG_LOAD_VCVARS_ENV</code> is set to <code>OFF</code>, which leads to CMake errors like <code>No CMAKE_C_COMPILER could be found</code> and other typical problems of not finding compilers and tools, so you need to set it back to <code>ON</code>/<code>1</code>.</li>
 </ul>
 <p>Now I can configure and build my project like this:</p>
@@ -2982,7 +2987,8 @@
 </span></span></span><span style="display:flex;"><span>set(<span style="color:#e6db74">VCPKG_ENV_PASSTHROUGH_UNTRACKED</span> <span style="color:#e6db74">VCPKG_ROOT</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"># setting Xcode attributes for specifying device/simulator architectures
 </span></span></span><span style="display:flex;"><span>set(<span style="color:#e6db74">VCPKG_CHAINLOAD_TOOLCHAIN_FILE</span> <span style="color:#f92672">${</span>CMAKE_CURRENT_LIST_DIR<span style="color:#f92672">}</span><span style="color:#e6db74">/../toolchains/ios-fat.cmake</span>)<span style="color:#960050;background-color:#1e0010">
-</span></span></span></code></pre></div><p>And actually you could probably get away without using a chainloaded toolchain, because you can <a href="https://github.com/retifrav/vcpkg-registry/commit/dd75fdfa5980336891b612654f59c9788079a76c">move</a> <code>CMAKE_OSX_ARCHITECTURES</code> from toolchain to triplet&rsquo;s <code>VCPKG_OSX_ARCHITECTURES</code> variable. But I suspect that <code>CMAKE_XCODE_ATTRIBUTE_*</code> variables still need to be set, and in that case toolchain isn&rsquo;t going away.</p>
+</span></span></span></code></pre></div><p>Be aware that <code>VCPKG_ROOT</code> might not be a safe way of finding the path to vcpkg toolchains, and actually starting with vcpkg tool version <a href="https://github.com/microsoft/vcpkg-tool/releases/tag/2026-03-04">2026-03-04</a> the <code>VCPKG_ROOT</code> environment variable is no longer available in Windows triplets (<em>though it does not concern iOS triplets as of now</em>) - more details <a href="#2026-03-22--vcpkg_root-is-no-longer-available-in-windows-triplets">here</a>.</p>
+<p>And actually you could probably get away without using a chainloaded toolchain, because you can <a href="https://github.com/retifrav/vcpkg-registry/commit/dd75fdfa5980336891b612654f59c9788079a76c">move</a> <code>CMAKE_OSX_ARCHITECTURES</code> from toolchain to triplet&rsquo;s <code>VCPKG_OSX_ARCHITECTURES</code> variable. But I suspect that <code>CMAKE_XCODE_ATTRIBUTE_*</code> variables still need to be set, and in that case toolchain isn&rsquo;t going away.</p>
 <p>Anyway, both variants seem to work equally fine, and to show it in action, if I build my <a href="https://github.com/retifrav/vcpkg-registry/tree/master/ports/thingy">Thingy</a> port with default <code>arm64-ios</code> triplet:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ vcpkg install <span style="color:#f92672">--</span>triplet arm64<span style="color:#f92672">-</span>ios</span></span></code></pre></div>
 <p>then here&rsquo;s the binary I will get:</p>
@@ -4098,11 +4104,11 @@
 </span></span><span style="display:flex;"><span>ololo, some string modified again. Goodness!
 </span></span></code></pre></div><p>One last thing to note here is that if you&rsquo;ll keep modifying the sources for this overlayed port, every new build will still be getting the same hash <code>41423159146c66969aa85f668add4a66bac37c310297c6957161649fedaefe1c</code> (<em>which makes it more convenient to remove the cached package before trying out new modifications</em>). But once you get back to the &ldquo;normal&rdquo; port, the hash will change to its &ldquo;normal&rdquo; value too, but that should be obvious.</p>
 <h2 id="2025-09-30--top-retarded-cmake-projects">2025-09-30 | Top retarded CMake projects</h2>
-<p>Having made quite a number of vcpkg ports (<em>about 100 <a href="https://github.com/retifrav/vcpkg-registry/tree/46e01f00376991ae2d7936c4f096fa5664d6258e/ports">at the moment</a></em>), I can say that I&rsquo;ve seen lots of crazy shit that people have been doing in their CMake projects. Vendored dependencies is the most common challenge, but there is also <a href="https://en.wikipedia.org/wiki/Not_invented_here">NIH</a>-driven custom functions/macros for doing things that are already available in CMake out of the box, building shared and static variants of the same library at once, raping targets with lunatic naming schemes, bizarre installation procedures and other mentally challenged practices.</p>
-<p>And so when I was fighting with yet another genius project, whose maintainers have been operating in a deep and dark cave in some wild mountains of the bumfuck middle of fucking nowhere with no internet and no access to CMake documentation, I thought that I&rsquo;d like to compose a list of the utmost retarded projects that I ever had to work with - just to have a quickly available overview of those masterpieces in my registry.</p>
-<p>I probably could&rsquo;ve used a better word than &ldquo;retarded&rdquo;, such as &ldquo;difficult&rdquo; or &ldquo;challenging&rdquo;, but at the moment I was royally pissed off by the amount of time wasted on fixing all that NIH-crap, so &ldquo;retarded&rdquo; is the word.</p>
-<p>Several things could be used as a criteria/metric for the project retardiness, but I reckoned that just the thing would be to simply count the total size of all the patches that need to be applied to the original project sources (<em>as those are mostly about fixing CMake project files</em>) in order to make it build and install properly. That and optionally plus the size of the <code>portfile.cmake</code> file. I probably could also count the size of <code>CMakeLists.txt</code> files, which needed to be created for projects that originally do not support building with CMake at all, but that wouldn&rsquo;t be entirely fair, since what I am evaluating is the degrees of misusing CMake.</p>
-<p>Of course, I should say that my understanding of &ldquo;proper building/installation&rdquo; and &ldquo;misusing CMake&rdquo; is certainly not the absolute truth, so it very well might be that it&rsquo;s not the projects who is retarded.</p>
+<p>Having made quite a number of vcpkg ports (<em>about 100 <a href="https://github.com/retifrav/vcpkg-registry/tree/46e01f00376991ae2d7936c4f096fa5664d6258e/ports">at the moment</a></em>), I can say that I&rsquo;ve seen lots of crazy shit people do in their CMake projects. Vendored dependencies is the most common challenge, but there is also <a href="https://en.wikipedia.org/wiki/Not_invented_here">NIH</a>-driven custom functions/macros for doing things that are already available in CMake out of the box, building shared and static variants of the same library at once, raping targets with lunatic naming schemes, bizarre installation procedures and other mentally challenged practices.</p>
+<p>And so when I was fighting with yet another genius project, whose maintainers have been operating under a rock in a deep and dark cave in some wild mountains of the bumfuck middle of fucking nowhere with no internet and no access to CMake documentation, I thought that I&rsquo;d like to compose a list of the utmost retarded projects that I ever had to work with - just to have a quickly available overview of those masterpieces in my registry.</p>
+<p>I probably could&rsquo;ve used a better word than &ldquo;retarded&rdquo;, such as &ldquo;difficult&rdquo; or &ldquo;challenging&rdquo;, but back at the moment I was royally pissed off by the amount of time wasted on fixing all that NIH-crap, so &ldquo;retarded&rdquo; is the word.</p>
+<p>Several things could be used as a criteria/metric for the project retardiness, but I reckoned that simply counting the total size of all the patches that need to be applied to the original project sources (<em>as those are mostly about fixing CMake project files</em>) in order to make it build and install properly would be a good criteria. That and optionally the size of <code>portfile.cmake</code> file.</p>
+<p>Of course, I should say that my understanding of &ldquo;proper building/installation&rdquo; is certainly not the absolute truth, so it very well might be that it&rsquo;s not those projects who is actually retarded.</p>
 <p>Anyway, once the criteria was established, I made the <a href="https://github.com/retifrav/vcpkg-registry/blob/46e01f00376991ae2d7936c4f096fa5664d6258e/scripts/top-retarted-projects.py">following script</a> to count the size of patches in every port and print the top list (<em>in descending order</em>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ cd /path/to/my/vcpkg-registry
 </span></span><span style="display:flex;"><span>$ python ./scripts/top-retarted-projects.py --with-portfile
@@ -4143,7 +4149,34 @@
 </span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>INFO<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>8<span style="color:#f92672">)</span> vtk, 51.6 KiloBytes
 </span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>INFO<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>9<span style="color:#f92672">)</span> ffmpeg, 51.5 KiloBytes
 </span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>INFO<span style="color:#f92672">]</span> <span style="color:#f92672">(</span>10<span style="color:#f92672">)</span> opencv4, 46.3 KiloBytes
-</span></span></code></pre></div><p>Hopefully, I&rsquo;ll never need to make a port for any of these, although I have been considering to make one for Qt. Also it is somewhat ironic to see VTK (<em>Kitware&rsquo;s own project</em>) in that list, let alone it ending up in the top 10 out of 2674.</p>
+</span></span></code></pre></div><p>Hopefully, I&rsquo;ll never need to make a port for any of these (<em>though I have been considering to make one for Qt</em>). Also it is somewhat ironic to see VTK (<em>Kitware&rsquo;s own project</em>) in that list, let alone it ending up in the top 10 out of 2674.</p>
+<h2 id="2026-03-22--vcpkg_root-is-no-longer-available-in-windows-triplets">2026-03-22 | VCPKG_ROOT is no longer available in Windows triplets</h2>
+<p>I&rsquo;ve recently updated vcpkg registry (<em>scripts and toolchains</em>) and vcpkg tool to the latest versions, and suddenly my Windows builds started failing, because there was no <code>VCPKG_ROOT</code> available in triplets anymore - it became an empty string (<em>or rather an undefined variable</em>).</p>
+<p>Last I had it working with vcpkg registry at tag <code>2026.02.27</code> and vcpkg tool version <code>2026-02-21</code>. Now I have registry tag <code>2026.03.18</code> and tool version <code>2026-03-04</code>, and that&rsquo;s where <code>VCPKG_ROOT</code> environment variable is no longer available in Windows triplets.</p>
+<p>As it turned out, that is an <a href="https://github.com/microsoft/vcpkg-tool/pull/1931">intentional change</a>, which is mentioned in the vcpkg tool <a href="https://github.com/microsoft/vcpkg-tool/releases/tag/2026-03-04">release notes</a> for this version. Specifically, the removal of the variable happens on <a href="https://github.com/microsoft/vcpkg-tool/pull/1931/changes#diff-a93efc9f4d36565c420ffe731eb4aafb23b3f5f300db52302f898c4a64884a94R610">this line</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>vcvars_env<span style="color:#f92672">.</span>remove_entry<span style="color:#f92672">(</span><span style="color:#a6e22e">EnvironmentVariableVcpkgRoot</span><span style="color:#f92672">);</span>
+</span></span></code></pre></div><p>As vcpkg maintainers <a href="https://discord.com/channels/400588936151433218/687365466422902841/1484889421882069112">explained</a> in the Discord channel:</p>
+<blockquote>The bug was that vcvars sets VCPKG_ROOT to the one that comes with VS so if you checked that box in the VS installer you created the "they're fighting with each other" situation. The intent was to throw out the VCPKG_ROOT value that comes from vcvars but not to change anything else about env var passing
+<p>Given that we don&rsquo;t set VCPKG_ROOT ourselves I don&rsquo;t think our docs should be telling people to assume it is there</p>
+<p>[&hellip;]</p>
+<p>Either way, fallout from us adding the copy to VS and making vcvars set VCPKG_ROOT</blockquote></p>
+<p>I&rsquo;ve never installed vcpkg via Visual Studio installer, so I never had that problem, but now this fix actually created a problem for me. As for &ldquo;<em>I don&rsquo;t think our docs should be telling people to assume it is there</em>&rdquo;, current version of the documentation <a href="https://learn.microsoft.com/en-us/vcpkg/users/triplets#vcpkg_chainload_toolchain_file">states</a> exactly that:</p>
+<blockquote>[...] start by including an existing toolchain from <code>${VCPKG_ROOT}/scripts/toolchains</code></blockquote>
+<p>sooo&hellip;</p>
+<p>Anyway, it is not that big of a trouble, because there are other ways to get path to vcpkg scripts and toolchains. One way would be to use <code>_VCPKG_ROOT_DIR</code> or <code>Z_VCPKG_ROOT_DIR</code>, but they are prefixed variables (<em>meaning that they are internal/experimental</em>), so probably not a good choice.</p>
+<p>A better way would be to get the path from <code>$ENV{VCPKG_COMMAND}</code> variable, which has been available all along, as it seems, so I should have used that one from the very beginning. What&rsquo;s especially good about <code>$ENV{VCPKG_COMMAND}</code> is that unlike <code>VCPKG_ROOT</code> it does not need to be passed-through from triplets. In short, here&rsquo;s how it can be used in the chainloaded toolchain:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span><span style="color:#75715e"># read the environment variable into a &#34;normal&#34; variable, otherwise `cmake_path()`
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># won&#39;t be able to work with it
+</span></span></span><span style="display:flex;"><span>set(<span style="color:#e6db74">VCPKG_COMMAND</span> <span style="color:#e6db74">&#34;$ENV{VCPKG_COMMAND}&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># get the path to registry (which is same value as what is/was in VCPKG_ROOT)
+</span></span></span><span style="display:flex;"><span>cmake_path(<span style="color:#e6db74">GET</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">VCPKG_COMMAND</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">PARENT_PATH</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">VCPKG_TOOL_PARENT_PATH</span>
+</span></span><span style="display:flex;"><span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"># and then it is ready to be used
+</span></span></span><span style="display:flex;"><span>include(<span style="color:#e6db74">&#34;${VCPKG_TOOL_PARENT_PATH}/scripts/toolchains/windows.cmake&#34;</span>)<span style="color:#960050;background-color:#1e0010">
+</span></span></span></code></pre></div><p>I updated my custom triplets/toolchains in <a href="https://github.com/retifrav/vcpkg-registry/commit/2d9a21f159aaea06e463c6d0baa605affd7ac504">this commit</a>.</p>
       </div>
     </article>
     <div><div id="tags">
