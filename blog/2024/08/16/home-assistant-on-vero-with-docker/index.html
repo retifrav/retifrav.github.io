@@ -65,7 +65,7 @@
 </svg> 2024-08-16 16:49:19 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 78 min read</div>
+</svg> 84 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -175,6 +175,14 @@
           <ul>
             <li><a href="#adding-sonos-speaker-to-home-assistant">Adding Sonos speaker to Home Assistant</a></li>
             <li><a href="#playing-media-from-home-assistant-on-sonos-speaker">Playing media from Home Assistant on Sonos speaker</a></li>
+          </ul>
+        </li>
+        <li><a href="#2026-05-16--migrating-to-synology-nas-and-postgresql">2026-05-16 | Migrating to Synology NAS and PostgreSQL</a>
+          <ul>
+            <li><a href="#recreating-containers">Recreating containers</a></li>
+            <li><a href="#database-migration-from-sqlite-to-postgresql">Database migration from SQLite to PostgreSQL</a></li>
+            <li><a href="#exposing-container-via-synology-reverse-proxy">Exposing container via Synology reverse-proxy</a></li>
+            <li><a href="#why-not-run-everything-on-synology-nas">Why not run everything on Synology NAS</a></li>
           </ul>
         </li>
       </ul>
@@ -2217,15 +2225,16 @@
 </span></span><span style="display:flex;"><span>$ sudo docker start <span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span>
 </span></span></code></pre></div><h2 id="updating">Updating</h2>
 <p>In general, the procedure of updating something (<em>that is run in a Docker container</em>) is to get the latest Docker image and re-create the container. So with Home Assistant as an example in my particular network setup (<em>note the <code>--network</code> and <code>--ip</code> arguments</em>), the steps would be:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Stop all the containers for making a backup&#34;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#39;Stop all the containers for making a backup&#39;</span>
 </span></span><span style="display:flex;"><span>$ sudo docker stop <span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span>
-</span></span><span style="display:flex;"><span>$ sudo /root/_backups/backup.sh
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#39;Optionally, make a backup&#39;</span>
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#39;sudo /root/_backups/backup.sh&#39;</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Remove the existing Home Assistant container&#34;</span>
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#39;Remove the existing Home Assistant container&#39;</span>
 </span></span><span style="display:flex;"><span>$ sudo docker rm homeassistant
-</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Get the latest image&#34;</span>
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#39;Get the latest image&#39;</span>
 </span></span><span style="display:flex;"><span>$ sudo docker pull ghcr.io/home-assistant/home-assistant:stable
-</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Re-create the container&#34;</span>
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#39;Re-create the container&#39;</span>
 </span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --name homeassistant <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --network hub <span style="color:#ae81ff">\
@@ -2236,12 +2245,12 @@
 </span></span></span><span style="display:flex;"><span>    -v /opt/wolpipe:/config/wolpipe <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -p 1400:1400 <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    ghcr.io/home-assistant/home-assistant:stable
-</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;If it fails with no matching manifest, then instead of :stable you will need to find the latest tag version that is still supported for your target architecture&#34;</span>
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#39;If it fails with no matching manifest, then instead of :stable you will need to find the latest tag version that is still supported for your target architecture&#39;</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;Start all the containers back: `sudo docker start </span><span style="color:#66d9ef">$(</span>sudo docker ps -aq<span style="color:#66d9ef">)</span><span style="color:#e6db74">`&#34;</span>
-</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#34;...unless you&#39;d like to update other images too&#34;</span>
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#39;Start all the containers back: `sudo docker start $(sudo docker ps -aq)`&#39;</span>
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#39;...unless you would like to update other images too&#39;</span>
 </span></span></code></pre></div><p>As you already know, thanks to Home Assistant data being stored in a mapped volume location, it is totally fine to destroy and re-create its container literally whenever, which makes updating Home Assistant a very simple procedure.</p>
-<p>Updating other images goes the same way (<em>assuming that you have already stopped their containers</em>). Here&rsquo;s for Mosquitto:</p>
+<p>Updating other images goes the same way (<em>assuming that you have already stopped their containers</em>). Here&rsquo;s for Mosquitto (<em>remove <code>-p 1883:1883</code> if you have everything running in the same Docker network</em>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker rm mosquitto
 </span></span><span style="display:flex;"><span>$ sudo docker pull eclipse-mosquitto:latest
 </span></span><span style="display:flex;"><span>$ sudo docker run -d <span style="color:#ae81ff">\
@@ -2252,6 +2261,7 @@
 </span></span></span><span style="display:flex;"><span>    -v /root/mosquitto/config:/mosquitto/config <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -v /root/mosquitto/data:/mosquitto/data <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -v /root/mosquitto/log:/mosquitto/log <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -p 1883:1883 <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    eclipse-mosquitto
 </span></span></code></pre></div><p>and here&rsquo;s for Zigbee2MQTT:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker rm zigbee2mqtt
@@ -2582,6 +2592,187 @@
 </video>
 
 <p class="video-fallback">If video doesn't play in your browser, you can download it <a href="https://files.decovar.dev/public/blog/home-assistant-on-vero-with-docker/home-assistant-sonos-ikea-remote-control.mp4">here</a>.</p>
+
+
+<h2 id="2026-05-16--migrating-to-synology-nas-and-postgresql">2026-05-16 | Migrating to Synology NAS and PostgreSQL</h2>
+<p>As I mentioned in the section about <a href="#2025-12-07--32-bit-hosts-have-been-deprecated">deprecated 32-bit hosts</a>, Vero V became a rather unfavorable host for running Home Assistant, and I finally got the time to migrate it to Container Manager on my Synology NAS.</p>
+<p>While at it, I also decided to switch from SQLite to PostgreSQL, as my <code>home-assistant_v2.db</code> went over 1.5 GB - that is already with <code>purge_keep_days</code> being just <code>20</code>. I do have quite a lot of sensors at the moment, so that certainly is quite an amount of data to be stored even for just 20 days. Besides, I plan to get a weather station soon, and for that one I&rsquo;d like to store data for much longer periods of time, so PostgreSQL should be a better fit.</p>
+<h3 id="recreating-containers">Recreating containers</h3>
+<p>First thing I did is stop and remove the Home Assistant container on Vero V host:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker stop homeassistant
+</span></span><span style="display:flex;"><span>$ sudo docker rm homeassistant
+</span></span></code></pre></div><p>Then on the Synology NAS I created the following folder structure in <code>/volume1/docker/home-assistant/</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>data
+</span></span><span style="display:flex;"><span>├── config
+</span></span><span style="display:flex;"><span>├── database
+</span></span><span style="display:flex;"><span>└── migrating
+</span></span></code></pre></div><p>and copied the contents of <code>/root/homeassistant/</code> from Vero V to <code>/volume1/docker/home-assistant/data/config/</code> on Synology NAS. After that I moved the <code>home-assistant_v2.db</code> file from <code>config/</code> to <code>migrating/</code>.</p>
+<p>Then I created the following <code>docker-compose.yml</code> for the new project in Container Manager:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">networks</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">hub</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">external</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">services</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">db</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">image</span>: <span style="color:#ae81ff">postgres:18-alpine</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">container_name</span>: <span style="color:#ae81ff">home-assistant-database</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">restart</span>: <span style="color:#ae81ff">unless-stopped</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">environment</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">TZ=Europe/Amsterdam</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">POSTGRES_PASSWORD=POSTGRES-PASSWORD-FOR-HOME-ASSISTANT</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">POSTGRES_USER=homeassistant</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">POSTGRES_DB=homeassistant</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">networks</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">hub</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">ipv4_address</span>: <span style="color:#ae81ff">172.18.0.30</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">volumes</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">/volume1/docker/home-assistant/data/database:/var/lib/postgresql</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">homeassistant</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">image</span>: <span style="color:#ae81ff">homeassistant/home-assistant:2026.5.2</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">container_name</span>: <span style="color:#ae81ff">home-assistant-server</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">restart</span>:  <span style="color:#ae81ff">unless-stopped</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">environment</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">TZ=Europe/Amsterdam</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">networks</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">hub</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">ipv4_address</span>: <span style="color:#ae81ff">172.18.0.31</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">ports</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">1400</span>:<span style="color:#ae81ff">1400</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">volumes</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">/volume1/docker/home-assistant/data/config:/config</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">depends_on</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">db</span>
+</span></span></code></pre></div><p>The <code>hub</code> network here is my custom network with <code>172.18.0.0/16</code> subnet and <code>bridge</code> driver, in which I run my containers (<em>similar to the <a href="#ip-address-of-the-running-container">custom network</a> that I created with Docker on Vero V</em>):</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/synology-container-manager-networks.png" alt="Synology Container Manager, networks" style="border:1px solid black;">
+
+<p>To tell Home Assistant that it should use this PostgreSQL database instead of the default SQLite you need to edit <code>/path/to/config/configuration.yaml</code> like so:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">recorder</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">db_url</span>: <span style="color:#ae81ff">postgresql://homeassistant:POSTGRES-PASSWORD-FOR-HOME-ASSISTANT@home-assistant-database/homeassistant</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">db_retry_wait</span>: <span style="color:#ae81ff">10</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">purge_keep_days</span>: <span style="color:#ae81ff">1111</span>
+</span></span></code></pre></div><p>You might prefer using <a href="https://home-assistant.io/docs/configuration/secrets/">secrets</a> for the <code>db_url</code>, but I didn&rsquo;t get what&rsquo;s the point (<em>as it would still be plain text, just in a different file</em>). Also, you might want to change the <code>purge_keep_days</code> value to something else, as I intend to keep the historical data for at least 3 years.</p>
+<p>Now the project should be ready to run, so you can build and start it in Container Manager. To check that Home Assistant successfully connected to the database and created its tables, you can do it in a terminal for the <code>home-assistant-database</code> container:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/synology-container-manager-terminal.png" alt="Synology Container Manager, terminal" style="border:1px solid black;">
+
+<p>I made this screenshot after everything was already migrated and Home Assistant has been running for some time, so you might(?) see a different set of tables.</p>
+<p>Before proceeding with the migration, stop the <code>home-assistant-server</code> container, so it wouldn&rsquo;t mess the database during the importing procedure.</p>
+<h3 id="database-migration-from-sqlite-to-postgresql">Database migration from SQLite to PostgreSQL</h3>
+<p>The original instructions with some more details are posted <a href="https://community.home-assistant.io/t/migrate-to-postgresql/2832/20">here</a>, and I am just going to describe what I did. First I created the migration config in <code>migrating/some.conf</code> (<em>same folder where <code>home-assistant_v2.db</code> is now</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">load</span> <span style="color:#66d9ef">database</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">from</span> sqlite:<span style="color:#f92672">//</span>.<span style="color:#f92672">/</span>home<span style="color:#f92672">-</span>assistant_v2.db
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">into</span> postgresql:<span style="color:#f92672">//</span>homeassistant:POSTGRES<span style="color:#f92672">-</span>PASSWORD<span style="color:#f92672">-</span><span style="color:#66d9ef">FOR</span><span style="color:#f92672">-</span>HOME<span style="color:#f92672">-</span>ASSISTANT<span style="color:#f92672">@</span>home<span style="color:#f92672">-</span>assistant<span style="color:#f92672">-</span><span style="color:#66d9ef">database</span><span style="color:#f92672">/</span>homeassistant
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">with</span> <span style="color:#66d9ef">data</span> <span style="color:#66d9ef">only</span>, <span style="color:#66d9ef">drop</span> indexes, <span style="color:#66d9ef">reset</span> sequences, <span style="color:#66d9ef">truncate</span>, batch <span style="color:#66d9ef">rows</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">1000</span>, prefetch <span style="color:#66d9ef">rows</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">1000</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">SET</span> work_mem <span style="color:#66d9ef">to</span> <span style="color:#e6db74">&#39;32 MB&#39;</span>, maintenance_work_mem <span style="color:#66d9ef">to</span> <span style="color:#e6db74">&#39;64 MB&#39;</span>;
+</span></span></code></pre></div><p>and then I created a &ldquo;helper&rdquo; container from the default <code>alpine</code> image with a <code>/volume1/docker/home-assistant/data/migrating:/data</code> path mapping. This container is where the migration will be executed from, so open a terminal on it and check the connection first:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ apk add postgresql-client
+</span></span><span style="display:flex;"><span>$ psql -U homeassistant -h 172.18.0.30
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>homeassistant<span style="color:#f92672">=</span><span style="color:#75715e"># \l</span>
+</span></span><span style="display:flex;"><span>homeassistant<span style="color:#f92672">=</span><span style="color:#75715e"># \c homeassistant</span>
+</span></span><span style="display:flex;"><span>homeassistant<span style="color:#f92672">=</span><span style="color:#75715e"># \dt</span>
+</span></span></code></pre></div><p>If it&rsquo;s all good, then the migration is done like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ apk add pgloader
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ cd /data
+</span></span><span style="display:flex;"><span>$ pgloader ./some.conf
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>2026-05-16T11:16:34.012001Z LOG pgloader version <span style="color:#e6db74">&#34;3.6.9&#34;</span>
+</span></span><span style="display:flex;"><span>2026-05-16T11:16:34.015001Z LOG Data errors in <span style="color:#e6db74">&#39;/tmp/pgloader/&#39;</span>
+</span></span><span style="display:flex;"><span>2026-05-16T11:16:34.015001Z LOG Parsing commands from file <span style="color:#75715e">#P&#34;/data/some.conf&#34;</span>
+</span></span><span style="display:flex;"><span>2026-05-16T11:16:34.144003Z LOG Migrating from <span style="color:#75715e">#&lt;SQLITE-CONNECTION sqlite:///data</span>
+</span></span><span style="display:flex;"><span>/./home-assistant_v2.db <span style="color:#f92672">{</span>1205A166E3<span style="color:#f92672">}</span>&gt;
+</span></span><span style="display:flex;"><span>2026-05-16T11:16:34.144003Z LOG Migrating into <span style="color:#75715e">#&lt;PGSQL-CONNECTION pgsql://homeass</span>
+</span></span><span style="display:flex;"><span>istant@home-assistant-database:5432/homeassistant <span style="color:#f92672">{</span>1205A16763<span style="color:#f92672">}</span>&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>2026-05-16T11:20:24.953185Z LOG report summary reset
+</span></span><span style="display:flex;"><span>             table name     errors       rows      bytes      total time                                          
+</span></span><span style="display:flex;"><span>-----------------------  ---------  ---------  ---------  --------------                                          
+</span></span><span style="display:flex;"><span>                  fetch          <span style="color:#ae81ff">0</span>          <span style="color:#ae81ff">0</span>                     0.000s                                          
+</span></span><span style="display:flex;"><span>        fetch meta data          <span style="color:#ae81ff">0</span>         <span style="color:#ae81ff">54</span>                     0.055s                                          
+</span></span><span style="display:flex;"><span>      Drop Foreign Keys          <span style="color:#ae81ff">0</span>         <span style="color:#ae81ff">14</span>                     0.011s                                          
+</span></span><span style="display:flex;"><span>           Drop Indexes          <span style="color:#ae81ff">0</span>         <span style="color:#ae81ff">33</span>                     0.010s                                          
+</span></span><span style="display:flex;"><span>               Truncate          <span style="color:#ae81ff">0</span>         <span style="color:#ae81ff">13</span>                     0.004s                                          
+</span></span><span style="display:flex;"><span>-----------------------  ---------  ---------  ---------  --------------                                          
+</span></span><span style="display:flex;"><span>             event_data          <span style="color:#ae81ff">0</span>       <span style="color:#ae81ff">2185</span>   228.8 kB          0.198s                                          
+</span></span><span style="display:flex;"><span>            event_types          <span style="color:#ae81ff">0</span>         <span style="color:#ae81ff">27</span>     0.6 kB          0.075s                                          
+</span></span><span style="display:flex;"><span>       state_attributes          <span style="color:#ae81ff">0</span>       <span style="color:#ae81ff">7082</span>     8.8 MB          4.498s                                          
+</span></span><span style="display:flex;"><span>            states_meta          <span style="color:#ae81ff">0</span>        <span style="color:#ae81ff">582</span>    23.1 kB          0.222s                                          
+</span></span><span style="display:flex;"><span>          recorder_runs          <span style="color:#ae81ff">0</span>          <span style="color:#ae81ff">3</span>     0.3 kB          0.329s                                          
+</span></span><span style="display:flex;"><span>         schema_changes          <span style="color:#ae81ff">0</span>         <span style="color:#ae81ff">10</span>     0.3 kB          0.424s                                          
+</span></span><span style="display:flex;"><span>                 events          <span style="color:#ae81ff">0</span>      <span style="color:#ae81ff">75107</span>     7.4 MB          3.288s                                          
+</span></span><span style="display:flex;"><span>             statistics          <span style="color:#ae81ff">0</span>    <span style="color:#ae81ff">1792843</span>   151.8 MB         29.567s                                          
+</span></span><span style="display:flex;"><span>        statistics_meta          <span style="color:#ae81ff">0</span>        <span style="color:#ae81ff">164</span>    11.4 kB          0.207s                                          
+</span></span><span style="display:flex;"><span>      migration_changes          <span style="color:#ae81ff">0</span>          <span style="color:#ae81ff">5</span>     0.1 kB          0.324s                                          
+</span></span><span style="display:flex;"><span>        statistics_runs          <span style="color:#ae81ff">0</span>       <span style="color:#ae81ff">5850</span>   194.2 kB          0.655s                                          
+</span></span><span style="display:flex;"><span>                 states          <span style="color:#ae81ff">0</span>    <span style="color:#ae81ff">7970726</span>     1.1 GB       2m25.203s                                          
+</span></span><span style="display:flex;"><span>  statistics_short_term          <span style="color:#ae81ff">0</span>     <span style="color:#ae81ff">939025</span>    78.1 MB         42.947s                                          
+</span></span><span style="display:flex;"><span>-----------------------  ---------  ---------  ---------  --------------                                          
+</span></span><span style="display:flex;"><span>COPY Threads Completion          <span style="color:#ae81ff">0</span>          <span style="color:#ae81ff">4</span>                  2m30.299s                                          
+</span></span><span style="display:flex;"><span>         Create Indexes          <span style="color:#ae81ff">0</span>         <span style="color:#ae81ff">33</span>                  6m39.175s                                          
+</span></span><span style="display:flex;"><span> Index Build Completion          <span style="color:#ae81ff">0</span>         <span style="color:#ae81ff">33</span>                   1m7.688s                                          
+</span></span><span style="display:flex;"><span>        Reset Sequences          <span style="color:#ae81ff">0</span>          <span style="color:#ae81ff">0</span>                     0.086s                                          
+</span></span><span style="display:flex;"><span>           Primary Keys          <span style="color:#ae81ff">0</span>         <span style="color:#ae81ff">13</span>                     0.010s                                          
+</span></span><span style="display:flex;"><span>    Create Foreign Keys          <span style="color:#ae81ff">0</span>          <span style="color:#ae81ff">7</span>                    12.453s                                          
+</span></span><span style="display:flex;"><span>       Install Comments          <span style="color:#ae81ff">0</span>          <span style="color:#ae81ff">0</span>                     0.000s                                          
+</span></span><span style="display:flex;"><span>-----------------------  ---------  ---------  ---------  --------------                                          
+</span></span><span style="display:flex;"><span>      Total import time          ✓   <span style="color:#ae81ff">10793609</span>     1.4 GB      10m29.711s
+</span></span></code></pre></div><p>It will be running for several minutes, so do not interrupt it, just wait. There will also be quite a few warnings, but apparently those are safe to ignore.</p>
+<p>Once the import is done, you will also need to reset the <a href="https://www.postgresql.org/docs/current/sql-createsequence.html">sequences</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ pg_dump postgresql://homeassistant:POSTGRES-PASSWORD-FOR-HOME-ASSISTANT@home-assistant-database/homeassistant --schema-only <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    | grep <span style="color:#e6db74">&#39;ADD GENERATED BY DEFAULT AS IDENTITY&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    | awk <span style="color:#e6db74">&#39;{ print &#34;SELECT setval(&#39;</span><span style="color:#ae81ff">\&#39;</span><span style="color:#e6db74">&#39;&#34; $3 &#34;_&#34; $6 &#34;_seq&#39;</span><span style="color:#ae81ff">\&#39;</span><span style="color:#e6db74">&#39;, (SELECT MAX(&#34;$6&#34;) FROM &#34;$3&#34;));&#34; }&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    | psql postgresql://homeassistant:POSTGRES-PASSWORD-FOR-HOME-ASSISTANT@home-assistant-database/homeassistant
+</span></span></code></pre></div><p>Now the migration is done completely, so you can:</p>
+<ol>
+<li>Stop and delete that helper container;</li>
+<li>Delete <code>migrating</code> folder (<em>where <code>some.conf</code> and <code>home-assistant_v2.db</code> are</em>);</li>
+<li>Start <code>home-assistant-server</code> container.</li>
+</ol>
+<h3 id="exposing-container-via-synology-reverse-proxy">Exposing container via Synology reverse-proxy</h3>
+<p>To expose <code>home-assistant-server</code> container from that custom Docker network I use NGINX container that is running in the same network (<em>with IP address <code>172.18.0.11</code></em>), and here&rsquo;s its config for Home Assistant (<em>not sure if absolutely all of those headers are actually needed</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">map</span> $http_upgrade $connection_upgrade {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">default</span> <span style="color:#e6db74">upgrade</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">&#39;&#39;</span> <span style="color:#e6db74">close</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">11015</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">location</span> <span style="color:#e6db74">/</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://homeassistant:8123</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_http_version</span> <span style="color:#ae81ff">1</span><span style="color:#e6db74">.1</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Host</span> $host:$server_port;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-Host</span> $http_host;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-For</span> $proxy_add_x_forwarded_for;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-Proto</span> <span style="color:#e6db74">https</span>;
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Upgrade</span> $http_upgrade;
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Connection</span> $connection_upgrade;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>And then there a yet another reverse-proxy in <strong>Synology DSM</strong> → <strong>Control Panel</strong> → <strong>Login Portal</strong> → <strong>Advanced</strong> → <strong>Reverse Proxy</strong> (<em>which is actually also an instance of NGINX, but with less customization</em>):</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/synology-login-portal-reverse-proxy.png" alt="Synology Login Portal, reverse proxy" style="border:1px solid black;">
+
+<p>which might be an overkill, as I could probably get away without setting up that intermediate NGINX container.</p>
+<p>So now it&rsquo;s all done, however trying to open Home Assistant in the browser may result in <code>Bad Request</code> or something of the sort, while in the container logs the will be this record:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">ERROR</span> <span style="color:#f92672">(</span><span style="color:#a6e22e">MainThread</span><span style="color:#f92672">)</span> <span style="color:#f92672">[</span><span style="color:#66d9ef">homeassistant.components.http.forwarded</span><span style="color:#f92672">]</span> A request from a reverse proxy was received from <span style="color:#ae81ff">172.18</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0.11</span><span style="color:#f92672">,</span> but your <span style="color:#a6e22e">HTTP</span> integration is not set<span style="color:#f92672">-</span>up <span style="color:#66d9ef">for</span> reverse proxies 
+</span></span></code></pre></div><p>which is fixed by configuring the <a href="https://www.home-assistant.io/integrations/http/">HTTP integration</a> in <code>configuration.yaml</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">http</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">use_x_forwarded_for</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">trusted_proxies</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ae81ff">172.18.0.11</span>
+</span></span></code></pre></div><p>Then (<em>after restarting the container</em>) it should finally open. Don&rsquo;t forget to set the correct IP address for your instance in <code>https://YOUR-NAS-IP-ADDRESS:11015/config/network</code> (<em>unless it already works fine with <code>Automatic</code></em>).</p>
+<h3 id="why-not-run-everything-on-synology-nas">Why not run everything on Synology NAS</h3>
+<p>You might have noticed that I migrated only Home Assistant, while Eclipse Mosquitto and Zigbee2MQTT are still running on Vero V.</p>
+<p>Yes, I would certainly prefer to migrate everything, but containers in Synology Container Manager do not have <a href="https://community.synology.com/enu/forum/1/post/195379">access to USB</a>, which is required to communicate with Zigbee adapter. I know that there are <a href="https://github.com/robertklep/dsm7-usb-serial-drivers">ways</a> to enable that, but I really do not want to touch anything in the stock system.</p>
+<p>By the way, don&rsquo;t forget to set the (<em>Vero V</em>) IP address in MQTT integration settings in Home Assistant. Also note that Eclipse Mosquitto container (<em>on Vero V</em>) now requires exposing its port with <code>-p 1883:1883</code>.</p>
       </div>
     </article>
     <div><div id="tags">
