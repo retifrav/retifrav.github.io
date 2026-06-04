@@ -1630,7 +1630,7 @@
 </span></span><span style="display:flex;"><span>│ ├── Installing.cmake
 </span></span><span style="display:flex;"><span>│ └── src
 </span></span><span style="display:flex;"><span>└── s.dirty
-</span></span></code></pre></div><p>Only then I realized that <code>package()</code> method is not meant for adding patches into the package, although its name (<em>which is <code>package</code></em>) is really deceiving in that regard. What&rsquo;s getting packed in this method is really just the build/install artifacts of the library, such as public headers, binaries, CMake configs and so on. Patches simply do not belong here, as they are needed only for building the library itself, or actually even earlier than that - before the project is configured for the build.</p>
+</span></span></code></pre></div><p>Only then I realized that <code>package()</code> method is not meant for adding patches into the package, although its name (<em>which is &ldquo;package&rdquo;</em>) is really deceiving in that regard. What&rsquo;s getting packed in this method is really just the build/install artifacts of the library, such as public headers, binaries, CMake configs and so on. Patches simply do not belong here, as they are needed only for building the library itself, or actually even earlier than that - before the project is configured for the build.</p>
 <p>So then my next guess was that since those additional files <code>Config.cmake.in</code> and <code>Installing.cmake</code> are present on the target host after unpacking, then maybe I should &ldquo;export&rdquo; the patches in <code>export_sources()</code> too:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">export_sources</span>(self):
 </span></span><span style="display:flex;"><span>    export_conandata_patches(self)
@@ -1697,7 +1697,7 @@
 </span></span><span style="display:flex;"><span>ERROR: zlib/1.3.1@your-prefix/public: Error in source<span style="color:#f92672">()</span> method, line <span style="color:#ae81ff">67</span>
 </span></span><span style="display:flex;"><span>    apply_conandata_patches<span style="color:#f92672">(</span>self<span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span>    FileNotFoundError: <span style="color:#f92672">[</span>Errno 2<span style="color:#f92672">]</span> No such file or directory: <span style="color:#e6db74">&#39;/home/USERNAME/.conan2/p/zlib25c7db754f26d/s/../patches/1.3.1/001-single-target-and-installation.patch&#39;</span>
-</span></span></code></pre></div><p>because now all of the bloody sudden it constructs the path to patches differently. In the original environment it puts them one level up relative to <code>s</code> directory, and while that works there, it does not work with <code>--build missing</code> in other environments. So, unless I have messed up something somewhere, <code>conandata.yml</code> and <code>export_conandata_patches()</code>/<code>apply_conandata_patches()</code> apparently were not designed to work with <code>../</code> paths, so me trying to reuse the same set of patches for 1.x and 2.x recipes broke that fragily thingy.</p>
+</span></span></code></pre></div><p>because now all of the bloody sudden it constructs the path to patches differently. In the original environment it puts them one level up relative to <code>s</code> directory, and while that works there, it does not work with <code>--build missing</code> in other environments. So, unless I have messed up something somewhere, <code>conandata.yml</code> and <code>export_conandata_patches()</code>/<code>apply_conandata_patches()</code> apparently were not designed to work with <code>../</code> paths, so me trying to reuse the same set of patches for 1.x and 2.x recipes broke that fragile thingy.</p>
 <p>One way to resolve this would be to add one more <code>copy()</code> in <code>export_sources()</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">source</span>(self):
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...</span>
@@ -2559,7 +2559,7 @@
               <h3>Tags</h3>
               <ul style="list-style-type:none; padding:0; margin:0;">
                   
-                  <li><a href="/tags/web">web (68)</a></li>
+                  <li><a href="/tags/web">web (69)</a></li>
                   
                   <li><a href="/tags/fail">fail (40)</a></li>
                   
