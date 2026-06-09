@@ -66,7 +66,7 @@
 </svg> 2024-08-16 16:49:19 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 84 min read</div>
+</svg> 89 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -186,6 +186,7 @@
             <li><a href="#why-not-run-everything-on-synology-nas">Why not run everything on Synology NAS</a></li>
           </ul>
         </li>
+        <li><a href="#2026-06-09--updating-sonoff-zigbee-dongle-firmware-and-switching-to-ember-driver">2026-06-09 | Updating SONOFF Zigbee dongle firmware and switching to ember driver</a></li>
       </ul>
     </li>
   </ul>
@@ -1040,7 +1041,7 @@
 </span></span><span style="display:flex;"><span>    at Zigbee.start <span style="color:#f92672">(</span>/app/lib/zigbee.ts:63:27<span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span>    at Controller.start <span style="color:#f92672">(</span>/app/lib/controller.ts:139:27<span style="color:#f92672">)</span>
 </span></span><span style="display:flex;"><span>    at start <span style="color:#f92672">(</span>/app/index.js:154:5<span style="color:#f92672">)</span>
-</span></span></code></pre></div><p>From what I see here, to make it work with <code>ember</code>, apparently I need flash my Zigbee adapter with a different/newer firmware. However, for now I decided not to, and I just reverted the config back to <code>ezsp</code>, as that one seemed to be already working as it is.</p>
+</span></span></code></pre></div><p><span id="postponed-updating-to-ember">From what I see here, to make it work with <code>ember</code>, apparently I need flash my Zigbee adapter with a different/newer firmware. However, for now I decided not to (<em>although I did <a href="#2026-06-09--updating-sonoff-zigbee-dongle-firmware-and-switching-to-ember-driver">later</a></em>), and I just reverted the config back to <code>ezsp</code>, as that one seemed to be already working as it is.</span></p>
 <p>To access the frontend I exposed its port (<em><code>8080</code> by default</em>) from the host the <a href="#nginx">same way</a> I did it with Home Assistant container (<em>static IP and reverse proxy</em>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker network disconnect hub zigbee2mqtt
 </span></span><span style="display:flex;"><span>$ sudo docker network connect --ip 172.18.0.101 hub zigbee2mqtt
@@ -2272,7 +2273,7 @@
 </span></span></span><span style="display:flex;"><span>    --network hub <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --ip 172.18.0.101 <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    --restart<span style="color:#f92672">=</span>unless-stopped <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span>    --device<span style="color:#f92672">=</span>/dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_20240218135838-if00:/dev/ttyACM0 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --device<span style="color:#f92672">=</span>/dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_SERIAL-NUMBER-HERE-if00:/dev/ttyACM0 <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -e TZ<span style="color:#f92672">=</span>Europe/Amsterdam <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -v /root/zigbee2mqtt/data:/app/data <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -v /root/zigbee2mqtt/logs:/app/logs <span style="color:#ae81ff">\
@@ -2774,6 +2775,118 @@
 <p>You might have noticed that I migrated only Home Assistant, while Eclipse Mosquitto and Zigbee2MQTT are still running on Vero V.</p>
 <p>Yes, I would certainly prefer to migrate everything, but containers in Synology Container Manager do not have <a href="https://community.synology.com/enu/forum/1/post/195379">access to USB</a>, which is required to communicate with Zigbee adapter. I know that there are <a href="https://github.com/robertklep/dsm7-usb-serial-drivers">ways</a> to enable that, but I really do not want to touch anything in the stock system.</p>
 <p>By the way, don&rsquo;t forget to set the (<em>Vero V</em>) IP address in MQTT integration settings in Home Assistant. Also note that Eclipse Mosquitto container (<em>on Vero V</em>) now requires exposing its port with <code>-p 1883:1883</code>.</p>
+<h2 id="2026-06-09--updating-sonoff-zigbee-dongle-firmware-and-switching-to-ember-driver">2026-06-09 | Updating SONOFF Zigbee dongle firmware and switching to ember driver</h2>
+<p>So, initially I <a href="#postponed-updating-to-ember">did not want</a> to update the SONOFF Zigbee dongle firmware and kept using <code>ezsp</code> driver (<em>even though it was marked as deprecated already back then</em>). But eventually I got annoyed enough by seening various warnings/errors in Zigbee2MQTT logs, such as these ones:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>warning:     zh:ezsp: <span style="color:#e6db74">&#39;ezsp&#39;</span> driver is deprecated and will only remain to provide support <span style="color:#66d9ef">for</span> older firmware <span style="color:#f92672">(</span>pre 7.4.x<span style="color:#f92672">)</span>. Migration to <span style="color:#e6db74">&#39;ember&#39;</span> is recommended. If using Zigbee2MQTT see https://github.com/Koenkk/zigbee2mqtt/discussions/21462
+</span></span><span style="display:flex;"><span>error:     zh:ezsp:uart: Error <span style="color:#66d9ef">while</span> parsing to NpiFrame <span style="color:#e6db74">&#39;Error: &lt;-- CRC error: 0e7e|0e|ffff&#39;</span>
+</span></span><span style="display:flex;"><span>error:     zh:ezsp:uart: Error <span style="color:#66d9ef">while</span> parsing to NpiFrame <span style="color:#e6db74">&#39;Error: &lt;-- CRC error: SOME-VALUE-HERE|6b30|0d59&#39;</span>
+</span></span><span style="display:flex;"><span>error:     zh:ezsp:ezsp: Frame changeSourceRouteHandler parsing error: RangeError <span style="color:#f92672">[</span>ERR_BUFFER_OUT_OF_BOUNDS<span style="color:#f92672">]</span>: Attempt to access memory outside buffer bounds
+</span></span><span style="display:flex;"><span>error:     zh:ezsp:ezsp: Unparsed frame 0xc4. Skipped
+</span></span></code></pre></div><p>and also I have been experiencing certain issues with some of my Zigbee devices, such as sensors readings dropping out for periods of time (<em>although rarely, but still</em>). So I finally decided to update the dongle firmware and switch to <code>ember</code> driver in Zigbee2MQTT.</p>
+<p>Conveniently, there is an official <a href="https://dongle.sonoff.tech/sonoff-dongle-flasher/">SONOFF webpage</a> for updating the firmware. Yeah, flashing a USB-connected device firmware from a web-browser (<em>has to be Chromium-based</em>). Crazy times! Crazy, but very convenient. So I plugged the dongle into my MacBook Pro via USB-C hub that has USB-A ports and opened that page:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/sonoff-dongle-flasher.png" alt="SONOFF Dongle Flasher">
+
+<p>Once you click <code>Connect</code>, browser will prompt you with accessing a serial port (<em>as I recall, there was also a prompt for allowing Bluetooth, even though I had Bluetooth toggle disabled at the moment?</em>):</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/sonoff-dongle-flasher-connect-serial.png" alt="SONOFF Dongle Flasher, prompt for connecting to a serial port">
+
+<p>and right after that there will be a second prompt for connecting to the device:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/sonoff-dongle-flasher-connect-device.png" alt="SONOFF Dongle Flasher, prompt for connecting to the device">
+
+<p>On this screenshot it already shows as &ldquo;<em>Paired</em>&rdquo;, but I don&rsquo;t remember how it was for the very first time. Also, if you won&rsquo;t allow the first prompt quickly enough, then this second prompt might never appear, so you&rsquo;ll need to repeat the procedure.</p>
+<p>Once connected, it will show both your current device firmware and the available firmware on their server:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/sonoff-dongle-flasher-connected.png" alt="SONOFF Dongle Flasher, connected device">
+
+<p>If you are curious, you can check what other firmware is available by clicking <code>Change firmware</code>:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/sonoff-dongle-flasher-selecting-firmware.png" alt="SONOFF Dongle Flasher, selecting firmware" style="border:1px solid black;">
+
+<p>but the default selected option is already the correct one. So you just click <code>Flash</code> and it will start updating:</p>
+<p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/sonoff-dongle-flasher-updating.png" alt="SONOFF Dongle Flasher, updating" style="border:1px solid black;">
+
+</p>
+<p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/sonoff-dongle-flasher-updated.png" alt="SONOFF Dongle Flasher, updated" style="border:1px solid black;">
+
+</p>
+<p>Connecting to the device again shows that it has the latest firmware:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/sonoff-dongle-flasher-latest.png" alt="SONOFF Dongle Flasher, latest firmware" style="border:1px solid black;">
+
+<p>Now you can plug the dongle back to Zigbee2MQTT host and switch <code>adapter</code> value in Zigbee2MQTT&rsquo;s <code>configuration.yaml</code> from <code>ezsp</code> to <code>ember</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">serial</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">port</span>: <span style="color:#ae81ff">/dev/ttyACM0</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">adapter</span>: <span style="color:#ae81ff">ember</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span></code></pre></div><p>But before doing so, as you should have read in this warning before flashing:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2024/08/16/home-assistant-on-vero-with-docker/images/sonoff-dongle-flasher-warning-eszp-ember.png" alt="SONOFF Dongle Flasher, warning about switching from eszp to ember" style="border:1px solid black;">
+
+<p>it is recommended to first start Zigbee2MQTT with <code>ezsp</code> driver still, otherwise apparently there is a risk of losing your entire Zigbee network, so you&rsquo;ll have to re-pair all your Zigbee devices (<em>of which I have 37 right now, so that would be a nightmare</em>). The linked GitHub discussion is <a href="https://github.com/Koenkk/zigbee2mqtt/discussions/21462">here</a>(?), but I didn&rsquo;t see this particular recommendation in there. Anyway, I tried to start my Zigbee2MQTT without changing the <code>adapter</code> value from <code>ezsp</code> to <code>ember</code>, but it failed to launch:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>info:     z2m: Starting Zigbee2MQTT version 2.10.1 <span style="color:#f92672">(</span>commit <span style="color:#75715e">#94751abaacb66989e688f21d8ac3773cf5d754a9)</span>
+</span></span><span style="display:flex;"><span>info:     z2m: Starting zigbee-herdsman <span style="color:#f92672">(</span>10.0.7<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>warning:     zh:ezsp: <span style="color:#e6db74">&#39;ezsp&#39;</span> driver is deprecated and will only remain to provide support <span style="color:#66d9ef">for</span> older firmware <span style="color:#f92672">(</span>pre 7.4.x<span style="color:#f92672">)</span>. Migration to <span style="color:#e6db74">&#39;ember&#39;</span> is recommended. If using Zigbee2MQTT see https://github.com/Koenkk/zigbee2mqtt/discussions/21462
+</span></span><span style="display:flex;"><span>error:     z2m: Error <span style="color:#66d9ef">while</span> starting zigbee-herdsman
+</span></span><span style="display:flex;"><span>error:     z2m: Failed to start zigbee-herdsman
+</span></span><span style="display:flex;"><span>error:     z2m: Check https://www.zigbee2mqtt.io/guide/installation/20_zigbee2mqtt-fails-to-start_crashes-runtime.html <span style="color:#66d9ef">for</span> possible solutions
+</span></span><span style="display:flex;"><span>error:     z2m: Exiting...
+</span></span><span style="display:flex;"><span>error:     z2m: Error: <span style="color:#e6db74">&#39;ezsp&#39;</span> driver is not compatible with firmware 8.x.x or above <span style="color:#f92672">(</span>EZSP v14+<span style="color:#f92672">)</span>. Use <span style="color:#e6db74">&#39;ember&#39;</span> driver instead.
+</span></span><span style="display:flex;"><span>    at Ezsp.version <span style="color:#f92672">(</span>/app/node_modules/.pnpm/zigbee-herdsman@10.0.7/node_modules/zigbee-herdsman/src/adapter/ezsp/driver/ezsp.ts:462:19<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    at Driver.startup <span style="color:#f92672">(</span>/app/node_modules/.pnpm/zigbee-herdsman@10.0.7/node_modules/zigbee-herdsman/src/adapter/ezsp/driver/driver.ts:195:9<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    at EZSPAdapter.start <span style="color:#f92672">(</span>/app/node_modules/.pnpm/zigbee-herdsman@10.0.7/node_modules/zigbee-herdsman/src/adapter/ezsp/adapter/ezspAdapter.ts:151:16<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    at Controller.start <span style="color:#f92672">(</span>/app/node_modules/.pnpm/zigbee-herdsman@10.0.7/node_modules/zigbee-herdsman/src/controller/controller.ts:146:29<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    at Zigbee.start <span style="color:#f92672">(</span>/app/lib/zigbee.ts:70:27<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    at Controller.start <span style="color:#f92672">(</span>/app/lib/controller.ts:111:29<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    at start <span style="color:#f92672">(</span>/app/index.js:156:5<span style="color:#f92672">)</span>
+</span></span></code></pre></div><p>Having no idea what to do about that, I changed the value to <code>ember</code>, and then it launched fine (<em>with one seemingly harmless warning</em>), and I haven&rsquo;t lost any devices from my Zigbee network:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>info:     z2m: Starting Zigbee2MQTT version 2.10.1 <span style="color:#f92672">(</span>commit <span style="color:#75715e">#94751abaacb66989e688f21d8ac3773cf5d754a9)</span>
+</span></span><span style="display:flex;"><span>info:     z2m: Starting zigbee-herdsman <span style="color:#f92672">(</span>10.0.7<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>info:     zh:ember: Using default stack config.
+</span></span><span style="display:flex;"><span>info:     zh:ember: <span style="color:#f92672">========</span> Ember Adapter Starting <span style="color:#f92672">========</span>
+</span></span><span style="display:flex;"><span>info:     zh:ember:ezsp: <span style="color:#f92672">========</span> EZSP starting <span style="color:#f92672">========</span>
+</span></span><span style="display:flex;"><span>info:     zh:ember:uart:ash: <span style="color:#f92672">========</span> ASH Adapter reset <span style="color:#f92672">========</span>
+</span></span><span style="display:flex;"><span>info:     zh:ember:uart:ash: RTS/CTS config is off, enabling software flow control.
+</span></span><span style="display:flex;"><span>info:     zh:ember:uart:ash: Serial port opened
+</span></span><span style="display:flex;"><span>info:     zh:ember:uart:ash: <span style="color:#f92672">========</span> ASH starting <span style="color:#f92672">========</span>
+</span></span><span style="display:flex;"><span>info:     zh:ember:uart:ash: <span style="color:#f92672">========</span> ASH connected <span style="color:#f92672">========</span>
+</span></span><span style="display:flex;"><span>info:     zh:ember:uart:ash: <span style="color:#f92672">========</span> ASH started <span style="color:#f92672">========</span>
+</span></span><span style="display:flex;"><span>info:     zh:ember:ezsp: <span style="color:#f92672">========</span> EZSP started <span style="color:#f92672">========</span>
+</span></span><span style="display:flex;"><span>info:     zh:ember: Adapter EZSP protocol version <span style="color:#f92672">(</span>14<span style="color:#f92672">)</span> lower than Host. Switched.
+</span></span><span style="display:flex;"><span>info:     zh:ember: Adapter version info: <span style="color:#f92672">{</span><span style="color:#e6db74">&#34;ezsp&#34;</span>:14,<span style="color:#e6db74">&#34;revision&#34;</span>:<span style="color:#e6db74">&#34;8.0.2 [GA]&#34;</span>,<span style="color:#e6db74">&#34;build&#34;</span>:397,<span style="color:#e6db74">&#34;major&#34;</span>:8,<span style="color:#e6db74">&#34;minor&#34;</span>:0,<span style="color:#e6db74">&#34;patch&#34;</span>:2,<span style="color:#e6db74">&#34;special&#34;</span>:0,<span style="color:#e6db74">&#34;type&#34;</span>:170<span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>info:     zh:ember: <span style="color:#f92672">[</span>STACK STATUS<span style="color:#f92672">]</span> Network up.
+</span></span><span style="display:flex;"><span>warning:     zh:ember: <span style="color:#f92672">[</span>BACKUP<span style="color:#f92672">]</span> Current backup file is from an unsupported EZSP version. Renaming and ignoring.
+</span></span><span style="display:flex;"><span>info:     zh:ember: <span style="color:#f92672">[</span>INIT TC<span style="color:#f92672">]</span> Adapter network matches config.
+</span></span><span style="display:flex;"><span>info:     zh:ember: <span style="color:#f92672">[</span>CONCENTRATOR<span style="color:#f92672">]</span> Started source route discovery. 1248ms <span style="color:#66d9ef">until</span> next broadcast.
+</span></span><span style="display:flex;"><span>info:     zh:controller: Wrote coordinator backup to <span style="color:#e6db74">&#39;/app/data/coordinator_backup.json&#39;</span>
+</span></span><span style="display:flex;"><span>info:     z2m: zigbee-herdsman started <span style="color:#f92672">(</span>resumed<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>info:     z2m: Coordinator firmware version: <span style="color:#e6db74">&#39;{&#34;meta&#34;:{&#34;build&#34;:397,&#34;ezsp&#34;:14,&#34;major&#34;:8,&#34;minor&#34;:0,&#34;patch&#34;:2,&#34;revision&#34;:&#34;8.0.2 [GA]&#34;,&#34;special&#34;:0,&#34;type&#34;:170},&#34;type&#34;:&#34;EmberZNet&#34;}&#39;</span>
+</span></span><span style="display:flex;"><span>info:     z2m: Philips Hue Plug | <span style="color:#ae81ff">1</span> <span style="color:#f92672">(</span>ONE-ADDRESS<span style="color:#f92672">)</span>: <span style="color:#ae81ff">929003050601</span> - Philips Hue smart plug <span style="color:#f92672">(</span>Router<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>info:     z2m: frient Smart Plug | <span style="color:#ae81ff">1</span> <span style="color:#f92672">(</span>ANOTHER-ADDRESS<span style="color:#f92672">)</span>: SPLZB-141 - Develco Power plug <span style="color:#f92672">(</span>Router<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>info:     z2m: Currently <span style="color:#ae81ff">37</span> devices are joined.
+</span></span><span style="display:flex;"><span>info:     z2m: Connecting to MQTT server at mqtt://mosquitto
+</span></span><span style="display:flex;"><span>info:     z2m: Connected to MQTT server
+</span></span><span style="display:flex;"><span>info:     z2m: Started frontend on port <span style="color:#ae81ff">8080</span>
+</span></span><span style="display:flex;"><span>info:     z2m: Zigbee2MQTT started!
+</span></span></code></pre></div><p>Now I no longer get those errors about parsing to NpiFrame and accessing memory outside buffer bounds. And hopefully sensors readings dropouts will happen even more rarely.</p>
       </div>
     </article>
     <div><div id="tags">
