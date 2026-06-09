@@ -1198,9 +1198,9 @@
 <p>It&rsquo;s probably also worth to mention that it doesn&rsquo;t matter whether your Steam Deck is in Desktop or Gaming mode - you can still connect to it, as long as SSH service is running.</p>
 <p>The SSH service will be running until the next system reboot (<em>switching Desktop/Gaming mode doesn&rsquo;t count</em>), because the service isn&rsquo;t set to auto-start. I would recommend to keep it that way, and ideally you&rsquo;d also stop the service once you&rsquo;ve done everything you needed to do over SSH. Yes, it is inconvenient, and next time you&rsquo;ll need to connect via SSH you&rsquo;ll have to open Terminal/Konsole and start the service again, but I think it&rsquo;s a good security precaution.</p>
 <h2 id="monitoring-the-temperature">Monitoring the temperature</h2>
-<p>You can monitor the device temperature (<em>and other metrics</em>) with <code>sensors</code> command:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ watch sensors</span></span></code></pre></div>
-<p>I used that to see how compiling from sources goes, and here&rsquo;s what <code>sensors</code> were reporting during 100% load on all 4/8 CPU cores for a period of time:</p>
+<p>You can monitor (<em><code>watch</code></em>) the device temperature and other metrics with <code>sensors</code> command:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ watch sensors
+</span></span></code></pre></div><p>I used it to see how <a href="/blog/2023/05/28/steam-deck-building-stuff-from-sources/">compiling C++ sources</a> goes, and here&rsquo;s what <code>sensors</code> were reporting during 100% load on all 4/8 CPU cores:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>amdgpu-pci-0400
 </span></span><span style="display:flex;"><span>Adapter: PCI adapter
 </span></span><span style="display:flex;"><span>vddgfx:       15.00 mV
@@ -1228,9 +1228,15 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>acpitz-acpi-0
 </span></span><span style="display:flex;"><span>Adapter: ACPI interface
-</span></span><span style="display:flex;"><span>temp1:        +84.0°C  <span style="color:#f92672">(</span>crit <span style="color:#f92672">=</span> +105.0°C<span style="color:#f92672">)</span></span></span></code></pre></div>
-<p>It never went higher than 84°C temperature. For comparison, my MacBook Pro (<em>15-inch, 2018</em>) during compilation of the same project becomes so damn hot (<em>about 99°C</em>) that you can&rsquo;t touch it.</p>
-<h2 id="disabling-file-indexer">Disabling file indexer</h2>
+</span></span><span style="display:flex;"><span>temp1:        +84.0°C  <span style="color:#f92672">(</span>crit <span style="color:#f92672">=</span> +105.0°C<span style="color:#f92672">)</span>
+</span></span></code></pre></div><p>So it never went higher than 84°C temperature. For comparison, my MacBook Pro (<em>15-inch, 2018</em>) during compilation of the same project becomes so damn hot (<em>about 99°C</em>) that you can&rsquo;t touch it.</p>
+<p>If you only need the temperature, then there is also this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ awk <span style="color:#e6db74">&#39;{printf &#34;%.1f\n&#34;, $1/1000}&#39;</span> /sys/class/thermal/thermal_zone*/temp | sort -r | head -1
+</span></span><span style="display:flex;"><span>42.0
+</span></span></code></pre></div><p>which is more convenient for reporting the temperature to <a href="/blog/2024/08/16/home-assistant-on-vero-with-docker/#sending-data-with-a-webhook">Home Assistant</a>, should you ever need that:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ jq -nc --argjson msg <span style="color:#66d9ef">$(</span>awk <span style="color:#e6db74">&#39;{printf &#34;%.1f\n&#34;, $1/1000}&#39;</span> /sys/class/thermal/thermal_zone*/temp | sort -r | head -1<span style="color:#66d9ef">)</span> <span style="color:#e6db74">&#39;{&#34;temperature&#34;:$msg}&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    | curl -X POST -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> -d @- -k https://YOUR-HOME-ASSISTANT-HOST:AND-PORT/api/webhook/monitoring-steam-deck-temperature
+</span></span></code></pre></div><h2 id="disabling-file-indexer">Disabling file indexer</h2>
 <p>At some point I noticed that a process called <code>/usr/lib/baloo_file_extractor</code> loads the CPU (<em>at least one of the cores</em>) to almost 100%. I googled for it, and that process turned out to be <a href="https://community.kde.org/Baloo">Baloo</a> file indexer.</p>
 <p>Well, I don&rsquo;t usually rely on system indexers, so I don&rsquo;t need a useless process wasting my CPU time and the battery charge along with it. Plus I saw some people reporting how extensively it performs read/write disk operations, which probably can reduce the SSD / SD card resource.</p>
 <p>First I disabled it in system settings:</p>
