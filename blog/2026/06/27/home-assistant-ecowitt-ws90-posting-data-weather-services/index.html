@@ -1,0 +1,1019 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Ecowitt WS90 in Home Assistant and posting data to weather services | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/" />
+
+    <meta name="generator" content="Hugo" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="Ecowitt WS90 (powered by Shelly) is a Zigbee-enabled personal weather station (PWS), which easily integrates with Home Assistant. In addition to using its weather data for your own dashboards and automations, you can also share it with online public weather services." />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:url" content="https://retifrav.github.io/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/">
+  <meta property="og:site_name" content="Declaration of VAR">
+  <meta property="og:title" content="Ecowitt WS90 in Home Assistant and posting data to weather services">
+  <meta property="og:description" content="Ecowitt WS90 (powered by Shelly) is a Zigbee-enabled personal weather station (PWS), which easily integrates with Home Assistant. In addition to using its weather data for your own dashboards and automations, you can also share it with online public weather services.">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="blog">
+    <meta property="article:published_time" content="2026-06-27T16:07:49+02:00">
+    <meta property="article:modified_time" content="2026-06-27T16:07:49+02:00">
+    <meta property="article:tag" content="Home-Automation">
+    <meta property="article:tag" content="Web">
+
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.2a28493e0b91076cde9fb52cb7fec81f63f685a6965e6a9df1179ec846b9141f.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        <code>2021-05-19:</code> The website has moved to
+        <a href="https://decovar.dev/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>, so <a href="https://retifrav.github.io/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/" style="color:black; font-weight:bold;">https://retifrav.github.io/</a>
+            is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Ecowitt WS90 in Home Assistant and posting data to weather services</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2026-06-27 16:07:49 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 31 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>Ecowitt WS90 (<em>specifically, the one <a href="https://shop.ecowitt.com/products/ecowitt-ws90-7-in-1-weather-station-powered-by-shelly">powered by Shelly</a></em>) is a Zigbee-enabled personal weather station (<em>PWS</em>), which easily integrates with <a href="/blog/2024/08/16/home-assistant-on-vero-with-docker/">Home Assistant</a>.</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/ecowitt-ws90-powered-by-shelly-pole-roof.jpg" alt="Ecowitt WS90 powered by Shelly, mounted on a pole">
+
+<p>In addition to using its weather data for your own dashboards and automations, you can also share it with online public weather services.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#the-station">The station</a>
+      <ul>
+        <li><a href="#what-exactly-does-shelly-power-in-it">What exactly does Shelly power in it</a></li>
+        <li><a href="#batteries">Batteries</a></li>
+        <li><a href="#updating-firmware">Updating firmware</a></li>
+      </ul>
+    </li>
+    <li><a href="#mounting-station-on-a-pole">Mounting station on a pole</a></li>
+    <li><a href="#home-assistant">Home Assistant</a>
+      <ul>
+        <li><a href="#connecting-via-zigbee2mqtt">Connecting via Zigbee2MQTT</a></li>
+        <li><a href="#sensors-data">Sensors data</a>
+          <ul>
+            <li><a href="#wind-speed">Wind speed</a></li>
+            <li><a href="#wind-direction">Wind direction</a></li>
+            <li><a href="#precipitation">Precipitation</a></li>
+            <li><a href="#atmospheric-pressure">Atmospheric pressure</a></li>
+          </ul>
+        </li>
+        <li><a href="#a-dashboard">A dashboard</a></li>
+      </ul>
+    </li>
+    <li><a href="#publishing-data">Publishing data</a>
+      <ul>
+        <li><a href="#openweathermap">OpenWeatherMap</a></li>
+        <li><a href="#weathercloud">Weathercloud</a></li>
+        <li><a href="#weather-underground">Weather Underground</a></li>
+        <li><a href="#pwsweather">PWSWeather</a></li>
+        <li><a href="#яндекс-погода">Яндекс Погода</a></li>
+        <li><a href="#other-services">Other services</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h1 id="the-station">The station</h1>
+<p>It looks like this:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/ecowitt-ws90-powered-by-shelly.jpg" alt="Ecowitt WS90 powered by Shelly">
+
+<p>As you can see, it is rather monolithic and has no moving parts, so even the wind speed is measured with some black magic (<em>ultrasonic anemometer</em>) instead of the usual rotating anemometer with cups.</p>
+<p>One thing you might worry about is birds landing on the top and messing with the sensors measurements, and for that Ecowitt sells this <a href="https://shop.ecowitt.com/products/bird-spikes-1">spikes accessory</a> (<em>10 USD</em>), but I haven&rsquo;t got one yet.</p>
+<h2 id="what-exactly-does-shelly-power-in-it">What exactly does Shelly power in it</h2>
+<p>Unlike the default/original <a href="https://shop.ecowitt.com/products/ws90">Ecowitt WS90</a>, which openly transmits the data via Sub-GHz radio frequency (<em>so anyone in range can receive it</em>), the one powered by Shelly uses Zigbee or/and(?) Bluetooth (<em>so it requires pairing</em>). That difference also makes it incompatible with other Ecowitt devices such as <a href="https://shop.ecowitt.com/collections/lcd-console">display panels</a> (<em>because they too work via that open radio broadcast</em>), but I don&rsquo;t care about those. The Shelly variant also costs more than the default one - about 30 USD more expensive.</p>
+<p>Both Zigbee and Bluetooth are clearly marked on the station body:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/ecowitt-ws90-powered-by-shelly-zigbee-and-bluetooth.jpg" alt="Ecowitt WS90 powered by Shelly, Zigbee and Bluetooth">
+
+<p>Zigbee in particular makes it trivial to integrate the station into <a href="http://localhost:1313/blog/2024/08/16/home-assistant-on-vero-with-docker/#zigbee">Home Assistant</a> (<em>assuming that you already have a Zigbee network at your home</em>), so for me that was an ideal scenario.</p>
+<h2 id="batteries">Batteries</h2>
+<p>The station is powered by solar energy, and it likely will be able to function without batteries, as apparently it is also capable of accumulating certain amount of solar energy for using it at night. But in case you don&rsquo;t have a lot of sun in your area, it does also have an option of being powered by 2 AA batteries.</p>
+<p>The batteries are recommended/required to be lithium batteries, so not NiMH or alkaline. As one user shared <a href="https://reddit.com/r/homeassistant/comments/1qm13ie/comment/o1l0nmj/">here</a>, his NiMH batteries died within a few days of -5°C outside, while they were at 100% of charge for several months before. I followed his advice and bought these <a href="https://batteriexperten.com/no/artiklar/aa-15v-lithium-4-pack-varta.html">Varta Ultra Lithium</a> batteries (<em>about 13 USD</em>):</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/varta-ultra-lithium-aa-batteries.jpg" alt="Varta Ultra Lithium AA batteries">
+
+<p>Station only needs two:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/ecowitt-ws90-powered-by-shelly-slot-for-batteries.jpg" alt="Ecowitt WS90 powered by Shelly, slot for batteries">
+
+<p>There is also a <a href="https://shop.ecowitt.com/products/extension-cord?variant=45406402019490">power adapter</a> (<em>50 USD</em>) for enabling the integrated heater (<em>and powering the station</em>), which is supposed to be melting snow/ice on the station body in winter (<em>which is a problem at least for wind sensors</em>), but I am not sure yet whether I need it or not, I guess we&rsquo;ll see in winter. By the way, the heater is another reason to avoid alkaline batteries, as they might overheat, leak and cause some damage.</p>
+<h2 id="updating-firmware">Updating firmware</h2>
+<p>As usual, first thing you do with a new device is update its firmware. For this device the process is not very trivial/obvious, mainly because it is not documented anywhere (<em>I failed to find anything</em>). It is also worth to mention that you should perform the updating rituals <em>before</em> you <a href="#mounting-station-on-a-pole">mount the station</a> at its permanent place (<em>which could be somewhere on a house roof</em>), because these rituals involves pressing a physical button on the station&rsquo;s body.</p>
+<p>Shelly&rsquo;s own manual points to their <a href="https://shelly.com/pages/app_download">Shelly Smart Control</a> application, which requires creating an account, and that didn&rsquo;t look right. I don&rsquo;t need no bloody account, I just want to update the firmware and get my raw sensors data. Perhaps this application does in fact provide functionality for updating the firmware, but I never proceeded with creating an account, so I don&rsquo;t know. Instead I discovered that there is this <a href="https://apps.apple.com/app/id6449539118">Shelly BLE Debug</a> application, which simply works and does not require creating accounts or any other bullshit.</p>
+<p>To connect to your device, after you&rsquo;ve put the batteries in, press the <code>CAL</code> button once:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/ecowitt-ws90-powered-by-shelly-button-cal.jpg" alt="Ecowitt WS90 powered by Shelly, CAL button">
+
+<p>It will enter Bluetooth pairing mode, and then you should be able to connect to it in the application:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/shelly-ble-debug-connecting.png" alt="Shelly BLE Debug, connecting device">
+
+<p>Once connected, you can read some device information by pressing <code>Info</code> button:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/shelly-ble-debug-info.png" alt="Shelly BLE Debug, device information">
+
+<p>and check the firmware status by pressing <code>OTA</code> button:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/shelly-ble-debug-ota.png" alt="Shelly BLE Debug, OTA status">
+
+<p>When I first tried starting the update (<em>by pressing <code>Update</code> button</em>), it got stuck on the very first stage of &ldquo;preparing&rdquo;:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/shelly-ble-debug-ota-preparing.png" alt="Shelly BLE Debug, OTA preparing">
+
+<p>I was waiting for a long time (<em>more than 5 minutes or even longer?</em>), but it never progressed any further. So then I relaunched the application and tried again, and this time it went fine right away and was done in about a minute:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/shelly-ble-debug-ota-updating.png" alt="Shelly BLE Debug, OTA updating">
+
+<p>Checking the update status now shows that I have the latest version:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/shelly-ble-debug-ota-latest.png" alt="Shelly BLE Debug, OTA latest">
+
+<p>It would be nice to subscribe to some newsletter or, better yet, an RSS feed with firmware updates, so one could know when a new version becomes available, but I didn&rsquo;t find any such feed or newsletter. Apparently, one is supposed to manually query for updates with Shelly BLE Debug application from time to time, which requires pressing physical button on the station body, so not the best possible user experience.</p>
+<p>At the very least, I wanted to read the firmware changelogs for released versions, but I did not find those either. There is <a href="https://ecowitt.com/api/quickstart/product?id=249">this page</a> on Ecowitt website, but the Firmware Release Notes document lists versions that do not match the versions shown in Shelly BLE Debug application. There is also <a href="https://shelly-api-docs.shelly.cloud/docs-ble/changelog_mg27/">this changelog</a> on Shelly&rsquo;s website, but I don&rsquo;t see anything related to the weather station there. Sadge.</p>
+<h1 id="mounting-station-on-a-pole">Mounting station on a pole</h1>
+<p>As I mentioned already, before you proceed with mounting your weather station at its permanent place, first <a href="#updating-firmware">update the firmware</a> to the latest version and then make sure that <a href="#connecting-via-zigbee2mqtt">communication with Home Assistant</a> works fine too.</p>
+<p>The station is meant to be mounted on a pole with a diameter of 25 mm:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/ecowitt-ws90-powered-by-shelly-mounting-hole.jpg" alt="Ecowitt WS90 powered by Shelly, mounting hole">
+
+<p>And I had no idea where can I get such a thing. These are probably available in building/construction stores, but I couldn&rsquo;t find it in my local ones. What I did find is this <a href="https://jula.no/catalog/bygg-og-maling/oppbevaring/oppbevaringssystem/klesstang-og-tillbehor/klesstang-016392/">wardrobe rail</a> (<em>5 USD</em>) for hanging clothes and these <a href="https://jula.no/catalog/bygg-og-maling/oppbevaring/oppbevaringssystem/klesstang-og-tillbehor/rorholder-016387/">mounting holders</a> (<em>10 USD</em>) for it:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/wardrobe-rail-and-pipe-holders.jpg" alt="Wardrobe rail and pipe holders">
+
+<p>To put them all together (<em>as it would be mounted vertically, not horizontally</em>) the best I could come up with was to use a universal tape like this:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/wardrobe-rail-and-pipe-holders-universal-tape.jpg" alt="Wardrobe rail and pipe holders with universal tape">
+
+<p>And the other end of the pole goes up the weather station&rsquo;s arse (<em>やめてください！(&gt;_&lt;)</em>):</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/ecowitt-ws90-powered-by-shelly-on-pole.jpg" alt="Ecowitt WS90 powered by Shelly, on a pole">
+
+<p>As for where to mount that pole with the station on it, people on weather forums unanimously say that good positioning of the station is more important than the quality/accuracy of its sensors, so you should really take your time and think about possible locations. One of the best places would be the house roof, somewhere on the edge, and I would very much like to install it there, but I don&rsquo;t have a big enough ladder, and my roof has nothing to mount the pole on, so I settled with attaching it to a shed:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/ecowitt-ws90-powered-by-shelly-mounted-on-pergola.jpg" alt="Ecowitt WS90 powered by Shelly, mounted on pergola">
+
+<p>That involved drilling in metal, which I&rsquo;ve never done before, so no surprise that I broke one drill bit and screwed up the surface a bit:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/screwed-up-drilling-holes-in-metal.jpg" alt="Screwed up drilling holes in metal">
+
+<p>That&rsquo;s some real mad skills right there, eh.</p>
+<p>Don&rsquo;t forget to align the <code>N</code> marker arrow on the station body so it would point to the north, otherwise your wind direction measurements will be all wrong.</p>
+<h1 id="home-assistant">Home Assistant</h1>
+<h2 id="connecting-via-zigbee2mqtt">Connecting via Zigbee2MQTT</h2>
+<p>Nothing special here, the device is <a href="https://zigbee2mqtt.io/devices/WS90.html">supported</a> out of the box, so you just permit joining for new devices in <a href="/blog/2024/08/16/home-assistant-on-vero-with-docker/#zigbee2mqtt">Zigbee2MQTT</a> and then put the station into pairing mode (<em>by pressing the <a href="./images/ecowitt-ws90-powered-by-shelly-button-cal.jpg">CAL button</a> twice</em>).</p>
+<p>For me the interviewing process was going somewhat flaky at first: the device was appearing and disappearing in the list, not being able to finish pairing. It paired successfully only on the second (<em>or third?</em>) try, which is why you shouldn&rsquo;t rush with <a href="#mounting-station-on-a-pole">mounting the station</a> before it is properly connected, as every pairing attempt requires pressing that CAL button on the station.</p>
+<p>Also, although probably unrelated, my Zigbee2MQTT container crashed shortly after I paired the station. I couldn&rsquo;t find the reason in the logs, so it might have been just a coincidence, but it never crashed before, so that was mighty suspicious. After a restart it did not crash again and has been working fine ever since.</p>
+<p>Once discovered and interviewed, here&rsquo;s how the device will look like in Zigbee2MQTT frontend:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/zigbee2mqtt-ecowitt-ws90-powered-by-shelly.png" alt="Ecowitt WS90 powered by Shelly, added to Zigbee2MQTT" style="border:1px solid black;">
+
+<h2 id="sensors-data">Sensors data</h2>
+<p>Aside from the <a href="https://shelly-api-docs.shelly.cloud/docs-ble/Devices/BLU_ZB/wstation/">basic sensors</a> you will also get several <a href="https://zigbee2mqtt.io/devices/WS90.html#exposes">derived/calculated sensors</a>, and even more of those you will create yourself as template/statistics/utility helpers to convert between different units, collect various statistics and such. So in total it is quite a lot of data, some of which you might want to exclude from <a href="https://home-assistant.io/integrations/recorder/">recorder</a>.</p>
+<h3 id="wind-speed">Wind speed</h3>
+<p>Not sure why, but by default I got wind speed (<em><code>wind_speed</code></em>) in <code>km/h</code>, even though both documentation and my Zigbee2MQTT device page state that it should be in <code>m/s</code>. It is probably Home Assistant who converts that behind the scenes, likely based on some locale settings, but I didn&rsquo;t find where to change that.</p>
+<p>At the same time, the wind gust speed (<em><code>gust_speed</code></em>) is reported in <code>m/s</code>, and I have no idea why this one isn&rsquo;t in <code>km/h</code> too.</p>
+<p>But anyway, since I wanted to have both of them in <code>m/s</code>, I had to create only one <a href="https://home-assistant.io/integrations/template/#sensor">template sensor</a> for converting from <code>km/h</code> to <code>m/s</code>. The conversion formula is no secret:</p>
+<p>$$
+m/s = km/h \times \frac{5}{18} = \frac{km/h}{3.6}
+$$</p>
+<p>and so as a template expression it will be this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-jinja" data-lang="jinja"><span style="display:flex;"><span><span style="color:#75715e">{{</span> <span style="color:#f92672">(</span>states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_wind_speed&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">float</span> <span style="color:#f92672">/</span> <span style="color:#ae81ff">3.6</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">round</span><span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">)</span> <span style="color:#75715e">}}</span>
+</span></span></code></pre></div><p>Then to create such a sensor you need to open <strong>Settings</strong> → <strong>Devices &amp; services</strong> → <strong>Helpers</strong> → <strong>Create helper</strong> → <strong>Template</strong> → <strong>Sensor</strong>:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-template-sensor-wind-speed-ms.png" alt="Home Assistant, template sensor for wind speed in m/s" style="border:1px solid black;">
+
+<p>If you add <code>ecowitt_ws90_</code> prefix to the sensor name and assign it to <code>ecowitt_ws90</code> device, then it will add that prefix one more time, making the resulting sensor name <code>ecowitt_ws90_ecowitt_ws90_wind_speed</code>, so you&rsquo;ll need to delete the duplicate prefix right after creating the sensor.</p>
+<p>One more thing to watch out for is that it can also mess up the unit of measurement, making it <code>km/h</code> all of a sudden, so you better check and fix that too.</p>
+<h3 id="wind-direction">Wind direction</h3>
+<p>The wind direction is reported in degrees, which is not very convenient, but it is easy enough to <a href="https://community.home-assistant.io/t/shelly-ws90-weather-station/995989/10">convert</a> that into letters:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-jinja" data-lang="jinja"><span style="display:flex;"><span><span style="color:#75715e">{%</span> <span style="color:#66d9ef">set</span> directions <span style="color:#f92672">=</span> <span style="color:#f92672">[</span> <span style="color:#e6db74">&#39;N&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;NNE&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;NE&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;ENE&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;E&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;ESE&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;SE&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;SSE&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;S&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;SSW&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;SW&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;WSW&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;W&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;WNW&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;NW&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;NNW&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;N&#39;</span><span style="color:#f92672">]</span> -<span style="color:#75715e">%}</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span> <span style="color:#66d9ef">set</span> bearing <span style="color:#f92672">=</span> directions<span style="color:#f92672">[</span> <span style="color:#f92672">((</span>states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_wind_direction&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">int</span><span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">)</span> <span style="color:#f92672">/</span> <span style="color:#ae81ff">22.5</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">round</span><span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">int</span><span style="color:#f92672">)</span> <span style="color:#f92672">]</span> <span style="color:#75715e">%}</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{{</span> bearing <span style="color:#75715e">}}</span>
+</span></span></code></pre></div><p>Moreover, using this fantastic <a href="https://github.com/aukedejong/lovelace-windrose-card">windrose card</a>, you can make a super nice chart such as this:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-windrose-card.png" alt="Home Assistant, windrose card" style="border:1px solid black;">
+
+<p>Here it is in YAML:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">custom:windrose-card</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">data_period</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">period_back</span>: <span style="color:#e6db74">&#34;-3h&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">rose_config</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">windrose_draw_north_offset</span>: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">center_calm_percentage</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">refresh_interval</span>: <span style="color:#ae81ff">300</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">windspeed_bar_location</span>: <span style="color:#ae81ff">right</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">wind_direction_entity</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">entity</span>: <span style="color:#ae81ff">sensor.ecowitt_ws90_wind_direction</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">use_statistics</span>: <span style="color:#66d9ef">false</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">direction_compensation</span>: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">windspeed_entities</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">entity</span>: <span style="color:#ae81ff">sensor.ecowitt_ws90_wind_speed_ms</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">Скорость</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">speed_unit</span>: <span style="color:#ae81ff">mps</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">use_statistics</span>: <span style="color:#66d9ef">false</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">windspeed_bar_full</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">output_speed_unit</span>: <span style="color:#ae81ff">mps</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">speed_range_beaufort</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">current_speed_arrow</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">buttons_config</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">location</span>: <span style="color:#ae81ff">bottom</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">buttons</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">type</span>: <span style="color:#ae81ff">period_selector</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">button_text</span>: <span style="color:#ae81ff">Today</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">preset_period</span>: <span style="color:#ae81ff">today</span>
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">type</span>: <span style="color:#ae81ff">period_selector</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">button_text</span>: <span style="color:#ae81ff">Last 7 days</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">preset_period</span>: <span style="color:#ae81ff">last_7_days</span>
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">type</span>: <span style="color:#ae81ff">period_selector</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">button_text</span>: <span style="color:#ae81ff">Last 30 days</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">preset_period</span>: <span style="color:#ae81ff">last_30_days</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">use_analytics</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">analytics_period</span>: <span style="color:#ae81ff">hour</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">direction_labels</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">cardinal_direction_letters</span>: <span style="color:#ae81ff">NESW</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">current_direction</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">show_arrow</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">matching_strategy</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">direction-first</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">corner_info</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">top_left</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">label</span>: <span style="color:#ae81ff">Направление</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">unit</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">entity</span>: <span style="color:#ae81ff">sensor.ecowitt_ws90_wind_direction_compass</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">top_right</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">label</span>: <span style="color:#ae81ff">Скорость</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">unit</span>: <span style="color:#e6db74">&#34; м/с&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">entity</span>: <span style="color:#ae81ff">sensor.ecowitt_ws90_wind_speed_ms</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">text_blocks</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">bottom</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">text</span>: &gt;-<span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      &lt;code&gt;${start-date} ${start-time}&lt;/code&gt; ⎯ &lt;code&gt;${end-date}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      ${end-time}&lt;/code&gt;</span>
+</span></span></code></pre></div><h3 id="precipitation">Precipitation</h3>
+<p>There is <code>ecowitt_ws90_precipitation</code> sensor, whose value is constantly increasing (<em>when there is rain</em>), which is a rather useless data on its own. To make it more useful you can create a <a href="https://home-assistant.io/integrations/utility_meter/">utility meter</a> for measuring daily (<em>hourly, etc</em>) precipitation:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-precipitation-daily.png" alt="Home Assistant, utility meter for daily precipitation" style="border:1px solid black;">
+
+<p>And then you&rsquo;ll have actually meaningful data and charts showing how much rain there was on a particular day:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-precipitation-daily-chart.png" alt="Home Assistant, daily precipitation chart" style="border:1px solid black;">
+
+<p>But there is a problem with that main <code>ecowitt_ws90_precipitation</code> sensor, because sometimes its value drops to <code>0</code> for a short (<em>single reading?</em>) period of time:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-precipitation-dropped-to-zero.png" alt="Home Assistant, precipitation dropped to zero" style="border:1px solid black;">
+
+<p>Zigbee2MQTT logs contain the following records during that time:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>info: zh:ember:ezsp: Received network/route error ROUTE_ERROR_INDIRECT_TRANSACTION_EXPIRY <span style="color:#66d9ef">for</span> <span style="color:#e6db74">&#34;59364&#34;</span>.
+</span></span><span style="display:flex;"><span>info: zh:ember:ezsp: Received network/route error ROUTE_ERROR_INDIRECT_TRANSACTION_EXPIRY <span style="color:#66d9ef">for</span> <span style="color:#e6db74">&#34;59364&#34;</span>.
+</span></span><span style="display:flex;"><span>error: z2m: Exception <span style="color:#66d9ef">while</span> calling fromZigbee converter: Value is not a number, got number <span style="color:#f92672">(</span>NaN<span style="color:#f92672">)}</span>
+</span></span></code></pre></div><p>Don&rsquo;t know why this happens. Probably the data payload gets lost/dropped/corrupted, but the reading event still fires (<em>as it is the station who pushes data to Zigbee coordinator, isn&rsquo;t it?</em>) with some invalid/null values, which Home Assistant then treats as <code>0</code>? Either way, this fucks up the dataset and so all the derived sensors (<em>such as daily/hourly precipitation</em>) too. Fortunately, it can be mitigated by&hellip; creating one more template sensor, of course:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-jinja" data-lang="jinja"><span style="display:flex;"><span>sensor:
+</span></span><span style="display:flex;"><span>  - name: &#34;Precipitation (stable)&#34;
+</span></span><span style="display:flex;"><span>    unit_of_measurement: &#34;mm&#34;
+</span></span><span style="display:flex;"><span>    device_class: precipitation
+</span></span><span style="display:flex;"><span>    state_class: total_increasing
+</span></span><span style="display:flex;"><span>    state: &gt;
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">{#
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">          The float(-1) on the raw value parses `unknown`/`unavailable` as `-1`,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">          which is less than `prev`, so those won&#39;t drop the sensor readings to `0`
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">      #}</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">{%</span> <span style="color:#66d9ef">set</span> raw <span style="color:#f92672">=</span> states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_precipitation&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">float</span><span style="color:#f92672">(-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">)</span> <span style="color:#75715e">%}</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">{%</span> <span style="color:#66d9ef">set</span> prev <span style="color:#f92672">=</span> states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_precipitation_stable&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">float</span><span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">)</span> <span style="color:#75715e">%}</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">{%</span> <span style="color:#66d9ef">if</span> raw <span style="color:#f92672">&lt;</span> prev <span style="color:#75715e">%}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">{{</span> prev <span style="color:#75715e">}}</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">{%</span> <span style="color:#66d9ef">else</span> <span style="color:#75715e">%}</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">{{</span> raw <span style="color:#75715e">}}</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">{%</span> <span style="color:#66d9ef">endif</span> <span style="color:#75715e">%}</span>
+</span></span><span style="display:flex;"><span>    availability: &gt;
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e">{{</span> states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_precipitation&#39;</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">in</span> <span style="color:#f92672">[</span><span style="color:#e6db74">&#39;unknown&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;unavailable&#39;</span><span style="color:#f92672">]</span> <span style="color:#75715e">}}</span>
+</span></span></code></pre></div><p>and then you base the rain utility meters on this one instead of the main <code>ecowitt_ws90_precipitation</code>.</p>
+<p>As a matter of fact, it is not just precipitation, all the other sensors (<em>temperature, pressure, illuminance, etc</em>) drop to <code>0</code> together. So it looks like you would have to crutch around these dropouts for every single sensor that is important to have stable datasets. Alternatively, it probably can be done in Zigbee2MQTT (<em>via custom <a href="https://zigbee2mqtt.io/advanced/more/external_converters.html">external converter</a>?</em>), so the &ldquo;bad&rdquo; values would never even reach Home Assistant, but I haven&rsquo;t tried that approach.</p>
+<h3 id="atmospheric-pressure">Atmospheric pressure</h3>
+<p>Similar story with <code>ecowitt_ws90_pressure</code> sensor - to work around possible dropouts to <code>0</code> you would need to create&hellip; no, not a template sensor this time, but a <a href="https://home-assistant.io/integrations/filter/">fiter</a>:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-filter-helper-pressure.png" alt="Home Assistant, filter helper for pressure" style="border:1px solid black;">
+
+<p>The measurement unit for this new <code>ecowitt_ws90_pressure_stable</code> sensor is <code>hPa</code>, because I got the original <code>ecowitt_ws90_pressure</code> in <code>hPa</code> (<em>although apparently it should have been <code>kPa</code></em>).</p>
+<p>If you&rsquo;ll want it to be in <code>mmHg</code>, then that is a yet another template sensor. The formula is:</p>
+<p>$$
+mmHg = hPa \times 0.7500615
+$$</p>
+<p>and as a template:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-jinja" data-lang="jinja"><span style="display:flex;"><span><span style="color:#75715e">{{</span> <span style="color:#f92672">(</span>states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_pressure_stable&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">float</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">0.7500615</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">round</span><span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">)</span> <span style="color:#75715e">}}</span>
+</span></span></code></pre></div><p>Note that here (<em>as well as in <a href="#wind-speed">wind speed</a> conversion or anywhere else</em>) the <a href="https://home-assistant.io/template-functions/round/">round filter</a> must apply to the entire expression in parenthesis. At first I made a mistake of simply &ldquo;piping&rdquo; it to the end of the expression, and that produced incorrect results:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-jinja" data-lang="jinja"><span style="display:flex;"><span><span style="color:#75715e">{#
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">    993 - original value in hPa
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#}</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{{</span> states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_pressure_stable&#39;</span><span style="color:#f92672">)</span> <span style="color:#75715e">}}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{#
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">    794.4000000000001 - incorrect result, because here round(1) applies
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">    only to 0.7500615 and makes it 0.8
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#}</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{{</span> states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_pressure_stable&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">float</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">0.7500615</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">round</span><span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">)</span> <span style="color:#75715e">}}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{#
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">    794.4000000000001 - same incorrect result,
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">    just to illustrate the previous comment
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#}</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{{</span> states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_pressure_stable&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">float</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">0.8</span> <span style="color:#75715e">}}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{#
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">    744.8 - correct result, because here round(1) applies
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">    to the entire expression
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#}</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{{</span> <span style="color:#f92672">(</span>states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_pressure_stable&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">float</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">0.7500615</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">round</span><span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">)</span> <span style="color:#75715e">}}</span>
+</span></span></code></pre></div><h2 id="a-dashboard">A dashboard</h2>
+<p>When it comes to making a dashboard, let alone a weather dashboard, sky is the limit for how much stuff one can put there. I have only just started, so my dashboard is rather modest:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-custom-weather-dashboard.png" alt="Home Assistant, custom weather dashboard" style="border:1px solid black;">
+
+<p>The top-left heatmap-like chart is the apparent temperature - a useful weather metric that is <a href="https://github.com/Koenkk/zigbee-herdsman-converters/blob/85e96393ef2424e3bc817c9b5e0150f6786ce2ea/src/devices/shelly.ts#L152-L162">calculated</a> from the actual temperature and wind/humidity. I used the awesome <a href="https://github.com/romrider/apexcharts-card">ApexCharts</a> to make it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">custom:apexcharts-card</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">header</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">title</span>: <span style="color:#ae81ff">Ощущается как</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">show</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">show_states</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">colorize_states</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">graph_span</span>: <span style="color:#ae81ff">6h</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">experimental</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">color_threshold</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">series</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">entity</span>: <span style="color:#ae81ff">sensor.ecowitt_ws90_apparent_temperature</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">type</span>: <span style="color:#ae81ff">area</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">stroke_width</span>: <span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">color_threshold</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color</span>: <span style="color:#ae81ff">blue</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">15</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color</span>: <span style="color:#ae81ff">yellow</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">20</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color</span>: <span style="color:#ae81ff">red</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">show</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">extremas</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">header_color_threshold</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">name_in_header</span>: <span style="color:#66d9ef">false</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">in_header</span>: <span style="color:#ae81ff">raw</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">statistics</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">period</span>: <span style="color:#ae81ff">5minute</span>
+</span></span></code></pre></div><p>Same way I made that bottom-right chart for atmospheric pressure:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">custom:apexcharts-card</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">header</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">title</span>: <span style="color:#ae81ff">Давление</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">show</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">show_states</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">colorize_states</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">graph_span</span>: <span style="color:#ae81ff">120h</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">experimental</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">color_threshold</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">series</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">entity</span>: <span style="color:#ae81ff">sensor.ecowitt_ws90_pressure_stable</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">type</span>: <span style="color:#ae81ff">area</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">stroke_width</span>: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">color_threshold</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">990</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color</span>: <span style="color:#ae81ff">blue</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">1010</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color</span>: <span style="color:#ae81ff">green</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">1030</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color</span>: <span style="color:#ae81ff">red</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">show</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">extremas</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">header_color_threshold</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">name_in_header</span>: <span style="color:#66d9ef">false</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">in_header</span>: <span style="color:#ae81ff">raw</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">statistics</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">period</span>: <span style="color:#ae81ff">5minute</span>
+</span></span></code></pre></div><p>Although it is located in the forecast column, it obviously only shows current and historical data, but it still counts as a forecast metric, because it lets me spot low trends, which indicates higher probability of rain.</p>
+<p>The rest of the dashboard is rather trivial, except for maybe that forecast chart (<em>second-from-top card in the right-most column</em>). This one is just a <a href="https://home-assistant.io/dashboards/picture/">picture</a> card with <code>image</code> pointing to a generated SVG from <a href="https://yr.no/">Yr.no</a> website (<em>very cool feature of theirs</em>). To place it on a dashboard, you can use the following YAML code (<em>with Oslo location ID as an example</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">picture</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">image</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">media_content_id</span>: <span style="color:#ae81ff">https://yr.no/nb/innhold/1-72837/meteogram.svg</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">alt_text</span>: <span style="color:#ae81ff">Yr.no</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">grid_options</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">columns</span>: <span style="color:#ae81ff">full</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">tap_action</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">action</span>: <span style="color:#ae81ff">url</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">url_path</span>: <span style="color:#ae81ff">https://yr.no/nb/innhold/1-72837/meteogram.svg</span>
+</span></span></code></pre></div><p>For english variant replace <code>nb/innhold</code> with <code>en/content</code>.</p>
+<h1 id="publishing-data">Publishing data</h1>
+<p>We are all for sharing information, right, so wouldn&rsquo;t it be nice to publish our weather data somewhere on the internet, so other people could use it too. And there are several such weather services where regular users can publish their PWS data.</p>
+<p>Aside from altruistic reasons, it would also be nice to get rewarded for submitting your data, something like how <a href="https://flightaware.com/">FlightAware</a> does it (<em>by granting contributors access to their otherwise paid services</em>). Such a basic thing as being able to see yours and other people stations on an online map would already be a good enough motivation, but surprisingly some services don&rsquo;t offer even that.</p>
+<h2 id="openweathermap">OpenWeatherMap</h2>
+<p>First one I tried was <a href="https://openweathermap.org/">OpenWeatherMap</a>. By the way, there is also a <a href="https://home-assistant.io/integrations/openweathermap/">Home Assistant integration</a> for this service, which lets you add it as a weather data source (<em>though I found their data to be less accurate than the default(?) <a href="https://home-assistant.io/integrations/met/">Met.no</a></em>).</p>
+<p>They have a rather nice <a href="https://openweathermap.org/api/stations">API</a> for publishing, but the data you submit is not(?) &ldquo;visible&rdquo; to anyone else. There is no map/list of existing users stations, so you cannot look at the data from other stations in your area (<em>and you don&rsquo;t even know if there are any</em>). You can share your station ID with someone, and then that someone will be able to query your data from OpenWeatherMap service, but that is not at all convenient, is it.</p>
+<p>It appears to me that the only use for OpenWeatherMap API is to simply store your data on their servers, so that you could query it later - something I have absolutely no interest in, because I already have all my data locally.</p>
+<p><span id="about-curent-timestamp">Another thing I didn&rsquo;t like at first is that every submitting request must contain a timestamp.</span> I thought, why doesn&rsquo;t it automatically default to the current datatime on the server, is it because API supports batch uploads of historical data? I have no interest in that, I just want to submit my &ldquo;live&rdquo; data, and yet I must explicitly send the timestamp too, so annoying. But as I realized later, it actually does make sense to timestamp the data on user side - right at the moment when the measurements were taken - otherwise there will be some delay introduced by client processing and sending, then some more delay from network latency, then some time for data processing on the server, and so in the end the current timestamp on the server will accumulate certain delay from the original moment of taking the measurements - maybe not so much but still something. So yes, user-side timestamping seems to be a better way to go about it.</p>
+<p>Publishing is done by sending a <code>POST</code> request, which looks something like:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X <span style="color:#e6db74">&#34;POST&#34;</span> <span style="color:#e6db74">&#34;http://api.openweathermap.org/data/3.0/measurements?appid=YOUR-API-KEY&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>     -H <span style="color:#e6db74">&#39;Content-Type: application/json&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>     -d <span style="color:#e6db74">$&#39;[
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  {
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    &#34;station_id&#34;: &#34;YOUR-STATION-ID&#34;,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    &#34;dt&#34;: 1780238160,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    &#34;temperature&#34;: 18.7,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    &#34;wind_speed&#34;: 1,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    &#34;wind_gust&#34;: 1.4,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    &#34;humidity&#34;: 87,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    &#34;pressure&#34;: 998
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  }
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">]&#39;</span>
+</span></span></code></pre></div><p>Not sure about correctness of the units though (<em>can&rsquo;t compare it with other stations in my area, as they show none</em>).</p>
+<p>One last thing to say about OpenWeatherMap is that there are no(?) rewards/bonuses for submitting the data, which, in addition to users stations not being visible to others, drops the motivation of sharing one&rsquo;s data with OpenWeatherMap to zero. Unless they do use it for improving the weather data in the area, but I did not find a confirmation for that.</p>
+<h2 id="weathercloud">Weathercloud</h2>
+<p>Another weather service is <a href="https://weathercloud.net/">Weathercloud</a>, and this one also has a kind of an &ldquo;API&rdquo; for data publishing, though with no official documentation, as it seems. Fortunately, there is this <a href="https://github.com/leoherzog/WundergroundStationForwarder/blob/991ffe7b5b93cd218764f466be7ded7c88a0d099/code.gs#L1323">3rd-party code</a> (<em>and <a href="https://gitlab.com/acuparse/acuparse/-/blob/f56df2bc2fab3009e02deb0261616c7140dfb1ca/src/fcn/cron/uploaders/weathercloud.php">yet another</a></em>) to be used as an example.</p>
+<p>I put &ldquo;API&rdquo; into quotes because unlike <a href="#openweathermap">OpenWeatherMap</a> here the data is submitted via <code>GET</code> requests right in the query string, for example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl <span style="color:#e6db74">&#34;https://api.weathercloud.net/v01/set?wid=YOUR-ID&amp;key=YOUR-KEY&amp;temp=190&amp;dew=125&amp;wspd=11&amp;wspdhi=14&amp;hum=65&amp;wdir=293&amp;chill=190&amp;uvi=10&amp;bar=9980&#34;</span>
+</span></span></code></pre></div><p>As you&rsquo;ll see later, that is a pretty common way of submitting the data across different weather services.</p>
+<p>Another peculiarity, as you might have noticed in the query string, is that some values are expected to be multiplied by 10. Apparently, that is how they are dealing with floats. Also noteworthy is that timestamp is not required (<em>one example has them in <code>date</code> and <code>time</code> parameters, but the other one does not have them at all</em>), so apparently this service is capable of defaulting to the current timestamp server-side, which might be convenient.</p>
+<p>It was also surprising to discover that they have some rate limit, so you will be getting <code>429</code> responses if you exceed it. I couldn&rsquo;t find the exact limit, but sending one request per 10 minutes seems to be okay.</p>
+<p>As for how to actually publish weather measurements, it&rsquo;s just a <a href="https://home-assistant.io/integrations/rest_command/">RESTful command</a>, so you simply add a new inclusion to your <code>configuration.yaml</code> (<em>if you don&rsquo;t have it there yet</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">rest_command</span>: !<span style="color:#ae81ff">include rest-commands.yaml</span>
+</span></span></code></pre></div><p>and create a <code>rest-commands.yaml</code> file:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">weathercloud_publish</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">url</span>: <span style="color:#e6db74">&#34;https://api.weathercloud.net/v01/set?wid=YOUR-ID&amp;key=YOUR-KEY&amp;temp={{ temp }}&amp;dew={{ dew }}&amp;wspd={{ wspd }}&amp;wspdhi={{ wspdhi }}&amp;wdir={{ wdir }}&amp;chill={{ chill }}&amp;hum={{ hum }}&amp;rain={{ rain }}&amp;rainrate={{ rainrate }}&amp;uvi={{ uvi }}&amp;bar={{ bar }}&amp;software=homeassistant&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">method</span>: <span style="color:#ae81ff">GET</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">verify_ssl</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">timeout</span>: <span style="color:#ae81ff">10</span>
+</span></span></code></pre></div><p>Then an automation for calling that <code>weathercloud_publish</code> command every 5 minutes would look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Publish weather data</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">description</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">time_pattern</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">minutes</span>: <span style="color:#ae81ff">/5</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">conditions</span>: []
+</span></span><span style="display:flex;"><span><span style="color:#f92672">actions</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">variables</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">temp</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_temperature&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">dew</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_dew_point&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">wspd</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_wind_speed_ms&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">wspdhi</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_gust_speed&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">wdir</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_wind_direction&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">chill</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_wind_chill&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">hum</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_humidity&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">uvi</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_uv_index&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">bar</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_pressure_stable&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">rain_day</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_rain_meter_day&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">rainrate</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_rain_rate&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Publish data to Weathercloud</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">action</span>: <span style="color:#ae81ff">rest_command.weathercloud_publish</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">metadata</span>: {}
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">data</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">temp</span>: <span style="color:#e6db74">&#34;{{ (temp | float * 10) | int }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">dew</span>: <span style="color:#e6db74">&#34;{{ (dew | float * 10) | int }} &#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">wspd</span>: <span style="color:#e6db74">&#34;{{ (wspd | float * 10) | int }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">wspdhi</span>: <span style="color:#e6db74">&#34;{{ (wspdhi | float * 10) | int }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">wdir</span>: <span style="color:#e6db74">&#34;{{ wdir }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">chill</span>: <span style="color:#e6db74">&#34;{{ (chill | float * 10) | int }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">hum</span>: <span style="color:#e6db74">&#34;{{ hum }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">uvi</span>: <span style="color:#e6db74">&#34;{{ uvi * 10 }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">bar</span>: <span style="color:#e6db74">&#34;{{ bar * 10 }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">rain</span>: <span style="color:#e6db74">&#34;{{ (rain_day | float * 10) | int }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">rainrate</span>: <span style="color:#e6db74">&#34;{{ (rainrate | float * 10) | int }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">response_variable</span>: <span style="color:#ae81ff">weathercloud_response</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">mode</span>: <span style="color:#ae81ff">single</span>
+</span></span></code></pre></div><p>As you can see, I don&rsquo;t send the &ldquo;raw&rdquo; data right away. The first action collects a set of variables, and only on the second action I pass them to the publishing command. The reason for doing so is because I also publish this same data to several other services, and it is better for all of them to have the exact same values. And as I already mentioned, Weathercloud requires multiplying some values by 10, and for clarity that is better to be done in its own action.</p>
+<p>Another thing that is worth pointing out here is that for &ldquo;volatile&rdquo; measurements (<em>such as wind speed, wind gust speed and wind direction</em>) it is better to take not the current values but their statistical averages for specific periods of time - such as for the last 5 minutes as in this example. To do so you&rsquo;ll need to create <a href="https://home-assistant.io/integrations/statistics">statistics</a> helpers, where for measurements like wind speeds the <code>state_characteristic</code> would be <code>average_linear</code> and for measurements like wind direction it would be <code>mean_circular</code>.</p>
+<p>For debugging purposes Home Assistant offers so-called <a href="https://home-assistant.io/docs/automation/troubleshooting/#traces">traces</a>, which I have never used before, but now this feature becomes super useful, because it lets you see the actual values you have sent to the service and also inspect their server response:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-automation-traces-weathercloud.png" alt="Home Assistant, automation traces for Weathercloud" style="border:1px solid black;">
+
+<p>While we are here, if/when you&rsquo;ll exceed their rate limit - and with my automation trigger you will, because it is set to run every 5 minutes - then the <code>status</code> value will be still <code>200</code>, and the actual status will be in the <code>content</code> - the <code>'429'</code> value:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-automation-traces-weathercloud-429.png" alt="Home Assistant, automation traces for Weathercloud, error 429" style="border:1px solid black;">
+
+<p>Fucking hell. Это же личерали <a href="https://decovar.dev/etc/texts/dvyhsotka-dodik/">двухсотка-додик</a>.</p>
+<p>Just like <a href="#openweathermap">OpenWeatherMap</a>, Weathercloud also does not(?) reward users for sharing the data, but they do have public pages for yours and other users stations, and you can look for nearby stations on the <a href="https://app.weathercloud.net/map">map</a>. As a bonus, you can also get a nice HTML widget for any station:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-html" data-lang="html"><span style="display:flex;"><span>&lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;https://app.weathercloud.net/d0310726209&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>    &lt;<span style="color:#f92672">img</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;https://app.weathercloud.net/device/sticker/0310726209&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>&lt;/<span style="color:#f92672">a</span>&gt;
+</span></span></code></pre></div><a href="https://app.weathercloud.net/d0310726209">
+    <img src="https://app.weathercloud.net/device/sticker/0310726209" style="display:block; margin:0 auto;">
+</a>
+<p>but the problem with this widget is that &ldquo;<em>X minutes ago</em>&rdquo; might be from a cached image, so it would be better if they just stated the exact date and time there.</p>
+<p>Quite naturally, you can also add this widget to your dashboard with a <code>picture</code> card:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">picture</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">image</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">media_content_id</span>: <span style="color:#ae81ff">https://app.weathercloud.net/device/sticker/0310726209</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">alt_text</span>: <span style="color:#ae81ff">Weathercloud</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">grid_options</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">columns</span>: <span style="color:#ae81ff">full</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">tap_action</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">action</span>: <span style="color:#ae81ff">url</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">url_path</span>: <span style="color:#ae81ff">https://app.weathercloud.net/d0310726209</span>
+</span></span></code></pre></div><h2 id="weather-underground">Weather Underground</h2>
+<p>Next service I found was <a href="https://wunderground.com/">Weather Underground</a>. Same as with <a href="#weathercloud">Weathercloud</a>, they have the same kind of &ldquo;API&rdquo;, and there is a description/example in the <a href="https://github.com/leoherzog/WundergroundStationForwarder/blob/991ffe7b5b93cd218764f466be7ded7c88a0d099/code.gs#L1232">same repository</a> (<em>and <a href="https://gitlab.com/acuparse/acuparse/-/blob/f56df2bc2fab3009e02deb0261616c7140dfb1ca/src/fcn/cron/uploaders/weatherunderground.php">here</a> too</em>). As for the official documentation, it seems that they (<em>and other services?</em>) use a so-called <a href="https://support.weather.com/s/article/PWS-Upload-Protocol">PWS upload protocol</a>.</p>
+<p>This time providing a timestamp parameter (<em><code>dateutc</code></em>) is required, otherwise requests will be failing with <code>400 Bad Request</code>. The <code>dateutc</code> parameter is required even on their <code>rtupdate</code> endpoint (<em>&ldquo;RapidFire Updates&rdquo;</em>), which also has a <code>realtime=1</code> parameter, so it might be surprising why timestamp is still required there, but as I already mentioned <a href="#about-curent-timestamp">earlier</a>, it actually does make sense.</p>
+<p>Speaking about the endpoint, here it is in the <code>rest-commands.yaml</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">weatherunderground_publish</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">url</span>: <span style="color:#e6db74">&#34;https://rtupdate.wunderground.com/weatherstation/updateweatherstation.php?ID=YOUR-STATION-ID&amp;PASSWORD=YOUR-PASSWORD&amp;dateutc={{ dateutc }}&amp;tempf={{ tempf }}&amp;uv={{ uv }}&amp;windspeedmph={{ windspeedmph }}&amp;windgustmph={{ windgustmph }}&amp;winddir={{ winddir }}&amp;baromin={{ baromin }}&amp;dewptf={{ dewptf }}&amp;humidity={{ humidity }}&amp;rainin={{ rainin }}&amp;dailyrainin={{ dailyrainin }}&amp;softwaretype=homeassistant&amp;realtime=1&amp;rtfreq=300&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">method</span>: <span style="color:#ae81ff">GET</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">verify_ssl</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">timeout</span>: <span style="color:#ae81ff">10</span>
+</span></span></code></pre></div><p>The <code>rtfreq=300</code> indicates that I am posting updates once per 5 minutes, which is what my automation trigger is set to, as you saw in <a href="#weathercloud">Weathercloud</a> section. Not sure why they need this frequency information, can&rsquo;t they calculate it themselves? And what will happen if I will be posting data more/less frequently or even at random rate?</p>
+<p>As for other parameters, this is a true US/NA moment, because temperature is in Fahrenheit, wind speed is in miles per hour, rain is in goddamn inches, pressure is in fucking inches of mercury and so on:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/autistic-screeching.png" alt="Metric system, autistic screeching in US" style="border:1px solid black;">
+
+<p>All of those autistic (<em>they are called &ldquo;imperial&rdquo;</em>) units required creating even more templated sensors for conversion (<em>in hindsight, I probably should have just converted them in-place</em>). The conversion formulas are the following:</p>
+<ul>
+<li>Celsius to Fahrenheit:</li>
+</ul>
+<p>$$T_F = T_C \times \frac{9}{5} + 32$$</p>
+<ul>
+<li><code>m/s</code> to <code>mph</code>:</li>
+</ul>
+<p>$$mph = m/s \times \frac{3600}{1609.34} = m/s \times 2.23694$$</p>
+<ul>
+<li><code>km/h</code> to <code>mph</code>:</li>
+</ul>
+<p>$$mph = \frac{km/h}{1.609344} = km/h \times 0.621371$$</p>
+<ul>
+<li><code>mm</code> to <code>in</code> (<em>and <code>mmHg</code> to <code>inHg</code>, obviously</em>):</li>
+</ul>
+<p>$$in = \frac{mm}{25.4} = mm \times 0.03937$$</p>
+<p>The updated <code>variables</code> action now looks like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">variables</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">datetime_utc</span>: <span style="color:#e6db74">&#34;{{ utcnow().strftime(&#39;%Y-%m-%d %H:%M:%S&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">temp</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_temperature&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">temp_f</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_temperature_f&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">dew</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_dew_point&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">dew_f</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_dew_point_f&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">wspd</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_wind_speed_ms&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">wspd_mph</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_wind_speed_mph&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">wspdhi</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_gust_speed&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">wspdhi_mph</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_gust_speed_mph&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">wdir</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_wind_direction&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">chill</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_wind_chill&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">hum</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_humidity&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">uvi</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_uv_index&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">bar</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_pressure_stable&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">bar_mm_hg</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_pressure_mmhg&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">bar_in_hg</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_pressure_inhg&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">rain_hour</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_rain_meter_hour&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">rain_day</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_rain_meter_day&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">rainrate</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_rain_rate&#39;) }}&#34;</span>
+</span></span></code></pre></div><p>And here&rsquo;s the new action for publishing to Weather Underground:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Publish data to Weather Underground</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">action</span>: <span style="color:#ae81ff">rest_command.weatherunderground_publish</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">metadata</span>: {}
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">data</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">dateutc</span>: <span style="color:#e6db74">&#34;{{ datetime_utc | urlencode }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">tempf</span>: <span style="color:#e6db74">&#34;{{ temp_f }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">windspeedmph</span>: <span style="color:#e6db74">&#34;{{ wspd_mph }} &#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">windgustmph</span>: <span style="color:#e6db74">&#34;{{ wspdhi_mph }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">winddir</span>: <span style="color:#e6db74">&#34;{{ wdir }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">uv</span>: <span style="color:#e6db74">&#34;{{ uvi }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">baromin</span>: <span style="color:#e6db74">&#34;{{ bar_in_hg }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">rainin</span>: <span style="color:#e6db74">&#34;{{ (rain_hour | float / 25.4) | round(4) }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">dailyrainin</span>: <span style="color:#e6db74">&#34;{{ (rain_day | float / 25.4) | round(4) }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">dewptf</span>: <span style="color:#e6db74">&#34;{{ dew_f }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">humidity</span>: <span style="color:#e6db74">&#34;{{ hum }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">response_variable</span>: <span style="color:#ae81ff">weatherunderground_response</span>
+</span></span></code></pre></div><p>You can see there how some values are taken from templated sensors while others (<em><code>rainin</code>, <code>dailyrainin</code></em>) are simply converted in-place.</p>
+<p>The service doesn&rsquo;t seem to have a rate limit, but I haven&rsquo;t tried sending requests more often than once per minute.</p>
+<p>As for rewards, in addition to a <a href="https://wunderground.com/wundermap">nice map</a> and public stations pages, apparently they also disable ads on the website, or at least my membership section on the <a href="https://wunderground.com/member/settings">profile page</a> says that I now have the <code>PWS Ad Free</code> status, and the <a href="https://wunderground.com/member/subscription">subscription page</a> also says that my current plan is <code>PWS Ad Free Membership</code> with the following description:</p>
+<blockquote>
+<p>Keep zapping the ads out of your forecast. Send us data from your personal weather station or subscribe to a paid plan.</p>
+</blockquote>
+<p>If anything, I didn&rsquo;t see any ads even before I got this status, but that is probably thanks to my <a href="https://github.com/gorhill/ublock">uBlock Origin</a>.</p>
+<p>Aside from the ads-free website, I can now get a key for their &ldquo;APIs for contributors&rdquo; (<em>which is documented in <a href="https://docs.google.com/document/d/1eKCnKXI9xnoMGRRzOL1xPCBihNV2rOet08qpE_gArAY">Google Docs</a>, lol</em>), and with that I can add other weather stations to my Home Assistant via <a href="https://github.com/cytech/Home-Assistant-wundergroundpws">this integration</a>, so that is useful too.</p>
+<p>Lastly, if you will be publishing your data consistently, and if it won&rsquo;t contradict measurements from other stations in the area, then in about 5 days you will get a <a href="https://support.weather.com/s/article/What-is-a-Gold-Star-weather-station">gold star</a> badge for your station:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/weather-underground-station-gold-star.png" alt="Weather Underground, station with a gold star" style="border:1px solid black;">
+
+<h2 id="pwsweather">PWSWeather</h2>
+<p>As far as website design goes, the <a href="https://pwsweather.com/">PWSWeather</a> has probably the most nice looking website of them all. As for the publishing API, it is almost the same as in <a href="#weather-underground">Weather Underground</a>, here&rsquo;s what goes into <code>rest-commands.yaml</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">pwsweather_publish</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">url</span>: <span style="color:#e6db74">&#34;https://pwsupdate.pwsweather.com/api/v1/submitwx?ID=YOUR-STATION-ID&amp;PASSWORD=YOUR-API-KEY&amp;dateutc={{ dateutc }}&amp;winddir={{ winddir }}&amp;windspeedmph={{ windspeedmph }}&amp;windgustmph={{ windgustmph }}&amp;tempf={{ tempf }}&amp;rainin={{ rainin }}&amp;dailyrainin={{ dailyrainin }}&amp;baromin={{ baromin }}&amp;dewptf={{ dewptf }}&amp;humidity={{ humidity }}&amp;uv={{ uv }}&amp;softwaretype=homeassistant&amp;action=updateraw&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">method</span>: <span style="color:#ae81ff">GET</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">verify_ssl</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">timeout</span>: <span style="color:#ae81ff">10</span>
+</span></span></code></pre></div><p>The difference is that there are no <code>realtime</code> and <code>rtfreq</code> parameters, but there is this new <code>action=updateraw</code> parameter. If anything, the query is also described in those same 3rd-party repositories <a href="https://github.com/leoherzog/WundergroundStationForwarder/blob/991ffe7b5b93cd218764f466be7ded7c88a0d099/code.gs#L1292">here</a> and <a href="https://gitlab.com/acuparse/acuparse/-/blob/f56df2bc2fab3009e02deb0261616c7140dfb1ca/src/fcn/cron/uploaders/pwsweather.php">there</a>.</p>
+<p>Just like with Weather Underground, the measurements are accepted in the same <del>autistic</del> imperial units. Good thing that I already had all of those in my <code>variables</code> action, so the action for PWSWeather is basically a copy-paste from Weather Underground:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Publish data to PWSWeather</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">action</span>: <span style="color:#ae81ff">rest_command.pwsweather_publish</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>: {}
+</span></span><span style="display:flex;"><span><span style="color:#f92672">data</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">dateutc</span>: <span style="color:#e6db74">&#34;{{ datetime_utc | urlencode }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">tempf</span>: <span style="color:#e6db74">&#34;{{ temp_f }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">windspeedmph</span>: <span style="color:#e6db74">&#34;{{ wspd_mph }} &#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">windgustmph</span>: <span style="color:#e6db74">&#34;{{ wspdhi_mph }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">winddir</span>: <span style="color:#e6db74">&#34;{{ wdir }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">uv</span>: <span style="color:#e6db74">&#34;{{ uvi }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">baromin</span>: <span style="color:#e6db74">&#34;{{ bar_in_hg }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">rainin</span>: <span style="color:#e6db74">&#34;{{ (rain_hour | float / 25.4) | round(4) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">dailyrainin</span>: <span style="color:#e6db74">&#34;{{ (rain_day | float / 25.4) | round(4) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">dewptf</span>: <span style="color:#e6db74">&#34;{{ dew_f }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">humidity</span>: <span style="color:#e6db74">&#34;{{ hum }}&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">response_variable</span>: <span style="color:#ae81ff">pwsweather_response</span>
+</span></span></code></pre></div><p>Since <code>rainin</code> and <code>dailyrainin</code> are now used in more than one place, it makes sense to move them to a common variables action too, so they wouldn&rsquo;t get calculated more than once:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Publish weather data</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">description</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">time_pattern</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">minutes</span>: <span style="color:#ae81ff">/5</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">conditions</span>: []
+</span></span><span style="display:flex;"><span><span style="color:#f92672">actions</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">variables</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">datetime_utc</span>: <span style="color:#e6db74">&#34;{{ utcnow().strftime(&#39;%Y-%m-%d %H:%M:%S&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">rain_hour</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_rain_meter_hour&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">rain_day</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_rain_meter_day&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">variables</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">rainin</span>: <span style="color:#e6db74">&#34;{{ (rain_hour | float / 25.4) | round(4) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">dailyrainin</span>: <span style="color:#e6db74">&#34;{{ (rain_day | float / 25.4) | round(4) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Publish data to Weather Underground</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">action</span>: <span style="color:#ae81ff">rest_command.weatherunderground_publish</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">data</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">dateutc</span>: <span style="color:#e6db74">&#34;{{ datetime_utc | urlencode }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">rainin</span>: <span style="color:#e6db74">&#34;{{ rainin }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">dailyrainin</span>: <span style="color:#e6db74">&#34;{{ dailyrainin }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Publish data to PWSWeather</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">action</span>: <span style="color:#ae81ff">rest_command.pwsweather_publish</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">data</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">dateutc</span>: <span style="color:#e6db74">&#34;{{ datetime_utc | urlencode }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">rainin</span>: <span style="color:#e6db74">&#34;{{ rainin }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">dailyrainin</span>: <span style="color:#e6db74">&#34;{{ dailyrainin }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span></code></pre></div><p>Once you start publishing the data, it will get logged on your private account page right away, but the station itself will not be visible to other users just yet. As it is explained in the <a href="https://pwsweather.com/frequently-asked-questions#station-status">FAQ</a>, first your station will have <code>Initiating</code> status for up to 5 days, and then, if your data passes quality control, it will get <code>Active</code> status and will become visible to other users on the <a href="https://pwsweather.com/map/">map</a>. It will also have a &ldquo;confidence level&rdquo; metric, which varies from 0 to 10, and you can see how it changes for your station in the logs:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/pwsweather-station-logs.png" alt="PWSWeather, station logs">
+
+<p>When it comes to rewards/motivation for sharing your data, then aside from nice looking public pages for users stations and the map, they also <a href="https://pwsweather.com/frequently-asked-questions#benefits-of-membership">provide</a> an API subscription plan for contributors:</p>
+<blockquote>
+<p>Through the <a href="https://pwsweather.com/contributor-plan">Contributor Plan</a> you also have an option to leverage <a href="https://aerisweather.com/">AerisWeather</a>&rsquo;s powerful <a href="https://aerisweather.com/develop/api/">API</a> and <a href="https://aerisweather.com/develop/maps/">Maps</a>.</p>
+</blockquote>
+<p>I haven&rsquo;t tried it yet, but it sure is nice of them.</p>
+<h2 id="яндекс-погода">Яндекс Погода</h2>
+<p>Мда, ну на Яндекс Погоду я возлагал особенно большие надежды, потому что&hellip; да не знаю, почему. Лет 15 назад может и правда возлагал бы, но не в 2026 году. Тем не менее, на первый взгляд выглядело очень многообещающе: такие-то у них там технологии <a href="https://yandex.ru/pogoda/meteum">Метеум</a> и <a href="https://habr.com/ru/companies/yandex/articles/834124/">OmniCast</a>, с такой-то красивой <a href="https://yandex.ru/pogoda/technology">страничкой</a> (<em>простите, с лендингом</em>):</p>
+<p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/yandex-meteum.png" alt="Яндекс Погода, Метеум">
+
+</p>
+<p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/yandex-meteum-omnicast.png" alt="Яндекс Погода, Метеум, OmniCast">
+
+</p>
+<p>И зовут скорее подключать свою станцию, чтобы ты тоже мог внести посильный вклад в такое большое общее дело на благо всех пользователей:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/yandex-meteum-connect-user-stations.png" alt="Яндекс Погода, подключение погодной станции">
+
+<p>Ну я, конечно, <del>побежал</del> перешёл по <a href="https://yandex.ru/dev/weather/doc/ru/concepts/user_stations">Узнать как</a> ссылке, а там говорят, что для получения ключа API надо сначала авторизоваться с <a href="https://yandex.ru/id/about">Яндекс ID</a>. Я хотел было создать новый на Васю Иванова, потому что мне не упало палить свои реальные координаты на основном аккаунте, но там оказалось, что для регистрации нужен номер телефона, а я и забыл.</p>
+<p>Вот на этом моменте я уже (<em>решительно</em>) передумал делиться своими погодными данными (<em>и координатами</em>) с Яндексом, но решил всё-таки пройти дальше по этому пути хотя бы просто из интереса посмотреть, как молодцы ребята умеют.</p>
+<p>На основном аккаунте у меня (<em>к сожалению, но иначе вроде нельзя</em>) уже привязан номер телефона, так что ключ API я на него получил. Далее надо с ним <a href="https://yandex.ru/dev/weather/doc/ru/concepts/user_stations#post_stations">зарегистрировать</a> свою станцию таким запросом:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X <span style="color:#e6db74">&#34;POST&#34;</span> <span style="color:#e6db74">&#34;https://api.weather.yandex.ru/user_stations/stations/&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>     -H <span style="color:#e6db74">&#39;Content-Type: application/json&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>     -H <span style="color:#e6db74">&#39;X-Yandex-Weather-Key: ТВОЙ-КЛЮЧ-АПИ&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>     -d <span style="color:#e6db74">$&#39;{
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  &#34;external_id&#34;: &#34;ТВОЙ-ИД&#34;,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  &#34;name&#34;: &#34;ТВАЁИМЯ-СТАНЦИИ&#34;,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  &#34;latitude&#34;: ШИРОТА,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  &#34;longitude&#34;: ДОЛГОТА,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  &#34;altitude&#34;: ВЫСОТА
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">}&#39;</span>
+</span></span></code></pre></div><p>В ответ вернётся такое (<em>со статусом <code>200</code></em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;ID&#34;</span>: <span style="color:#e6db74">&#34;ТУТ-НАЗНАЧЕННЫЙ-ИД-СТАНЦИИ&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;updated_at&#34;</span>: <span style="color:#e6db74">&#34;ТУТ-ОДИН-И-ТОТ-ЖЕ-ТАЙМСТАМП-ДВА-РАЗА&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;created_at&#34;</span>: <span style="color:#e6db74">&#34;ТУТ-ОДИН-И-ТОТ-ЖЕ-ТАЙМСТАМП-ДВА-РАЗА&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;user_id&#34;</span>: <span style="color:#e6db74">&#34;dummy_user_id&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;external_id&#34;</span>: <span style="color:#e6db74">&#34;ТВОЙ-ИД&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;ТВАЁИМЯ-СТАНЦИИ&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;latitude&#34;</span>: ШИРОТА,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;longitude&#34;</span>: ДОЛГОТА,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;altitude&#34;</span>: ВЫСОТА
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>Почему <code>user_id</code> возвращается как <code>dummy_user_id</code> - я хз. И кстати, если отправить в <code>X-Yandex-Weather-Key</code> любой случайный бред или вообще отправить запрос без этого заголовка - ответ сервера всё равно будет со статусом <code>200</code> (<em>и <code>user_id</code> будет всё так же <code>dummy_user_id</code></em>).</p>
+<p>А ещё кстати, повторная отправка такого же запроса со всеми теми же идентификаторами и координатами тоже возвращает результат со статусом <code>200</code> и при этом с новым значением <code>ID</code> каждый раз, а ведь этот <code>ID</code> вообще-то должен быть идентификатором станции, то есть это что, каждый последующий идентичный запрос создаёт новую станцию? Ну это явно какие-то олимпиадники писали.</p>
+<p>Хорошо, вот я выполнил 10 таких запросов, например потому что я тупой, а значит создал 10 разных станций (<em>идентификаторы же разные</em>), и теперь хочу удалить 9 из них. Где мне посмотреть все зарегистрированные на меня станции? Где такой метод API? Такого метода API нет. Ну ладно, даже если бы я выполнил запрос создания станции только один раз, то есть лишние мне удалять не надо, но вот я что-то как-то отвлёкся и, скажем, перезагрузил комплюктер зачем-то, и теперь результата выполнения этого запроса у меня нигде не осталось - так это что, я теперь никак не могу узнать идентификатор моей созданной станции? Или хотя бы просто убедиться, что я реально её создал и что она существует? Ну ладно в API такого метода нет, но можно их посмотреть хотя бы где-то в профиле на сайте, я же авторизовался аж с целым Яндекс ID и привязанным номером телефона? Но нет, нельзя, ничего такого нигде в профиле пользователя нету. Это как вообще? Вы по каким олимпиадам-то призёры там?</p>
+<p>Океюшки, допустим, я не <del>прое</del>потерял идентификатор своей созданной станции, и я верую, что она существует, и готов <a href="https://yandex.ru/dev/weather/doc/ru/concepts/user_stations#post_measurements">слать</a> погодные данные. Запрос будет такой:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -X <span style="color:#e6db74">&#34;POST&#34;</span> <span style="color:#e6db74">&#34;https://api.weather.yandex.ru/user_stations/measurements/&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>     -H <span style="color:#e6db74">&#39;Content-Type: application/json&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>     -H <span style="color:#e6db74">&#39;X-Yandex-Weather-Key: ТВОЙ-КЛЮЧ-АПИ&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>     -d <span style="color:#e6db74">$&#39;[
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  {
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    &#34;station_id&#34;: &#34;ТУТ-НАЗНАЧЕННЫЙ-ИД-СТАНЦИИ&#34;,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    &#34;dt&#34;: 1782053081,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    &#34;temperature&#34;: 18.7,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    &#34;humidity&#34;: 68,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    &#34;pressure&#34;: 998,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    &#34;wind_speed&#34;: 1.1,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    &#34;wind_gust&#34;: 2.4
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  }
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">]&#39;</span>
+</span></span></code></pre></div><p>И снова в <code>X-Yandex-Weather-Key</code> может быть любой бред, а также этот заголовок может просто отсутствовать - ответ всё равно будет со статусом <code>200</code>. Также можно не указывать <code>dt</code> и&hellip; да что там другие поля, тут аж <code>station_id</code> можно выкинуть к херам! Яндексу безразлично, чего вы там шлёте и для какой станции, потому что данные всё равно уходят куда-то в никуда, и ответ на запрос всегда будет вот такой (<em>со статусом <code>200</code>, разумеется</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>HTTP/1.1 <span style="color:#ae81ff">200</span> OK
+</span></span><span style="display:flex;"><span>Connection: Close
+</span></span><span style="display:flex;"><span>Content-Length: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>Set-Cookie: ТУТ-ОДНА-КУКА
+</span></span><span style="display:flex;"><span>Set-Cookie: ТУТ-ДРУГАЯ-КУКА
+</span></span><span style="display:flex;"><span>Set-Cookie: ТУТ-ТРЕТЬЯ-КУКА
+</span></span><span style="display:flex;"><span>Set-Cookie: ТУТ-ЧЕТВЁРТАЯ-КУКА
+</span></span><span style="display:flex;"><span>Set-Cookie: ТУТ-ПЯТАЯ-КУКА
+</span></span><span style="display:flex;"><span>Date: Mon, <span style="color:#ae81ff">15</span> Jun <span style="color:#ae81ff">2026</span> 11:29:16 GMT
+</span></span><span style="display:flex;"><span>X-Req-Id: ИД-РЕКВЕСТА
+</span></span></code></pre></div><p>Посмотреть историю своих отправлений нигде нельзя, вот тут человек ещё два года назад <a href="https://habr.com/ru/companies/yandex/articles/834124/#comment_27212318">спросил</a> - &ldquo;<em>отправляю данные как в чёрную дыру</em>&rdquo; - на что представитель Яндекса обещал подумать, но вот, видимо, так ни до чего и не додумались до сих пор, по-прежнему всё уходит в чёрную дыру. Короче, ни за чем сто лет Яндексу не нужны никакие данные от пользовательских станций.</p>
+<p>Я ещё подумал, ну наверное это просто я криворукий, не осилил API из двух методов, дай хоть посмотрю на станции других пользователей, ведь за столько лет по-любому несколько тысяч ну или хотя бы сотен станций добавили и можно на них взглянуть. Но вот надо же, что-то я не нашёл нигде такой карты со станциями, как это сделано во всех других погодных сервисах. Ладно карта, хотя бы страничку убогую со списочком хоть каких-то станций от живых пользователей - но нет, и такого тоже нету. Так а что есть-то вообще? <del>Наху</del>зачем было этот &ldquo;API&rdquo; для &ldquo;пользователей&rdquo; городить и рекламировать, если в него ни отправить ничего нельзя, ни посмотреть из него ничего нельзя?</p>
+<p>На этом как бы всё, но я ещё попытался хоть подать им знак, а то может они не знают, что у них вместо API онлайновый <code>/dev/null</code>. Для обратной связи у них есть вот <a href="https://yandex.ru/dev/weather/doc/ru/concepts/troubleshooting">такая страница</a>:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/yandex-feedback-collapsed.png" alt="Яндекс Погода, страница обратной связи с формой под спойлером" style="border:1px solid black;">
+
+<p>&hellip;с формой под спойлером, Карл! И чтобы отправить великому Яндексу записочку, помимо прочих данных в этой форме:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/yandex-feedback-expanded.png" alt="Яндекс Погода, страница обратной связи" style="border:1px solid black;">
+
+<p>от пользователя дрожащего требуется (<em>обязательные поля с красной звёздочкой (хотя она тут на всех полях)</em>) указать:</p>
+<ul>
+<li>телефон</li>
+<li>название компании</li>
+<li>ИНН</li>
+</ul>
+<p>Ясно, в общем, на хуй и в пизду.</p>
+<h2 id="other-services">Other services</h2>
+<p>There likely are many more public weather services where you could submit your data too, and different countries probably have their local alternatives.</p>
+<p>If I was to share my weather data with some more services, my next candidate would be <a href="https://narodmon.ru/">Public Monitoring Project</a> (<em>опять Яндекс?</em>), but I do have to stop at some point, and for now this is it.</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/home-automation/">home-automation</a><a class="tag" href="https://retifrav.github.io/tags/web/">web</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div style="border:2px orange solid; background-color: floralwhite; border-radius:0.5rem; padding: 10px 14px; font-style:italic; font-size:0.9em;">
+              If you'd like to comment the article, you can do it on the
+              <a href="https://decovar.dev/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/#remark42" style="font-weight:bold;">
+                  original website</a>. This one is just a mirror without comments.
+          </div>
+      
+      </div>
+    </div>
+  </div>
+
+  
+        <div id="footer">
+          <div>
+              2014 - 2026,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <div style="margin:0 0 20px;">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+            <div id="search-results" style="display:none;"></div>
+        </div>
+        <div id="sidebars">
+            <a id="avatar" href="/about"><img class="app-header-avatar" src="/images/avatar.png" /></a>
+            <iframe src="https://github.com/sponsors/retifrav/button"
+                height="35" style="border:0;"
+                title="You can sponsor me">
+            </iframe>
+            
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <div class="sidebar-row">
+                <a href="/index.xml" title="Subscribe to RSS">
+                  <img src="/images/rss.png" class="sidebar-row-icon">
+                </a>
+                
+                <a href="https://t.me/decovar" title="Telegram channel">
+                  <img src="/images/telegram.png" class="sidebar-row-icon">
+                </a>
+              </div>
+            </div>
+            <div class="sidebar-section">
+                <h3>Chat</h3>
+                <a
+                    href="https://web.libera.chat/##decovar"
+                    title="IRC channel on Libera.Chat"
+                    style="font-size:1em; text-shadow:#f100ff 0px 0px 25px;"
+                >
+                    irc.libera.chat:6697/##decovar
+                </a>
+            </div>
+            
+            
+            
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (70)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (40)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (38)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (35)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (28)</a></li>
+                  
+                  <li><a href="/tags/review">review (28)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (23)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (19)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (17)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (15)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (13)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (12)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (11)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (8)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (7)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (7)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (5)</a></li>
+                  
+                  <li><a href="/tags/android">android (4)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (4)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/azure">azure (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/home-automation">home-automation (2)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (2)</a></li>
+                  
+                  <li><a href="/tags/steam-deck">steam-deck (2)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (2)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/ldap">ldap (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/science">science (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    
+
+    <script>
+        
+        window.onload = () =>
+        {
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+        }
+    </script>
+
+    
+    
+  </body>
+</html>
