@@ -16,16 +16,16 @@
     <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
 
     <meta property="og:url" content="https://retifrav.github.io/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/">
-  <meta property="og:site_name" content="Declaration of VAR">
-  <meta property="og:title" content="Ecowitt WS90 in Home Assistant and posting data to weather services">
-  <meta property="og:description" content="Ecowitt WS90 (powered by Shelly) is a Zigbee-enabled personal weather station (PWS), which easily integrates with Home Assistant. In addition to using its weather data for your own dashboards and automations, you can also share it with online public weather services.">
-  <meta property="og:locale" content="en_US">
-  <meta property="og:type" content="article">
-    <meta property="article:section" content="blog">
-    <meta property="article:published_time" content="2026-06-27T16:07:49+02:00">
-    <meta property="article:modified_time" content="2026-06-27T16:07:49+02:00">
-    <meta property="article:tag" content="Home-Automation">
-    <meta property="article:tag" content="Web">
+	<meta property="og:site_name" content="Declaration of VAR">
+	<meta property="og:title" content="Ecowitt WS90 in Home Assistant and posting data to weather services">
+	<meta property="og:description" content="Ecowitt WS90 (powered by Shelly) is a Zigbee-enabled personal weather station (PWS), which easily integrates with Home Assistant. In addition to using its weather data for your own dashboards and automations, you can also share it with online public weather services.">
+	<meta property="og:locale" content="en_US">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2026-06-27T16:07:49+02:00">
+		<meta property="article:modified_time" content="2026-06-27T16:07:49+02:00">
+		<meta property="article:tag" content="Home-Automation">
+		<meta property="article:tag" content="Web">
 
 
     <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.2a28493e0b91076cde9fb52cb7fec81f63f685a6965e6a9df1179ec846b9141f.css" />
@@ -351,10 +351,20 @@ $$</p>
 </span></span></code></pre></div><p>and then you base the rain utility meters on this one instead of the main <code>ecowitt_ws90_precipitation</code>.</p>
 <p>As a matter of fact, it is not just precipitation, all the other sensors (<em>temperature, pressure, illuminance, etc</em>) drop to <code>0</code> together. So it looks like you would have to crutch around these dropouts for every single sensor that is important to have stable datasets. Alternatively, it probably can be done in Zigbee2MQTT (<em>via custom <a href="https://zigbee2mqtt.io/advanced/more/external_converters.html">external converter</a>?</em>), so the &ldquo;bad&rdquo; values would never even reach Home Assistant, but I haven&rsquo;t tried that approach.</p>
 <h3 id="atmospheric-pressure">Atmospheric pressure</h3>
-<p>Similar story with <code>ecowitt_ws90_pressure</code> sensor - to work around possible dropouts to <code>0</code> you would need to create&hellip; no, not a template sensor this time, but a <a href="https://home-assistant.io/integrations/filter/">fiter</a>:</p>
+<p>Similar story with <code>ecowitt_ws90_pressure</code> sensor - to work around possible dropouts to <code>0</code> you would need to create&hellip; no, not a template sensor this time, but a <a href="https://home-assistant.io/integrations/filter/">fiter</a>. At first I went with <a href="https://home-assistant.io/integrations/filter#outlier">outlier</a> filter:</p>
 
 
-    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-filter-helper-pressure.png" alt="Home Assistant, filter helper for pressure" style="border:1px solid black;">
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-filter-helper-pressure-outlier.png" alt="Home Assistant, outlier filter helper for pressure" style="border:1px solid black;">
+
+<p>but that resulted in &ldquo;stuck&rdquo; values, or at least the historical charts were stale (<em>even though the current/live values were reporting correctly</em>):</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-filter-helper-pressure-outlier-stuck.png" alt="Home Assistant, outlier filter helper for pressure got stuck" style="border:1px solid black;">
+
+<p>and that was because the <code>radius</code> was too big (<em>should&rsquo;ve set it to <code>5</code>, not <code>50</code></em>) and the <code>window</code> was too wide (<em>should&rsquo;ve been just <code>1</code>, not <code>4</code></em>). But instead of adjusting those, I decided to use a different filter - the <a href="https://home-assistant.io/integrations/filter#range">range</a> one - as it seems to fit better for the particular purpose of excluding <code>0</code> values from the atmospheric pressure measurements:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-filter-helper-pressure-range.png" alt="Home Assistant, range filter helper for pressure" style="border:1px solid black;">
 
 <p>The measurement unit for this new <code>ecowitt_ws90_pressure_stable</code> sensor is <code>hPa</code>, because I got the original <code>ecowitt_ws90_pressure</code> in <code>hPa</code> (<em>although apparently it should have been <code>kPa</code></em>).</p>
 <p>If you&rsquo;ll want it to be in <code>mmHg</code>, then that is a yet another template sensor. The formula is:</p>
