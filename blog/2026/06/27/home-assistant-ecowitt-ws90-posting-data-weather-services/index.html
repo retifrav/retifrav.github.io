@@ -28,6 +28,29 @@
 		<meta property="article:tag" content="Web">
 
 
+    
+        <script id="MathJax-script" async src="/js/mathjax/tex-mml-chtml.js"></script>
+
+<script>
+    MathJax = {
+        tex: {
+            displayMath: [['\\[', '\\]'], ['$$', '$$']]
+            
+        },
+        chtml: {
+            scale: 1.2
+        },
+        svg: {
+            scale: 1.2
+        },
+        loader:{
+            load: ['ui/safe']
+        }
+    };
+</script>
+
+    
+
     <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.2a28493e0b91076cde9fb52cb7fec81f63f685a6965e6a9df1179ec846b9141f.css" />
     <link rel="stylesheet" href="/css/default.css" />
     <link rel="stylesheet" href="/css/post.css" />
@@ -230,10 +253,9 @@
 <p>Not sure why, but by default I got wind speed (<em><code>wind_speed</code></em>) in <code>km/h</code>, even though both documentation and my Zigbee2MQTT device page state that it should be in <code>m/s</code>. It is probably Home Assistant who converts that behind the scenes, likely based on some locale settings, but I didn&rsquo;t find where to change that.</p>
 <p>At the same time, the wind gust speed (<em><code>gust_speed</code></em>) is reported in <code>m/s</code>, and I have no idea why this one isn&rsquo;t in <code>km/h</code> too.</p>
 <p>But anyway, since I wanted to have both of them in <code>m/s</code>, I had to create only one <a href="https://home-assistant.io/integrations/template/#sensor">template sensor</a> for converting from <code>km/h</code> to <code>m/s</code>. The conversion formula is no secret:</p>
-<p>$$
+$$
 m/s = km/h \times \frac{5}{18} = \frac{km/h}{3.6}
-$$</p>
-<p>and so as a template expression it will be this:</p>
+$$<p>and so as a template expression it will be this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-jinja" data-lang="jinja"><span style="display:flex;"><span><span style="color:#75715e">{{</span> <span style="color:#f92672">(</span>states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_wind_speed&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">float</span> <span style="color:#f92672">/</span> <span style="color:#ae81ff">3.6</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">round</span><span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">)</span> <span style="color:#75715e">}}</span>
 </span></span></code></pre></div><p>Then to create such a sensor you need to open <strong>Settings</strong> → <strong>Devices &amp; services</strong> → <strong>Helpers</strong> → <strong>Create helper</strong> → <strong>Template</strong> → <strong>Sensor</strong>:</p>
 
@@ -366,12 +388,12 @@ $$</p>
 
     <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-filter-helper-pressure-range.png" alt="Home Assistant, range filter helper for pressure" style="border:1px solid black;">
 
+<p>But actually, as I realized later, the reason for the stale/stuck history chart in first place was me, myself and I who disabled this new <code>ecowitt_ws90_pressure_stable</code> sensor in <a href="https://home-assistant.io/integrations/recorder/">recorder</a>, so it was only right that current/live readings were correct but there was no long-term statistics for the charts. After I removed it from the blacklist (<em><a href="https://home-assistant.io/integrations/recorder/#exclude">exclude</a> configuration variable</em>), the historical data got collected and the charts became fine.</p>
 <p>The measurement unit for this new <code>ecowitt_ws90_pressure_stable</code> sensor is <code>hPa</code>, because I got the original <code>ecowitt_ws90_pressure</code> in <code>hPa</code> (<em>although apparently it should have been <code>kPa</code></em>).</p>
 <p>If you&rsquo;ll want it to be in <code>mmHg</code>, then that is a yet another template sensor. The formula is:</p>
-<p>$$
+$$
 mmHg = hPa \times 0.7500615
-$$</p>
-<p>and as a template:</p>
+$$<p>and as a template:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-jinja" data-lang="jinja"><span style="display:flex;"><span><span style="color:#75715e">{{</span> <span style="color:#f92672">(</span>states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_pressure_stable&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">float</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">0.7500615</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">round</span><span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">)</span> <span style="color:#75715e">}}</span>
 </span></span></code></pre></div><p>Note that here (<em>as well as in <a href="#wind-speed">wind speed</a> conversion or anywhere else</em>) the <a href="https://home-assistant.io/template-functions/round/">round filter</a> must apply to the entire expression in parenthesis. At first I made a mistake of simply &ldquo;piping&rdquo; it to the end of the expression, and that produced incorrect results:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-jinja" data-lang="jinja"><span style="display:flex;"><span><span style="color:#75715e">{#
@@ -430,7 +452,7 @@ $$</p>
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">in_header</span>: <span style="color:#ae81ff">raw</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">statistics</span>:
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">period</span>: <span style="color:#ae81ff">5minute</span>
-</span></span></code></pre></div><p>Same way I made that bottom-right chart for atmospheric pressure:</p>
+</span></span></code></pre></div><p>Same way I made that bottom-right chart for <a href="#atmospheric-pressure">atmospheric pressure</a>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">custom:apexcharts-card</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">header</span>:
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">title</span>: <span style="color:#ae81ff">Давление</span>
@@ -601,20 +623,16 @@ $$</p>
 <ul>
 <li>Celsius to Fahrenheit:</li>
 </ul>
-<p>$$T_F = T_C \times \frac{9}{5} + 32$$</p>
-<ul>
+$$T_F = T_C \times \frac{9}{5} + 32$$<ul>
 <li><code>m/s</code> to <code>mph</code>:</li>
 </ul>
-<p>$$mph = m/s \times \frac{3600}{1609.34} = m/s \times 2.23694$$</p>
-<ul>
+$$mph = m/s \times \frac{3600}{1609.34} = m/s \times 2.23694$$<ul>
 <li><code>km/h</code> to <code>mph</code>:</li>
 </ul>
-<p>$$mph = \frac{km/h}{1.609344} = km/h \times 0.621371$$</p>
-<ul>
+$$mph = \frac{km/h}{1.609344} = km/h \times 0.621371$$<ul>
 <li><code>mm</code> to <code>in</code> (<em>and <code>mmHg</code> to <code>inHg</code>, obviously</em>):</li>
 </ul>
-<p>$$in = \frac{mm}{25.4} = mm \times 0.03937$$</p>
-<p>The updated <code>variables</code> action now looks like this:</p>
+$$in = \frac{mm}{25.4} = mm \times 0.03937$$<p>The updated <code>variables</code> action now looks like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">variables</span>:
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">datetime_utc</span>: <span style="color:#e6db74">&#34;{{ utcnow().strftime(&#39;%Y-%m-%d %H:%M:%S&#39;) }}&#34;</span>
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">temp</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_temperature&#39;) }}&#34;</span>
