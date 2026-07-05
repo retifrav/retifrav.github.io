@@ -88,7 +88,7 @@
 </svg> 2026-06-27 16:07:49 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 31 min read</div>
+</svg> 32 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -383,12 +383,25 @@ $$<p>and so as a template expression it will be this:</p>
 
     <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-filter-helper-pressure-outlier-stuck.png" alt="Home Assistant, outlier filter helper for pressure got stuck" style="border:1px solid black;">
 
-<p>and that was because the <code>radius</code> was too big (<em>should&rsquo;ve set it to <code>5</code>, not <code>50</code></em>) and the <code>window</code> was too wide (<em>should&rsquo;ve been just <code>1</code>, not <code>4</code></em>). But instead of adjusting those, I decided to use a different filter - the <a href="https://home-assistant.io/integrations/filter#range">range</a> one - as it seems to fit better for the particular purpose of excluding <code>0</code> values from the atmospheric pressure measurements:</p>
+<p>I thought that maybe it was because the <code>radius</code> was too big (<em>should&rsquo;ve set it to <code>5</code>, not <code>50</code>?</em>) and the <code>window</code> was too wide (<em>should&rsquo;ve been just <code>1</code>, not <code>4</code>?</em>). But instead of adjusting those, I decided to use a different filter - the <a href="https://home-assistant.io/integrations/filter#range">range</a> one - as it seemed to fit better for the particular purpose of excluding <code>0</code> values from the atmospheric pressure measurements:</p>
 
 
     <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-filter-helper-pressure-range.png" alt="Home Assistant, range filter helper for pressure" style="border:1px solid black;">
 
-<p>But actually, as I realized later, the reason for the stale/stuck history chart in first place was me, myself and I who disabled this new <code>ecowitt_ws90_pressure_stable</code> sensor in <a href="https://home-assistant.io/integrations/recorder/">recorder</a>, so it was only right that current/live readings were correct but there was no long-term statistics for the charts. After I removed it from the blacklist (<em><a href="https://home-assistant.io/integrations/recorder/#exclude">exclude</a> configuration variable</em>), the historical data got collected and the charts became fine.</p>
+<p>However, what I noticed next was that during those spurious dropouts to <code>0</code> my new range-filtered atmospheric pressure was getting <code>900</code> value - the lower bound of the filter - and that is explicitly stated in the documentation (<em>if only I read it carefully</em>). And while <code>900</code> is much better than <code>0</code>, it is still a wrong value, so then a proper(?) way to go about excluding dropouts would be a combination of both the outlier and the range filters, like so:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">sensor</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">platform</span>: <span style="color:#ae81ff">filter</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">name</span>: <span style="color:#e6db74">&#34;ecowitt_ws90_pressure_stable&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">unique_id</span>: <span style="color:#ae81ff">ecowitt_ws90_pressure_stable</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">entity_id</span>: <span style="color:#ae81ff">sensor.ecowitt_ws90_pressure</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">filters</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">filter</span>: <span style="color:#ae81ff">outlier</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">window_size</span>: <span style="color:#ae81ff">4</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">radius</span>: <span style="color:#ae81ff">50</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">filter</span>: <span style="color:#ae81ff">range</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">lower_bound</span>: <span style="color:#ae81ff">900</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">upper_bound</span>: <span style="color:#ae81ff">1100</span>
+</span></span></code></pre></div><p>But actually, as I realized a bit later, the reason for the stale/stuck history chart in first place was me, myself and I, who disabled this new <code>ecowitt_ws90_pressure_stable</code> sensor in <a href="https://home-assistant.io/integrations/recorder/">recorder</a>, so it was only right that current/live readings were correct but there was no long-term statistics for the charts. After I removed it from the blacklist (<em>the <a href="https://home-assistant.io/integrations/recorder/#exclude">exclude</a> configuration variable</em>), the historical data got collected and the charts got &ldquo;unstuck&rdquo;, so evidently there was nothing wrong with my initial outlier filter. Nevertheless, I decided to keep the combined outlier/range variant for now (<em>even though the range part looks redundant</em>).</p>
 <p>The measurement unit for this new <code>ecowitt_ws90_pressure_stable</code> sensor is <code>hPa</code>, because I got the original <code>ecowitt_ws90_pressure</code> in <code>hPa</code> (<em>although apparently it should have been <code>kPa</code></em>).</p>
 <p>If you&rsquo;ll want it to be in <code>mmHg</code>, then that is a yet another template sensor. The formula is:</p>
 $$
@@ -521,7 +534,7 @@ $$<p>and as a template:</p>
 <p>I put &ldquo;API&rdquo; into quotes because unlike <a href="#openweathermap">OpenWeatherMap</a> here the data is submitted via <code>GET</code> requests right in the query string, for example:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl <span style="color:#e6db74">&#34;https://api.weathercloud.net/v01/set?wid=YOUR-ID&amp;key=YOUR-KEY&amp;temp=190&amp;dew=125&amp;wspd=11&amp;wspdhi=14&amp;hum=65&amp;wdir=293&amp;chill=190&amp;uvi=10&amp;bar=9980&#34;</span>
 </span></span></code></pre></div><p>As you&rsquo;ll see later, that is a pretty common way of submitting the data across different weather services.</p>
-<p>Another peculiarity, as you might have noticed in the query string, is that some values are expected to be multiplied by 10. Apparently, that is how they are dealing with floats. Also noteworthy is that timestamp is not required (<em>one example has them in <code>date</code> and <code>time</code> parameters, but the other one does not have them at all</em>), so apparently this service is capable of defaulting to the current timestamp server-side, which might be convenient.</p>
+<p>Another peculiarity, as you might have noticed in the query string, is that some values are expected to be multiplied by 10. Apparently, that is how they are dealing with floats. Also noteworthy is that timestamp is not required (<em>one example has them in <code>date</code> and <code>time</code> parameters, but the other one does not have them at all</em>), so this service is capable of defaulting to the current timestamp server-side, which might be convenient.</p>
 <p>It was also surprising to discover that they have some rate limit, so you will be getting <code>429</code> responses if you exceed it. I couldn&rsquo;t find the exact limit, but sending one request per 10 minutes seems to be okay.</p>
 <p>As for how to actually publish weather measurements, it&rsquo;s just a <a href="https://home-assistant.io/integrations/rest_command/">RESTful command</a>, so you simply add a new inclusion to your <code>configuration.yaml</code> (<em>if you don&rsquo;t have it there yet</em>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">rest_command</span>: !<span style="color:#ae81ff">include rest-commands.yaml</span>
