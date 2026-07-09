@@ -88,7 +88,7 @@
 </svg> 2026-06-27 16:07:49 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 32 min read</div>
+</svg> 35 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -116,7 +116,11 @@
             <li><a href="#wind-speed">Wind speed</a></li>
             <li><a href="#wind-direction">Wind direction</a></li>
             <li><a href="#precipitation">Precipitation</a></li>
-            <li><a href="#atmospheric-pressure">Atmospheric pressure</a></li>
+            <li><a href="#atmospheric-pressure">Atmospheric pressure</a>
+              <ul>
+                <li><a href="#absolute-or-relative">Absolute or relative</a></li>
+              </ul>
+            </li>
           </ul>
         </li>
         <li><a href="#a-dashboard">A dashboard</a></li>
@@ -401,7 +405,7 @@ $$<p>and so as a template expression it will be this:</p>
 </span></span><span style="display:flex;"><span>      - <span style="color:#f92672">filter</span>: <span style="color:#ae81ff">range</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">lower_bound</span>: <span style="color:#ae81ff">900</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">upper_bound</span>: <span style="color:#ae81ff">1100</span>
-</span></span></code></pre></div><p>But actually, as I realized a bit later, the reason for the stale/stuck history chart in the first place was me, myself and I, who disabled this new <code>ecowitt_ws90_pressure_stable</code> sensor in <a href="https://home-assistant.io/integrations/recorder/">recorder</a>, so it was only right that current/live readings were correct but there was no long-term statistics for the charts. After I removed it from the blacklist (<em>the <a href="https://home-assistant.io/integrations/recorder/#exclude">exclude</a> configuration variable</em>), the historical data got collected and the charts got &ldquo;unstuck&rdquo;, so evidently there was nothing wrong with my initial outlier filter. Nevertheless, I decided to keep the combined outlier/range variant for now (<em>even though the range part looks redundant</em>).</p>
+</span></span></code></pre></div><p>But actually, as I realized a bit later, the reason for the stale/stuck history chart in the first place was me, myself and I, who disabled this new <code>ecowitt_ws90_pressure_stable</code> sensor in <a href="https://home-assistant.io/integrations/recorder/">recorder</a>, so it was only right that current/live readings were correct but there was no long-term statistics for the charts. After I removed it from the blacklist (<em>the <a href="https://home-assistant.io/integrations/recorder/#exclude">exclude</a> configuration variable</em>), the historical data got collected and the charts got &ldquo;unstuck&rdquo;. So then I just returned my initial outlier filter, as there was nothing wrong with it.</p>
 <p>The measurement unit for this new <code>ecowitt_ws90_pressure_stable</code> sensor is <code>hPa</code>, because I got the original <code>ecowitt_ws90_pressure</code> in <code>hPa</code> (<em>although apparently it should have been <code>kPa</code></em>).</p>
 <p>If you&rsquo;ll want it to be in <code>mmHg</code>, then that is a yet another template sensor. The formula is:</p>
 $$
@@ -431,7 +435,49 @@ $$<p>and as a template:</p>
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e">    to the entire expression
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e">#}</span>
 </span></span><span style="display:flex;"><span><span style="color:#75715e">{{</span> <span style="color:#f92672">(</span>states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_pressure_stable&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">float</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">0.7500615</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">round</span><span style="color:#f92672">(</span><span style="color:#ae81ff">1</span><span style="color:#f92672">)</span> <span style="color:#75715e">}}</span>
-</span></span></code></pre></div><h2 id="a-dashboard">A dashboard</h2>
+</span></span></code></pre></div><h4 id="absolute-or-relative">Absolute or relative</h4>
+<p>When I was comparing my station data with (<em>spoilers</em>) <a href="#publishing-data">other weather stations</a> in the area, I noticed that almost all of them report higher atmospheric pressure values than mine, such as if mine is 1002 hPa, then theirs would be 1014 hPa in average. And this was consistent across different weather services, so it was not just one single service being weird.</p>
+<p>The only explanation I could come up with was me not accounting for <a href="https://en.wikipedia.org/wiki/Sea_level">sea level</a>, meaning that those stations do account for it and report relative pressure, while mine just reports absolute pressure as is.</p>
+<p>To adjust absolute pressure to relative, the formula is:</p>
+$$P_{rel} = P_{abs} \times \left(1 - \frac{0.0065 \times h}{(T + 0.0065 \times h + 273.15)}\right)^{-5.257}$$<p>where:</p>
+<ul>
+<li><code>h</code> - weather station elevation above sea level in meters;</li>
+<li><code>T</code> - current temperature in Celsius;</li>
+<li><code>-5.257</code> - <a href="https://en.wikipedia.org/wiki/Barometric_formula#Model_equations">you don&rsquo;t want to know</a>.</li>
+</ul>
+<p>If I take the current temperature of 23.3°C, my elevation of 113 meters and current <em>absolute</em> atmospheric pressure of 1002 hPa, then by this formula my current <em>relative</em> atmospheric pressure is 1015 hPa - right in the range of what other stations are reporting around me.</p>
+<p>There is also a much simpler formula without the temperature, lapse rate or any other black magic constants, as their effect is rather negligible for elevations under 1000 meters:</p>
+$$P_{rel} = P_{abs} + h \times 0.12$$<p>but we are not looking for easy ways, are we.</p>
+<p>A template expression for the conversion would be:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-jinja" data-lang="jinja"><span style="display:flex;"><span><span style="color:#75715e">{{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>    states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_pressure_stable&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">int</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">*</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">-</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">(</span><span style="color:#ae81ff">0.0065</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">113</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">/</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">(</span>states<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.ecowitt_ws90_temperature&#39;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">float</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">0.0065</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">113</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">273.15</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">)</span> <span style="color:#f92672">**</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">5.257</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">)</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">round</span><span style="color:#f92672">(</span><span style="color:#ae81ff">0</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">}}</span>
+</span></span></code></pre></div><p>Okay, but which value am I supposed to publish to weather services: the absolute one or the relative one? Who the fuck knows, not a single motherfucking service has an explicit clarification for that in their API documentation. At the same time, all of them require specifying the weather station elevation when you register it, but for what fucking purpose then, if they don&rsquo;t use it to convert the absolute pressure values into relative ones?</p>
+<p>The only indication (<em>aside from my misalignment with the neighbouring stations</em>) that I found was&hellip; a switch in the unit settings on <a href="#pwsweather">PWSWeather</a> station page. Here&rsquo;s what it shows with <code>ALTIM.</code> option selected:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/pwsweather-unit-settings-pressure-altim.png" alt="PWSWeather, unit settings, pressure altimeter.png" style="border:1px solid black;">
+
+<p>which is the 1002 hPa value reported by my station. And here&rsquo;s what it shows if I select <code>STATION</code>:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/pwsweather-unit-settings-pressure-station.png" alt="PWSWeather, unit settings, pressure station.png" style="border:1px solid black;">
+
+<p>So okay then, that settles it - I need to publish the relative value (<em>1015 hPa from the example calculation above</em>), which is what will go into the <code>ALTIM.</code>, and then I reckon the <code>STATION</code> will show something around 1002 hPa.</p>
+<p>If you already created a template for the hPa/mmHg conversion, then don&rsquo;t forget to update it to use this new <code>ecowitt_ws90_pressure_stable_relative</code> instead if the absolute <code>ecowitt_ws90_pressure_stable</code>.</p>
+<h2 id="a-dashboard">A dashboard</h2>
 <p>When it comes to making a dashboard, let alone a weather dashboard, sky is the limit for how much stuff one can put there. I have only just started, so my dashboard is rather modest:</p>
 
 
@@ -465,7 +511,7 @@ $$<p>and as a template:</p>
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">in_header</span>: <span style="color:#ae81ff">raw</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">statistics</span>:
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">period</span>: <span style="color:#ae81ff">5minute</span>
-</span></span></code></pre></div><p>Same way I made that bottom-right chart for <a href="#atmospheric-pressure">atmospheric pressure</a>:</p>
+</span></span></code></pre></div><p>Same way I made that bottom-right chart for <a href="#atmospheric-pressure">atmospheric pressure</a> (<em>it is still the absolute one here, because I had not yet learned about the relative one back then</em>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">custom:apexcharts-card</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">header</span>:
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">title</span>: <span style="color:#ae81ff">Давление</span>
@@ -561,7 +607,7 @@ $$<p>and as a template:</p>
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">chill</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_wind_chill&#39;) }}&#34;</span>
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">hum</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_humidity&#39;) }}&#34;</span>
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">uvi</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_uv_index&#39;) }}&#34;</span>
-</span></span><span style="display:flex;"><span>      <span style="color:#f92672">bar</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_pressure_stable&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">bar</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_pressure_stable_relative&#39;) }}&#34;</span>
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">rain_day</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_rain_meter_day&#39;) }}&#34;</span>
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">rainrate</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_rain_rate&#39;) }}&#34;</span>
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Publish data to Weathercloud</span>
@@ -660,7 +706,7 @@ $$in = \frac{mm}{25.4} = mm \times 0.03937$$<p>The updated <code>variables</code
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">chill</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_wind_chill&#39;) }}&#34;</span>
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">hum</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_humidity&#39;) }}&#34;</span>
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">uvi</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_uv_index&#39;) }}&#34;</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">bar</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_pressure_stable&#39;) }}&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">bar</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_pressure_stable_relative&#39;) }}&#34;</span>
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">bar_mm_hg</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_pressure_mmhg&#39;) }}&#34;</span>
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">bar_in_hg</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_pressure_inhg&#39;) }}&#34;</span>
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">rain_hour</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_rain_meter_hour&#39;) }}&#34;</span>
@@ -721,8 +767,10 @@ $$in = \frac{mm}{25.4} = mm \times 0.03937$$<p>The updated <code>variables</code
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">dewptf</span>: <span style="color:#e6db74">&#34;{{ dew_f }}&#34;</span>
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">humidity</span>: <span style="color:#e6db74">&#34;{{ hum }}&#34;</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">response_variable</span>: <span style="color:#ae81ff">pwsweather_response</span>
-</span></span></code></pre></div><p>Since <code>rainin</code> and <code>dailyrainin</code> are now used in more than one place, it makes sense to move them to a common variables action too, so they wouldn&rsquo;t get calculated more than once:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Publish weather data</span>
+</span></span></code></pre></div><p>Since <code>rainin</code> and <code>dailyrainin</code> are now used in more than one place, it makes sense to move them to a common variables action too, so they wouldn&rsquo;t get calculated more than once.</p>
+<p>Another thing I realized that needs adding for every service (<em>except for maybe the last one</em>) is <code>continue_on_error: true</code>, because if the first one in line (<em><a href="#weathercloud">Weathercloud</a></em>) fails to send the request (<em>as it often does due to timeouts</em>), then none of the next actions will execute.</p>
+<p>So here are the updates:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Publish weather data</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">description</span>: <span style="color:#e6db74">&#34;&#34;</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">triggers</span>:
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">trigger</span>: <span style="color:#ae81ff">time_pattern</span>
@@ -736,9 +784,13 @@ $$in = \frac{mm}{25.4} = mm \times 0.03937$$<p>The updated <code>variables</code
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">rain_day</span>: <span style="color:#e6db74">&#34;{{ states(&#39;sensor.ecowitt_ws90_rain_meter_day&#39;) }}&#34;</span>
 </span></span><span style="display:flex;"><span>      <span style="color:#75715e"># ...</span>
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">variables</span>:
-</span></span><span style="display:flex;"><span>      <span style="color:#f92672">rainin</span>: <span style="color:#e6db74">&#34;{{ (rain_hour | float / 25.4) | round(4) }}&#34;</span>
-</span></span><span style="display:flex;"><span>      <span style="color:#f92672">dailyrainin</span>: <span style="color:#e6db74">&#34;{{ (rain_day | float / 25.4) | round(4) }}&#34;</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>      <span style="color:#f92672">rainin</span>: <span style="color:#e6db74">&#34;{{ (rain_hour | float / 25.4) | round(4) }}&#34;</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>      <span style="color:#f92672">dailyrainin</span>: <span style="color:#e6db74">&#34;{{ (rain_day | float / 25.4) | round(4) }}&#34;</span>
 </span></span><span style="display:flex;"><span>  <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Publish data to Weathercloud</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">action</span>: <span style="color:#ae81ff">rest_command.weathercloud_publish</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#f92672">continue_on_error</span>: <span style="color:#66d9ef">true</span>
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Publish data to Weather Underground</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">action</span>: <span style="color:#ae81ff">rest_command.weatherunderground_publish</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">data</span>:
@@ -747,7 +799,7 @@ $$in = \frac{mm}{25.4} = mm \times 0.03937$$<p>The updated <code>variables</code
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">rainin</span>: <span style="color:#e6db74">&#34;{{ rainin }}&#34;</span>
 </span></span><span style="display:flex;"><span>      <span style="color:#f92672">dailyrainin</span>: <span style="color:#e6db74">&#34;{{ dailyrainin }}&#34;</span>
 </span></span><span style="display:flex;"><span>      <span style="color:#75715e"># ...</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#f92672">continue_on_error</span>: <span style="color:#66d9ef">true</span>
 </span></span><span style="display:flex;"><span>  - <span style="color:#f92672">alias</span>: <span style="color:#ae81ff">Publish data to PWSWeather</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">action</span>: <span style="color:#ae81ff">rest_command.pwsweather_publish</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">data</span>:
