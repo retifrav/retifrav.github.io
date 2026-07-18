@@ -88,7 +88,7 @@
 </svg> 2026-06-27 16:07:49 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 35 min read</div>
+</svg> 39 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -131,7 +131,11 @@
         <li><a href="#openweathermap">OpenWeatherMap</a></li>
         <li><a href="#weathercloud">Weathercloud</a></li>
         <li><a href="#weather-underground">Weather Underground</a></li>
-        <li><a href="#pwsweather">PWSWeather</a></li>
+        <li><a href="#pwsweather">PWSWeather</a>
+          <ul>
+            <li><a href="#trying-to-use-xweather-api">Trying to use Xweather API</a></li>
+          </ul>
+        </li>
         <li><a href="#яндекс-погода">Яндекс Погода</a></li>
         <li><a href="#other-services">Other services</a></li>
       </ul>
@@ -819,7 +823,243 @@ $$in = \frac{mm}{25.4} = mm \times 0.03937$$<p>The updated <code>variables</code
 <blockquote>
 <p>Through the <a href="https://pwsweather.com/contributor-plan">Contributor Plan</a> you also have an option to leverage <a href="https://aerisweather.com/">AerisWeather</a>&rsquo;s powerful <a href="https://aerisweather.com/develop/api/">API</a> and <a href="https://aerisweather.com/develop/maps/">Maps</a>.</p>
 </blockquote>
-<p>I haven&rsquo;t tried it yet, but it sure is nice of them.</p>
+<p>They still call it <a href="https://en.wikipedia.org/wiki/AerisWeather">AerisWeather</a>, but actually it is <a href="https://xweather.com/">Vaisala Xweather</a> (<em>since <a href="https://vaisala.com/en/stock-exchange-releases/2022-01/vaisala-accelerates-growth-its-weather-and-environmental-data-business-acquiring-us-based-aerisweather">2022</a></em>).</p>
+<h3 id="trying-to-use-xweather-api">Trying to use Xweather API</h3>
+<p>Even though PWSWeather claims that contributors get a special subscription plan, I couldn&rsquo;t find how to get it. I think I saw somewhere that you only need to register an Xweather account with the same e-mail that you have on PWSWeather, and I did so, but I still don&rsquo;t see that Contributor Plan available anywhere. I sent a question about that to <a href="mailto:support@xweather.com">support@xweather.com</a>, but never got a reply.</p>
+<p>That doesn&rsquo;t speak very highly of them, but they also have a free of charge Developer subscription plan (<em>available to anyone regardless of sharing the data</em>), so for now I tried to use that one. It seems to be severely crippled by the daily requests quota, so you can&rsquo;t really use it for getting maps imagery, but it is enough for getting basic forecasts.</p>
+<p>What&rsquo;s convenient about their forecasts data is that you can make a proper <a href="https://home-assistant.io/integrations/weather/">weather entity</a> and use it as the source for <a href="https://home-assistant.io/dashboards/weather-forecast/">weather forecast cards</a>.</p>
+<p>The data from API will be fetched via <a href="https://home-assistant.io/integrations/rest/">RESTful integration</a>. If you never had one before, then add it in <code>configuration.yaml</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">rest</span>: !<span style="color:#ae81ff">include rest.yaml</span>
+</span></span></code></pre></div><p>and then in <code>rest.yaml</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#75715e"># current conditions</span>
+</span></span><span style="display:flex;"><span>- <span style="color:#f92672">resource</span>: <span style="color:#e6db74">&#34;https://data.api.xweather.com/conditions&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">params</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">p</span>: !<span style="color:#ae81ff">secret xweather_location</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">client_id</span>: !<span style="color:#ae81ff">secret xweather_client_id</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">client_secret</span>: !<span style="color:#ae81ff">secret xweather_client_secret</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">format</span>: <span style="color:#ae81ff">json</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">scan_interval</span>: <span style="color:#ae81ff">900</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sensor</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">name</span>: <span style="color:#e6db74">&#34;Xweather Current&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">value_template</span>: <span style="color:#e6db74">&#34;{{ value_json.response[0].periods[0].weatherPrimary }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">json_attributes_path</span>: <span style="color:#e6db74">&#34;$.response[0].periods[0]&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">json_attributes</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ae81ff">tempC</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#ae81ff">humidity</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#ae81ff">pressureMB</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#ae81ff">windSpeedMPS</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#ae81ff">windGustMPS</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#ae81ff">windDirDEG</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#ae81ff">visibilityKM</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#ae81ff">dewpointC</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#ae81ff">weather</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># daily forecast (7 days)</span>
+</span></span><span style="display:flex;"><span>- <span style="color:#f92672">resource</span>: <span style="color:#e6db74">&#34;https://data.api.xweather.com/forecasts&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">params</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">p</span>: !<span style="color:#ae81ff">secret xweather_location</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">client_id</span>: !<span style="color:#ae81ff">secret xweather_client_id</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">client_secret</span>: !<span style="color:#ae81ff">secret xweather_client_secret</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">format</span>: <span style="color:#ae81ff">json</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">filter</span>: <span style="color:#ae81ff">day</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">limit</span>: <span style="color:#ae81ff">7</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">scan_interval</span>: <span style="color:#ae81ff">1800</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sensor</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">name</span>: <span style="color:#e6db74">&#34;Xweather Daily&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">value_template</span>: <span style="color:#e6db74">&#34;{{ value_json.response[0].periods | count }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">json_attributes_path</span>: <span style="color:#e6db74">&#34;$.response[0]&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">json_attributes</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ae81ff">periods</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># hourly forecast (24 hours)</span>
+</span></span><span style="display:flex;"><span>- <span style="color:#f92672">resource</span>: <span style="color:#e6db74">&#34;https://data.api.xweather.com/forecasts&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">params</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">p</span>: !<span style="color:#ae81ff">secret xweather_location</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">client_id</span>: !<span style="color:#ae81ff">secret xweather_client_id</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">client_secret</span>: !<span style="color:#ae81ff">secret xweather_client_secret</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">format</span>: <span style="color:#ae81ff">json</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">filter</span>: <span style="color:#ae81ff">1hr</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">limit</span>: <span style="color:#ae81ff">24</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">scan_interval</span>: <span style="color:#ae81ff">1800</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sensor</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">name</span>: <span style="color:#e6db74">&#34;Xweather Hourly&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">value_template</span>: <span style="color:#e6db74">&#34;{{ value_json.response[0].periods | count }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">json_attributes_path</span>: <span style="color:#e6db74">&#34;$.response[0]&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">json_attributes</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#ae81ff">periods</span>
+</span></span></code></pre></div><p>Since <code>xweather_location</code>, <code>xweather_client_id</code> and <code>xweather_client_secret</code> are common parameters, it makes sense to re-use them as variables, and one way to do so is by placing them into <code>secrets.yaml</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">xweather_location</span>: <span style="color:#e6db74">&#34;YOUT-LATITUDE,YOUR-LONGITUDE&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">xweather_client_id</span>: <span style="color:#e6db74">&#34;YOUR-XWEATHER-CLIENT-ID&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">xweather_client_secret</span>: <span style="color:#e6db74">&#34;YOUR-XWEATHER-CLIENT-SECRET&#34;</span>
+</span></span></code></pre></div><p>That won&rsquo;t make them actually &ldquo;secret&rdquo;, since this is merely a different plain-text file, but it will make them re-usable variables, which is what we wanted.</p>
+<p>Next is to make the weather entity template, and that is a yet another <code>configuration.yaml</code> include (<em>if you don&rsquo;t have it yet</em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">template</span>: !<span style="color:#ae81ff">include templates.yaml</span>
+</span></span></code></pre></div><p>and then in <code>templates.yaml</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">weather</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">name</span>: <span style="color:#e6db74">&#34;Xweather&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">unique_id</span>: <span style="color:#ae81ff">xweather_template</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">condition_template</span>: &gt;<span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {% from &#39;xweather_macros.jinja&#39; import xw_map %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {% set c = state_attr(&#39;sensor.xweather_current&#39;, &#39;weather&#39;) %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {{ xw_map(c) }}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">temperature_template</span>: <span style="color:#e6db74">&#34;{{ state_attr(&#39;sensor.xweather_current&#39;,&#39;tempC&#39;) | float(0) }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">temperature_unit</span>: <span style="color:#e6db74">&#34;°C&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">humidity_template</span>: <span style="color:#e6db74">&#34;{{ state_attr(&#39;sensor.xweather_current&#39;,&#39;humidity&#39;) | float(0) }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">pressure_template</span>: <span style="color:#e6db74">&#34;{{ state_attr(&#39;sensor.xweather_current&#39;,&#39;pressureMB&#39;) | float(0) }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">pressure_unit</span>: <span style="color:#e6db74">&#34;hPa&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">wind_speed_template</span>: <span style="color:#e6db74">&#34;{{ state_attr(&#39;sensor.xweather_current&#39;,&#39;windSpeedMPS&#39;) | float(0) }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">wind_speed_unit</span>: <span style="color:#e6db74">&#34;m/s&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">wind_bearing_template</span>: <span style="color:#e6db74">&#34;{{ state_attr(&#39;sensor.xweather_current&#39;,&#39;windDirDEG&#39;) | float(0) }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">visibility_template</span>: <span style="color:#e6db74">&#34;{{ state_attr(&#39;sensor.xweather_current&#39;,&#39;visibilityKM&#39;) | float(0) }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">visibility_unit</span>: <span style="color:#e6db74">&#34;km&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">dew_point_template</span>: <span style="color:#e6db74">&#34;{{ state_attr(&#39;sensor.xweather_current&#39;,&#39;dewpointC&#39;) | float(0) }}&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">forecast_daily_template</span>: &gt;<span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {% from &#39;xweather_macros.jinja&#39; import xw_map %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {% set periods = state_attr(&#39;sensor.xweather_daily&#39;,&#39;periods&#39;) %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {% set ns = namespace(out=[]) %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {% if periods %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        {% for p in periods %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          {% set ns.out = ns.out + [{
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;datetime&#39;: p.dateTimeISO,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;condition&#39;: xw_map(p.weatherPrimary),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;temperature&#39;: p.maxTempC | float(0),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;templow&#39;: p.minTempC | float(0),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;precipitation&#39;: p.precipMM | float(0),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;precipitation_probability&#39;: p[&#39;pop&#39;] | int(0),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;wind_speed&#39;: p.windSpeedMaxMPS | float(0),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;wind_gust_speed&#39;: p.windGustMPS | float(0),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;wind_bearing&#39;: p.windDirDEG | float(0),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;humidity&#39;: p.humidity | int(0)
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          }] %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        {% endfor %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {% endif %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {{ ns.out }}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">forecast_hourly_template</span>: &gt;<span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {% from &#39;xweather_macros.jinja&#39; import xw_map %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {% set periods = state_attr(&#39;sensor.xweather_hourly&#39;,&#39;periods&#39;) %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {% set ns = namespace(out=[]) %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {% if periods %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        {% for p in periods %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          {% set ns.out = ns.out + [{
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;datetime&#39;: p.dateTimeISO,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;condition&#39;: xw_map(p.weatherPrimary),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;temperature&#39;: p.tempC | float(0),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;precipitation&#39;: p.precipMM | float(0),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;precipitation_probability&#39;: p[&#39;pop&#39;] | int(0),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;wind_speed&#39;: p.windSpeedMPS | float(0),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;wind_gust_speed&#39;: p.windGustMPS | float(0),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;wind_bearing&#39;: p.windDirDEG | float(0),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;humidity&#39;: p.humidity | int(0),
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            &#39;pressure&#39;: p.pressureMB | float(0)
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          }] %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        {% endfor %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {% endif %}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      {{ ns.out }}</span>
+</span></span></code></pre></div><p>The <code>xw_map()</code> is a <a href="https://home-assistant.io/docs/templating/custom-templates/#sharing-a-macro">macro</a> for mapping the Xweather conditions to Home Assistant weather conditions. It lives in the <code>custom_templates/xweather_macros.jinja</code> file:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>├── custom_templates
+</span></span><span style="display:flex; background-color:#3c3d38"><span>│   └── xweather_macros.jinja
+</span></span><span style="display:flex;"><span>├── ...
+</span></span><span style="display:flex;"><span>├── configuration.yaml
+</span></span><span style="display:flex;"><span>├── rest-commands.yaml
+</span></span><span style="display:flex;"><span>├── rest.yaml
+</span></span><span style="display:flex;"><span>├── secrets.yaml
+</span></span><span style="display:flex;"><span>├── templates.yaml
+</span></span><span style="display:flex;"><span>├── ...
+</span></span></code></pre></div><p>with the contents:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-jinja" data-lang="jinja"><span style="display:flex;"><span><span style="color:#75715e">{%</span> <span style="color:#66d9ef">macro</span> xw_map<span style="color:#f92672">(</span>w<span style="color:#f92672">)</span> <span style="color:#75715e">%}</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span>- <span style="color:#66d9ef">set</span> w <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>w <span style="color:#f92672">|</span> <span style="color:#a6e22e">string</span> <span style="color:#f92672">|</span> <span style="color:#a6e22e">lower</span><span style="color:#f92672">)</span> -<span style="color:#75715e">%}</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span>- <span style="color:#66d9ef">if</span> <span style="color:#e6db74">&#39;thunder&#39;</span> <span style="color:#66d9ef">in</span> w <span style="color:#66d9ef">or</span> <span style="color:#e6db74">&#39;tstorm&#39;</span> <span style="color:#66d9ef">in</span> w -<span style="color:#75715e">%}</span>lightning-rainy
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span>- <span style="color:#66d9ef">elif</span> <span style="color:#e6db74">&#39;snow&#39;</span> <span style="color:#66d9ef">in</span> w <span style="color:#66d9ef">or</span> <span style="color:#e6db74">&#39;flurries&#39;</span> <span style="color:#66d9ef">in</span> w <span style="color:#66d9ef">or</span> <span style="color:#e6db74">&#39;wintry&#39;</span> <span style="color:#66d9ef">in</span> w -<span style="color:#75715e">%}</span>snowy
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span>- <span style="color:#66d9ef">elif</span> <span style="color:#e6db74">&#39;sleet&#39;</span> <span style="color:#66d9ef">in</span> w <span style="color:#66d9ef">or</span> <span style="color:#e6db74">&#39;ice&#39;</span> <span style="color:#66d9ef">in</span> w <span style="color:#66d9ef">or</span> <span style="color:#e6db74">&#39;freezing&#39;</span> <span style="color:#66d9ef">in</span> w -<span style="color:#75715e">%}</span>snowy-rainy
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span>- <span style="color:#66d9ef">elif</span> <span style="color:#e6db74">&#39;rain&#39;</span> <span style="color:#66d9ef">in</span> w <span style="color:#66d9ef">or</span> <span style="color:#e6db74">&#39;showers&#39;</span> <span style="color:#66d9ef">in</span> w <span style="color:#66d9ef">or</span> <span style="color:#e6db74">&#39;drizzle&#39;</span> <span style="color:#66d9ef">in</span> w -<span style="color:#75715e">%}</span>rainy
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span>- <span style="color:#66d9ef">elif</span> <span style="color:#e6db74">&#39;hail&#39;</span> <span style="color:#66d9ef">in</span> w -<span style="color:#75715e">%}</span>hail
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span>- <span style="color:#66d9ef">elif</span> <span style="color:#e6db74">&#39;fog&#39;</span> <span style="color:#66d9ef">in</span> w <span style="color:#66d9ef">or</span> <span style="color:#e6db74">&#39;haze&#39;</span> <span style="color:#66d9ef">in</span> w <span style="color:#66d9ef">or</span> <span style="color:#e6db74">&#39;mist&#39;</span> <span style="color:#66d9ef">in</span> w -<span style="color:#75715e">%}</span>fog
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span>- <span style="color:#66d9ef">elif</span> <span style="color:#e6db74">&#39;wind&#39;</span> <span style="color:#66d9ef">in</span> w -<span style="color:#75715e">%}</span>windy
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span>- <span style="color:#66d9ef">elif</span> <span style="color:#e6db74">&#39;overcast&#39;</span> <span style="color:#66d9ef">in</span> w <span style="color:#66d9ef">or</span> <span style="color:#e6db74">&#39;cloudy&#39;</span> <span style="color:#66d9ef">in</span> w -<span style="color:#75715e">%}</span>cloudy
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span>- <span style="color:#66d9ef">elif</span> <span style="color:#e6db74">&#39;partly&#39;</span> <span style="color:#66d9ef">in</span> w <span style="color:#66d9ef">or</span> <span style="color:#e6db74">&#39;mostly sunny&#39;</span> <span style="color:#66d9ef">in</span> w <span style="color:#66d9ef">or</span> <span style="color:#e6db74">&#39;mostly clear&#39;</span> <span style="color:#66d9ef">in</span> w -<span style="color:#75715e">%}</span>partlycloudy
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span>- <span style="color:#66d9ef">elif</span> <span style="color:#e6db74">&#39;clear&#39;</span> <span style="color:#66d9ef">in</span> w <span style="color:#66d9ef">or</span> <span style="color:#e6db74">&#39;sunny&#39;</span> <span style="color:#66d9ef">in</span> w <span style="color:#66d9ef">or</span> <span style="color:#e6db74">&#39;fair&#39;</span> <span style="color:#66d9ef">in</span> w -<span style="color:#75715e">%}</span>sunny
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span>- <span style="color:#66d9ef">else</span> -<span style="color:#75715e">%}</span>exceptional
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span>- <span style="color:#66d9ef">endif</span> -<span style="color:#75715e">%}</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">{%</span> <span style="color:#66d9ef">endmacro</span> <span style="color:#75715e">%}</span>
+</span></span></code></pre></div><p>Putting it all together, here are weather cards for the hourly and daily forecasts along with the expected wind speeds:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">vertical-stack</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">title</span>: <span style="color:#ae81ff">Xweather</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">cards</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">show_current</span>: <span style="color:#66d9ef">false</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">show_forecast</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">type</span>: <span style="color:#ae81ff">weather-forecast</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">entity</span>: <span style="color:#ae81ff">weather.xweather</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">forecast_type</span>: <span style="color:#ae81ff">hourly</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">round_temperature</span>: <span style="color:#66d9ef">false</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">secondary_info_attribute</span>: <span style="color:#ae81ff">wind_speed</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">forecast_slots</span>: <span style="color:#ae81ff">9</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">show_current</span>: <span style="color:#66d9ef">false</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">show_forecast</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">type</span>: <span style="color:#ae81ff">weather-forecast</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">entity</span>: <span style="color:#ae81ff">weather.xweather</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">forecast_type</span>: <span style="color:#ae81ff">daily</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">round_temperature</span>: <span style="color:#66d9ef">false</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">secondary_info_attribute</span>: <span style="color:#ae81ff">wind_speed</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">forecast_slots</span>: <span style="color:#ae81ff">6</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">tap_action</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">action</span>: <span style="color:#ae81ff">url</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">url_path</span>: <span style="color:#ae81ff">https://pwsweather.com/station/forecast/pws/YOUR-STATION-ID/</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">type</span>: <span style="color:#ae81ff">custom:apexcharts-card</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">stacked</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">graph_span</span>: <span style="color:#ae81ff">10h</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">span</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">start</span>: <span style="color:#ae81ff">hour</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">offset</span>: <span style="color:#ae81ff">+1h</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">experimental</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">color_threshold</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">series</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">entity</span>: <span style="color:#ae81ff">sensor.xweather_hourly</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">Скорость ветра</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">type</span>: <span style="color:#ae81ff">area</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">unit</span>: <span style="color:#ae81ff">m/s</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">data_generator</span>: |<span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          return entity.attributes.periods
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            .slice(0, 10)
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            .map(p =&gt; [p.timestamp * 1000, p.windSpeedMPS]);</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color</span>: <span style="color:#ae81ff">green</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">stroke_width</span>: <span style="color:#ae81ff">3</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color_threshold</span>:
+</span></span><span style="display:flex;"><span>          - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">color</span>: <span style="color:#ae81ff">green</span>
+</span></span><span style="display:flex;"><span>          - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">4</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">color</span>: <span style="color:#ae81ff">yellow</span>
+</span></span><span style="display:flex;"><span>          - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">7</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">color</span>: <span style="color:#ae81ff">red</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">show</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">extremas</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">header_color_threshold</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">entity</span>: <span style="color:#ae81ff">sensor.xweather_hourly</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">Порывы</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">type</span>: <span style="color:#ae81ff">area</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">unit</span>: <span style="color:#ae81ff">m/s</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">data_generator</span>: |<span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          return entity.attributes.periods
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            .slice(0, 10)
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">            .map(p =&gt; [p.timestamp * 1000, p.windGustMPS]);</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color</span>: <span style="color:#ae81ff">red</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">stroke_width</span>: <span style="color:#ae81ff">3</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color_threshold</span>:
+</span></span><span style="display:flex;"><span>          - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">color</span>: <span style="color:#ae81ff">green</span>
+</span></span><span style="display:flex;"><span>          - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">4</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">color</span>: <span style="color:#ae81ff">yellow</span>
+</span></span><span style="display:flex;"><span>          - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">7</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">color</span>: <span style="color:#ae81ff">red</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">show</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">extremas</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">header_color_threshold</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">grid_options</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">columns</span>: <span style="color:#ae81ff">full</span>
+</span></span></code></pre></div><p>which will look like this on a dashboard:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-xweather-forecast-cards.png" alt="Home Assistant, Xweather forecast cards.png" style="border:1px solid black;">
+
 <h2 id="яндекс-погода">Яндекс Погода</h2>
 <p>Мда, ну на Яндекс Погоду я возлагал особенно большие надежды, потому что&hellip; да не знаю, почему. Лет 15 назад может и правда возлагал бы, но не в 2026 году. Тем не менее, на первый взгляд смотрелось очень многообещающе: такие-то у них там технологии <a href="https://yandex.ru/pogoda/meteum">Метеум</a> и <a href="https://habr.com/ru/companies/yandex/articles/834124/">OmniCast</a>, с такой-то красивой <a href="https://yandex.ru/pogoda/technology">страничкой</a> (<em>простите, с лендингом</em>):</p>
 <p>
