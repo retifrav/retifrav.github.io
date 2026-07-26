@@ -88,7 +88,7 @@
 </svg> 2026-06-27 16:07:49 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 41 min read</div>
+</svg> 43 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -123,7 +123,11 @@
             </li>
           </ul>
         </li>
-        <li><a href="#a-dashboard">A dashboard</a></li>
+        <li><a href="#a-dashboard">A dashboard</a>
+          <ul>
+            <li><a href="#wind-speed-forecast-chart">Wind speed forecast chart</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
     <li><a href="#publishing-data">Publishing data</a>
@@ -557,11 +561,87 @@ $$P_{rel} = P_{abs} + h \times 0.12$$<p>but we are not looking for easy ways, ar
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">action</span>: <span style="color:#ae81ff">url</span>
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">url_path</span>: <span style="color:#ae81ff">https://yr.no/nb/innhold/1-72837/meteogram.svg</span>
 </span></span></code></pre></div><p>For english variant replace <code>nb/innhold</code> with <code>en/content</code>.</p>
+<h3 id="wind-speed-forecast-chart">Wind speed forecast chart</h3>
+<p>Another useful card you might want to add is a chart for wind speed forecast. Naturally, this data has nothing to do with your weather station, as this is a forecast, and conveniently the default(?) weather provider (<em><a href="https://home-assistant.io/integrations/met/">Met.no</a></em>) can deliver it, though apparently it is not doing so by default, so you&rsquo;ll need to add a new template sensor in <code>templates.yaml</code> (<em>assuming that your <code>configuration.yaml</code> has <code>template: !include templates.yaml</code></em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">trigger</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">platform</span>: <span style="color:#ae81ff">time_pattern</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">minutes</span>: <span style="color:#e6db74">&#34;/30&#34;</span>
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">platform</span>: <span style="color:#ae81ff">homeassistant</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">event</span>: <span style="color:#ae81ff">start</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">action</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">service</span>: <span style="color:#ae81ff">weather.get_forecasts</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">target</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">entity_id</span>: <span style="color:#ae81ff">weather.forecast_home</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">data</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">type</span>: <span style="color:#ae81ff">hourly</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">response_variable</span>: <span style="color:#ae81ff">hourly</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sensor</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">Weather (hourly)</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">unique_id</span>: <span style="color:#ae81ff">weather_hourly</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">state</span>: <span style="color:#e6db74">&#34;{{ now().isoformat() }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">attributes</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">forecast</span>: <span style="color:#e6db74">&#34;{{ hourly[&#39;weather.forecast_home&#39;].forecast }}&#34;</span>
+</span></span></code></pre></div><p>After reloading/restarting Home Assistant, you should be able to check that it works on the  Developer tools page:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-jinja" data-lang="jinja"><span style="display:flex;"><span><span style="color:#75715e">{{</span> state_attr<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;sensor.weather_hourly&#39;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">&#39;forecast&#39;</span><span style="color:#f92672">)[</span><span style="color:#ae81ff">0</span><span style="color:#f92672">]</span> <span style="color:#75715e">}}</span>
+</span></span></code></pre></div><p>Among the values it reports there are both the <code>wind_speed</code> and the <code>wind_gust_speed</code>, which is great. So then the chart code will look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">type</span>: <span style="color:#ae81ff">custom:apexcharts-card</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">stacked</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">graph_span</span>: <span style="color:#ae81ff">20h</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">span</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">start</span>: <span style="color:#ae81ff">hour</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">offset</span>: <span style="color:#ae81ff">+1h</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">experimental</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">color_threshold</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">series</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">entity</span>: <span style="color:#ae81ff">sensor.weather_hourly</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">Скорость ветра</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">type</span>: <span style="color:#ae81ff">area</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">unit</span>: <span style="color:#ae81ff">m/s</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">data_generator</span>: |<span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      return entity.attributes.forecast
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          .map(p =&gt; [new Date(p.datetime).getTime(), p.wind_speed]);</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">color</span>: <span style="color:#ae81ff">green</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">stroke_width</span>: <span style="color:#ae81ff">3</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">color_threshold</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color</span>: <span style="color:#ae81ff">green</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">4</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color</span>: <span style="color:#ae81ff">yellow</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">7</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color</span>: <span style="color:#ae81ff">red</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">show</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">extremas</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">header_color_threshold</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">entity</span>: <span style="color:#ae81ff">sensor.weather_hourly</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">Порывы</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">type</span>: <span style="color:#ae81ff">area</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">unit</span>: <span style="color:#ae81ff">m/s</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">data_generator</span>: |<span style="color:#e6db74">
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      return entity.attributes.forecast
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          .map(p =&gt; [new Date(p.datetime).getTime(), p.wind_gust_speed]);</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">color</span>: <span style="color:#ae81ff">red</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">stroke_width</span>: <span style="color:#ae81ff">3</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">color_threshold</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color</span>: <span style="color:#ae81ff">green</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">4</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color</span>: <span style="color:#ae81ff">yellow</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">value</span>: <span style="color:#ae81ff">7</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">color</span>: <span style="color:#ae81ff">red</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">show</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">extremas</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">header_color_threshold</span>: <span style="color:#66d9ef">true</span>
+</span></span></code></pre></div><p>And here&rsquo;s a screenshot of the resulting chart:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/06/27/home-assistant-ecowitt-ws90-posting-data-weather-services/images/home-assistant-wind-speed-forecast-chart.png" alt="Home Assistant, wind speed forecast chart">
+
+<p>Other weather providers might have this data in a different format - specifically, there will be an example later for how to make a similar chart with <a href="#trying-to-use-xweather-api">Xweather</a> data (<em>though you probably shouldn&rsquo;t waste your time on that particular service</em>).</p>
 <h1 id="publishing-data">Publishing data</h1>
 <p>We are all for sharing information, right, so wouldn&rsquo;t it be nice to publish our weather data somewhere on the internet, so other people could use it too. And there are several such weather services where regular users can publish their PWS data.</p>
 <p>Aside from altruistic reasons, it would also be nice to get rewarded for submitting your data, something like how <a href="https://flightaware.com/">FlightAware</a> does it (<em>by granting contributors access to their otherwise paid services</em>). Such a basic thing as being able to see yours and other people stations on an online map would already be a good enough motivation, but surprisingly some services don&rsquo;t offer even that.</p>
 <h2 id="openweathermap">OpenWeatherMap</h2>
-<p>First one I tried was <a href="https://openweathermap.org/">OpenWeatherMap</a>. By the way, there is also a <a href="https://home-assistant.io/integrations/openweathermap/">Home Assistant integration</a> for this service, which lets you add it as a weather data source (<em>though I found their data to be less accurate than the default(?) <a href="https://home-assistant.io/integrations/met/">Met.no</a></em>).</p>
+<p>First one I tried was <a href="https://openweathermap.org/">OpenWeatherMap</a>. By the way, there is also a <a href="https://home-assistant.io/integrations/openweathermap/">Home Assistant integration</a> for this service, which lets you add it as a weather data source (<em>though I found their data to be less accurate than the default one</em>).</p>
 <p>They have a rather nice <a href="https://openweathermap.org/api/stations">API</a> for publishing, but the data you submit is not(?) &ldquo;visible&rdquo; to anyone else. There is no map/list of existing users stations, so you cannot look at the data from other stations in your area (<em>and you don&rsquo;t even know if there are any</em>). You can share your station ID with someone, and then that someone will be able to query your data from OpenWeatherMap service, but that is not at all convenient, is it.</p>
 <p>It appears to me that the only use for OpenWeatherMap API is to simply store your data on their servers, so that you could query it later - something I have absolutely no interest in, because I already have all my data locally.</p>
 <p><span id="about-curent-timestamp">Another thing I didn&rsquo;t like at first is that every submitting request must contain a timestamp.</span> I thought, why doesn&rsquo;t it automatically default to the current datatime on the server, is it because API supports batch uploads of historical data? I have no interest in that, I just want to submit my &ldquo;live&rdquo; data, and yet I must explicitly send the timestamp too, so annoying. But as I realized later, it actually does make sense to timestamp the data on user side - right at the moment when the measurements were taken - otherwise there will be some delay introduced by client processing and sending, then some more delay from network latency, then some time for data processing on the server, and so in the end the current timestamp on the server will accumulate certain delay from the original moment of taking the measurements - maybe not so much but still something. So yes, user-side timestamping seems to be a better way to go about it.</p>
