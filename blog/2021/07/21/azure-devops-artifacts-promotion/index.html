@@ -32,7 +32,7 @@
 
     
 
-    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1d49af7dcc370ad138c372fedb8188587cb39b085f3c95ee835feafa302dcc3.css" />
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.60c1bc4160e9f7ac460008102a8b89c4a1c40300022aecbd52888b2c5cafb9d0.css" />
     <link rel="stylesheet" href="/css/default.css" />
     <link rel="stylesheet" href="/css/post.css" />
     <link rel="stylesheet" href="/css/page.css" />
@@ -46,7 +46,7 @@
   <body>
     <div id="body-hat">
       <div id="title-block">
-        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <div id="blog-title"><a href="/">Declaration of VAR</a></div>
         <p>and some other stuff</p>
       </div>
     </div>
@@ -99,8 +99,8 @@
     <li><a href="#how-to-do-it-in-teamcity">How to do it in TeamCity</a></li>
   </ul>
 </nav>
-<h1 id="what-are-these">What are these</h1>
-<h2 id="feed-views">Feed views</h2>
+<h2 id="what-are-these">What are these</h2>
+<h3 id="feed-views">Feed views</h3>
 <p>So, as it turns out, package feeds have &ldquo;<a href="https://docs.microsoft.com/en-us/azure/devops/artifacts/concepts/views">views</a>&rdquo;. The default set is:</p>
 <ul>
 <li><code>Local</code></li>
@@ -116,7 +116,7 @@
     <img class="image-post" loading="lazy" src="/blog/2021/07/21/azure-devops-artifacts-promotion/images/feed-default-view.png" alt="Azure DevOps Artifacts feed default view">
 
 <p>But having set <code>Release</code> view to be the default one, we still get new published packages versions with <code>Local</code> view only, so they still need to be explicitly promoted to <code>Release</code> view. Thank you, Microsoft?</p>
-<h2 id="upstream-source">Upstream source</h2>
+<h3 id="upstream-source">Upstream source</h3>
 <p>A feed can be added as an <a href="https://docs.microsoft.com/en-us/azure/devops/artifacts/concepts/upstream-sources">upstream source</a> in another feed, and upon doing so one can select a view, which defaults to <code>Release</code>:</p>
 
 
@@ -125,9 +125,9 @@
 <p>It is my understanding that this is what our users did, when they were adding our feed as an upstream source, and that is why they don&rsquo;t see new published versions of our packages in their feed, until we promote them to <code>Release</code> view.</p>
 <p>So the easiest solution here would be for our users to just re-add our feed as an upstream source with <code>Local</code> view selected. We only publish production-ready packages, so that would be a much better option than promoting every single package version to <code>Release</code> view (<em>kind of a stupid exercise in this case</em>). Although, it could be that I&rsquo;m missing something about the point of having these views and the way they work with upstream sources.</p>
 <p>Either way, let&rsquo;s see how the process of promoting package versions to a certain view can be automated (<em>as it would be crazy to perform this promotion manually, wouldn&rsquo;t it</em>).</p>
-<h1 id="how-to-promote-a-package-version-to-a-certain-view">How to promote a package version to a certain view</h1>
+<h2 id="how-to-promote-a-package-version-to-a-certain-view">How to promote a package version to a certain view</h2>
 <p>Manual process is described <a href="https://docs.microsoft.com/en-us/azure/devops/artifacts/feeds/views#promote-a-package-to-prerelease-or-release-view">here</a>, but we of course will be doing this in an automated manner via <a href="https://docs.microsoft.com/en-us/azure/devops/artifacts/feeds/views#promote-a-package-using-the-rest-api">Azure DevOps REST API</a>.</p>
-<h2 id="endpoint">Endpoint</h2>
+<h3 id="endpoint">Endpoint</h3>
 <p>First thing you need is the endpoint, and you should notice that it is different for promoting NuGet and npm packages. Take a close look at the URLs, as I overlooked it at first.</p>
 <p>What you might still miss is that the example URL for npm doesn&rsquo;t contain <code>/{project}/</code> part, while <strong>it is actually required</strong>. Here&rsquo;s a screenshot of the documentation page:</p>
 
@@ -135,7 +135,7 @@
     <img class="image-post" loading="lazy" src="/blog/2021/07/21/azure-devops-artifacts-promotion/images/wrong-promotion-url.png" alt="Azure DevOps Artifacts wrong promotion URL" style="border:1px solid black;">
 
 <p>Thank you, Microsoft.</p>
-<h2 id="authentication">Authentication</h2>
+<h3 id="authentication">Authentication</h3>
 <p>Having gotten your <a href="/blog/2020/03/05/azure-devops-nuget-npm-cpp/#issuing-a-new-pat-in-azure-devops">Personal Access Token</a>, you might think that you need to set it in <code>Authorization</code> header with <code>Bearer</code> type, like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ curl <span style="color:#e6db74">&#34;https://feeds.dev.azure.com/YOUR-ORGANIZATION/YOUR-PROJECT/_apis/packaging/feeds&#34;</span> \
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-</span>H &#39;Authorization<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Bearer</span> <span style="color:#66d9ef">YOUR-PAT</span><span style="color:#960050;background-color:#1e0010">&#39;</span></span></span></code></pre></div>
@@ -144,7 +144,7 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ curl <span style="color:#e6db74">&#34;https://feeds.dev.azure.com/YOUR-ORGANIZATION/YOUR-PROJECT/_apis/packaging/feeds&#34;</span> \
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-</span>u &#39;YOUR<span style="color:#f92672">-</span><span style="color:#a6e22e">PAT</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">&#39;</span></span></span></code></pre></div>
 <p>Yep, you need to provide your PAT as user login with empty password. What is the actual fuck.</p>
-<h2 id="api-version">API version</h2>
+<h3 id="api-version">API version</h3>
 <p>Next thing you need to know is the API version, because if you&rsquo;ll send your request without specifying the API version, you&rsquo;ll get a <code>400 Bad Request</code> error like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;success&#34;</span>: <span style="color:#e6db74">&#34;false&#34;</span>,
@@ -212,7 +212,7 @@
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Вы ебанулись там что ли, у вас хоть одна версия вообще вышла в релиз? Okay, let&rsquo;s try&hellip; no, fuck it, I got the point, there is no a single non-preview version of the API, and requests to <code>1.0</code> just fail, as apparently this one is ancient history already, so I can just as well take the latest one. Which is not <code>5.1</code>, by the way, but <code>6.1</code> (<em>how should I have known that</em>), so resulting URL query is <code>?api-version=6.1-preview</code>.</p>
-<h2 id="request-body">Request body</h2>
+<h3 id="request-body">Request body</h3>
 <p>Documentation says &ldquo;<em>use JsonPatchOperation to construct the body</em>&rdquo; and links to different pages for each type of package, but actually this object is the same for all of them, so <a href="https://docs.microsoft.com/en-us/rest/api/azure/devops/artifactspackagetypes/npm/update%20package#jsonpatchoperation">here&rsquo;s the one</a> for npm.</p>
 <p>What you might overlook is that it needs to be wrapped into <code>views</code> object on the root level of the <a href="https://docs.microsoft.com/en-us/rest/api/azure/devops/artifactspackagetypes/npm/update%20package#request-body">JSON request body</a>, so here&rsquo;s the final JSON:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
@@ -236,7 +236,7 @@
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;eventId&#34;</span>: <span style="color:#ae81ff">3000</span>
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>Why <code>&quot;path&quot;: &quot;/views/-&quot;</code>? Gee, I don&rsquo;t know, because what&rsquo;s the point of wrapping this into <code>views</code> object then? The point of adding <code>-</code> to the end I do now: documentation says it&rsquo;s for taking the last element in the <code>views</code> array. Which begs for the question &ldquo;<em>why <code>add</code> and not <code>replace</code></em>&rdquo;.</p>
-<h2 id="package-name-and-version">Package name and version</h2>
+<h3 id="package-name-and-version">Package name and version</h3>
 <p>If you used Azure DevOps REST API before, you might have been sending requests like this one to get a list of package versions:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>https:<span style="color:#f92672">//</span>feeds<span style="color:#f92672">.</span>dev<span style="color:#f92672">.</span>azure<span style="color:#f92672">.</span>com<span style="color:#f92672">/</span>ORGANIZATION<span style="color:#f92672">-</span>NAME<span style="color:#f92672">/</span>PROJECT<span style="color:#f92672">-</span>NAME<span style="color:#f92672">/</span>_apis<span style="color:#f92672">/</span>packaging<span style="color:#f92672">/</span>feeds<span style="color:#f92672">/</span>FEED<span style="color:#f92672">-</span>ID<span style="color:#f92672">/</span>packages<span style="color:#f92672">/</span><span style="color:#ae81ff">370</span>bf540<span style="color:#f92672">-</span>edf3<span style="color:#f92672">-</span><span style="color:#ae81ff">4105</span><span style="color:#f92672">-</span>a827<span style="color:#f92672">-</span><span style="color:#ae81ff">10962</span>g54e224<span style="color:#f92672">/</span>versions</span></span></code></pre></div>
 <p>or this one to get information about specific package version:</p>
@@ -332,7 +332,7 @@
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-</span>u &#39;YOUR<span style="color:#f92672">-</span><span style="color:#a6e22e">PAT</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#66d9ef">\</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">|</span> jq <span style="color:#f92672">-</span>r <span style="color:#f92672">.</span>versions<span style="color:#f92672">[</span><span style="color:#960050;background-color:#1e0010">0</span><span style="color:#f92672">].</span>normalizedVersion</span></span></code></pre></div>
 <p>And then send the <code>PATCH</code> request (<em>don&rsquo;t forget that it has <a href="#endpoint">different URL structure</a> for NuGet and npm</em>).</p>
-<h1 id="how-to-do-it-in-teamcity">How to do it in TeamCity</h1>
+<h2 id="how-to-do-it-in-teamcity">How to do it in TeamCity</h2>
 <p>If you would like to perform these promotions as a build step in your TeamCity build configuration, and if the assigned build agent(s) is(are) running on Windows, then you&rsquo;ll probably encounter some issues.</p>
 <p>First of all, executing cURL directly from Windows command line is likely to fail, at least it did for me, so I wrapped it into a shell script like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/sh

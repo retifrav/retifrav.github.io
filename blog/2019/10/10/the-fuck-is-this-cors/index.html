@@ -32,7 +32,7 @@ Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remot
 
     
 
-    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1d49af7dcc370ad138c372fedb8188587cb39b085f3c95ee835feafa302dcc3.css" />
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.60c1bc4160e9f7ac460008102a8b89c4a1c40300022aecbd52888b2c5cafb9d0.css" />
     <link rel="stylesheet" href="/css/default.css" />
     <link rel="stylesheet" href="/css/post.css" />
     <link rel="stylesheet" href="/css/page.css" />
@@ -46,7 +46,7 @@ Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remot
   <body>
     <div id="body-hat">
       <div id="title-block">
-        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <div id="blog-title"><a href="/">Declaration of VAR</a></div>
         <p>and some other stuff</p>
       </div>
     </div>
@@ -98,14 +98,14 @@ Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remot
     </li>
   </ul>
 </nav>
-<h1 id="what-is-cors">What is CORS</h1>
-<h2 id="but-first-what-is-sop">But first, what is SOP</h2>
+<h2 id="what-is-cors">What is CORS</h2>
+<h3 id="but-first-what-is-sop">But first, what is SOP</h3>
 <p>Before CORS one should know about <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy">Same Origin Policy</a> (SOP). It&rsquo;s a mechanism that prevents JS scripts from accessing resources (<em>such as REST API</em>) on other websites.</p>
 <p>And it is a very nice-to-have security measure. Let&rsquo;s say you&rsquo;ve logged-in to your online bank, did some things there, and then went to watch some pron. Sadly, you landed on a cheeky website, which contained certain evil JS-script, which might theoretically (<em>and in past it actually could</em>) perform certain actions that you were unlikely to like, but, as MDN article says:</p>
 <blockquote>...SOP prevents a malicious website on the Internet from running JS in a browser to read data from a third-party webmail service (which the user is signed into) or a company intranet (which is protected from direct access by the attacker by not having a public IP address) and relaying that data to the attacker</blockquote>
 <p>Which means that your web-browser (<em>if you are not using some <code>SuP3rM3gACusT0M.VASYAN-ED1T1ON.v9000</code> version</em>) will prevent the execution of such requests to your bank&rsquo;s website (<em>or REST API</em>), because the <a href="https://developer.mozilla.org/en-US/docs/Glossary/origin">origin</a> of your bank website is different from the origin of this malicious pron website.</p>
 <p>So hopefully you can now see for yourself how stupid is the idea of disabling SOP in your browser. And yet, some &ldquo;experts&rdquo; on some forums actually suggest to do that in order to &ldquo;fix&rdquo; the &ldquo;problem&rdquo; with CORS.</p>
-<h2 id="and-now-about-cors">And now about CORS</h2>
+<h3 id="and-now-about-cors">And now about CORS</h3>
 <p>CORS stands for <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">Cross-Origin Resource Sharing</a>. And it&rsquo;s a quite common misunderstanding that CORS is also a security mechanism that prevents XMLHttpRequests from being executed.</p>
 <p>Actually, it&rsquo;s the other way around - CORS makes it possible to weaken the SOP (<em>or, rather, make exceptions</em>) by allowing trusted origins to access resources on certain origin, in particular to send XMLHttpRequests to it. Here&rsquo;s a <a href="https://dzone.com/articles/do-you-really-know-cors">good article</a> about that.</p>
 <p>Now coming back to our problem. So, okay, the scenario from above is about malicious scripts, but in our case we are merely want to call API of some service (<em>YouTrack instance</em>), so how to &ldquo;enable&rdquo; this CORS to allow the requests?</p>
@@ -125,7 +125,7 @@ Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remot
 
 <p>As you can see, the browser added <code>Origin: http://localhost:5000</code> header (<em>browser does it by itself for all cross-origin requests</em>), and server returned <code>Access-Control-Allow-Origin: http://localhost:5000</code> header, which means that the request is allowed to be sent.</p>
 <p>There is more to it, as requests can be <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#Simple_requests">simple</a> and <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#Preflighted_requests">preflighted</a>. The <a href="https://dzone.com/articles/do-you-really-know-cors">same article</a> has a shorter explanation.</p>
-<h1 id="blockers">Blockers</h1>
+<h2 id="blockers">Blockers</h2>
 <p>I said that requests started to work after I added my origin to the list of allowed origins on server. And they did, but not right away.</p>
 <p>At first they were still failing, and <a href="https://stackoverflow.com/a/56970532">the reason</a> for that was my <a href="https://github.com/gorhill/uMatrix">uMatrix</a> browser extension:</p>
 
@@ -133,9 +133,9 @@ Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remot
     <img class="image-post" loading="lazy" src="/blog/2019/10/10/the-fuck-is-this-cors/images/umatrix-blocking-xhr.png" alt="uMatrix blocking XHR">
 
 <p>That&rsquo;s totally my fault because I should have thought about that. Enabling XHR solved the issue.</p>
-<h1 id="requests-implementation">Requests implementation</h1>
+<h2 id="requests-implementation">Requests implementation</h2>
 <p>As a bonus, here&rsquo;s an implementation of querying YouTrack API for getting a list of issues.</p>
-<h2 id="js">JS</h2>
+<h3 id="js">JS</h3>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">getIssues</span>()
 </span></span><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">xhr</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">XMLHttpRequest</span>();
@@ -185,7 +185,7 @@ Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remot
 </span></span><span style="display:flex;"><span>    )
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>With a properly set CORS policy (<em>allow your origin on the target server</em>), it will work just fine. There is, however, a drawback - everyone can see credentials for your YouTrack instance in the page&rsquo;s HTML source.</p>
-<h2 id="c">C#</h2>
+<h3 id="c">C#</h3>
 <p>Here&rsquo;s another solution for the CORS/SOP problems - don&rsquo;t send requests from JS frontend! SOP exists only in web-browsers, remember? So send them from backend, and give JS frontend only result data. That way you will also avoid exposing your YouTrack credentials in the page&rsquo;s HTML source.</p>
 <p>I am using .NET Core application, so here&rsquo;s a C# implementation:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> IActionResult Issues(<span style="color:#66d9ef">string</span> releaseName)

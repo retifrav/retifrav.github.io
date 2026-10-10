@@ -31,7 +31,7 @@
 
     
 
-    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1d49af7dcc370ad138c372fedb8188587cb39b085f3c95ee835feafa302dcc3.css" />
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.60c1bc4160e9f7ac460008102a8b89c4a1c40300022aecbd52888b2c5cafb9d0.css" />
     <link rel="stylesheet" href="/css/default.css" />
     <link rel="stylesheet" href="/css/post.css" />
     <link rel="stylesheet" href="/css/page.css" />
@@ -45,7 +45,7 @@
   <body>
     <div id="body-hat">
       <div id="title-block">
-        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <div id="blog-title"><a href="/">Declaration of VAR</a></div>
         <p>and some other stuff</p>
       </div>
     </div>
@@ -68,7 +68,7 @@
 </svg> 2024-02-12 13:45:43 &#43;0100</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 22 min read</div>
+</svg> 23 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -104,7 +104,7 @@
   </ul>
 </nav>
 <p>Some years ago I&rsquo;ve briefly touched the topic of building applications for Android, but there <a href="/blog/2017/12/28/qt-for-android/">it was done with Qt</a>, and most of the complexity was graciously hidden from me by Qt Creator, which was auto-magically compiling my C++/QML application sources into the final APK without me knowing anything about the actual process.</p>
-<h1 id="environment-and-versions">Environment and versions</h1>
+<h2 id="environment-and-versions">Environment and versions</h2>
 <p>This is what I had when I was working on the example project:</p>
 <ul>
 <li>Mac OS <code>13.6.3</code>
@@ -125,7 +125,7 @@
 <li>NDK <code>25.1.8937393</code></li>
 <li>CMake <code>3.28.1</code></li>
 </ul>
-<h2 id="installation">Installation</h2>
+<h3 id="installation">Installation</h3>
 <p>Most of the required components come together with <a href="https://developer.android.com/studio">Android Studio</a>, so download and install it. When you launch it for the first time, it will choose some default SDK/API versions to be downloaded:</p>
 
 
@@ -171,8 +171,8 @@
 
     <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/android-studio-running-emulator.png" alt="Android Studio, running emulator">
 
-<h1 id="project">Project</h1>
-<h2 id="application">Application</h2>
+<h2 id="project">Project</h2>
+<h3 id="application">Application</h3>
 <p>I know almost nothing about creating applications for Android, so I just followed <a href="https://developer.android.com/jetpack/compose/tutorial">Jetpack Compose tutorial</a>.</p>
 <p>To create an application in Android Studio go to <code>New project</code> → <code>Phone and Tablet</code> → <code>Empty Activity</code>, and then you&rsquo;ll need to set the minimum SDK version:</p>
 
@@ -236,7 +236,7 @@
 </span></span></code></pre></div><p>One thing to note here is that I find it hilarious how using <a href="https://developer.android.com/jetpack/compose/components/app-bars">TopAppBar</a> requires you to do <code>@OptIn(ExperimentalMaterial3Api::class)</code>, implying that there is no a stable alternative (<em>still, in 2024?</em>). So to be able to use such basic UI controls one just has to enable experimental/unstable stuff in one&rsquo;s completely new application right from the day one.</p>
 <p>Other than that, this <a href="https://developer.android.com/jetpack">Jetpack/Kotlin</a> thing looks rather good, I could probably even like it. It looks very similar to <a href="https://developer.apple.com/xcode/swiftui/">SwiftUI</a> (<em>not sure which one came first</em>), but somewhat simpler / cleaner. And both of them seem to look up to <a href="https://doc.qt.io/qt-6/qtquick-index.html">Qt Quick / QML</a>, which is the simplest of them all (<em>although, perhaps, not as capable, given its cross-platform nature</em>).</p>
 <p>As for building the application, there is probably a way to do it from command line without Android Studio, and usually I do prefer building things from bare CLI, but here it&rsquo;s just too convenient to build and launch the application in emulator right from the IDE - you only need to click Run.</p>
-<h2 id="c-library">C++ library</h2>
+<h3 id="c-library">C++ library</h3>
 <p>To build a C++ library targetting Android platform, you need to have <a href="https://developer.android.com/ndk">NDK</a> installed. As I understand it, NDK is a set of build tools/compiler(s) for (<em>cross-</em>)compiling C++ sources into an Android binary. In other words, you won&rsquo;t be able to compile your C++ library for Android using your &ldquo;standard&rdquo; host platform compiler/toolchain.</p>
 <p>The NDK should be pre-installed/pre-downloaded together with Android Studio:</p>
 
@@ -281,10 +281,10 @@
 
     <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/detect-it-easy-aarch64-64-bit-api-30.png" alt="Detect It Easy, Android AARCH64, 64-bit, API 30">
 
-<h1 id="loading-a-pre-built-c-library-in-an-android-application">Loading a pre-built C++ library in an Android application</h1>
+<h2 id="loading-a-pre-built-c-library-in-an-android-application">Loading a pre-built C++ library in an Android application</h2>
 <p>Okay, so we have an <a href="#application">Android application</a> and we have a pre-built <a href="#c-library">C++ library</a>. Now we need to somehow load this library from the application and call its functions.</p>
 <p>Such a thing is at all possible thanks to <a href="https://en.wikipedia.org/wiki/Java_Native_Interface">Java Native Interface</a> (<em>JNI</em>), and that is what I will be using. Aside from that, there is also <a href="https://en.wikipedia.org/wiki/Java_Native_Access">Java Native Access</a> (JNA), which apparently is supposed to be an easier thing to use, but from what I see on the internet, JNA is slower than JNI, and since I haven&rsquo;t experienced any particular difficulties using JNI, I guess I&rsquo;ll stick to that one.</p>
-<h2 id="directly">Directly</h2>
+<h3 id="directly">Directly</h3>
 <p>Having started googling for how does one load a pre-built C++ library in an Android application, I was overwhelmed by the amount of articles and forum threads on the subject, and what was especially amazing is that none of them were actually useful. They would tell you how to build C++ library as a part of your project in Android Studio, but not a single fucking soul would tell you how to simply load an existing already pre-built binary.</p>
 <p>As I understand now, it doesn&rsquo;t make a lot of sense to load a pre-built C++ library directly, because a more common way is to <a href="#via-wrapper">use a wrapper</a>. But still, I wanted to know how can I just take my pre-built library, and just load it, and just call its functions, so can I fucking do that or not.</p>
 <p>I barely found <a href="https://stackoverflow.com/a/46824969/1688203">this answer</a>, which covers almost everything, and the rest I was able to figure out on my own. So first you create a folder <code>jni</code> inside the <code>app</code> folder, and given that we are targetting <code>arm64-v8a</code>, the folder structure and contents would be this then:</p>
@@ -506,7 +506,7 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#f92672">-LOCAL_SRC_FILES := libs/$(TARGET_ARCH_ABI)/libThingy.so
 </span></span></span><span style="display:flex;"><span><span style="color:#f92672">-include $(PREBUILT_SHARED_LIBRARY)
 </span></span></span></code></pre></div><p>I tried it myself, and project still built just fine, and application could load the library and call its functions.</p>
-<h2 id="via-wrapper">Via wrapper</h2>
+<h3 id="via-wrapper">Via wrapper</h3>
 <p>But, obviously, we don&rsquo;t want to mutilate our library functions with those <code>Java_com_example_some_MainActivity_*</code> prefixes, as we want it to be re-usable in other projects too, and on other platforms as well, so we can&rsquo;t have these Android-specific headers and signatures in the our library sources.</p>
 <p>And that is how I arrived to an understanding of a wrapper. So in order to keep the original C++ library sources clean from the Android-specific filth, one needs to create yet another C++ library, which would link to the original library and quite literally &ldquo;wrap&rdquo; its functions into those ugly prefixed functions, which in turn would be callable from the Android application.</p>
 <p>Such a wrapper can be created as a separate external project too, and then there will be no changes in our Android project, except for changing the <code>.so</code> file name that is passed to <code>System.loadLibrary()</code>, of course. But it can also be created as a part of the Android project, which is actually more convenient. There is an <a href="https://developer.android.com/studio/projects/add-native-code">official documentation</a> on the matter, and while I can see now that it does provide required guidance, back when I read it for the first time it wasn&rsquo;t particularly helpful/clear for me. There is even an example for that in the standard galery of project templates in Android Studio, and that one was in fact quite useful.</p>
@@ -753,7 +753,7 @@
     <img class="image-post" loading="lazy" src="/blog/2024/02/12/cpp-library-in-android-application/images/analyze-apk-with-bundled-library-wrapper-no-dependency.png" alt="Android Studio, Analyze APK">
 
 <p>Here&rsquo;s a <a href="https://github.com/retifrav/android-cpp-example/commit/66843b4a9e6c677a3c9ed838c39cba364b206038">commit</a> with all these changes, and the current state of the project repository is <a href="https://github.com/retifrav/android-cpp-example/tree/66843b4a9e6c677a3c9ed838c39cba364b206038">here</a>. After that commit the project will be further enhanced with parsing JSON on C++ side through a <a href="#transitive-dependencies">transitive dependency</a> on a 3rd-party library.</p>
-<h3 id="transitive-dependencies">Transitive dependencies</h3>
+<h4 id="transitive-dependencies">Transitive dependencies</h4>
 <p>Of course, there is not much of a point to involve an external C++ library just for getting static text strings. At the same time, our goal was just to research how does one do that at all, and now it will be easier to bring-in an actually useful library that does something meaningful. It also should be no worries to resolve that library&rsquo;s own 3rd-party dependencies, should it have some, as it will be all the same as with any other regular CMake project.</p>
 <p>Say, we&rsquo;d like to parse some JSON, and let&rsquo;s imagine that there is nothing for working with JSON on Android side, so we just have to pass JSON string to C++ side and parse it there.</p>
 <p>For working with JSON in C++ I usually prefer <a href="https://github.com/nlohmann/json">json-nlohmann</a>, but it&rsquo;s a header-only library, so it won&rsquo;t be as exciting, and so let&rsquo;s take <a href="https://github.com/open-source-parsers/jsoncpp">JsonCpp</a> instead. A function for parsing JSON with JsonCpp would be something like <a href="https://github.com/retifrav/android-cpp-example/blob/05b30fe2ae48e5522a344435b2404eac273eba2e/cpp/src/thingy.cpp#L17">this</a>:</p>

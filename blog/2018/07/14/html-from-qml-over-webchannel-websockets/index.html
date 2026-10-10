@@ -31,7 +31,7 @@ And there are several ways of implementing that.">
 
     
 
-    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1d49af7dcc370ad138c372fedb8188587cb39b085f3c95ee835feafa302dcc3.css" />
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.60c1bc4160e9f7ac460008102a8b89c4a1c40300022aecbd52888b2c5cafb9d0.css" />
     <link rel="stylesheet" href="/css/default.css" />
     <link rel="stylesheet" href="/css/post.css" />
     <link rel="stylesheet" href="/css/page.css" />
@@ -45,7 +45,7 @@ And there are several ways of implementing that.">
   <body>
     <div id="body-hat">
       <div id="title-block">
-        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <div id="blog-title"><a href="/">Declaration of VAR</a></div>
         <p>and some other stuff</p>
       </div>
     </div>
@@ -96,7 +96,7 @@ And there are several ways of implementing that.">
     <li><a href="#a-few-words-about-documentation">A few words about documentation</a></li>
   </ul>
 </nav>
-<h1 id="how-to-display-html-content">How to display HTML content</h1>
+<h2 id="how-to-display-html-content">How to display HTML content</h2>
 <p>First of all, here&rsquo;s how you can show HTML-content:</p>
 <ol>
 <li>Using <a href="http://doc.qt.io/qt-5/qml-qtwebengine-webengineview.html">WebEngineView</a>;</li>
@@ -109,10 +109,10 @@ And there are several ways of implementing that.">
 <p><strong><span style="color:green;">WebEngineView</span></strong> is a web-view provided by Qt&rsquo;s own web-browser engine which is based on <a href="http://www.chromium.org/Home">Chromium</a> (<a href="https://doc.qt.io/qt-5.11/qtwebengine-index.html">Qt WebEngine</a>). It is a full-featured web-browser that is bundled and integrated with Qt, which is good, but at the same time it means that you need to drag it around together with your application, and this thing is quite a big one (what did you expect, it&rsquo;s almost a full-blown web-browser after all).</p>
 <p><strong><span style="color:blue;">WebView</span></strong> is a, well, web-view, but the difference is that it uses a native web-browser of the platform (if available), thus it does not require including a full web-browser stack as a part of the application (which is the case with WebEngineView), so your application is more light-weight. Another point is that some platforms simply do not allow any non-system web-browsers, so WebView is the only option available there.</p>
 <p>The crucial difference between WebEngineView and WebView in terms of this article is the way how Qt can communicate with HTML-content inside those views. WebEngineView provides the easiest way - directly via WebChannel, thanks to <a href="https://www.chromium.org/developers/design-documents/inter-process-communication">Chromium IPC</a> capabilities. And WebView (as well as external web-browser) requires you to establish some transport for WebChannel first.</p>
-<h1 id="interacting-with-html-from-qml">Interacting with HTML from QML</h1>
+<h2 id="interacting-with-html-from-qml">Interacting with HTML from QML</h2>
 <p>Okay, we can display our HTML, but how to interact with it from QML? This way or another, everything goes through <a href="http://doc.qt.io/qt-5/qml-qtwebchannel-webchannel.html">WebChannel</a>, and at HTML side it is done via special JavaScript library - <a href="http://doc.qt.io/qt-5/qtwebchannel-javascript.html">Qt WebChannel JavaScript API</a>.</p>
 <p>Now let&rsquo;s see how to make it work with WebEngineView and WebView.</p>
-<h2 id="webengineview---direct-webchannel">WebEngineView - direct WebChannel</h2>
+<h3 id="webengineview---direct-webchannel">WebEngineView - direct WebChannel</h3>
 <p>As I said, WebEngineView can use WebChannel directly, so this example is pretty easy. But even being an easy one (comparing with the WebSockets examples), it made me spent quite a some time to make it work. Luckily, I found this <a href="https://github.com/mattixpet/webchannel-qml-example">repository</a>, which I used as a base.</p>
 <p><a href="https://github.com/retifrav/qml-webchannel-websockets/blob/master/webchannel/webchannel/main.qml">main.qml</a>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#75715e">// an object with properties, signals and methods - just like any normal Qt object
@@ -231,12 +231,12 @@ And there are several ways of implementing that.">
     <img class="image-post" loading="lazy" src="/blog/2018/07/14/html-from-qml-over-webchannel-websockets/images/qml-html-interaction.png" alt="Interaction between QML and HTML">
 
 <p>By the way, interaction is done asynchronously - take a look at <code>changeLabel()</code> function and note the order of alerts.</p>
-<h2 id="webview---webchannel-over-websockets">WebView - WebChannel over WebSockets</h2>
+<h3 id="webview---webchannel-over-websockets">WebView - WebChannel over WebSockets</h3>
 <p>WebView (and external web-browser) cannot use WebChannel directly. You need to create a <a href="https://doc.qt.io/qt-5/qml-qtwebsockets-websocketserver.html">WebSockets</a> transport first, and then use WebChannel on top of it.</p>
 <p>This is something that is not possible with QML only, so you&rsquo;ll have to write some C++ code too. It&rsquo;s a bit frustrating, but more frustrating is the fact that documentation does not mention it clearly.</p>
 <p>So, when I discovered that, first I decided to rework one of the C++ examples, and when I almost finished I also got an answer at Stack Overflow showing how to do almost everything in QML, so I ended up with two solutions.</p>
 <p>I&rsquo;ll share both with you.</p>
-<h3 id="mostly-c">Mostly C++</h3>
+<h4 id="mostly-c">Mostly C++</h4>
 <p>This one has most of the work done in C++ and there is not much left for QML. It is based on the <a href="http://doc.qt.io/qt-5/qtwebchannel-standalone-example.html">Standalone Example</a>.</p>
 <p><a href="https://github.com/retifrav/qml-webchannel-websockets/blob/master/websockets-mostly-cpp/websockets/main.cpp">main.cpp</a>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>(<span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>argv[])
@@ -324,7 +324,7 @@ And there are several ways of implementing that.">
     <img class="image-post" loading="lazy" src="/blog/2018/07/14/html-from-qml-over-webchannel-websockets/images/qml-html-interaction-via-cpp.png" alt="Interaction between QML and HTML via C&#43;&#43;">
 
 <p>Fortunately, there is a better solution.</p>
-<h3 id="mostly-qml">Mostly QML</h3>
+<h4 id="mostly-qml">Mostly QML</h4>
 <p>I like this example more, because it&rsquo;s done mostly in QML, except for a tiny bit on C++. I got this solution as an answer to my <a href="https://stackoverflow.com/questions/51313111/qt-webview-and-webchannel-over-websockets-in-qml">question</a> at Stack Overflow.</p>
 <p>First we need to implement a <a href="http://doc.qt.io/qt-5/qwebchannelabstracttransport.html">transport</a> for WebChannel.</p>
 <p><a href="https://github.com/retifrav/qml-webchannel-websockets/blob/master/websockets-mostly-qml/websockets/websockettransport.h">websockettransport.h</a>:</p>
@@ -431,13 +431,13 @@ And there are several ways of implementing that.">
 <p><a href="https://github.com/retifrav/qml-webchannel-websockets/blob/master/websockets-mostly-qml/websockets/index.html">index.html</a> here is the same as in previous example. Create a <code>WebSocket</code> and use it as a transport for <code>QWebChannel</code>.</p>
 <p>By the way, as I told you in the earlier, WebView and standalone/external browser are the same thing, so you can just open this <code>index.html</code> in your web-browser and it will work the same way  - just don&rsquo;t forget to remove <code>qrc:/</code> from code and copy <code>qwebchannel.js</code> to the same folder.</p>
 <p>The full source code for all three examples can be found in this <a href="https://github.com/retifrav/qml-webchannel-websockets">repository</a>.</p>
-<h1 id="so-whats-the-point">So, what&rsquo;s the point</h1>
+<h2 id="so-whats-the-point">So, what&rsquo;s the point</h2>
 <p>Okay, we can interact between HTML (running inside a WebEngineView/WebView/web-browser) and QML (or rather proper QObjects from C++ side). But why? What is the point of this? What problem does it solve?</p>
 <p><em>I have no fucking clue</em>. In my opinion, that was a stupid idea in the first place.</p>
 <p>You want to have an HTML-based GUI? Why use Qt at all then? Just take any of bazillion web-frameworks and run everything in browser. Or go totally mental and create <a href="/blog/2018/05/18/etcher-200mb-to-dd/">applications with a size of 200 MB</a> for running console utilities.</p>
 <p>You need a client for your remote backend? Do it with Qt Quick, it even has <a href="/blog/2018/06/09/qml-xmlhttprequest/">XMLHttpRequest</a> out of the box. And it will perform <a href="https://youtu.be/Z4CwVN9RRbE">much better</a> than HTML-based equivalent.</p>
 <p>But why on earth would you need to have HTML-content integrated into your Qt application? I seriously don&rsquo;t understand.</p>
-<h1 id="a-few-words-about-documentation">A few words about documentation</h1>
+<h2 id="a-few-words-about-documentation">A few words about documentation</h2>
 <p>The whole thing is quite poorly documented. I spent around one week going back and forth, trying to make things work, and now I&rsquo;m not even angry - I&rsquo;m fascinated.</p>
 <p>Qt WebChannel appeared somewhere in Qt 5.4, and here&rsquo;s a <a href="https://youtu.be/KnvnTi6XafA">video</a> from Qt Developer Days 2014 about that. Some examples from this video are nowhere to find, and presenter used features that are not part of the Qt (could not be found in the documentation). Same stuff is happening in this <a href="https://www.kdab.com/qt-webchannel-bridging-gap-cqml-web/">article</a>. Sure, those are old materials, and experimental features were changed by the release, but how can we do these things in the released version, where is documentation for that? Because now it really looks like quite a gap - from experimental to?.. To what?</p>
 <p>Here&rsquo;s a good resume for both their video and article:</p>

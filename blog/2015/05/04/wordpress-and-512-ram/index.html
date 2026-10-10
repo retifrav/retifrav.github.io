@@ -32,7 +32,7 @@
 
     
 
-    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1d49af7dcc370ad138c372fedb8188587cb39b085f3c95ee835feafa302dcc3.css" />
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.60c1bc4160e9f7ac460008102a8b89c4a1c40300022aecbd52888b2c5cafb9d0.css" />
     <link rel="stylesheet" href="/css/default.css" />
     <link rel="stylesheet" href="/css/post.css" />
     <link rel="stylesheet" href="/css/page.css" />
@@ -46,7 +46,7 @@
   <body>
     <div id="body-hat">
       <div id="title-block">
-        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <div id="blog-title"><a href="/">Declaration of VAR</a></div>
         <p>and some other stuff</p>
       </div>
     </div>
@@ -95,14 +95,14 @@
   </ul>
 </nav>
 <p>Итак, есть дроплет в <strong>DigitalOcean</strong>, я рулю им через SSH. В дроплете стоит <strong>Ubuntu</strong>, <strong>Apache</strong>, <strong>MySQL</strong> и лежит сайт на <strong>WordPress</strong>&lsquo;е.</p>
-<h1 id="проблема">Проблема</h1>
+<h2 id="проблема">Проблема</h2>
 <p>Началось с того, что вдруг вырубился <strong>MySQL</strong> и отказался стартовать обратно обратно. Хотя конфиг я не изменял и вообще ничего не трогал, просто запустил сайт для общего доступа (до этого заходил на него только я один). Дальше буду приводить все свои действия по решению.</p>
 <p>Запускал я его такой командой:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo /etc/init.d/mysql restart</span></span></code></pre></div>
 <p>На что он мне выдавал:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Can<span style="color:#e6db74">&#39;t connect to local MySQL server through socket &#39;</span>/var/run/mysqld/mysqld.sock<span style="color:#960050;background-color:#1e0010">&#39;</span> <span style="color:#f92672">(</span>111<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>Так как конфиги я не трогал, то все рецепты по их редактированию я пропускал. Если у вас ситуация другая, то посмотрите <a href="http://softodom.com/516/mysql-cant-connect-through-socket-reshenie-problemy.html">тут ещё</a>. Через некоторое время после чтения этой статьи и форумов выяснилось, что проблема&hellip; в нехватке оперативной памяти либо места на диске. Так как места на диске завались, то остаётся оперативка.</p>
-<h1 id="мониторинг-потребления-памяти">Мониторинг потребления памяти</h1>
+<h2 id="мониторинг-потребления-памяти">Мониторинг потребления памяти</h2>
 <p>Информацию лучше браит непосредственно на самом сервере. Потому для мониторинга потребления оперативки на сервере, а также для получения статуса MySQL (ещё жив или уже слёг) я запилил себе <a href="/blog/2015/05/12/telegram-server-status/">отправку состояния сервера через Telegram</a>.</p>
 <p>Команда проверки использования памяти:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>free -m</span></span></code></pre></div>
@@ -113,7 +113,7 @@
 <p>Вот у меня картина была такая, что из 512 метров свободно два, а то и вообще один.</p>
 <p>Для оптимизации использования памяти попробовал следовать советам статьи <a href="http://www.narga.net/optimizing-apachephpmysql-low-memory-server/">Configuring Apache/PHP/MySQL for Low Memory (RAM) VPS</a> - взял из неё значения для конфигов <strong>MySQL</strong> и <strong>Apache</strong>. Также хотел потключать модули <strong>Apache</strong> в соответствии с предложенным там списком, но он у меня после таких манипуляций просто не стартовал, потому я вернул их взад.</p>
 <p>Вроде стало получше, но от перегрузок всё равно не спасало. Также при помощи команды <code>top</code> выяснилось, что память жрёт не только <strong>MySQL</strong>, но и <strong>Apache</strong>, только он-то не падает, а вот база - да.</p>
-<h1 id="использование-swap">Использование swap</h1>
+<h2 id="использование-swap">Использование swap</h2>
 <p>Далее я создал <strong>swap</strong> по исправленной инструкции <a href="http://www.webtrafficexchange.com/solved-mysql-crash-fatal-error-cannot-allocate-memory-buffer-pool">отсюда</a>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>dd <span style="color:#66d9ef">if</span><span style="color:#f92672">=</span>/dev/zero of<span style="color:#f92672">=</span>/swap.dat bs<span style="color:#f92672">=</span><span style="color:#ae81ff">1024</span> count<span style="color:#f92672">=</span>512k
 </span></span><span style="display:flex;"><span>mkswap /swap.dat
@@ -125,9 +125,9 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>swapoff -a
 </span></span><span style="display:flex;"><span>rm /swap.dat</span></span></code></pre></div>
 <p>И удалил строку из <code>/etc/fstab</code>.</p>
-<h1 id="плагины-wordpress">Плагины Wordpress</h1>
+<h2 id="плагины-wordpress">Плагины Wordpress</h2>
 <p>Попробовал как-то оптимизировать Wordpress с помощью плагинов.</p>
-<h2 id="wp-super-cache">WP Super Cache</h2>
+<h3 id="wp-super-cache">WP Super Cache</h3>
 <p>После этих манипуляций <strong>MySQL</strong> стартовал, но вскоре опять встал&hellip; Вот тут я сдался и сменил дроплет с 512 МБ на 1 ГБ. Но и с гигабайтом оперативки <strong>MySQL</strong> падал и не поднимался.</p>
 <p>Спасением оказался плагин <a href="https://wordpress.org/plugins/wp-super-cache/">WP Super Cache</a> - после его включения <em>неистово</em> сократилось потребление всего, и всё спокойно себе работает. До этого даже простой проверки через <a href="http://www.host-tracker.com/InstantCheck/ResultComplete/5c9d58df-6cf3-e411-80c3-00155d36955e">этот сервис</a> хватало, чтобы всё издохло. Так что можно сказать, что этот плагин просто необходим для нормальной работы.</p>
 <p>Настроил я его так (вопреки рекомендуемым настройкам):</p>
@@ -141,7 +141,7 @@
     <img class="image-post" loading="lazy" src="/blog/2015/05/04/wordpress-and-512-ram/images/permalinks.png" alt="Настройки Permalinks">
 
 <p>Но кстати после установки <strong>nginx</strong> я отключил этот плагин, и всплеска потребления ресурсов не произошло. Так что непонятно, есть от него польза или нет.</p>
-<h2 id="wp-memory-usage">WP-Memory-Usage</h2>
+<h3 id="wp-memory-usage">WP-Memory-Usage</h3>
 <p>Надо же ведь как-то следить за сервером, когда компьютер с SSH-терминалом вне досягаемости.</p>
 <p>Есть вот такой плагин: <a href="https://wordpress.org/plugins/wp-memory-usage/">WP-Memory-Usage</a> - позволяет смотреть потребление памяти прямо из админки (хотя не знаю, насколько значение соответствует действительности).</p>
 
@@ -149,7 +149,7 @@
     <img class="image-post" loading="lazy" src="/blog/2015/05/04/wordpress-and-512-ram/images/wpRAMusage.png" alt="Потребление памяти WordPress">
 
 <p>Судя по-всему, он показывает не общее потребление, а конкретно сколько памяти потребовалось, чтобы всё прогрузить для текущего пользователя, так что пользы не очень много. Выключил.</p>
-<h1 id="установка-nginx-в-качестве-прокси-сервера-для-apache">Установка nginx в качестве прокси-сервера для Apache</h1>
+<h2 id="установка-nginx-в-качестве-прокси-сервера-для-apache">Установка nginx в качестве прокси-сервера для Apache</h2>
 <p>Но самое главное, что я узнал, и что должен был знать с самого начала - как раз на такие случаи используется веб-сервер <a href="http://nginx.org/ru/">nginx</a>.</p>
 <p>Схема такая:</p>
 <ol>
@@ -159,7 +159,7 @@
 </ol>
 <p><em>Дальше пойдут инструкции по настройке, которых я нахватался по форумам и блогам, дополненные мной. Ресурсов было настолько много, что я не помню, где что брал. Простите меня все авторы, которых я не указал.</em></p>
 <p>Итак, сначала надо поставить плагин <a href="https://wordpress.org/plugins/permalink-fix-disable-canonical-redirects-pack/">Permalink Fix &amp; Disable Canonical Redirects Pack</a>, который исправляет что-то там с перенаправлениями в <strong>Permalinks</strong>.</p>
-<h2 id="настройки-apache">Настройки Apache</h2>
+<h3 id="настройки-apache">Настройки Apache</h3>
 <p>Сначала <code>/etc/apache2/apache2.conf</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-apache" data-lang="apache"><span style="display:flex;"><span>ServerRoot <span style="color:#e6db74">&#34;/etc/apache2&#34;</span>
 </span></span><span style="display:flex;"><span>Mutex file:${APACHE_LOCK_DIR} default
@@ -264,7 +264,7 @@
 <p>Перезапускаем сервер:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>service apache2 restart</span></span></code></pre></div>
 <p>Теперь он работает на порту 8080, и сайт ваш стал недоступен из интернета. Даже если вы попробуете открыть его как <code>example.com:8080</code>.</p>
-<h2 id="настройки-nginx">Настройки nginx</h2>
+<h3 id="настройки-nginx">Настройки nginx</h3>
 <p>Установка:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>apt-get install nginx</span></span></code></pre></div>
 <p>Пишем конфиг для сайта - просто файл без расширения - <code>/etc/nginx/sites-enabled/mysite</code>:</p>

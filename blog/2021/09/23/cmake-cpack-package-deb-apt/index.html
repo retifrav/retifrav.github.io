@@ -32,7 +32,7 @@
 
     
 
-    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1d49af7dcc370ad138c372fedb8188587cb39b085f3c95ee835feafa302dcc3.css" />
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.60c1bc4160e9f7ac460008102a8b89c4a1c40300022aecbd52888b2c5cafb9d0.css" />
     <link rel="stylesheet" href="/css/default.css" />
     <link rel="stylesheet" href="/css/post.css" />
     <link rel="stylesheet" href="/css/page.css" />
@@ -46,7 +46,7 @@
   <body>
     <div id="body-hat">
       <div id="title-block">
-        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <div id="blog-title"><a href="/">Declaration of VAR</a></div>
         <p>and some other stuff</p>
       </div>
     </div>
@@ -114,12 +114,12 @@
     </li>
   </ul>
 </nav>
-<h1 id="about-cpack">About CPack</h1>
+<h2 id="about-cpack">About CPack</h2>
 <p>CPack, like CMake itself, is a CLI program. While CMake handles building the project, CPack is responsible for making packages.</p>
 <p>The package is simply a &ldquo;distribution unit&rdquo; - something that you share with your users, or, in other words, what form your library/SDK/application is delivered in. Quite often it&rsquo;s just a ZIP archive, but it can be also something more sophisticated, such as a package in one of the package management system formats, such as <a href="https://en.wikipedia.org/wiki/NuGet">NuGet</a>, <a href="https://en.wikipedia.org/wiki/RPM_Package_Manager">RPM</a>, <a href="https://en.wikipedia.org/wiki/Deb_(file_format)">deb</a> and so on.</p>
 <p>CPack comes especially handy if you need to support more than one package format. Instead of dealing with every single package format structure and requirements &ldquo;manually&rdquo;, you can let CPack handle all of them, so you&rsquo;ll only need to worry about getting the actual package contents together.</p>
 <p>In my case I needed to make a deb package for one of the libraries of our SDK, so deb package format will be the main focus of this article. Additional complexity of the task was that I needed to make a package only for that library and not for the entire SDK.</p>
-<h1 id="an-example-project">An example project</h1>
+<h2 id="an-example-project">An example project</h2>
 <p>Let&rsquo;s take the <a href="/blog/2021/03/08/cmake-cpp-library/#from-internal-top-level-project">same project</a> that was used as an example in the C++ library article, but make it slightly more complex: now it will have one more library (<em>just to increase the number of components in the project, the main application doesn&rsquo;t even link to it</em>).</p>
 <p>Here&rsquo;s the project structure:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">├──</span> cmake
@@ -149,7 +149,7 @@
 </span></span><span style="display:flex;"><span><span style="color:#f92672">├──</span> <span style="color:#a6e22e">README</span><span style="color:#f92672">.</span>md
 </span></span><span style="display:flex;"><span><span style="color:#f92672">└──</span> main<span style="color:#f92672">.</span>cpp</span></span></code></pre></div>
 <p>For the reference, full project source code is available <a href="https://github.com/retifrav/cmake-cpack-example">here</a>.</p>
-<h2 id="what-is-needed-to-enable-packing">What is needed to enable packing</h2>
+<h3 id="what-is-needed-to-enable-packing">What is needed to enable packing</h3>
 <p>Most of the work is done by <code>install()</code> statements. So if you already have installation instructions in your project, then there is not much left for you to do.</p>
 <p>As a bare minimum, you need to set some variables for CPack, such as package name and the way you&rsquo;d like components to be (<em>or not to be</em>) grouped. Then you just include a standard module named <code>CPack</code> into your project.</p>
 <p>I put all that into a separate CMake module in the project (<code>/cmake/Packing.cmake</code>):</p>
@@ -268,7 +268,7 @@
 </span></span><span style="display:flex;"><span>            <span style="color:#f92672">├──</span> libAnotherLibrary<span style="color:#f92672">.</span>a
 </span></span><span style="display:flex;"><span>            <span style="color:#f92672">└──</span> libSomeLibrary<span style="color:#f92672">.</span>a</span></span></code></pre></div>
 <p>As you can see, it&rsquo;s the same content as what we would get in the install folder after running <code>--install</code>/<code>--target install</code>, but prefixed with the specified installation path (<code>/opt/some</code>) and with the package meta-information and checksums in <code>DEBIAN</code> folder on top.</p>
-<h2 id="components">Components</h2>
+<h3 id="components">Components</h3>
 <p>Well, that was easy. But what wasn&rsquo;t easy is to find out how to tell CPack to pack only selected components instead of the entire project.</p>
 <p>For selective packing you need to define so-called components in the <code>install()</code> statements. If an <code>install()</code> statement doesn&rsquo;t have a <code>COMPONENT</code> set, then it will default to <code>Unspecified</code> component. So by default the entire project is an <code>Unspecified</code> component, and that is what will get packed.</p>
 <p>Here&rsquo;s how you can set <code>COMPONENT</code> in an <code>install()</code> statement:</p>
@@ -343,7 +343,7 @@
 </span></span><span style="display:flex;"><span>            <span style="color:#f92672">└──</span> libSomeLibrary<span style="color:#f92672">.</span>a</span></span></code></pre></div>
 <p>Here we go, <code>AnotherLibrary</code> wasn&rsquo;t packed this time.</p>
 <p>Sadly, <code>CPACK_COMPONENTS_ALL</code> (<em>and other useful CPack variables</em>) can be set only on project configuration, not on <code>cpack</code> run.</p>
-<h3 id="preinstall-target">Preinstall target</h3>
+<h4 id="preinstall-target">Preinstall target</h4>
 <p>As at first I ran CMake with default generator, it was using <code>Unix Makefiles</code> (<em>which is the default one on some systems, such as Mac OS</em>). And for a long time I couldn&rsquo;t understand why, even though I have set specific components to pack and built required targets, I was getting a <code>Run preinstall target</code> step, which was building the entire project before packing the components I asked.</p>
 <p>Here&rsquo;s how this can be reproduced:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cmake <span style="color:#f92672">-</span>G <span style="color:#e6db74">&#34;Unix Makefiles&#34;</span> <span style="color:#f92672">-</span><span style="color:#a6e22e">DCMAKE_BUILD_TYPE</span><span style="color:#66d9ef">=</span><span style="color:#a6e22e">Release</span> \
@@ -365,7 +365,7 @@
 <p>In fact, even if you won&rsquo;t explicitly build required targets (<em>or anything at all</em>), <code>cpack</code> will be still fine, because this &ldquo;preinstall target&rdquo; will anyway build the entire project.</p>
 <p>It will pack only what was passed in <code>CPACK_COMPONENTS_ALL</code>, no problem here, but it will always build the entire project. That&rsquo;s absolutely not good news, because our SDK takes quite some time to build, and either way it&rsquo;s just a waste of resources to build everything, when you only need a (<em>small</em>) part of the project.</p>
 <p>I don&rsquo;t know if such behavior is by design or is it a bug, but <a href="https://stackoverflow.com/a/57531164/1688203">solution/workaround</a> is simple: do not use <code>Unix Makefiles</code> generator. Instead, use <code>Ninja</code>, <code>Visual Studio *</code>, <code>Xcode</code> - none of these invoke that &ldquo;preinstall target&rdquo;. Alternatively, you can still use <code>Unix Makefiles</code> for configuring and building the project, but pass <code>-DCPACK_CMAKE_GENERATOR=Ninja</code> to <code>cpack</code>.</p>
-<h1 id="keeping-lintian-happy">Keeping Lintian happy</h1>
+<h2 id="keeping-lintian-happy">Keeping Lintian happy</h2>
 <p>The deb package produced by CPack above is already fine and can be installed with <code>dpkg</code>. However, there is a tool for running checks on packages - <a href="https://en.wikipedia.org/wiki/Lintian">Lintian</a> - and it will not be happy about that package quality:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ lintian /path/to/cmake-cpack-example/_packages/some-application_0.9.2_amd64.deb
 </span></span><span style="display:flex;"><span>E: some-application: changelog-file-missing-in-native-package
@@ -388,20 +388,20 @@
 <li><code>no-copyright-file</code> - indeed, there isn&rsquo;t one.</li>
 </ul>
 <p>But some warnings can be easily fixed with the right CPack variables in <code>/cmake/Packing.cmake</code>.</p>
-<h2 id="maintainer-address-missing">maintainer-address-missing</h2>
+<h3 id="maintainer-address-missing">maintainer-address-missing</h3>
 <p>The maintainer name should contain not just his name but also his e-mail address. And you need to set <code>CPACK_DEBIAN_PACKAGE_MAINTAINER</code> exactly so:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">CPACK_PACKAGE_CONTACT</span> <span style="color:#e6db74">&#34;YOUR@E-MAIL.net&#34;</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span>set(<span style="color:#e6db74">CPACK_DEBIAN_PACKAGE_MAINTAINER</span> <span style="color:#e6db74">&#34;YOUR NAME &lt;${CPACK_PACKAGE_CONTACT}&gt;&#34;</span>)</span></span></code></pre></div>
-<h2 id="unstripped-binary-or-object">unstripped-binary-or-object</h2>
+<h3 id="unstripped-binary-or-object">unstripped-binary-or-object</h3>
 <p>The <code>some-application</code> executable needs to be stripped from debug symbols. I am a bit confused about the fact that it still has them despite the Release build configuration, but okay, you can explicitly strip binaries with this CPack variable:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">CPACK_STRIP_FILES</span> <span style="color:#e6db74">YES</span>)</span></span></code></pre></div>
-<h2 id="missing-depends-line">missing-depends-line</h2>
+<h3 id="missing-depends-line">missing-depends-line</h3>
 <p>A good package should list its dependencies. This can be turned on with the following variable:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(<span style="color:#e6db74">CPACK_DEBIAN_PACKAGE_SHLIBDEPS</span> <span style="color:#e6db74">YES</span>)</span></span></code></pre></div>
 <p>As a result, in the case of my silly project, the following line will get added to <code>/some-application_0.9.2_amd64.deb/DEBIAN/control</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Depends: libc6 <span style="color:#f92672">(</span>&gt;<span style="color:#f92672">=</span> 2.2.5<span style="color:#f92672">)</span>, libstdc++6 <span style="color:#f92672">(</span>&gt;<span style="color:#f92672">=</span> 5.2<span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>For that to work you need to have <code>dpkg-shlibdeps</code> utility installed.</p>
-<h2 id="non-standard-dir-perm">non-standard-dir-perm</h2>
+<h3 id="non-standard-dir-perm">non-standard-dir-perm</h3>
 <p>The installation path directory should have <code>0755</code> permissions:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>set(
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">CPACK_INSTALL_DEFAULT_DIRECTORY_PERMISSIONS</span>
@@ -409,9 +409,9 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">GROUP_READ</span> <span style="color:#e6db74">GROUP_EXECUTE</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#e6db74">WORLD_READ</span> <span style="color:#e6db74">WORLD_EXECUTE</span>
 </span></span><span style="display:flex;"><span>)</span></span></code></pre></div>
-<h1 id="hosting-deb-packages-for-apt">Hosting deb packages for APT</h1>
+<h2 id="hosting-deb-packages-for-apt">Hosting deb packages for APT</h2>
 <p>This is a bonus part: how to set-up an APT repository with restricted access to host your deb packages. Mostly based on this <a href="https://earthly.dev/blog/creating-and-hosting-your-own-deb-packages-and-apt-repo/">beautiful blog post</a>.</p>
-<h2 id="repository">Repository</h2>
+<h3 id="repository">Repository</h3>
 <p>The deb packages repository is comprised by:</p>
 <ul>
 <li>a certain folders structure (<em>with actual packages inside</em>);</li>
@@ -491,9 +491,9 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ cd <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>somewhere<span style="color:#f92672">/</span>repository<span style="color:#f92672">/</span>dists<span style="color:#f92672">/</span>stable<span style="color:#f92672">/</span>
 </span></span><span style="display:flex;"><span>$ <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>elsewhere<span style="color:#f92672">/</span>generate<span style="color:#f92672">-</span>release<span style="color:#f92672">.</span>sh <span style="color:#f92672">&gt;</span> <span style="color:#f92672">./</span><span style="color:#a6e22e">Release</span></span></span></code></pre></div>
 <p>We should also sign the <code>Release</code> file with PGP, and that will be covered <a href="#secure-apt">a bit later</a>, but the repository can already serve packages to APT as it is - you only need to set-up a transport for it.</p>
-<h2 id="transport">Transport</h2>
+<h3 id="transport">Transport</h3>
 <p>APT supports several transports. SSH and HTTP/HTTPS I was aware of and will demonstrate them below, but apparently it can also use <a href="https://en.wikipedia.org/wiki/Amazon_S3">AWS S3</a> and <a href="https://en.wikipedia.org/wiki/Tor_(network)">Tor</a>, which was news to me.</p>
-<h3 id="ssh">SSH</h3>
+<h4 id="ssh">SSH</h4>
 <p>At first I thought that I can just expose the repository via SFTP using a chrooted user, and so that&rsquo;s what I did on the repository server. My reasoning for going with SFTP was to use SSH keys (<em>instead of Basic authentication in case of HTTP/HTTPS</em>).</p>
 <p>Start with adding a &ldquo;guest&rdquo; user:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo addgroup packages
@@ -549,7 +549,7 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt update
 </span></span><span style="display:flex;"><span>$ sudo apt install some-library
 </span></span><span style="display:flex;"><span>$ ls -l /opt/some</span></span></code></pre></div>
-<h3 id="https">HTTPS</h3>
+<h4 id="https">HTTPS</h4>
 <p>That seems to be a more common way of connecting to APT repositories. Too bad <a href="#ssh">SSH option</a> turned out to be not what I expected.</p>
 <p>Of course, for HTTP/HTTPS you&rsquo;ll need a web-server, and I&rsquo;ll be using NGINX, but any other will be fine too (<em>as long as it supports Basic authentication</em>).</p>
 <p>Move the repository to website root:</p>
@@ -576,7 +576,7 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt update
 </span></span><span style="display:flex;"><span>$ sudo apt install some-library
 </span></span><span style="display:flex;"><span>$ ls -l /opt/some</span></span></code></pre></div>
-<h2 id="secure-apt">Secure APT</h2>
+<h3 id="secure-apt">Secure APT</h3>
 <p>It is recommended not to use <code>trusted=yes</code> parameter in APT source setting and instead to sign the repository with PGP key.</p>
 <p>For that you&rsquo;ll need to create a PGP key, if you don&rsquo;t already have one:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ gpg --full-generate-key</span></span></code></pre></div>

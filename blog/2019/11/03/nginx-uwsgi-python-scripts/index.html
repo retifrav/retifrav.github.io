@@ -32,7 +32,7 @@ Let’s see, how it’s done.">
 
     
 
-    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1d49af7dcc370ad138c372fedb8188587cb39b085f3c95ee835feafa302dcc3.css" />
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.60c1bc4160e9f7ac460008102a8b89c4a1c40300022aecbd52888b2c5cafb9d0.css" />
     <link rel="stylesheet" href="/css/default.css" />
     <link rel="stylesheet" href="/css/post.css" />
     <link rel="stylesheet" href="/css/page.css" />
@@ -46,7 +46,7 @@ Let’s see, how it’s done.">
   <body>
     <div id="body-hat">
       <div id="title-block">
-        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <div id="blog-title"><a href="/">Declaration of VAR</a></div>
         <p>and some other stuff</p>
       </div>
     </div>
@@ -106,7 +106,7 @@ Let’s see, how it’s done.">
   </ul>
 </nav>
 <p>For initial understanding of bare grounds I used <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-uwsgi-and-nginx-to-serve-python-apps-on-ubuntu-14-04">this article</a>. It has nice explanations for most of the steps.</p>
-<h1 id="environment">Environment</h1>
+<h2 id="environment">Environment</h2>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ lsb_release <span style="color:#f92672">-</span>d
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">Description</span><span style="color:#66d9ef">:</span>	<span style="color:#66d9ef">Linux</span> <span style="color:#66d9ef">Mint</span> <span style="color:#960050;background-color:#1e0010">19</span><span style="color:#66d9ef">.</span><span style="color:#960050;background-color:#1e0010">2</span> <span style="color:#66d9ef">Tina</span>
 </span></span><span style="display:flex;"><span>
@@ -132,7 +132,7 @@ Let’s see, how it’s done.">
 </span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">├──</span> some<span style="color:#f92672">.</span>py
 </span></span><span style="display:flex;"><span><span style="color:#f92672">│</span>   <span style="color:#f92672">└──</span> uwsgi<span style="color:#f92672">.</span>ini
 </span></span><span style="display:flex;"><span><span style="color:#f92672">└──</span> index<span style="color:#f92672">.</span>html</span></span></code></pre></div>
-<h1 id="nginx-server-config">NGINX server config</h1>
+<h2 id="nginx-server-config">NGINX server config</h2>
 <p>Our server config (<code>/etc/nginx/sites-available/default</code>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#66d9ef">server</span> {
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span> <span style="color:#e6db74">default_server</span>;
@@ -156,7 +156,7 @@ Let’s see, how it’s done.">
 </span></span></span><span style="display:flex;"><span>        <span style="color:#f92672">uwsgi_pass</span> <span style="color:#e6db74">unix:/var/www/html/cgi-bin/wsgi.sock</span>;
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
-<h1 id="uwsgi">uWSGI</h1>
+<h2 id="uwsgi">uWSGI</h2>
 <p>uWSGI can be run with a bitch-ass-long line of arguments, or you can put those into a config file (<code>/var/www/html/cgi-bin/uwsgi.ini</code>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#66d9ef">[uwsgi]</span>
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">module</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">info:application</span>
@@ -175,7 +175,7 @@ Let’s see, how it’s done.">
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>sudo <span style="color:#f92672">-</span>u www<span style="color:#f92672">-</span>data uwsgi <span style="color:#f92672">--</span>ini uwsgi<span style="color:#f92672">.</span>ini <span style="color:#f92672">--</span>need<span style="color:#f92672">-</span>app</span></span></code></pre></div>
 <p>The <code>--need-app</code> option is here just to make the application fail if it won&rsquo;t find the script or function to call. I&rsquo;ve put it here so you could immediately see if your configuration is fine.</p>
 <p>Most likely you&rsquo;ll want to create a (<code>systemd</code>) service for that, as naturally uWSGI will need to be running all the time in order for NGINX to reach it.</p>
-<h2 id="a-simple-script">A simple script</h2>
+<h3 id="a-simple-script">A simple script</h3>
 <p>First let&rsquo;s test that it all works. Create a simple script (<code>/var/www/html/cgi-bin/info.py</code>)</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">application</span>(environ, start_response):
 </span></span><span style="display:flex;"><span>    start_response(<span style="color:#e6db74">&#39;200 OK&#39;</span>, [(<span style="color:#e6db74">&#39;Content-Type&#39;</span>, <span style="color:#e6db74">&#39;text/html&#39;</span>)])
@@ -202,7 +202,7 @@ Let’s see, how it’s done.">
 
     <img class="image-post" loading="lazy" src="/blog/2019/11/03/nginx-uwsgi-python-scripts/images/uwsgi-environ-variables.png" alt="uWSGI environ variables">
 
-<h2 id="a-script-behind-an-html-form">A script behind an HTML form</h2>
+<h3 id="a-script-behind-an-html-form">A script behind an HTML form</h3>
 <p>Since simple scripts work, which means that NGINX and uWSGI can communicate with each other, we can now proceed with calling a Python script when submitting a web-form.</p>
 <p>So, here&rsquo;s a page (<code>/var/www/html/index.html</code>) with a form:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-html" data-lang="html"><span style="display:flex;"><span><span style="color:#75715e">&lt;!DOCTYPE html&gt;</span>
@@ -280,7 +280,7 @@ Let’s see, how it’s done.">
 <p>So, web-form submits <code>someVal</code> value to <code>/cgi-bin/some.py</code> endpoint, which gets caught by NGINX and passed to uWSGI, which in turn calls the <code>some.py</code> script, and there we finally get the <code>someVal</code> value.</p>
 <p>In this particular example the form&rsquo;s <code>action</code> can have - you guessed it right - absolutely any path, as long as it ends with <code>.py</code>. But below you will find a <a href="#cgi-mode">CGI example</a>, in which the path actually matters.</p>
 <p>If you&rsquo;d like to be able to call different scripts based on the incoming URL without using CGI mode, then I guess this can be achieved with <a href="https://uwsgi-docs.readthedocs.io/en/latest/InternalRouting.html">uWSGI routing</a>, although I haven&rsquo;t investigated that option. If I understood it correctly, you will still have one main entry-point-kind-of script, and it will be calling other scripts based on URL parsing.</p>
-<h1 id="cgi-mode">CGI mode</h1>
+<h2 id="cgi-mode">CGI mode</h2>
 <p>Running uWSGI in CGI mode allows you to have a whole bunch of Python scripts, which can be called depending on the URL path requested.</p>
 <p><del>Sadly, I couldn&rsquo;t make it work. Nevertheless, I&rsquo;ll share my attempts, and hopefully someone will point me in the right direction.</del></p>
 <p>To enable CGI you need to have uWSGI with CGI plugin. As I understood, by default (<em>being installed with <code>pip</code></em>) it comes without this plugin. Following <a href="https://uwsgi-docs.readthedocs.io/en/latest/CGI.html#enabling-the-plugin">instruction</a> from the documentation I did the following:</p>
@@ -395,8 +395,8 @@ Let’s see, how it’s done.">
 </span></span><span style="display:flex;"><span><span style="color:#f92672">[</span><span style="color:#66d9ef">pid:</span> <span style="color:#960050;background-color:#1e0010">9606</span><span style="color:#66d9ef">|app:</span> <span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">|req:</span> <span style="color:#66d9ef">-</span><span style="color:#960050;background-color:#1e0010">1</span><span style="color:#66d9ef">/</span><span style="color:#960050;background-color:#1e0010">3</span><span style="color:#f92672">]</span> <span style="color:#ae81ff">127.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0.1</span> <span style="color:#f92672">()</span> <span style="color:#f92672">{</span><span style="color:#ae81ff">42</span> vars in <span style="color:#ae81ff">618</span> bytes<span style="color:#f92672">}</span> <span style="color:#f92672">[</span><span style="color:#66d9ef">Fri</span> <span style="color:#66d9ef">Oct</span> <span style="color:#960050;background-color:#1e0010">18</span> <span style="color:#960050;background-color:#1e0010">15</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">41</span><span style="color:#66d9ef">:</span><span style="color:#960050;background-color:#1e0010">05</span> <span style="color:#960050;background-color:#1e0010">2019</span><span style="color:#f92672">]</span> <span style="color:#a6e22e">GET</span> <span style="color:#f92672">/</span>some<span style="color:#f92672">.</span>py <span style="color:#66d9ef">=&gt;</span> generated <span style="color:#ae81ff">0</span> bytes in <span style="color:#ae81ff">15</span> msecs <span style="color:#f92672">(</span><span style="color:#a6e22e">HTTP</span><span style="color:#f92672">/</span><span style="color:#ae81ff">1.1</span> <span style="color:#ae81ff">500</span><span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span> headers in <span style="color:#ae81ff">0</span> bytes <span style="color:#f92672">(</span><span style="color:#ae81ff">0</span> switches on core <span style="color:#ae81ff">0</span><span style="color:#f92672">)</span></span></span></code></pre></div>
 <p>So obviously it finds the files (<em><code>info.py</code> and <code>some.py</code></em>), but why then it fails with <code>500</code> error?</p>
 <hr class="updates-separator">
-<h1 id="updates">Updates</h1>
-<h2 id="04082021--cgi-is-not-wsgi">04.08.2021 | CGI is not WSGI</h2>
+<h2 id="updates">Updates</h2>
+<h3 id="04082021--cgi-is-not-wsgi">04.08.2021 | CGI is not WSGI</h3>
 <p>&hellip;As it suddenly <a href="https://stackoverflow.com/a/68625925/1688203">turned out</a> (<em>thanks a lot, mate!</em>) almost two years later, <a href="https://en.wikipedia.org/wiki/Common_Gateway_Interface">CGI</a> is not the same thing as <a href="https://en.wikipedia.org/wiki/Web_Server_Gateway_Interface">WSGI</a> (<em>yeah, breaking news</em>), and so uWSGI was rightfully returning 500 errors, as the scripts were not meant or rather not compatible for CGI mode.</p>
 <p>With the very first simple script as an example, to make it work in CGI mode, it needs to be changed from:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">application</span>(environ, start_response):
@@ -437,7 +437,7 @@ Let’s see, how it’s done.">
 </span></span><span style="display:flex;"><span><span style="color:#66d9ef">for</span> line <span style="color:#f92672">in</span> htmlResponse:
 </span></span><span style="display:flex;"><span>    print(line)</span></span></code></pre></div>
 <p>As you can see, the form data is still available, but now it comes from <a href="https://docs.python.org/3/library/cgi.html">cgi.FieldStorage</a> (<em>here&rsquo;s a <a href="https://stackoverflow.com/a/40990994/1688203">short example</a></em>). It is (<em>should be</em>) also possible to get it from <a href="http://www.cgi101.com/book/ch3/text.html">environment variables</a>, as it is described in <a href="https://stackoverflow.com/a/27893309/1688203">this answer</a>.</p>
-<h3 id="newer-versions">Newer versions</h3>
+<h4 id="newer-versions">Newer versions</h4>
 <p>While I was reviving my setup, I discovered that online installer is no longer available, even though it is still mentioned in the <a href="https://uwsgi-docs.readthedocs.io/en/latest/CGI.html#enabling-the-plugin">documentation</a>:</p>
 <blockquote><p>To build a single binary with CGI support:</p><p><code>curl http://uwsgi.it/install | bash -s cgi /tmp/uwsgi</code></p></blockquote>
 <p>There are a couple of issues <a href="https://github.com/unbit/uwsgi-docs/issues/480">reported</a> in their repository about that, and actually these lines were already <a href="https://github.com/akx/uwsgi-docs/commit/214d52675067a1c2edf89ab4c2806927fbe7b8da">deleted</a> from sources, but apparently updated documentation was never deployed to the actual website.</p>
@@ -519,7 +519,7 @@ Let’s see, how it’s done.">
 <p>I can now open <a href="http://localhost/info.py">http://localhost/info.py</a>, and then <code>info.py</code> will be executed; if I open <a href="http://localhost/some.py">http://localhost/some.py</a>, then <code>some.py</code> will be executed; and if I open a page with a form and submit it, then the script specified in <code>action</code> attribute will get executed (<em>note that this time it should be not <code>/absolutely/any/path.py</code> but an actual path to the script</em>).</p>
 <p>So this is it, CGI mode works, yay.</p>
 <p>Surely, now <code>uwsgi</code> executable, <code>.so</code> plugins and <code>uwsgi.ini</code> config need to be moved to a proper place (<em><code>/usr/local/bin</code> and so on</em>), a service to launch uWSGI needs to be created, etc, but that&rsquo;s just routine tasks, I won&rsquo;t cover it here.</p>
-<h2 id="11032022--django-with-uwsgi">11.03.2022 | Django with uWSGI</h2>
+<h3 id="11032022--django-with-uwsgi">11.03.2022 | Django with uWSGI</h3>
 <p>Here&rsquo;s also instructions for <a href="https://github.com/retifrav/scraps/blob/master/_linux/installing-healthchecks/index.md#uwsgi">running a Django project</a> with uWSGI behind NGINX.</p>
       </div>
     </article>

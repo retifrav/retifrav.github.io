@@ -33,7 +33,7 @@ This article in english 🇺🇸.">
 
     
 
-    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1d49af7dcc370ad138c372fedb8188587cb39b085f3c95ee835feafa302dcc3.css" />
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.60c1bc4160e9f7ac460008102a8b89c4a1c40300022aecbd52888b2c5cafb9d0.css" />
     <link rel="stylesheet" href="/css/default.css" />
     <link rel="stylesheet" href="/css/post.css" />
     <link rel="stylesheet" href="/css/page.css" />
@@ -47,7 +47,7 @@ This article in english 🇺🇸.">
   <body>
     <div id="body-hat">
       <div id="title-block">
-        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <div id="blog-title"><a href="/">Declaration of VAR</a></div>
         <p>and some other stuff</p>
       </div>
     </div>
@@ -92,7 +92,7 @@ This article in english 🇺🇸.">
     </li>
   </ul>
 </nav>
-<h1 id="что-это-такое">Что это такое</h1>
+<h2 id="что-это-такое">Что это такое</h2>
 <p>Как пишут в <a href="https://core.telegram.org/bots/webhooks">документации</a>, общаться с серверами Telegram бот может двумя способами:</p>
 <ol>
 <li><a href="https://core.telegram.org/bots/api#getupdates">getUpdates</a> - pull: ваш бот постоянно дёргает сервер Telegram и проверяет есть ли новые сообщения;</li>
@@ -104,17 +104,17 @@ This article in english 🇺🇸.">
     <img class="image-post" loading="lazy" src="/blog/2018/12/02/telegram-bot-webhook-ru/images/telegram-getupdates-vs-setwebhook.png" alt="Telegram bot, getUpdates vs setWebhook">
 
 <p>Очевидно, что второй способ (<code>setWebhook</code>) рациональнее для всех участников процесса. Однако в нём присутствует неявная сложность: кто-то должен принимать сообщения от Telegram на стороне бота, то есть необходим веб-сервер или его эквивалент.</p>
-<h1 id="как-настроить">Как настроить</h1>
+<h2 id="как-настроить">Как настроить</h2>
 <p>Что нужно сделать:</p>
 <ol>
 <li>Заиметь доменное имя для сервера и получить на него сертификат (например, от <a href="https://letsencrypt.org">Let’s Encrypt</a>). Документация также говорит, что в случае самоподписанного сертификата можно обойтись и просто IP адресом, но этого я не пробовал;</li>
 <li>Запилить серверную часть на стороне бота (куда будет ломиться Telegram);</li>
 <li>Зарегистрировать адрес серверной части в Telegram (зацепить webhook на endpoint), чтобы Telegram знал, куда ломиться с сообщениями.</li>
 </ol>
-<h2 id="сертификат">Сертификат</h2>
+<h3 id="сертификат">Сертификат</h3>
 <p>С доменом и сертификатом просто. Домен у меня уже был, а сертификат я получил по <a href="https://certbot.eff.org/lets-encrypt/ubuntubionic-other">этой инструкции</a>.</p>
 <p>Вариант с самоподписанным сертификатом на прямой IP адрес я оставляю вам на самостоятельное изучение.</p>
-<h2 id="серверная-часть">Серверная часть</h2>
+<h3 id="серверная-часть">Серверная часть</h3>
 <p>Серверная часть чуть посложнее. Я переделал текущую реализацию бота на <a href="https://github.com/eternnoir/pyTelegramBotAPI">pyTelegramBotAPI</a>, используя <a href="https://github.com/eternnoir/pyTelegramBotAPI/blob/master/examples/webhook_examples/webhook_aiohttp_echo_bot.py">пример</a> для <a href="https://aiohttp.readthedocs.io/">AIOHTTP</a>.</p>
 <p>Ставим необходимые пакеты:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>pip install pyTelegramBotAPI
@@ -197,7 +197,7 @@ This article in english 🇺🇸.">
 <p>Но он один фиг не мог открыть файлы оттуда, даже простой <code>ls</code> выдавал ошибку доступа. В общем, или мои познания Linux полный отстой, или одно из двух. Пришлось тупо назначить его владельцем:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>chown -R userforbot:letsencrypt /etc/letsencrypt/</span></span></code></pre></div>
 <p>Тогда сервис запустился нормально.</p>
-<h2 id="регистрация">Регистрация</h2>
+<h3 id="регистрация">Регистрация</h3>
 <p>Теперь осталось самое, как оказалось, сложное - зарегистрировать endpoint бота в Telegram. Сложности возникли потому, что я сначала неправильно понял принцип составления endpoint&rsquo;а, а также из-за проблем с проверкой сертификата.</p>
 <p>Для установки/регистрации webhook&rsquo;а нужно выполнить следующий HTTP запрос (можно просто открыть этот URL в браузере):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//api.telegram.org/botYOUR-TOKEN/setWebhook?url</span><span style="color:#f92672">=</span>https<span style="color:#66d9ef">:</span><span style="color:#66d9ef">//YOUR.DOMAIN:</span><span style="color:#960050;background-color:#1e0010">8443</span><span style="color:#66d9ef">/YOUR-TOKEN/</span></span></span></code></pre></div>

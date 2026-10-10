@@ -30,7 +30,7 @@
 
     
 
-    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1d49af7dcc370ad138c372fedb8188587cb39b085f3c95ee835feafa302dcc3.css" />
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.60c1bc4160e9f7ac460008102a8b89c4a1c40300022aecbd52888b2c5cafb9d0.css" />
     <link rel="stylesheet" href="/css/default.css" />
     <link rel="stylesheet" href="/css/post.css" />
     <link rel="stylesheet" href="/css/page.css" />
@@ -44,7 +44,7 @@
   <body>
     <div id="body-hat">
       <div id="title-block">
-        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <div id="blog-title"><a href="/">Declaration of VAR</a></div>
         <p>and some other stuff</p>
       </div>
     </div>
@@ -67,7 +67,7 @@
 </svg> 2023-07-22 14:32:36 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 27 min read</div>
+</svg> 28 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -119,9 +119,9 @@
     </li>
   </ul>
 </nav>
-<h1 id="theory">Theory</h1>
+<h2 id="theory">Theory</h2>
 <p>If anything, I am now on CMake v3.26.4, which might be important to state, as (<em>much</em>) older versions had different policies for things like <a href="https://cmake.org/Bug/view.php?id=16102">include directories propagation</a>, and newer versions might have something different too.</p>
-<h2 id="what-are-these-scopes">What are these scopes</h2>
+<h3 id="what-are-these-scopes">What are these scopes</h3>
 <p>Before reading my interpretation, do read the <a href="https://cmake.org/cmake/help/latest/command/target_link_libraries.html#libraries-for-a-target-and-or-its-dependents">documentation</a> and <a href="https://cmake.org/pipermail/cmake/2016-May/063400.html">this post</a> from Craig Scott (<em>author of <a href="https://crascit.com/professional-cmake/">Professional CMake</a></em>).</p>
 <p>As I understood it, scopes define how <em>dependencies</em> of a library will affect <em>consumers</em> of that library. So if you only deal with <em>direct</em> dependencies and don&rsquo;t have users/consumers down the dependency chain/stream, then you probably don&rsquo;t need to care about all that, as this is about <em>transitive</em> dependencies (<em>dependencies of dependencies</em>).</p>
 <p>For example, let&rsquo;s say we have a Project, which is a collection of libraries. This Project is used by some Tool (<em>so Tool depends on Project</em>) and also it has a dependency of its own (<em>so Project depends on Dependency</em>). In this case that Dependency library will be a <em>direct</em> dependency for our Project and a <em>transitive</em> dependency for the Tool:</p>
@@ -154,15 +154,15 @@
 </li>
 </ul>
 <p>While <code>PRIVATE</code> and <code>PUBLIC</code> scopes make sense to me, I cannot think of a real-world example of <code>INTERFACE</code> scope linkage. Why would a library A link to library B only to make B available down in the dependency chain, so without using B&rsquo;s functionality itself? Actually, it does make sense for so-called &ldquo;header-only&rdquo; libraries (<em>which have no sources of their own, only headers</em>), so it would pass its dependencies to other libraries without using them itself, but I never needed to create such a thing, so I have never used <code>target_link_libraries()</code> with <code>INTERFACE</code> scope in my projects (<em>yet?</em>).</p>
-<h3 id="it-is-not-just-about-linking">It is not just about linking</h3>
+<h4 id="it-is-not-just-about-linking">It is not just about linking</h4>
 <p>I should mention that <code>target_link_libraries()</code> does <a href="https://cmake.org/cmake/help/latest/guide/tutorial/Getting%20Started%20with%20CMake.html#exercise-3-linking-together-libraries-and-executables">more</a> than just &ldquo;plain&rdquo; linking of binaries (<em>making one library symbols available/discoverable to others</em>). In particular, it lets developer/maintainer propagate certain target properties to consuming projects, such as <a href="https://cmake.org/cmake/help/latest/command/target_compile_definitions.html">compile definitions</a> (<em>to pass <code>IT_IS_OVER=9000</code></em>) or <a href="https://cmake.org/cmake/help/latest/command/target_compile_features.html">compile features</a> (<em>to pass <code>cxx_std_17</code></em>). This is also one of the reasons why everyone should really stop linking to libraries <em>files</em> directly and finally start linking to <em>targets</em> instead.</p>
 <p>But in this article my goal was to understand what those scopes really mean exactly for that &ldquo;plain&rdquo; linking, so this is the only side of <code>target_link_libraries()</code> that I will be talking about here.</p>
-<h3 id="which-scope-is-the-best">Which scope is the best</h3>
+<h4 id="which-scope-is-the-best">Which scope is the best</h4>
 <p>I saw this question being asked in a couple of places: either &ldquo;<em>which one is the best</em>&rdquo; or &ldquo;<em>which one should I use</em>&rdquo;. I wouldn&rsquo;t say that any of the scopes is better or worse than another, it&rsquo;s just different scopes for different purposes.</p>
 <p>If we take one of the most common dependencies, such as <a href="http://zlib.net">zlib</a>, then applying to the same example from above, if the Tool has no intention of using any of zlib&rsquo;s functionality on its own, as it only needs what AnotherLibrary provides in its <code>doTheThing()</code> function, then one should choose <code>PRIVATE</code> scope when linking to zlib from AnotherLibrary.</p>
 <p>However, if, in addition to whatever <code>doTheThing()</code> does, Tool also needs to perform some compression/decompression operations of its own, then it indeed would require access to zlib&rsquo;s API too. So now it&rsquo;s both AnotherLibrary and Tool who should have access to zlib functions, and in that case one should choose <code>PUBLIC</code> scope when linking to zlib from AnotherLibrary. Although I don&rsquo;t quite understand why wouldn&rsquo;t Tool just <code>find_package()</code> zlib and link to it itself then, so AnotherLibrary could keep its linking to zlib as <code>PRIVATE</code>. This would also make the Tool&rsquo;s dependency on zlib more clear/visible in its <code>CMakeLists.txt</code>.</p>
 <p>If after reading the last sentence you were going to say &ldquo;<em>but in that case Tool will need to have zlib binary for linking, while when it gets zlib through AnotherLibrary&rsquo;s private linking it won&rsquo;t</em>&rdquo;, then I have <a href="#private">some news</a> for you.</p>
-<h2 id="a-silly-analogy">A silly analogy</h2>
+<h3 id="a-silly-analogy">A silly analogy</h3>
 <p>If previous sections didn&rsquo;t add much clarity, let&rsquo;s try the following silly analogy.</p>
 <p>Say, you&rsquo;d like to steal a game. Such a process usually involves getting the base game and finding a crack for it (<em>modified executable or/and accompanying files</em>). In general, the latter is provided by crackers, and the former is provided by repackers, who incorporate the crack into the base game and distribute the result.</p>
 <p>To make the analogy fit a bit better, let&rsquo;s assume that you don&rsquo;t know the original cracker website (<em>it frequently gets shut down and thus moves around a lot</em>), so you cannot download the crack yourself, only repacker always knows how to get it.</p>
@@ -181,7 +181,7 @@
 <li><strong>PUBLIC</strong> - repacker still does all that horrible shit as in <code>PRIVATE</code> variant, but this time he also provides a link to the original cracker release page, so if you already have the base game, you might prefer to download just the crack from its origin and apply it to the base game yourself, instead of using repacker&rsquo;s garbage installer.</li>
 </ul>
 <p>As you can see, the analogy is very silly indeed and not entirely correct too, so don&rsquo;t hang to it too much. I almost regret adding it to the article.</p>
-<h1 id="practical-example">Practical example</h1>
+<h2 id="practical-example">Practical example</h2>
 <p>That trio of projects from <a href="#what-are-these-scopes">above</a> (<em>Dependency, Project and Tool</em>) is what I used in <a href="https://github.com/retifrav/cmake-target-link-libraries-example">this repository</a> for experimenting with <code>target_link_libraries()</code> scopes to see what exactly do they do in practice.</p>
 <p>Once again, it is 3 different entities:</p>
 <ol>
@@ -209,9 +209,9 @@
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">├──</span> <span style="color:#a6e22e">ThingyTargets</span><span style="color:#f92672">-</span>release<span style="color:#f92672">.</span>cmake
 </span></span><span style="display:flex;"><span>        <span style="color:#f92672">└──</span> <span style="color:#a6e22e">ThingyTargets</span><span style="color:#f92672">.</span>cmake
 </span></span></code></pre></div><p>Now let&rsquo;s see how different scopes of linking to it from Project will affect Tool.</p>
-<h2 id="static-libraries">STATIC libraries</h2>
+<h3 id="static-libraries">STATIC libraries</h3>
 <p>Here the Project libraries are built as <code>STATIC</code> libraries.</p>
-<h3 id="private">PRIVATE</h3>
+<h4 id="private">PRIVATE</h4>
 <p>Linking to <code>Thingy</code> library with <code>PRIVATE</code> scope:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>find_package(<span style="color:#e6db74">Thingy</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
@@ -369,7 +369,7 @@
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">...</span>
 </span></span></code></pre></div><p>So indeed, it links to all 3 of them: <code>libSomeLibrary.a</code>, <code>libAnotherLibrary.a</code> (<em>these two are part of the Project</em>) and <code>libThingy.a</code> (<em>this one is part of the <code>Thingy</code></em>), even though the latter is a <code>PRIVATE</code> dependency of the Project. Thus, the only(?) effect that <code>PRIVATE</code> scope actually has here is that <code>Thingy</code>&rsquo;s public headers are not added to the Tool&rsquo;s <code>INCLUDES</code>; but as you saw a bit earlier, manually making these headers available lets the Tool discover <code>dpndnc::doThingy()</code> symbol and still call that function with no problems, as the the library is linked to anyway. So it really is about the headers, isn&rsquo;t it?</p>
 <p>As a side note, that discovery made me suspect that we might be doing something stupid when we merge our SDK installation and our 3rd-party dependencies installations together into a single &ldquo;bundle&rdquo; with <code>bin</code>/<code>include</code>/<code>lib</code>/<code>share</code> folders structure (<em>for the delivery convenience</em>), because that roally fucks the <code>PRIVATE</code> scope of our linking to them, as all the public headers become discoverable for consuming projects, don&rsquo;t they. Goddamn.</p>
-<h3 id="interface">INTERFACE</h3>
+<h4 id="interface">INTERFACE</h4>
 <p>Let&rsquo;s see what changes with <code>INTERFACE</code> scope:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>find_package(<span style="color:#e6db74">Thingy</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
@@ -479,7 +479,7 @@
 </span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">LINK_LIBRARIES</span> <span style="color:#f92672">=</span> <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>cmake<span style="color:#f92672">-</span>target<span style="color:#f92672">-</span>link<span style="color:#f92672">-</span>libraries<span style="color:#f92672">-</span>example<span style="color:#f92672">/</span>prjct<span style="color:#f92672">/</span>install<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>libSomeLibrary<span style="color:#f92672">.</span>a  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>cmake<span style="color:#f92672">-</span>target<span style="color:#f92672">-</span>link<span style="color:#f92672">-</span>libraries<span style="color:#f92672">-</span>example<span style="color:#f92672">/</span>prjct<span style="color:#f92672">/</span>install<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>libAnotherLibrary<span style="color:#f92672">.</span>a  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>cmake<span style="color:#f92672">-</span>target<span style="color:#f92672">-</span>link<span style="color:#f92672">-</span>libraries<span style="color:#f92672">-</span>example<span style="color:#f92672">/</span>dpndnc<span style="color:#f92672">/</span>install<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>libThingy<span style="color:#f92672">.</span>a
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">...</span>
 </span></span></code></pre></div><p>The set of linking libraries is the same, but <code>INCLUDES</code> now contains the path to <code>Thingy</code>&rsquo;s headers too.</p>
-<h3 id="public">PUBLIC</h3>
+<h4 id="public">PUBLIC</h4>
 <p>Finally, the <code>PUBLIC</code> scope:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>find_package(<span style="color:#e6db74">Thingy</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
@@ -582,13 +582,13 @@
 </span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">LINK_LIBRARIES</span> <span style="color:#f92672">=</span> <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>cmake<span style="color:#f92672">-</span>target<span style="color:#f92672">-</span>link<span style="color:#f92672">-</span>libraries<span style="color:#f92672">-</span>example<span style="color:#f92672">/</span>prjct<span style="color:#f92672">/</span>install<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>libSomeLibrary<span style="color:#f92672">.</span>a  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>cmake<span style="color:#f92672">-</span>target<span style="color:#f92672">-</span>link<span style="color:#f92672">-</span>libraries<span style="color:#f92672">-</span>example<span style="color:#f92672">/</span>prjct<span style="color:#f92672">/</span>install<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>libAnotherLibrary<span style="color:#f92672">.</span>a  <span style="color:#f92672">/</span>path<span style="color:#f92672">/</span>to<span style="color:#f92672">/</span>cmake<span style="color:#f92672">-</span>target<span style="color:#f92672">-</span>link<span style="color:#f92672">-</span>libraries<span style="color:#f92672">-</span>example<span style="color:#f92672">/</span>dpndnc<span style="color:#f92672">/</span>install<span style="color:#f92672">/</span>lib<span style="color:#f92672">/</span>libThingy<span style="color:#f92672">.</span>a
 </span></span><span style="display:flex;"><span>  <span style="color:#f92672">...</span>
 </span></span></code></pre></div><p>As you can see, it&rsquo;s the same as with <a href="#interface">INTERFACE</a> scope.</p>
-<h2 id="shared-libraries">SHARED libraries</h2>
+<h3 id="shared-libraries">SHARED libraries</h3>
 <p>Let&rsquo;s check if anything is different when Project libraries are built as <code>SHARED</code>.</p>
 <p>But first, a couple of words about DLLs - shared libraries on Windows. As you probably know, <code>.dll</code> file is what your application would need to be available for its runtime, but in order to link with that library on building your application you would still need a <code>.lib</code> file. That <code>.lib</code> file isn&rsquo;t produced &ldquo;by default&rdquo;, because you need to explicitly mark the library&rsquo;s symbols for export/import (<em>or add <code>-DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=1</code> to export everything, but that&rsquo;s not recommended</em>).</p>
 <p>With <code>SomeLibrary</code> as an example, to export its symbols for producing <code>.lib</code> you&rsquo;d need to add <code>__declspec</code> keyword for every symbol in its <a href="https://github.com/retifrav/cmake-target-link-libraries-example/blob/master/prjct/libraries/SomeLibrary/include/Some/some.h">public header</a>. But as you need to do that only when the library is built as <code>SHARED</code>, then you&rsquo;d need to add a compile definition and check for it with <code>#ifdef</code>.</p>
 <p>Good news here is that you don&rsquo;t need to set this definition yourself, because CMake already does that for <code>SHARED</code> libraries on its own, in a form of <code>-DSomeLibrary_EXPORTS</code>, where <code>SomeLibrary</code> is the name of the target (<em>you&rsquo;ll be able to see that for yourself in the resulting <code>build.ninja</code> file, on the <code>DEFINES</code> lines</em>). So you only need to do <code>#ifdef SomeLibrary_EXPORTS</code> in your sources. But even that part can be taken care of by CMake with <a href="https://cmake.org/cmake/help/latest/module/GenerateExportHeader.html">GenerateExportHeader</a> (<em>as described in <a href="https://kitware.com/create-dlls-on-windows-without-declspec-using-new-cmake-export-all-feature/">this post</a></em>), although this functionality I haven&rsquo;t tested myself.</p>
 <p>Now back to scopes.</p>
-<h3 id="private-1">PRIVATE</h3>
+<h4 id="private-1">PRIVATE</h4>
 <p>Having that:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>find_package(<span style="color:#e6db74">Thingy</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
@@ -718,14 +718,14 @@
 </span></span><span style="display:flex;"><span><span style="color:#ae81ff">0</span>
 </span></span></code></pre></div><p>Removing <code>../install/bin/some-tool</code> file and trying again gets rid of the error message. I have no idea what that is, probably one of the Mac OS things.</p>
 <p>Anyway, to summarize, the <code>PRIVATE</code> scope in case of <code>SHARED</code> libraries lets you not to deliver your 3rd-party dependencies to you customer, as he&rsquo;ll be able to build his Tool without them. Great news, isn&rsquo;t it. Too bad your customer will likely want to get exactly <code>STATIC</code> variants of your Project libraries, not to mention that he&rsquo;ll probably want to be able to build your Project from sources himself.</p>
-<h4 id="what-if-transitive-dependency-is-also-shared">What if transitive dependency is also SHARED</h4>
+<h5 id="what-if-transitive-dependency-is-also-shared">What if transitive dependency is also SHARED</h5>
 <p>If <code>Thingy</code> library also was a <code>SHARED</code> library, that wouldn&rsquo;t affect the build and linking:</p>
 <ul>
 <li>there would be still no linking to it in <code>AnotherLibraryTargets.cmake</code>;</li>
 <li>Tool configuration would still not require adding path to <code>Thingy</code>&rsquo;s installation into <code>CMAKE_INSTALL_PREFIX</code> and would not require <code>Thingy</code>&rsquo;s binary to be available for linking.</li>
 </ul>
 <p>But that would certainly affect the final application - the Tool - because it would then require <code>Thingy</code>&rsquo;s binary for its runtime (<em>in addition to the Project&rsquo;s libraries, and that obviously applies to other scopes too</em>). So if your goal is to minimize the number of things you have to deliver, then you&rsquo;d probably prefer your 3rd-party (<em>transitive for your customer</em>) dependencies to remain <code>STATIC</code> (<em>but that might complicate things if some of those are licensed under LGPL or similar</em>).</p>
-<h3 id="interface-1">INTERFACE</h3>
+<h4 id="interface-1">INTERFACE</h4>
 <p>Having that:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>find_package(<span style="color:#e6db74">Thingy</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
@@ -827,7 +827,7 @@
 </span></span><span style="display:flex;"><span>some-tool
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ DYLD_LIBRARY_PATH<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../install/bin&#34;</span> ../install/bin/some-tool
-</span></span></code></pre></div><h3 id="public-1">PUBLIC</h3>
+</span></span></code></pre></div><h4 id="public-1">PUBLIC</h4>
 <p>Having that:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>find_package(<span style="color:#e6db74">Thingy</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
 </span></span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">
@@ -921,7 +921,7 @@
 </span></span><span style="display:flex;"><span>some-tool
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ DYLD_LIBRARY_PATH<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../install/bin&#34;</span> ../install/bin/some-tool
-</span></span></code></pre></div><h1 id="so-when-do-i-need-to-deliver-3rd-party-dependencies-to-my-customers">So when do I need to deliver 3rd-party dependencies to my customers</h1>
+</span></span></code></pre></div><h2 id="so-when-do-i-need-to-deliver-3rd-party-dependencies-to-my-customers">So when do I need to deliver 3rd-party dependencies to my customers</h2>
 <p>&hellip;so they could build their applications with your SDK/framework/library, which is their direct dependency.</p>
 <p>Almost always, as it seems.</p>
 <p>Assuming that we are comparing the scope of <code>target_link_libraries()</code> from our library to 3rd-party dependencies, with both <code>STATIC</code> and <code>SHARED</code> variants of our library, a summarizing table would be this:</p>
@@ -953,7 +953,7 @@
         </tbody>
     </table>
 </div>
-<h2 id="but-i-dont-want-to">But I don&rsquo;t want to</h2>
+<h3 id="but-i-dont-want-to">But I don&rsquo;t want to</h3>
 <p>If you really don&rsquo;t want to distribute all of your 3rd-party dependencies to customers (<em>one of the reasons could be that they are not using CMake, so they&rsquo;d need to somehow manage the transitive dependencies linking themselves</em>), then there are still some options (<em>none of which I&rsquo;ve tried myself</em>).</p>
 <p>You could probably bundle/vendor 3rd-party dependencies sources into your SDK/framework/library project and make them <a href="https://cmake.org/cmake/help/latest/command/add_library.html#object-libraries">OBJECT</a> libraries. But we are all civilized people here, right, we want to use CMake packages and <code>find_package(Thingy CONFIG REQUIRED)</code>, and probably with a package manager such as <a href="/blog/2022/10/30/cpp-dependencies-with-vcpkg/">vcpkg</a>, so no vendoring, forget that I even brought this up.</p>
 <p>Another way to &ldquo;hide&rdquo; 3rd-party dependencies would probably be via making a frankenstein monster of a static mega-library, which would contain everything: object files of your libraries and object files of 3rd-party libraries. Basically, you would &ldquo;unpack&rdquo; all the static libraries that you got and &ldquo;pack&rdquo; their object files into one big <del>fucking</del> final static library, which is what you&rsquo;d distribute to your customers. As with the previous option, this doesn&rsquo;t look like something I would recommend, but if you still would like to do that, here are some links for further reading:</p>

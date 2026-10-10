@@ -31,7 +31,7 @@
 
     
 
-    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1d49af7dcc370ad138c372fedb8188587cb39b085f3c95ee835feafa302dcc3.css" />
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.60c1bc4160e9f7ac460008102a8b89c4a1c40300022aecbd52888b2c5cafb9d0.css" />
     <link rel="stylesheet" href="/css/default.css" />
     <link rel="stylesheet" href="/css/post.css" />
     <link rel="stylesheet" href="/css/page.css" />
@@ -45,7 +45,7 @@
   <body>
     <div id="body-hat">
       <div id="title-block">
-        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <div id="blog-title"><a href="/">Declaration of VAR</a></div>
         <p>and some other stuff</p>
       </div>
     </div>
@@ -147,7 +147,7 @@
     </li>
   </ul>
 </nav>
-<h1 id="why-bother">Why bother</h1>
+<h2 id="why-bother">Why bother</h2>
 <p>Straight to the point, here&rsquo;s a build of my <a href="/blog/2019/08/04/glfw-dear-imgui/">simple application</a> that has a few dependencies: <a href="https://github.com/Dav1dde/glad">glad</a>, <a href="https://www.glfw.org/">GLFW</a> and <a href="https://github.com/ocornut/imgui">Dear ImGui</a> - everything is built from sources:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ time cmake --build .
 </span></span><span style="display:flex;"><span><span style="color:#f92672">[</span>29/29<span style="color:#f92672">]</span> Linking CXX executable glfw-imgui
@@ -201,15 +201,15 @@
 <p>For us this became especially important, as our project is re-built on every commit in our CI/CD to run all the QA tests, so the builds are run many times a day, wasting a lot of resources re-building non-changing dependencies over and over.</p>
 <p>But pre-building dependencies is not enough, it isn&rsquo;t even a half of the job. First of all, dependencies need to be built for several platforms and different toolchains. Then every dependency can (<em>will</em>) have different versions and also dependencies of its own. And finally, you need to store pre-built artifacts somewhere and fetch the right variant for the build.</p>
 <p>To handle/manage all that you&rsquo;ll need a combination of CI/CD builbots, an artifacts storage and a package manager.</p>
-<h1 id="conan">Conan</h1>
+<h2 id="conan">Conan</h2>
 <p>First of all, I would suggest you to get familiar with Conan by reading <a href="https://docs.conan.io/en/latest/cheatsheet.html">its documentation</a> and trying out their examples, as it is too much to cover in one article.</p>
 <p>So, <a href="https://docs.conan.io/en/latest/introduction.html">Conan</a> is a package/dependency manager, mostly for C++ development. It has a good and easy enough integration with CMake (<em>and seemingly other build systems too</em>).</p>
 <p>In short, Conan packages are regular <code>bin</code>/<code>cmake</code>/<code>include</code>/<code>lib</code>/<code>etc</code> folder structures packed into <code>.tgz</code> compressed archives, accompanied with various metadata. Conan client uses that metadata to determine correct packages for concrete platforms/toolchains/configurations, resolve dependencies, etc.</p>
 <p>What might come as a shock for some is that Conan is written in Python. I&rsquo;ve seen people looking down on it because of that and saying something like &ldquo;<em>how can this pitiful indent-based scripting language handle dependencies for our mighty C++</em>&rdquo;. I personally don&rsquo;t mind the Python all that much, and it does the job, so it&rsquo;s okay.</p>
 <p>Out of all the functionality that Conan provides, at the moment we are using only <a href="https://docs.conan.io/en/latest/creating_packages/existing_binaries.html#packaging-pre-built-binaries">packing pre-built binaries</a> and of course <a href="https://docs.conan.io/en/latest/getting_started.html">installing dependencies</a>.</p>
-<h1 id="packages-storage">Packages storage</h1>
+<h2 id="packages-storage">Packages storage</h2>
 <p>There are <a href="https://docs.conan.io/en/latest/uploading_packages/remotes.html">several options</a> for where the Conan packages can be hosted and fetched from.</p>
-<h2 id="conan_server">conan_server</h2>
+<h3 id="conan_server">conan_server</h3>
 <p>The default option is to use <a href="https://docs.conan.io/en/latest/uploading_packages/running_your_server.html">conan_server</a> that comes out of the box. If you decide to use that one, as usual, I would recommend not to expose it to the internet directly but rather via a reverse-proxy, such as NGINX.</p>
 <p>In short, this would be your <code>server.conf</code>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#66d9ef">[server]</span>
@@ -259,10 +259,10 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-Proto</span> $scheme;
 </span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
 <p>We started with <code>conan_server</code>, and it was working fine, but then we discovered that despite <code>read_permissions</code> is set to <code>*/*@*/*: ?</code>, which means allowing access only for authenticated users(?), the server was still available to anonymous users too, so everyone could list and download our packages, which certainly was not the intention. I thought about reporting this in the Conan bugtracker, but when I had <a href="https://github.com/conan-io/conan/issues/9664">another question</a>, along with the answer I got a recommendation to start using JFrog Artifactory, so I reckoned it won&rsquo;t be worth wasting everyone&rsquo;s time asking about <code>conan_server</code> any more.</p>
-<h2 id="conan-center">Conan Center</h2>
+<h3 id="conan-center">Conan Center</h3>
 <p>Not much to say here - it&rsquo;s a public <a href="https://conan.io/center/">Conan packages storage</a>, a great source of lots of pre-built libraries.</p>
 <p>But we are not using it. First of all, because of the same reasons listed <a href="#source-code-repositories">below</a>; and secondly, we&rsquo;d like to ensure that both our project and all the dependencies are built in the same environment, on the same buildbots, and in general we prefer to build our dependencies ourselves.</p>
-<h2 id="jfrog-artifactory">JFrog Artifactory</h2>
+<h3 id="jfrog-artifactory">JFrog Artifactory</h3>
 <p><a href="https://jfrog.com/artifactory/">JFrog Artifactory</a> is a great piece of software for hosting packages, either in their cloud (<em>no</em>) or on your own server (<em>yes</em>). Probably that is what&rsquo;s running behind the <a href="#conan-center">Conan Center</a> too.</p>
 <p>You can take the <a href="https://docs.conan.io/en/latest/uploading_packages/artifactory/artifactory_ce.html">Community Edition</a>, which is graciously available free of charge (<em>and limited to Conan packages only</em>). Trying to find it using the links from the <a href="https://www.jfrog.com/confluence/">referred documentation</a> if futile, so here&rsquo;s the <a href="https://conan.io/downloads.html">downloads page</a>.</p>
 <p>As we need to distribute many other package formats beside Conan (<em><a href="/blog/2021/09/23/cmake-cpack-package-deb-apt/#hosting-deb-packages-for-apt">deb</a>, <a href="/blog/2020/03/05/azure-devops-nuget-npm-cpp/#azure-devops-feed">NuGet</a>, <a href="/blog/2020/03/05/azure-devops-nuget-npm-cpp/#azure-devops-feed-1">npm</a>, Maven, etc</em>), it was grand time for us to get a full-featured Artifactory, which supports <a href="https://www.jfrog.com/confluence/display/JFROG/Package+Management#PackageManagement-SupportedPackageTypes">all these formats</a>:</p>
@@ -271,8 +271,8 @@
     <img class="image-post" loading="lazy" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/artifactory-supported-packages.png" alt="JFrog Artifactory, supported packages">
 
 <p>It is <a href="https://jfrog.com/pricing/#hosted">expensive</a> (<em>cheapest variant is 3200 USD per year!</em>), but it saves a lot of trouble for maintaining several different storages/services - instead you only need to maintain one Artifactory. Also it nicely integrates with <a href="https://docs.microsoft.com/en-us/azure/active-directory/saas-apps/jfrog-artifactory-tutorial">Azure AD SAML SSO</a>, which helps a lot too.</p>
-<h1 id="dependencies">Dependencies</h1>
-<h2 id="source-code-repositories">Source code repositories</h2>
+<h2 id="dependencies">Dependencies</h2>
+<h3 id="source-code-repositories">Source code repositories</h3>
 <p>Now we have a place for storing pre-built dependencies in packages, but where to store their source code?</p>
 <p>If you are your own evil twin (<em>сам себе злой Буратино</em>), then you can just fetch it from original repositories on GitHub, GitLab or wherever. If you really are an enemy to yourself, then you can also store your own project source code in an external repository too.</p>
 <p>The main reason why this is not a great idea is that any external resource might suddenly become unavailable, and you can&rsquo;t do anything about it, as that&rsquo;s not your server and you have no control over it. Here are some examples of such unavailability:</p>
@@ -291,7 +291,7 @@
 
     <img class="image-post" loading="lazy" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/dependencies-repositories.png" alt="Dependencies repositories">
 
-<h2 id="project-files">Project files</h2>
+<h3 id="project-files">Project files</h3>
 <p>Almost always libraries sources already have project files for various build systems. Ideally that would be CMake, because that is our main build system.</p>
 <p>If a library doesn&rsquo;t have a project file, then it could be that author intended it to be built as a part of your project, for example Dear ImGui is like that. But you still might want to pre-build it separately, so creating a <code>CMakeLists.txt</code> for it will be on you.</p>
 <p>Another scenario would be so-called &ldquo;header-only&rdquo; libraries, such as <a href="https://github.com/orlp/pdqsort">pdqsort</a>, so there is nothing to build there. But even in that case you might want to consider making <code>CMakeLists.txt</code> for it with install instructions to generate CMake configs. Furthermore, some header-only libraries, for example <a href="https://json.nlohmann.me/">json-nlohmann</a>, do have <code>CMakeLists.txt</code> and sometimes even include a number of tests.</p>
@@ -338,7 +338,7 @@
 </span></span><span style="display:flex;"><span><span style="color:#f92672">└──</span> zstandard
 </span></span><span style="display:flex;"><span>    <span style="color:#f92672">└──</span> conanfile<span style="color:#f92672">.</span>py</span></span></code></pre></div>
 <p>That way we don&rsquo;t interfere with the original repositories/clones and keep all the dependencies-related resources in one place.</p>
-<h3 id="conanfile">conanfile</h3>
+<h4 id="conanfile">conanfile</h4>
 <p>The <code>conanfile.py</code> contains various information about the package and it is almost the same for all the dependencies:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#f92672">from</span> conans <span style="color:#f92672">import</span> ConanFile, tools
 </span></span><span style="display:flex;"><span>
@@ -396,8 +396,8 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#a6e22e">DearImGui</span><span style="color:#f92672">/</span><span style="color:#ae81ff">1.86</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0</span><span style="color:#a6e22e">@YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">PREFIX</span><span style="color:#f92672">/</span>public</span></span></code></pre></div>
 <p>You might want to use <code>channel</code> property for organizing packages by platforms, but that would be redundant and rather confusing, as that is already taken care of by Conan via so-called <a href="https://docs.conan.io/en/latest/reference/config_files/default_profile.html#default-profile">profiles</a> (<em>there is an illustration for that on the last screenshot in the <a href="#packing">packing</a> section</em>).</p>
 <p>What <code>user</code> and <code>channel</code> properties should be used for is identifying your package as yours to <a href="https://docs.conan.io/en/latest/faq/using.html#faq-recommendation-user-channel">prevent possible collisions</a> with other people packages. The <code>user</code> property here (<code>YOUR-PREFIX</code>) can be your company or team name, and <code>channel</code> can be whatever you&rsquo;d like (<em><code>public</code>, <code>experimental</code>, <code>customerspecific</code></em>).</p>
-<h2 id="cicd">CI/CD</h2>
-<h3 id="projects-and-configurations">Projects and configurations</h3>
+<h3 id="cicd">CI/CD</h3>
+<h4 id="projects-and-configurations">Projects and configurations</h4>
 <p>Hopefully your infrastructure already has dedicated buildbots for building, testing and packing your product, managed by a CI/CD system.</p>
 <p>We use <a href="https://www.jetbrains.com/teamcity/">TeamCity</a>, so instructions below will be mostly TeamCity-specific, but it&rsquo;s rather trivial to apply them to whatever CI/CD you might have.</p>
 <p>As we build and distribute our SDK for several platforms/toolchains, there is a configuration for every target:</p>
@@ -444,7 +444,7 @@
 </span></span><span style="display:flex;"><span><span style="color:#f92672">+:</span><span style="color:#a6e22e">_cmake</span> <span style="color:#66d9ef">=&gt;</span> <span style="color:#f92672">./</span>cmake</span></span></code></pre></div>
 <p>So everything specific to this library (<em><code>CMakeLists.txt</code>, <code>conanfile.py</code>, patches, etc</em>) is fetched to the top level, and common resources (<em>CMake modules</em>) are fetched into subfolders.</p>
 <p>Since it&rsquo;s two different repositories that are fetched into a common path, you won&rsquo;t have <code>.git</code> data there, so if you do need it, then you&rsquo;ll need to checkout those into separate paths.</p>
-<h3 id="building">Building</h3>
+<h4 id="building">Building</h4>
 <p>The build step in most cases is simple:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>mkdir build
 </span></span><span style="display:flex;"><span>mkdir install
@@ -477,7 +477,7 @@
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#f92672">--</span> <span style="color:#a6e22e">Old</span> export file <span style="color:#e6db74">&#34;/home/build/buildAgent/work/externals/dear-imgui/src/install/cmake/DearImGuiConfig.cmake&#34;</span> will be replaced
 </span></span><span style="display:flex;"><span><span style="color:#a6e22e">Removing</span> files <span style="color:#f92672">[</span><span style="color:#66d9ef">/home/build/buildAgent/work/externals/dear-imgui/src/install/cmake/DearImGuiConfig-debug.cmake</span><span style="color:#f92672">]</span></span></span></code></pre></div>
 <p>And so you&rsquo;ll be missing that file in your package (<em>thanks a lot!</em>).</p>
-<h4 id="dependencies-of-dependencies">Dependencies of dependencies</h4>
+<h5 id="dependencies-of-dependencies">Dependencies of dependencies</h5>
 <p>If (<em>when</em>) a dependency has dependencies of its own, the project configuration and build become slightly more complicated, but thanks to Conan not too complicated.</p>
 <p>For example, let&rsquo;s take <a href="https://github.com/asmaloney/libE57Format">E57Format</a> library, which depends on <a href="https://xerces.apache.org/xerces-c/">Xerces-C++</a> library and expects to discover it with <code>find_package()</code>.</p>
 <p>In that case, naturally, first you need to build Xerces-C++ and publish it to your Conan packages storage. Then add the following to E57Format&rsquo;s <code>conanfile.py</code>:</p>
@@ -513,7 +513,7 @@
 </span></span><span style="display:flex;"><span>sh<span style="color:#f92672">.</span>exe <span style="color:#f92672">-</span>c <span style="color:#e6db74">&#34;cp ./install_manifest.txt ../install-manifest-debug.txt&#34;</span>
 </span></span><span style="display:flex;"><span>cmake <span style="color:#f92672">--</span>build <span style="color:#f92672">.</span> <span style="color:#f92672">--</span>target install <span style="color:#f92672">--</span>config <span style="color:#a6e22e">Release</span>
 </span></span><span style="display:flex;"><span>sh<span style="color:#f92672">.</span>exe <span style="color:#f92672">-</span>c <span style="color:#e6db74">&#34;cp ./install_manifest.txt ../install-manifest-release.txt&#34;</span></span></span></code></pre></div>
-<h3 id="packing">Packing</h3>
+<h4 id="packing">Packing</h4>
 <p>When creating Conan package, you can put both Debug and Release configurations into one package. Thanks to CMake this work work just fine: <code>find_package()</code> will find both Debug (<em><code>DearImGuiTargets-debug.cmake</code></em>) and Release (<em><code>DearImGuiTargets-release.cmake</code></em>) configurations. And <code>conan export-pkg</code> wouldn&rsquo;t care, as it packs everything it finds in the path specified in <code>-pf</code> argument.</p>
 <p>But that would not be exactly correct, because if one tries to install such package like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ conan install <span style="color:#f92672">-</span>s build_type<span style="color:#66d9ef">=</span><span style="color:#a6e22e">Debug</span> <span style="color:#f92672">-</span>r <span style="color:#a6e22e">YOUR</span><span style="color:#f92672">-</span><span style="color:#a6e22e">CONAN</span><span style="color:#f92672">-</span><span style="color:#a6e22e">REMOTE</span></span></span></code></pre></div>
@@ -566,7 +566,7 @@
     <img class="image-post" loading="lazy" src="/blog/2022/02/06/cpp-dependencies-with-conan/images/artifactory-conan-package.png" alt="JFrog Artifactory, Conan package">
 
 <p>So it is 10 packages in total: 5 platforms, each having 2 configurations (<em>Debug/Release</em>).</p>
-<h1 id="resolving-dependencies-in-a-project">Resolving dependencies in a project</h1>
+<h2 id="resolving-dependencies-in-a-project">Resolving dependencies in a project</h2>
 <p>As an example, let&rsquo;s take the <a href="https://github.com/retifrav/glfw-imgui-example">same application</a> that was used for benchmarking build times <a href="#why-bother">in the beginning</a>.</p>
 <p>I have all of its dependencies pre-built and published in Artifactory, so I can fetch them with Conan. For that I can either create <a href="https://docs.conan.io/en/latest/reference/conanfile_txt.html">conanfile.txt</a>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#66d9ef">[requires]</span>
@@ -849,7 +849,7 @@
 </span></span><span style="display:flex;"><span>
 </span></span><span style="display:flex;"><span>$ ../install/bin/glfw-imgui/glfw-imgui</span></span></code></pre></div>
 <p>Absolutely magnificent.</p>
-<h1 id="dependency-graph">Dependency graph</h1>
+<h2 id="dependency-graph">Dependency graph</h2>
 <p>Speaking about <a href="#dependencies-of-dependencies">dependencies of dependencies</a>, here&rsquo;s another nice feature of Conan - it can generate a <a href="https://docs.conan.io/en/1.45/reference/commands/consumer/info.html">dependency graph</a>:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ conan info <span style="color:#f92672">../</span>conanfile<span style="color:#f92672">.</span>py <span style="color:#f92672">-</span>g <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>html
 </span></span><span style="display:flex;"><span>$ open <span style="color:#f92672">./</span>graph<span style="color:#f92672">.</span>html</span></span></code></pre></div>
@@ -871,22 +871,22 @@
 <p>If you add <code>-j</code> argument to <code>conan info</code>, then you&rsquo;ll get a JSON representation of the graph, which you can easily parse to generate a report about your dependencies (<em>versions, licenses, etc</em>):</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span>$ conan info <span style="color:#f92672">../</span>conanfile<span style="color:#f92672">.</span>py <span style="color:#f92672">-</span>j <span style="color:#f92672">./</span>dependencies<span style="color:#f92672">.</span>json</span></span></code></pre></div>
 <hr class="updates-separator">
-<h1 id="updates">Updates</h1>
-<h2 id="2022-03-03--once-more-about-self-hosting">2022-03-03 | Once more about self-hosting</h2>
+<h2 id="updates">Updates</h2>
+<h3 id="2022-03-03--once-more-about-self-hosting">2022-03-03 | Once more about self-hosting</h3>
 <p>Just a month after I wrote this:</p>
 <blockquote>If you are your own evil twin (<i>сам себе злой Буратино</i>), then you can just fetch it from original repositories on GitHub, GitLab or wherever. If you really are an enemy to yourself, then you can also store your own project source code in an external repository too.</blockquote>
 <p>&hellip;Russia attacked Ukraine and started a proper retarded war. Shortly after that several IT companies began to block users with russian IP addresses or russian billing addresses. No one cared whether those users were against the war themselves or not, as the companies apparently figured that collective responsibility is okay in the 21th century. Thus, hosting 3rd-party dependencies (<em>both sources and pre-built binaries</em>) in one&rsquo;s own in-house IT infrastructure has already become a (<em>very sudden</em>) reality for at least russian users, so it&rsquo;s no longer a theoretical possibility anymore.</p>
-<h2 id="2022-10-30--started-using-vcpkg-instead-of-conan">2022-10-30 | Started using vcpkg instead of Conan</h2>
+<h3 id="2022-10-30--started-using-vcpkg-instead-of-conan">2022-10-30 | Started using vcpkg instead of Conan</h3>
 <p>More than half a year after trying out Conan we started looking into resolving dependencies with <a href="/blog/2022/10/30/cpp-dependencies-with-vcpkg/">vcpkg</a> and then decided to adopt it as our main package manager.</p>
-<h2 id="2023-01-12--an-e-mail-from-jfrog">2023-01-12 | An e-mail from JFrog</h2>
+<h3 id="2023-01-12--an-e-mail-from-jfrog">2023-01-12 | An e-mail from JFrog</h3>
 <p>A couple of months after <a href="/blog/2022/10/30/cpp-dependencies-with-vcpkg/">that article</a> about vcpkg I got an e-mail from someone at JFrog. I won&rsquo;t disclose his name, just in case, but the address was <code>@jfrog.com</code> and he represented himself as someone working with Conan.</p>
 <p>It is nothing secret really, he just wanted to know a bit more details about why it took so long for me to resolve the project dependencies with Conan: I <a href="/blog/2022/10/30/cpp-dependencies-with-vcpkg/#speed">wrote</a> in the article that it took 3 days with vcpkg versus 2 weeks with Conan to resolve the same <a href="/blog/2022/02/06/cpp-dependencies-with-conan/images/dependencies-graph.png">set of dependencies</a>. Apparently, he was under impression that I was trying to use ready-made packages that were already available in Conan Center, and in that case 2 weeks would indeed look like a crazy long period of time for such a trivial task.</p>
 <p>So I explained again that we needed to make our own packages of 3rd-party dependencies for publishing them in our internal Artifactory, how in general the slowdown was likely due to the wrong approach that we took (<em>where instead of packing pre-built binaries we should have probably tried to integrate Conan into the project&rsquo;s build system</em>), and also how Conan seemed less intuitive comparing with vcpkg.</p>
-<h2 id="2026-02-23--giving-it-another-go-with-modern-conan">2026-02-23 | Giving it another go with modern Conan</h2>
+<h3 id="2026-02-23--giving-it-another-go-with-modern-conan">2026-02-23 | Giving it another go with modern Conan</h3>
 <p>Some years have passed by, and we are still using vcpkg for managing our project dependencies, which works pretty splendid.</p>
 <p>However, from time to time we get requests to provide Conan packages for some of our libraries, and by now we&rsquo;ve accumulated enough of those requests for the task to become important enough and worth putting effort into.</p>
 <p>Meanwhile, Conan has got version <a href="https://docs.conan.io/2/changelog.html#feb-2023">2.0</a>, which introduced <a href="https://docs.conan.io/2/whatsnew.html">certain changes</a>, so it was a good opportunity to give it another go and this time try building packages from sources instead of just packing pre-built binaries.</p>
-<h3 id="building-packages-from-source-in-conan-1x">Building packages from source in Conan 1.x</h3>
+<h4 id="building-packages-from-source-in-conan-1x">Building packages from source in Conan 1.x</h4>
 <p>To warm-up, let&rsquo;s see how we could/should have done it with Conan 1.x. Specifically, the version I&rsquo;ll be using in the example below is <a href="https://docs.conan.io/1/changelog.html#dec-2024">1.66.0</a> (<em>the latest in the 1.x branch at the moment</em>). And the example itself will be making a package for <a href="https://zlib.net/">zlib</a>.</p>
 <p>The very first thing is naturally the sources, which we of course will be getting from Git repositories via SSH. It is assumed that you already have <a href="https://docs.github.com/en/authentication/connecting-to-github-with-ssh/testing-your-ssh-connection">SSH connection</a> established, so your <code>~/.ssh/config</code> contains a record for your Git host and you have the keys in place.</p>
 <p>Also, despite what I said about self-hosting earlier, in the examples below I will be using GitHub, but this is just for the sake of demonstration/simplicity, and in production you should really consider relying on your own Git hosting.</p>
@@ -1194,7 +1194,7 @@
 </span></span><span style="display:flex;"><span>Uploading zlib/1.3.1@YOUR-PREFIX/public to remote <span style="color:#e6db74">&#39;our-gitea&#39;</span>
 </span></span><span style="display:flex;"><span>Recipe is up to date, upload skipped
 </span></span></code></pre></div><p>Now it&rsquo;s all done, but <strong>be aware</strong> that this package is likely to fail with <code>--build missing</code> in other environments/platforms/profiles because of the&hellip; missing patches (<em>surprise!</em>), but more on that <a href="#making-sure-that-build-missing-works">later</a>.</p>
-<h3 id="building-packages-from-source-in-conan-2x">Building packages from source in Conan 2.x</h3>
+<h4 id="building-packages-from-source-in-conan-2x">Building packages from source in Conan 2.x</h4>
 <p>Right then, now let&rsquo;s see how things are in Conan 2.x. Specifically, I&rsquo;ll be using version <a href="https://docs.conan.io/2/changelog.html#feb-2026">2.25.2</a>.</p>
 <p>First thing of note is that <code>YOUR-PREFIX</code> is now required to be lower-cased. In fact, the entire <code>zlib/1.3.1@your-prefix/public</code> specification string must be lower-cased, and that is a good requirement, I welcome it very much.</p>
 <p>Then what I noticed right away is that there is no <code>scm</code> thing anymore. It doesn&rsquo;t print any errors but it also does not do shit, and there is no 2.x documentation for it either. To be fair, it was marked as deprecated already in 1.x documentation, so this was more or less expected. From what I gather, instead of <code>scm</code> one should use the <a href="https://docs.conan.io/2/reference/tools/scm/git.html">Git module</a> now:</p>
@@ -1483,7 +1483,7 @@
 </span></span><span style="display:flex;"><span>          b4653e854542d65f58ec9b607521d1c6da3dd37f
 </span></span><span style="display:flex;"><span>            revisions
 </span></span><span style="display:flex;"><span>              c88b3c405b4fd5824f77dc6a6c13e410 <span style="color:#f92672">(</span>Uploaded<span style="color:#f92672">)</span>
-</span></span></code></pre></div><h4 id="making-sure-that-build-missing-works">Making sure that build missing works</h4>
+</span></span></code></pre></div><h5 id="making-sure-that-build-missing-works">Making sure that build missing works</h5>
 <p>Now let&rsquo;s verify that it all was not for nothing, so users will be able build the package from sources in their environments too (<em>when there are no pre-built binaries available in the remote</em>).</p>
 <p>My original Conan profile was on Mac OS, as you could see, and I will be testing the package on a different host with GNU/Linux:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ conan profile detect
@@ -1877,7 +1877,7 @@
 </span></span><span style="display:flex;"><span>Install finished successfully</span></span></code></pre></div>
 </details>
 <p>Fucking finally! The full updated/corrected recipe file is <a href="https://github.com/retifrav/conan-recipes/blob/127f1c86c37c33f9e937ebc4b3c1488c674797d2/zlib/conanfile.py">here</a>.</p>
-<h4 id="building-a-shareddynamic-library">Building a shared/dynamic library</h4>
+<h5 id="building-a-shareddynamic-library">Building a shared/dynamic library</h5>
 <p>Another question is how to build/make a package with a shared/dynamic library? Quick googling revealed that merely adding <code>-o *:shared=True</code> should be enough:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ conan create . -s build_type<span style="color:#f92672">=</span>Release -o *:shared<span style="color:#f92672">=</span>True
 </span></span></code></pre></div><p>but no, it still produced <code>libz.a</code>, which is a static library. I&rsquo;d like to be wrong, but apparently (<em>every</em>) recipe must explicitly <a href="https://github.com/retifrav/conan-recipes/commit/777f2c07332aeb4af70c42fcd5b2a468e0eccd34">state</a> that it cares about this option, otherwise <code>-o *:shared=True</code> has no effect on it:</p>
@@ -1964,7 +1964,7 @@
 </span></span><span style="display:flex;"><span>        }
 </span></span><span style="display:flex;"><span>    )
 </span></span><span style="display:flex;"><span>    cmake<span style="color:#f92672">.</span>build()
-</span></span></code></pre></div><h4 id="making-sure-that-requirements-use-proper-cmake-configs">Making sure that requirements use proper CMake configs</h4>
+</span></span></code></pre></div><h5 id="making-sure-that-requirements-use-proper-cmake-configs">Making sure that requirements use proper CMake configs</h5>
 <p>I was about to start celebrating, but then I discovered another nasty thing. If one generates and exports CMake configs as a part of the <a href="https://github.com/retifrav/conan-recipes/blob/209148df29894c0b979bfe8431a4cd3605ef650f/_cmake/Installing.cmake#L25-L74">installation steps</a> when building the project with CMake, then one will be very surprised to learn that by default Conan does not use those configs (<em>here be sounds of explosions, people screaming and general armageddon vibes</em>).</p>
 <p>For instance, let&rsquo;s make a package for <a href="https://libpng.org/pub/png/libpng.html">png</a>, whose only dependency is zlib, which is going to be discovered in png&rsquo;s CMake project like this, as one would expect:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cmake" data-lang="cmake"><span style="display:flex;"><span>find_package(<span style="color:#e6db74">zlib</span> <span style="color:#e6db74">CONFIG</span> <span style="color:#e6db74">REQUIRED</span>)<span style="color:#960050;background-color:#1e0010">
@@ -2095,7 +2095,7 @@
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
 </span></span></code></pre></div><p>And then the <code>~/.conan2/path/to/build/Release/generators/</code> will not contain auto-generated CMake configs for png and zlib, there will be only things for JsonCpp.</p>
 <p>It was not easy to figure this out, despite Conan maintainers <a href="https://github.com/conan-io/conan/issues/9414#issuecomment-2226555054">claiming</a> that it is &ldquo;<em><a href="https://docs.conan.io/2/examples/tools/cmake/cmake_toolchain/use_package_config_cmake.html">explicitly documented</a></em>&rdquo;. The linked documentation page certainly does mention setting <code>cmake_find_mode</code>, but there it is about <code>package_info()</code> of that particular package recipe again, while I needed to control this in the final project that depends on those packages, and that leap from <code>.set_property(&quot;cmake_find_mode&quot;, &quot;none&quot;)</code> to <code>.set_property(&quot;PACKAGE-NAME-HERE&quot;, &quot;cmake_find_mode&quot;, &quot;none&quot;)</code> was far from being obvious.</p>
-<h5 id="transitive-dependencies-might-not-be-discoverable">Transitive dependencies might not be discoverable</h5>
+<h6 id="transitive-dependencies-might-not-be-discoverable">Transitive dependencies might not be discoverable</h6>
 <p>But that is not the end of it, oh no. As a continuation of <a href="#building-a-shareddynamic-library">that section</a> about building shared/dynamic libraries: given that you have a library which is &ldquo;restricted&rdquo; to build as static-only on Windows, if you will have a yet another library that depends on that one, then the final project will fail to discover that transitive dependency, or rather Conan will &ldquo;obstruct&rdquo; the discovery.</p>
 <p>To demonstrate that, I made the following (<em>otherwise pointless</em>) library - <a href="https://github.com/retifrav/conan-recipes/tree/34238e260419eedbc2aa9fc3608eca52e6fa2580/recipes/ryu-wrapper">ryu-wrapper</a> - which has nothing but a <a href="https://github.com/retifrav/conan-recipes/blob/34238e260419eedbc2aa9fc3608eca52e6fa2580/recipes/ryu-wrapper/src/src/thingy.cpp#L9-L17">dumb call</a> to the actual ryu library. Unlike the original ryu library, this wrapper of mine has a proper <a href="https://github.com/retifrav/conan-recipes/blob/34238e260419eedbc2aa9fc3608eca52e6fa2580/recipes/ryu-wrapper/src/CMakeLists.txt#L31-L34">auto-generated</a> export header, so it does export symbols for making a DLL on Windows.</p>
 <p>Trying to build it with <code>-o *:shared=False</code> along with building and running its <a href="https://github.com/retifrav/conan-recipes/tree/34238e260419eedbc2aa9fc3608eca52e6fa2580/recipes/ryu-wrapper/test_package">test_package</a> will succeed, and here&rsquo;s a fragment of the generated <code>/path/to/ryu-wrapper/test_package/build/msvc-194-x86_64-17-debug/generators/conan_toolchain.cmake</code>:</p>
@@ -2273,7 +2273,7 @@
 </span></span></code></pre></div><p>Either way, with that trait added to the wrapper recipe, the required paths for both the library and the wrapper finally got to the generated <code>conan_toolchain.cmake</code>. Hallelujah.</p>
 <p>So now it works, but what I still don&rsquo;t understand is how is one supposed to know that some transitive libraries might require setting <code>no_skip=True</code>? Is it only by failing at least once and then figuring out the reason (<em>if one is lucky to ever figure it out at all</em>)?</p>
 <p>And okay, suppose we know that one library (<em>ryu</em>) can only build as static on Windows at the moment, so we went through all our theoretical 9000 recipes which have it as a dependency to add the <code>no_skip=True</code> trait. But then what if some time later that library&rsquo;s maintainers will implement proper symbols exporting for it, so it will be able to make a DLL on Windows, then what, we will need to edit all those 9000 recipe to remove the <code>no_skip=True</code> trait? I really can&rsquo;t say what was the grand idea here and what is the true Conan way to handle this.</p>
-<h3 id="and-so-how-is-it">And so how is it</h3>
+<h4 id="and-so-how-is-it">And so how is it</h4>
 <p>Indeed, building packages from sources is definitily the way to go. Bare packing of pre-built binaries with <code>export-pkg</code> <a href="/blog/2022/10/30/cpp-dependencies-with-vcpkg/#why-we-didnt-proceed-with-conan">won&rsquo;t get you far</a>, so we really did take a wrong approach to Conan back then.</p>
 <p>Presumably, that was the main reason why we did not proceed with Conan and chose vcpkg instead. However, with all the current knowledge that I have now, if I needed to choose between Conan and vcpkg today, I would absolutely pick vcpkg again. The reasons are still the <a href="/blog/2022/10/30/cpp-dependencies-with-vcpkg/#overall-impression">same</a>: vcpkg is more intuitive, and I had considerably fewer &ldquo;chances&rdquo; to do something wrong, as most of the time things just made sense and felt like a natural way to go.</p>
 <p>I&rsquo;d say that Conan being less intuitive was the major slowdown again, as way too often I needed to either browse the documentation, or go through their <a href="https://github.com/conan-io/conan/issues">issue tracker</a>, or just google the wild internets (<em>the latter has proven to be the least useful</em>). Not so rarely none of the above revealed the answer I was looking for, so I had to resort to good ol&rsquo; trial and error accompanied with extensive archaeological excavations inside <code>~/.conan2/p/</code>.</p>

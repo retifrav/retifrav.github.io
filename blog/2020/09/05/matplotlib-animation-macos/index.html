@@ -31,7 +31,7 @@ If video doesn’t play in your browser, you can download it here.">
 
     
 
-    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.c1d49af7dcc370ad138c372fedb8188587cb39b085f3c95ee835feafa302dcc3.css" />
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.60c1bc4160e9f7ac460008102a8b89c4a1c40300022aecbd52888b2c5cafb9d0.css" />
     <link rel="stylesheet" href="/css/default.css" />
     <link rel="stylesheet" href="/css/post.css" />
     <link rel="stylesheet" href="/css/page.css" />
@@ -45,7 +45,7 @@ If video doesn’t play in your browser, you can download it here.">
   <body>
     <div id="body-hat">
       <div id="title-block">
-        <h1 id="blog-title"><a href="/">Declaration of VAR</a></h1>
+        <div id="blog-title"><a href="/">Declaration of VAR</a></div>
         <p>and some other stuff</p>
       </div>
     </div>
@@ -103,7 +103,7 @@ If video doesn’t play in your browser, you can download it here.">
     </li>
   </ul>
 </nav>
-<h1 id="problem">Problem</h1>
+<h2 id="problem">Problem</h2>
 <p>The full script is published <a href="https://gist.github.com/retifrav/b884ce647c8ef26678c2b6408d4b8306">here</a>.</p>
 <p>To run the script I installed only <strong>matplotlib</strong> and <strong>numpy</strong> packages, so the environment on all 3 systems (Windows, Linux, Mac OS) should be the same. Just in case, here they are:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-scala" data-lang="scala"><span style="display:flex;"><span><span style="color:#66d9ef">#</span> <span style="color:#a6e22e">Windows</span> <span style="color:#f92672">(</span><span style="color:#ae81ff">10.19041</span><span style="color:#f92672">.</span><span style="color:#ae81ff">450</span><span style="color:#f92672">,</span> x64<span style="color:#f92672">)</span>
@@ -125,9 +125,9 @@ If video doesn’t play in your browser, you can download it here.">
 </span></span><span style="display:flex;"><span><span style="color:#f92672">-</span> numpy <span style="color:#ae81ff">1.19</span><span style="color:#f92672">.</span><span style="color:#ae81ff">1</span></span></span></code></pre></div>
 <p>I&rsquo;ve tried other simple plot animation samples (<em>for instance, the ones from <a href="https://matplotlib.org/3.1.1/api/animation_api.html">matplotlib documentation</a></em>), and all of them work fine on Mac OS, so there has to be something wrong with my particular script. However, the fact that this very same script works on Windows and Linux confused me a lot. As a side note, you might have noticed that animation speed is different between Windows and Linux (<em>the latter is faster</em>), and I&rsquo;ve no idea what could be the reason of that either, though it&rsquo;s not so important here.</p>
 <p>I&rsquo;ve also tested my script on 3 other Macs with different Mac OS and Python versions installed, just to make sure that it&rsquo;s not my environment who messes things up, but it was the same on all of them - no animation showing up.</p>
-<h1 id="solution">Solution</h1>
+<h2 id="solution">Solution</h2>
 <p>After submitting a question at <a href="https://stackoverflow.com/questions/63722669/matplotlib-animation-works-on-windows-and-linux-but-not-on-mac-os">Stack Overflow</a> and also at <a href="https://discourse.matplotlib.org/t/matplotlib-animation-works-on-windows-and-linux-but-not-on-mac-os/21530">matplotlib forum</a>, I thought about reading <a href="https://matplotlib.org/contents.html">the documentation</a> (<em>classic</em>).</p>
-<h2 id="the-right-backend">The right backend</h2>
+<h3 id="the-right-backend">The right backend</h3>
 <p>There I soon enough discovered the <a href="https://matplotlib.org/tutorials/introductory/usage.html#what-is-a-backend">backends section</a>. That helped me to google some more ideas, for instance <a href="https://stackoverflow.com/a/46878070/1688203">this answer</a> shown what&rsquo;s needed to make animation from my script work in Jupyter notebook - just a single line in the very beginning of the script:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">%</span>matplotlib Tk
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy <span style="color:#66d9ef">as</span> np
@@ -138,7 +138,7 @@ If video doesn’t play in your browser, you can download it here.">
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>print(<span style="color:#e6db74">&#34;backend:&#34;</span>, plt<span style="color:#f92672">.</span>rcParams[<span style="color:#e6db74">&#34;backend&#34;</span>])</span></span></code></pre></div>
 <p>It returned <code>TkAgg</code> - so that&rsquo;s what can show animations in my script! Now I only need to set the same backend in my standalone script.</p>
 <p>By the way, if you are curious, without <code>%matplotlib Tk</code> Jupyter reports <code>module://ipykernel.pylab.backend_inline</code> value for backend.</p>
-<h3 id="with-pyplotrcparams">With pyplot.rcParams</h3>
+<h4 id="with-pyplotrcparams">With pyplot.rcParams</h4>
 <p>Using the same print statement, I&rsquo;ve discovered what backend is used by default when running my script in terminal: <code>MacOSX</code>. Right then, so this backend is incapable to run my animation for some reason. But since I now know the backend that is capable, I&rsquo;ve set it like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy <span style="color:#66d9ef">as</span> np
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#66d9ef">as</span> plt
@@ -154,7 +154,7 @@ If video doesn’t play in your browser, you can download it here.">
     <img class="image-post" loading="lazy" src="/blog/2020/09/05/matplotlib-animation-macos/images/still-no-animation.png" alt="matplotlib no animation">
 
 <p>So setting the backend via <code>plt.rcParams[&quot;backend&quot;]</code> isn&rsquo;t supported? That&rsquo;s a bit unexpected, as according to <a href="https://matplotlib.org/tutorials/introductory/usage.html#selecting-a-backend">the documentation</a>, it should be.</p>
-<h3 id="with-matplotlibuse">With matplotlib.use</h3>
+<h4 id="with-matplotlibuse">With matplotlib.use</h4>
 <p>Anyway, after some more googling I&rsquo;ve found <a href="https://stackoverflow.com/a/32082076/1688203">this answer</a>, and that was what finally worked:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib
 </span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> numpy <span style="color:#66d9ef">as</span> np
