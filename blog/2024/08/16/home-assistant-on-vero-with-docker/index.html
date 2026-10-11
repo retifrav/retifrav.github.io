@@ -68,7 +68,7 @@
 </svg> 2024-08-16 16:49:19 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 93 min read</div>
+</svg> 94 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -166,7 +166,11 @@
     <li><a href="#maintenance">Maintenance</a>
       <ul>
         <li><a href="#backups">Backups</a></li>
-        <li><a href="#updating">Updating</a></li>
+        <li><a href="#updating">Updating</a>
+          <ul>
+            <li><a href="#using-docker-compose">Using Docker Compose</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
     <li><a href="#performance-monitoring-with-btop">Performance monitoring with btop</a></li>
@@ -2284,6 +2288,50 @@
 </span></span></span><span style="display:flex;"><span>    -v /root/zigbee2mqtt/data:/app/data <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -v /root/zigbee2mqtt/logs:/app/logs <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    ghcr.io/koenkk/zigbee2mqtt
+</span></span></code></pre></div><h4 id="using-docker-compose">Using Docker Compose</h4>
+<p>Instead of typing those long <code>run</code> commands every time, it is more convenient to use <a href="https://docs.docker.com/compose/">Docker Compose</a> for handling images/containers updates:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo apt install docker-compose-plugin
+</span></span></code></pre></div><p>With Zigbee2MQTT container as an example, create a compose file for it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo mkdir -p /root/docker-containers/zigbee2mqtt
+</span></span><span style="display:flex;"><span>$ sudo nano /root/docker-containers/zigbee2mqtt/compose.yaml
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">name</span>: <span style="color:#ae81ff">zigbee2mqtt</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">networks</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">hub</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">external</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">services</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">zigbee2mqtt</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">image</span>: <span style="color:#ae81ff">ghcr.io/koenkk/zigbee2mqtt:2.14.2</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">container_name</span>: <span style="color:#ae81ff">zigbee2mqtt</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">restart</span>: <span style="color:#ae81ff">unless-stopped</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">devices</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">/dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_SERIAL-NUMBER-HERE-if00:/dev/ttyACM0</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">environment</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">TZ=Europe/Amsterdam</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">volumes</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">/root/zigbee2mqtt/data:/app/data</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">/root/zigbee2mqtt/logs:/app/logs</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">networks</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">hub</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">ipv4_address</span>: <span style="color:#ae81ff">172.18.0.101</span>
+</span></span></code></pre></div><p>If you already have a pre-compose container running, <code>stop</code> and <code>rm</code> it first, and then you can (<em>pull the image and</em>) create and run the container like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ sudo docker compose -f /root/docker-containers/zigbee2mqtt/compose.yaml up -d
+</span></span></code></pre></div><p>And when you will need to update the image and re-create the container, pin the new image tag in the <code>compose.yaml</code> and then:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ docker compose -f /root/docker-containers/zigbee2mqtt/compose.yaml pull <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    <span style="color:#f92672">&amp;&amp;</span> docker compose -f /root/docker-containers/zigbee2mqtt/compose.yaml up -d
+</span></span></code></pre></div><p>As you can guess, providing the full path to <code>compose.yaml</code> with <code>-f</code> every time gets old rather quickly, so instead you might prefer the following alternative:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ export COMPOSE_FILE<span style="color:#f92672">=</span>/root/docker-containers/zigbee2mqtt/compose.yaml
+</span></span><span style="display:flex;"><span>$ docker compose pull <span style="color:#f92672">&amp;&amp;</span> docker compose up -d
+</span></span></code></pre></div><p>One more thing to mention here is that since the <code>compose.yaml</code> has <code>name: zigbee2mqtt</code>, the compose plugin can address that container by name for most of the commands (<em>not for <code>pull</code>/<code>up</code> though</em>), so for those there is no need to set <code>COMPOSE_FILE</code>. For example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#39;With -f&#39;</span>
+</span></span><span style="display:flex;"><span>$ sudo docker compose -f /root/docker-containers/zigbee2mqtt/compose.yaml logs | tail -11
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#39;With name&#39;</span>
+</span></span><span style="display:flex;"><span>$ sudo docker compose ls
+</span></span><span style="display:flex;"><span>NAME                STATUS              CONFIG FILES
+</span></span><span style="display:flex;"><span>zigbee2mqtt         running<span style="color:#f92672">(</span>1<span style="color:#f92672">)</span>          /root/docker-containers/zigbee2mqtt/compose.yaml
+</span></span><span style="display:flex;"><span>$ sudo docker compose -p zigbee2mqtt logs | tail -11
 </span></span></code></pre></div><h2 id="performance-monitoring-with-btop">Performance monitoring with btop</h2>
 <p>As a bonus part, I wanted to install <a href="https://github.com/aristocratos/btop">btop</a> tool for watching the system CPU load.</p>
 <p>There is no(?) pre-built package for btop on Debian, so I had to build it from sources, and for that it needs some tools and dependencies to be installed first, out of which CMake I also had to build from sources, because packaged version <code>3.18.4</code> is a bit old, and btop requires at least <code>3.24</code>:</p>
