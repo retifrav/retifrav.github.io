@@ -1,0 +1,1152 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Meilisearch on a Hugo-based website | Declaration of VAR</title>
+    <link rel="canonical" href="https://decovar.dev/blog/2026/10/21/hugo-meilisearch/" />
+
+    <meta name="generator" content="Hugo" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link href="/favicon.png" rel="icon">
+
+    <meta name="author" content="retif" />
+    <meta name="description" content="Added Meilisearch as the main search engine on my Hugo-based website (with a fallback to the basic search that I had before). Being a proper indexed search, it works dramatically better, let alone that now I finally have the entire website content searchable, not just the post summaries." />
+
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="Declaration of VAR" />
+
+    <meta property="og:url" content="https://retifrav.github.io/blog/2026/10/21/hugo-meilisearch/">
+	<meta property="og:site_name" content="Declaration of VAR">
+	<meta property="og:title" content="Meilisearch on a Hugo-based website">
+	<meta property="og:description" content="Added Meilisearch as the main search engine on my Hugo-based website (with a fallback to the basic search that I had before). Being a proper indexed search, it works dramatically better, let alone that now I finally have the entire website content searchable, not just the post summaries.">
+	<meta property="og:locale" content="en_US">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="blog">
+		<meta property="article:published_time" content="2026-10-21T16:36:48+02:00">
+		<meta property="article:modified_time" content="2026-10-21T16:36:48+02:00">
+		<meta property="article:tag" content="Web">
+		<meta property="article:tag" content="Hugo">
+		<meta property="article:tag" content="Linux">
+		<meta property="article:tag" content="Devops">
+		<meta property="article:tag" content="Ai">
+		<meta property="article:tag" content="Mcp">
+
+
+    
+
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.60c1bc4160e9f7ac460008102a8b89c4a1c40300022aecbd52888b2c5cafb9d0.css" />
+    <link rel="stylesheet" href="/css/default.css" />
+    <link rel="stylesheet" href="/css/post.css" />
+    <link rel="stylesheet" href="/css/page.css" />
+    <link rel="stylesheet" href="/css/comments.css" />
+
+    <script src="/js/mark.js"></script>
+
+    
+    
+  </head>
+  <body>
+    <div id="body-hat">
+      <div id="title-block">
+        <div id="blog-title"><a href="/">Declaration of VAR</a></div>
+        <p>and some other stuff</p>
+      </div>
+    </div>
+    <div style="background-color:orange; padding:4px 16px; font-size:0.8em; text-align:center; font-style:italic;">
+        <code>2021-05-19:</code> The website has moved to
+        <a href="https://decovar.dev/blog/2026/10/21/hugo-meilisearch/" style="color:black; font-weight:bold;">
+            https://decovar.dev/</a>, so <a href="https://retifrav.github.io/blog/2026/10/21/hugo-meilisearch/" style="color:black; font-weight:bold;">https://retifrav.github.io/</a>
+            is just a mirror now.
+    </div>
+    <div id="body-flex">
+      <main class="app-container">
+        
+  <div id="main-container">
+    <article class="post">
+      <header class="post-header">
+        <h1 class ="post-title">Meilisearch on a Hugo-based website</h1>
+        <div class="post-meta">
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg> 2026-10-21 16:36:48 &#43;0200</div>
+          <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg> 35 min read</div>
+        </div>
+      </header>
+      <div class="post-content">
+        <p>Some years ago I added a <a href="/blog/2020/01/05/hugo-search/">basic search</a> to my website. It was rather crude and even primitive, but it was better than nothing. I did want to use a proper search engine already back then, but the variety of available solutions wasn&rsquo;t overwhelming, and none looked attractive enough to invest some effort into. As years passed by, more search engines became available, and out of the new ones I&rsquo;ve now settled with <a href="https://meilisearch.com/">Meilisearch</a>.</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/10/21/hugo-meilisearch/images/search.png" alt="Search query and results from Meilisearch" style="border:1px solid black;">
+
+<p>It extended the search functionality on my website with very useful features such as actually searching the entire contents, ranking the results, ability to exclude certain keywords and some more. At the same time, I did not get rid of the previous search implementation either, it is still available and works as a fallback.</p>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#why-basic-search-isnt-enough">Why basic search isn&rsquo;t enough</a></li>
+    <li><a href="#what-does-meilisearch-have">What does Meilisearch have</a>
+      <ul>
+        <li><a href="#alternatives">Alternatives</a>
+          <ul>
+            <li><a href="#a-bit-of-drama">A bit of drama</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#meilisearch-as-the-main-search">Meilisearch as the main search</a>
+      <ul>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#installation-and-configuration">Installation and configuration</a>
+          <ul>
+            <li><a href="#docker-container">Docker container</a></li>
+            <li><a href="#api-keys">API keys</a>
+              <ul>
+                <li><a href="#indexing-key">Indexing key</a></li>
+                <li><a href="#searching-key">Searching key</a></li>
+                <li><a href="#the-keys-uids">The keys UIDs</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li><a href="#hugo-integration">Hugo integration</a>
+          <ul>
+            <li><a href="#new-custom-output-and-updated-layout">New custom output and updated layout</a></li>
+            <li><a href="#updated-searchjs">Updated search.js</a></li>
+          </ul>
+        </li>
+        <li><a href="#indexing-script">Indexing script</a></li>
+      </ul>
+    </li>
+    <li><a href="#basic-search-as-a-fallback">Basic search as a fallback</a></li>
+    <li><a href="#other-features">Other features</a>
+      <ul>
+        <li><a href="#prometheus-metrics">Prometheus metrics</a></li>
+        <li><a href="#mcp-server">MCP server</a>
+          <ul>
+            <li><a href="#large-mcp-responses">Large MCP responses</a></li>
+            <li><a href="#examples-of-using-mcp-in-claude-code">Examples of using MCP in Claude Code</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+<h2 id="why-basic-search-isnt-enough">Why basic search isn&rsquo;t enough</h2>
+<p>The disadvantages of my current (<em>now previous</em>) implementation were very clear from the start:</p>
+<ul>
+<li>can only find what&rsquo;s inside <code>index.json</code>, meaning that the entire website contents need to be there, and the more content you have, the bigger <code>index.json</code> is (<em>and it is fetched on every search requests</em>), which is why I had to reduce it to just summaries of pages, which naturally meant that nothing else was searchable;</li>
+<li>no ranking/ordering of the search results, so any match has the same &ldquo;weight&rdquo; as others;</li>
+<li>if the search query contains more than one keyword, it will only find places where those words are placed strictly next to each other (<em>with no other words between them</em>).</li>
+</ul>
+<h2 id="what-does-meilisearch-have">What does Meilisearch have</h2>
+<p>Being a proper search engine, Meilisearch works with indexed content, and for me that alone was already the biggest win (<em>as my summaries-only search was borderline useless</em>). But there is <a href="https://meilisearch.com/docs/getting_started/features">more</a>:</p>
+<ul>
+<li><a href="https://meilisearch.com/docs/capabilities/full_text_search/overview">full-text</a> search by keywords but also <a href="https://meilisearch.com/docs/capabilities/hybrid_search/overview">semantic search</a> or a combination of the two (<em>haven&rsquo;t tried that yet</em>);</li>
+<li><a href="https://meilisearch.com/docs/capabilities/full_text_search/how_to/configure_prefix_search">prefix search</a> (<em>or partial matches, which I kinda had already</em>), exact matches, negative search, <a href="https://meilisearch.com/docs/capabilities/full_text_search/how_to/configure_stop_words">stop words</a> and <a href="https://meilisearch.com/docs/capabilities/full_text_search/how_to/configure_dictionary">dictionaries</a>;</li>
+<li><a href="https://meilisearch.com/docs/capabilities/full_text_search/relevancy/ranking_rules">ranking</a>, which is <a href="https://meilisearch.com/docs/capabilities/full_text_search/relevancy/custom_ranking_rules">configurable</a> too;</li>
+<li><a href="https://meilisearch.com/docs/capabilities/full_text_search/relevancy/typo_tolerance_settings">typo tolerance</a>, also configurable;</li>
+<li><a href="https://meilisearch.com/docs/capabilities/hybrid_search/advanced/multiple_embedders">embedders</a> or so-called <a href="https://meilisearch.com/blog/what-is-vector-search">vector-search</a>;</li>
+<li><a href="#mcp-server">MCP</a> integration for LLM agents;</li>
+<li>some more features that I have not read about yet.</li>
+</ul>
+<h3 id="alternatives">Alternatives</h3>
+<p>There are several other search engines available, out of which I was also considering the following:</p>
+<ul>
+<li><a href="https://typesense.org/">Typesense</a> - seems to be the next best thing after Meilisearch, or maybe even a better one, but apparently it keeps everything in RAM, of which I don&rsquo;t have a lot on the VPS where my website is hosted, so that sounded concerning. Also, by the looks of it, the setup/configuration appeared to be more involved;</li>
+<li><a href="https://opensearch.org/">Elasticsearch/OpenSearch</a> - fucking Java again, and right from the start it requires more than 1 GB of RAM (<em>recommended 8 GB!</em>), so hell no. Other than that, Elasticsearch is actually what I was looking at already all those years ago;</li>
+<li><a href="https://pagefind.app/">Pagefind</a> - this one looks like a (<em>much</em>) better alternative to my current basic search, and as I understand it might be possible to use it &ldquo;offline&rdquo; too (<em>self-contained bundles / documentation packages</em>).</li>
+</ul>
+<p>If you are brave enough to try cloud-based solutions without self-hosting options, then there are even more alternatives out there, but I didn&rsquo;t look at those at all.</p>
+<h4 id="a-bit-of-drama">A bit of drama</h4>
+<p>It&rsquo;s nothing serious and probably not even worth bringing up, but it jumped out at me a bit the way Meilisearch people (<em>although it could be just some random unaffiliated users</em>) push their product for example in <a href="https://news.ycombinator.com/item?id=43682013">this thread</a>:</p>
+<blockquote>
+<ul>
+<li>
+<p>I hate the way typesense are doing their « hybrid search » [&hellip;] I tried to explain them in an issue that in this state it was pretty much useless [&hellip;] ton a justification instead of just admitting that this strategy is bad</p>
+</li>
+<li>
+<p>But guess what, meilisearch may need some fine-tuning around your model etc, but in the end it gives you the tool to make a proper hybrid search</p>
+</li>
+<li>
+<p>You should try Meilisearch then, you&rsquo;ll be astonished by the quality of the results and the ease of setup</p>
+</li>
+<li>
+<p>You know that Meilisearch is the way to go, right?</p>
+</li>
+</ul>
+</blockquote>
+<p>One of those comments was a direct reply to someone simply saying that he liked Typesense (<em>which is one of the <a href="#alternatives">alternatives</a></em>):</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/10/21/hugo-meilisearch/images/meilisearch-pushing-on-hackernews.png" alt="Meilisearch pushing their product on Hacker News">
+
+<p>To be fair, this is the only such thread that I have stumbled upon so far. And regardless, I did like Meilisearch myself, it really is a great product, so their promotional strategies don&rsquo;t bother me all that much.</p>
+<h2 id="meilisearch-as-the-main-search">Meilisearch as the main search</h2>
+<h3 id="architecture">Architecture</h3>
+<p>To reiterate, this is how the so-to-say &ldquo;architecture&rdquo; of my basic search looked like up until now:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/10/21/hugo-meilisearch/images/architecture-basic-search.svg" alt="Basic search architecture">
+
+<p>In order to add a search engine into that, specifically Meilisearch, one would need to do the following:</p>
+<ol>
+<li>Set up the Meilisearch instance to run somewhere, probably on the same server where the website is hosted;</li>
+<li>Index the website content in the format that Meilisearch understands and save it in Meilisearch database;
+<ul>
+<li>Hugo can help with that via <a href="#new-custom-output-and-updated-layout">custom output format/layout</a>, but you will still need to create a special <a href="#indexing-script">indexing script</a> for creating search index records out of that output;</li>
+<li>Both Hugo and the indexing script need to be executed somewhere by someone, which implies having CI/CD (<em>already present in my current setup</em>) for running those tasks (<em>unless you hate yourself and do all that manually</em>);</li>
+</ul>
+</li>
+<li>Implement the searching functionality on your website - sending requests to the Meilisearch instance and showing results to the user;
+<ul>
+<li>Everything can be done with <a href="#updated-searchjs">JavaScript</a>, so there is still no need to involve a backend, and your website remains to be a collection of static HTML pages generated by Hugo;</li>
+<li>Optionally implement a simpler fallback search (<em>conveniently, that I already have with my <a href="#basic-search-as-a-fallback">basic search</a></em>).</li>
+</ul>
+</li>
+<li>Since it isn&rsquo;t a good idea to expose Meilisearch port to the wild internet (<em>especially that there will be an <a href="#searching-key">API key</a> involved</em>), you should probably reverse-proxy search requests with your current web-server (<em>the very same NGINX that serves the website itself</em>).</li>
+</ol>
+<p>So then the architecture diagram changes accordingly:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/10/21/hugo-meilisearch/images/architecture-meilisearch.svg" alt="Meilisearch architecture">
+
+<p>And as far as my understanding goes, replacing Meilisearch with a different engine shouldn&rsquo;t cause me a lot of troubles, because they all(?) likely share the same general idea. Of course, the indexing script will require certain engine-specific adjustments, but other than that it does not feel like I am getting myself vendor-locked to Meilisearch.</p>
+<h3 id="installation-and-configuration">Installation and configuration</h3>
+<p>Meilisearch itself is a single self-contained executable, and there is also a pre-made <a href="https://hub.docker.com/r/getmeili/meilisearch">Docker image</a> for running it in a container, so the <a href="https://meilisearch.com/docs/resources/self_hosting/getting_started/docker">installation procedure</a> is rather uncomplicated.</p>
+<h4 id="docker-container">Docker container</h4>
+<p>The container will be running from a non-root <code>ubuntu</code> user with a <a href="https://github.com/retifrav/scraps/blob/master/docker/index.md#rootless-mode">rootless Docker</a>, so check whether that user has lingering enabled:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ loginctl show-user ubuntu -p Linger
+</span></span><span style="display:flex;"><span>Linger<span style="color:#f92672">=</span>yes
+</span></span></code></pre></div><p>The compose file is in <code>/home/ubuntu/meili/compose.yaml</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">name</span>: <span style="color:#ae81ff">meilisearch</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">services</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">meilisearch</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">image</span>: <span style="color:#ae81ff">getmeili/meilisearch:v1.54.3</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">container_name</span>: <span style="color:#ae81ff">meilisearch</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">restart</span>: <span style="color:#ae81ff">unless-stopped</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">ports</span>: [<span style="color:#e6db74">&#34;127.0.0.1:7700:7700&#34;</span>]
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">env_file</span>: <span style="color:#ae81ff">./meili.env</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">environment</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">MEILI_ENV</span>: <span style="color:#ae81ff">production</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">MEILI_NO_ANALYTICS</span>: <span style="color:#e6db74">&#34;true&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">volumes</span>: [<span style="color:#e6db74">&#34;meili_data:/meili_data&#34;</span>]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">volumes</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">meili_data</span>:
+</span></span></code></pre></div><p>The <code>/home/ubuntu/meili/meili.env</code> (<em><code>chmod 600</code></em>) contains <code>MEILI_MASTER_KEY</code> - a random secret value:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>MEILI_MASTER_KEY<span style="color:#f92672">=</span>ANY-RANDOM-16-SYMBOLS-STRING-HERE-OR-LONGER
+</span></span></code></pre></div><p>Next thing to note is that I decided to use a <a href="https://docs.docker.com/engine/storage/volumes/">named volume</a> for the data persistence, but it should also work fine with a <a href="https://docs.docker.com/engine/storage/bind-mounts/">bind mount</a>. Also there is no need to set the timezone for container, as the image has no <code>tzdata</code> out of the box and operates in UTC.</p>
+<p>As for analytics/telemetry, in general I wouldn&rsquo;t mind sharing anonymized data, especially for a product that I got to use free of charge, but Meilisearch collects a <a href="https://meilisearch.com/docs/resources/help/telemetry#exhaustive-list-of-all-collected-data">tremendous amount of data</a> with no option to select what to share (<em>like how it is done in <a href="https://home-assistant.io/integrations/analytics/#what-can-be-shared">Home Assistant</a></em>), so I disabled it.</p>
+<p>The <code>7700</code> port is not exposed to the internet (<em>binds to localhost</em>), as only the web-server (<em>NGINX</em>) needs to communicate with it (<em>reverse-proxy the search requests</em>).</p>
+<p>Creating a container is the usual:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># if you are root now, use the non-root user shell</span>
+</span></span><span style="display:flex;"><span>$ machinectl shell ubuntu@
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># that should expand to /home/ubuntu/meili/</span>
+</span></span><span style="display:flex;"><span>$ cd ~/meili/
+</span></span><span style="display:flex;"><span>$ docker compose up -d
+</span></span></code></pre></div><p>And for updating the container image, pin the new version in <code>./compose.yaml</code> and then:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ docker compose pull <span style="color:#f92672">&amp;&amp;</span> docker compose up -d
+</span></span></code></pre></div><p>To verify that everything was set up correctly:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># a helper variable</span>
+</span></span><span style="display:flex;"><span>$ M<span style="color:#f92672">=</span>http://127.0.0.1:7700
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ curl -s <span style="color:#e6db74">&#34;</span>$M<span style="color:#e6db74">/health&#34;</span> -w <span style="color:#e6db74">&#34;\n&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span><span style="color:#e6db74">&#34;status&#34;</span>:<span style="color:#e6db74">&#34;available&#34;</span><span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># this should return 401, which means that authentication is enforced</span>
+</span></span><span style="display:flex;"><span>$ curl -s -o /dev/null -w <span style="color:#e6db74">&#39;%{http_code}\n&#39;</span> <span style="color:#e6db74">&#34;</span>$M<span style="color:#e6db74">/keys&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">401</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># the port should only be available from localhost</span>
+</span></span><span style="display:flex;"><span>$ ss -ltn | grep <span style="color:#ae81ff">7700</span>
+</span></span><span style="display:flex;"><span>LISTEN <span style="color:#ae81ff">0</span>      <span style="color:#ae81ff">4096</span>       127.0.0.1:7700      0.0.0.0:*
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ docker compose logs meilisearch | grep -i -E <span style="color:#e6db74">&#39;environment|telemetry&#39;</span>
+</span></span><span style="display:flex;"><span>meilisearch  | Environment:        <span style="color:#e6db74">&#34;production&#34;</span>
+</span></span><span style="display:flex;"><span>meilisearch  | Anonymous telemetry:    <span style="color:#e6db74">&#34;Disabled&#34;</span>
+</span></span></code></pre></div><h4 id="api-keys">API keys</h4>
+<p>Using Meilisearch API requires certain API keys to be created, a minimum set of two:</p>
+<ol>
+<li>Indexing/writing key - for creating search indexes;</li>
+<li>Searching/reading key - for performing the actual search.</li>
+</ol>
+<p>Actually, once the master key is set, Meilisearch seems to create some default keys itself, but I still prefer to issue my own keys with an explicit scope. I should probably delete the defaults ones too.</p>
+<p>The keys are created by sending requests to Meilisearch API using <code>MEILI_MASTER_KEY</code> (<em>the one from <code>/home/ubuntu/meili/meili.env</code></em>). Aside from those minimally required two keys, later you might need to create some more, so here&rsquo;s a convenience function for issuing a new key:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># assuming you are still in that non-root user shell</span>
+</span></span><span style="display:flex;"><span>$ cd ~/meili/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># load MEILI_MASTER_KEY without typing it, so it won&#39;t get saved in commands history</span>
+</span></span><span style="display:flex;"><span>$ set -a; . ./meili.env; set +a
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># that helper variable again</span>
+</span></span><span style="display:flex;"><span>$ M<span style="color:#f92672">=</span>http://127.0.0.1:7700
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># a convenience function for issuing API keys</span>
+</span></span><span style="display:flex;"><span>$ mkkey<span style="color:#f92672">()</span> <span style="color:#f92672">{</span> curl -s -X POST <span style="color:#e6db74">&#34;</span>$M<span style="color:#e6db74">/keys&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#34;Authorization: Bearer </span>$MEILI_MASTER_KEY<span style="color:#e6db74">&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#e6db74">&#34;</span>$1<span style="color:#e6db74">&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    | python -c <span style="color:#e6db74">&#39;import json,sys; r=json.load(sys.stdin); print(r.get(&#34;key&#34;) or r)&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># check that it is a function</span>
+</span></span><span style="display:flex;"><span>$ type mkkey
+</span></span><span style="display:flex;"><span>mkkey is a <span style="color:#66d9ef">function</span>
+</span></span></code></pre></div><h5 id="indexing-key">Indexing key</h5>
+<p>First is the index writing key:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkkey <span style="color:#e6db74">&#39;{&#34;name&#34;:&#34;YOUR-WEBSITE-indexer&#34;,&#34;description&#34;:&#34;Indexing/writing key for the indexing step over SSH&#34;,&#34;actions&#34;:[&#34;indexes.create&#34;,&#34;indexes.delete&#34;,&#34;indexes.get&#34;,&#34;indexes.swap&#34;,&#34;settings.update&#34;,&#34;documents.add&#34;,&#34;tasks.get&#34;],&#34;indexes&#34;:[&#34;*&#34;],&#34;expiresAt&#34;:null}&#39;</span>
+</span></span><span style="display:flex;"><span>ISSUED-API-KEY-FOR-INDEXING
+</span></span></code></pre></div><p>This key is meant to be used for creating index records in Meilisearch with the <a href="#indexing-script">indexing script</a>, and in my setup that script is run via SSH by a CI/CD build agent, for which I have a separate user account on the server where the website is hosted. So I put that key into <code>/home/buildbot/YOUR-WEBSITE-index-writer.key</code> file:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ echo <span style="color:#e6db74">&#39;ISSUED-API-KEY-FOR-INDEXING&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    | sudo -u buildbot tee /home/buildbot/YOUR-WEBSITE-index-writer.key &gt; /dev/null
+</span></span><span style="display:flex;"><span>$ sudo chmod <span style="color:#ae81ff">600</span> /home/buildbot/YOUR-WEBSITE-index-writer.key
+</span></span></code></pre></div><p>&hellip;although you should probably do this differently for the same reason of keeping the key out of commands history.</p>
+<h5 id="searching-key">Searching key</h5>
+<p>Second is the search-only reading key:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkkey <span style="color:#e6db74">&#39;{&#34;name&#34;:&#34;YOUR-WEBSITE-search&#34;,&#34;description&#34;:&#34;Searching/reading key for querying /api/search&#34;,&#34;actions&#34;:[&#34;search&#34;],&#34;indexes&#34;:[&#34;*&#34;],&#34;expiresAt&#34;:null}&#39;</span>
+</span></span><span style="display:flex;"><span>ISSUED-API-KEY-FOR-SEARCHING
+</span></span></code></pre></div><p>This key goes into NGINX config for the website, something like <code>/etc/nginx/sites-enabled/YOUR-WEBSITE</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;display:grid;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#75715e"># ...
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">location</span> = <span style="color:#e6db74">/api/search/indexes/INDEX-NAME/search</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">limit_except</span> <span style="color:#e6db74">POST</span> { <span style="color:#f92672">deny</span> <span style="color:#e6db74">all</span>; }
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># up to 20 requests above the rate are let through right away
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e"># (instead of being delayed, which would make search-as-you-type lag),
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e"># anything more gets 429
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#limit_req zone=YOUR-WEBSITE_search burst=20 nodelay;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#limit_req_status 429;
+</span></span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">client_max_body_size</span> <span style="color:#ae81ff">4k</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://127.0.0.1:7700/indexes/INDEX-NAME/search</span>;
+</span></span><span style="display:flex; background-color:#3c3d38"><span>    <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Authorization</span> <span style="color:#e6db74">&#34;Bearer</span> <span style="color:#e6db74">ISSUED-API-KEY-FOR-SEARCHING&#34;</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">location</span> <span style="color:#e6db74">/api/search/</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">return</span> <span style="color:#ae81ff">404</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">location</span> <span style="color:#e6db74">/</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">try_files</span> $uri $uri/ =<span style="color:#ae81ff">404</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># ...
+</span></span></span></code></pre></div><p>For the rate limiting to work you will also need to add the following inside <code>http { ... }</code> block in the main <code>/etc/nginx/nginx.conf</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#75715e"># rate limiting
+</span></span></span><span style="display:flex;"><span><span style="color:#66d9ef">limit_req_zone</span> $binary_remote_addr <span style="color:#e6db74">zone=YOUR-WEBSITE_search:10m</span> <span style="color:#e6db74">rate=10r/s</span>;
+</span></span></code></pre></div><p>&hellip;and then uncomment the <code>limit_req</code> lines in the website config.</p>
+<p>Either way, once NGINX is restarted, you should be able to test the requests proxying by running this from any other host:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -s -X POST https://YOUR-WEBSITE/api/search/indexes/INDEX-NAME/search <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;Content-Type: application/json&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --data <span style="color:#e6db74">&#39;{&#34;q&#34;:&#34;ololo&#34;}&#39;</span> -w <span style="color:#e6db74">&#34;\n&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    | jq
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;Index `INDEX-NAME` not found.&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;code&#34;</span>: <span style="color:#e6db74">&#34;index_not_found&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;invalid_request&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;link&#34;</span>: <span style="color:#e6db74">&#34;https://docs.meilisearch.com/errors#index_not_found&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>The index not being found is an expected result, since nothing has been indexed yet, so this only verifies that Meilisearch endpoint is reachable and that NGINX does the proxying. And if the API key for searching was incorrect, then the response would be this instead:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;message&#34;</span>: <span style="color:#e6db74">&#34;The provided API key is invalid.&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;code&#34;</span>: <span style="color:#e6db74">&#34;invalid_api_key&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;auth&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;link&#34;</span>: <span style="color:#e6db74">&#34;https://docs.meilisearch.com/errors#invalid_api_key&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span></code></pre></div><h5 id="the-keys-uids">The keys UIDs</h5>
+<p>The API keys are identified by UIDs, which are random <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)">version-4 UUID</a> values generated during the key creation. You can generate a UID beforehand yourself (<em>with <code>uuidgen -r</code></em>) and pass it to <code>mkkey</code> function as a part of the JSON payload (<em>there will be an example a bit later</em>), but it is probably better/easier to just get the auto-generated values after the keys have been created/issued:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -s <span style="color:#e6db74">&#34;</span>$M<span style="color:#e6db74">/keys&#34;</span> -H <span style="color:#e6db74">&#34;Authorization: Bearer </span>$MEILI_MASTER_KEY<span style="color:#e6db74">&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    | jq <span style="color:#e6db74">&#39;.results[] | {name, uid, actions, indexes}&#39;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;YOUR-WEBSITE-indexer&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;uid&#34;</span>: <span style="color:#e6db74">&#34;INDEXER-KEY-UID-HERE&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;actions&#34;</span>: <span style="color:#f92672">[</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;indexes.create&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;indexes.delete&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;indexes.get&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;indexes.swap&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;settings.update&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;documents.add&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;tasks.get&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">]</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;indexes&#34;</span>: <span style="color:#f92672">[</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;*&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;YOUR-WEBSITE-search&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;uid&#34;</span>: <span style="color:#e6db74">&#34;SEARCH-KEY-UID-HERE&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;actions&#34;</span>: <span style="color:#f92672">[</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;search&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">]</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;indexes&#34;</span>: <span style="color:#f92672">[</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;*&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>It is not very important to know/save those UIDs, but it does matter for reproducibility. An API key value is derived from UID and master key (<em><code>MEILI_MASTER_KEY</code></em>), and the same master key and the same UID will produce the same API key value. This means that you will be able to recreate the exact same API keys after losing/deleting the Meilisearch database, so you won&rsquo;t need to update the keys saved in <code>/home/buildbot/YOUR-WEBSITE-index-writer.key</code>, or in the NGINX config, or in your <a href="#mcp-server">LLM agent</a> or wherever else you might be calling the Meilisearch API from.</p>
+<p>When/if it will come to a point of re-creating an existing API key in a fresh Meilisearch instance, you&rsquo;ll just need to add the UID value to the issuing command:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkkey <span style="color:#e6db74">&#39;{&#34;uid&#34;:&#34;SEARCH-KEY-UID-HERE&#34;,&#34;name&#34;:&#34;YOUR-WEBSITE-search&#34;,&#34;...&#34;:&#34;...&#34;}&#39;</span>
+</span></span><span style="display:flex;"><span>ISSUED-API-KEY-FOR-SEARCHING
+</span></span></code></pre></div><p>and it will produce the same API key value as the one you already have in your configs or wherever.</p>
+<p>So, aside from saving the <code>MEILI_MASTER_KEY</code> in a password manager / secrets storage, it is also recommended to save the keys UIDs. Those are less secret, and you can probably even store them in plain text somewhere (<em>documentation, wiki, etc</em>).</p>
+<h3 id="hugo-integration">Hugo integration</h3>
+<h4 id="new-custom-output-and-updated-layout">New custom output and updated layout</h4>
+<p>Hugo can help with the indexing task via a custom output - same idea as how it is done with <a href="/blog/2020/01/05/hugo-search/#create-an-index-file">index.json</a>, but more advanced now. The output format will be described in <code>.../layouts/_default/index.searchrecords.json</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>{{<span style="color:#f92672">-</span> <span style="color:#75715e">/*
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">    Source for the Meilisearch index. Covers every listed page with content (pages with
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">    `build: list: never` are not in `site.Pages`).
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">*/</span> <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>{{<span style="color:#f92672">-</span> <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">not</span> <span style="color:#a6e22e">site</span>.<span style="color:#a6e22e">Params</span>.<span style="color:#a6e22e">search</span>.<span style="color:#a6e22e">index</span> <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>    {{<span style="color:#f92672">-</span> <span style="color:#a6e22e">errorf</span> <span style="color:#e6db74">&#34;The SearchRecords output format is enabled, but params.search.index (the Meilisearch index uid) is not set&#34;</span> <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>{{<span style="color:#f92672">-</span> <span style="color:#a6e22e">end</span> <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>{{<span style="color:#f92672">-</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">pages</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">slice</span> <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>{{<span style="color:#f92672">-</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">where</span> <span style="color:#a6e22e">site</span>.<span style="color:#a6e22e">Pages</span> <span style="color:#e6db74">&#34;Kind&#34;</span> <span style="color:#e6db74">&#34;in&#34;</span> (<span style="color:#a6e22e">slice</span> <span style="color:#e6db74">&#34;home&#34;</span> <span style="color:#e6db74">&#34;section&#34;</span> <span style="color:#e6db74">&#34;page&#34;</span>) <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>    {{<span style="color:#f92672">-</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">content</span> <span style="color:#f92672">:=</span> .<span style="color:#a6e22e">Content</span> <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>    {{<span style="color:#f92672">-</span> <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">strings</span>.<span style="color:#a6e22e">TrimSpace</span> (<span style="color:#a6e22e">plainify</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">content</span>) <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>        {{<span style="color:#f92672">-</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">breadcrumbs</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">slice</span> <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>        {{<span style="color:#f92672">-</span> <span style="color:#66d9ef">range</span> .<span style="color:#a6e22e">Ancestors</span>.<span style="color:#a6e22e">Reverse</span> <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>            {{<span style="color:#f92672">-</span> <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">not</span> .<span style="color:#a6e22e">IsHome</span> <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>                {{<span style="color:#f92672">-</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">breadcrumbs</span> = <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">breadcrumbs</span> | <span style="color:#a6e22e">append</span> .<span style="color:#a6e22e">Title</span> <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>            {{<span style="color:#f92672">-</span> <span style="color:#a6e22e">end</span> <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>        {{<span style="color:#f92672">-</span> <span style="color:#a6e22e">end</span> <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>        {{<span style="color:#f92672">-</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">pages</span> = <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">pages</span> | <span style="color:#a6e22e">append</span> (<span style="color:#a6e22e">dict</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;path&#34;</span> .<span style="color:#a6e22e">RelPermalink</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;title&#34;</span> .<span style="color:#a6e22e">Title</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;section&#34;</span> .<span style="color:#a6e22e">Section</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;date&#34;</span> (<span style="color:#a6e22e">cond</span> .<span style="color:#a6e22e">Date</span>.<span style="color:#a6e22e">IsZero</span> <span style="color:#e6db74">&#34;&#34;</span> (.<span style="color:#a6e22e">Date</span>.<span style="color:#a6e22e">Format</span> <span style="color:#e6db74">&#34;2006-01-02&#34;</span>))
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;breadcrumbs&#34;</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">breadcrumbs</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;tags&#34;</span> (.<span style="color:#a6e22e">Params</span>.<span style="color:#a6e22e">tags</span> | <span style="color:#66d9ef">default</span> .<span style="color:#a6e22e">Params</span>.<span style="color:#a6e22e">newstags</span> | <span style="color:#66d9ef">default</span> <span style="color:#a6e22e">slice</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;content&#34;</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">content</span>
+</span></span><span style="display:flex;"><span>        ) <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>    {{<span style="color:#f92672">-</span> <span style="color:#a6e22e">end</span> <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>{{<span style="color:#f92672">-</span> <span style="color:#a6e22e">end</span> <span style="color:#f92672">-</span>}}
+</span></span><span style="display:flex;"><span>{{<span style="color:#f92672">-</span> <span style="color:#a6e22e">jsonify</span> (<span style="color:#a6e22e">dict</span> <span style="color:#e6db74">&#34;noHTMLEscape&#34;</span> <span style="color:#66d9ef">true</span>) (<span style="color:#a6e22e">dict</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;format&#34;</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;index&#34;</span> (<span style="color:#66d9ef">string</span> <span style="color:#a6e22e">site</span>.<span style="color:#a6e22e">Params</span>.<span style="color:#a6e22e">search</span>.<span style="color:#a6e22e">index</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;pages&#34;</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">pages</span>
+</span></span><span style="display:flex;"><span>) <span style="color:#f92672">-</span>}}
+</span></span></code></pre></div><p>As you can see, it takes the <code>.Content</code> part, which is the rendered HTML body without layout parts around it (<em>navigation, header, footer, etc</em>). I do realize that it might seem counter-intuitive to index the rendered HTML instead of the original Markdown files, but actually the rendered content is a more reliable source for building a search index:</p>
+<ul>
+<li>HTML parsing is a more or less common task with existing standard implementations (<em>such as <a href="https://docs.python.org/3/library/html.parser.html">html.parser</a> in Python</em>), but processing Markdown the same way as Hugo does it would mean reimplementing Hugo&rsquo;s renderer (<em>with <a href="https://gohugo.io/content-management/shortcodes/">shortcodes</a> too</em>) to produce the matching output;
+<ul>
+<li>code listings might originate from Markdown fences (<em>three backticks</em>) or from <a href="https://gohugo.io/shortcodes/highlight/">highlight</a> shortcode, and a non-Hugo parser could process a <code>#</code> comment line inside a <code>highlight</code> block as a <code>&lt;h1&gt;</code> heading;</li>
+<li>search results link to the sections on pages via anchors that Hugo assigned to the headings, so an indexer working with raw Markdown files would need to know how Hugo does it in order to produce matching IDs;</li>
+<li>there are likely more caveats like this, no point in listing all of them;</li>
+</ul>
+</li>
+<li>unparsed/unprocessed Markdown would bring its own syntax into the index (<em>and so into the search results</em>) - the bold/italic/etc markup, bracketed links, <a href="https://gohugo.io/content-management/front-matter/">front matter</a>, shortcodes (<em>which would not get evaluated, by the way, as noted in the first point</em>) and so on - all that would need to be converted into the plain text;</li>
+<li>I have raw HTML inclusions in my Markdown sources (<em>some tables and other custom-styled things</em>), and that HTML needs to get stripped before indexing, so I would still need to do some pre-processing for my raw Markdown files anyway.</li>
+</ul>
+<p>To enable the new output, <code>config.toml</code> gets this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-toml" data-lang="toml"><span style="display:flex;"><span>[<span style="color:#a6e22e">params</span>.<span style="color:#a6e22e">search</span>]
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># where the search requests go (NGINX forwards this to Meilisearch),</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># and an empty value here means using only the basic index.json search</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">endpoint</span> = <span style="color:#e6db74">&#34;/api/search/&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># Meilisearch index name</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">index</span> = <span style="color:#e6db74">&#34;INDEX-NAME&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>[<span style="color:#a6e22e">outputs</span>]
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># - `HTML` - the actual website contents</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># - `RSS` - RSS feeds, duh</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># - `JSON` - basic/fallback search (index.json)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># - `SearchRecords` - Meilisearch index source (search-records.json)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">home</span> = [<span style="color:#e6db74">&#34;HTML&#34;</span>, <span style="color:#e6db74">&#34;RSS&#34;</span>, <span style="color:#e6db74">&#34;JSON&#34;</span>, <span style="color:#e6db74">&#34;SearchRecords&#34;</span>]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>[<span style="color:#a6e22e">outputFormats</span>.<span style="color:#a6e22e">SearchRecords</span>]
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">mediaType</span> = <span style="color:#e6db74">&#34;application/json&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">baseName</span> = <span style="color:#e6db74">&#34;search-records&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">isPlainText</span> = <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">notAlternative</span> = <span style="color:#66d9ef">true</span>
+</span></span></code></pre></div><p>and <code>.../layouts/_default/baseof.html</code> gets the following:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>{{<span style="color:#f92672">-</span> <span style="color:#a6e22e">with</span> .<span style="color:#a6e22e">Site</span>.<span style="color:#a6e22e">Params</span>.<span style="color:#a6e22e">search</span>.<span style="color:#a6e22e">endpoint</span> }}
+</span></span><span style="display:flex;"><span>    &lt;!<span style="color:#f92672">--</span> <span style="color:#a6e22e">using</span> <span style="color:#a6e22e">Meilisearch</span> (<span style="color:#a6e22e">with</span> <span style="color:#a6e22e">a</span> <span style="color:#a6e22e">fallback</span> <span style="color:#a6e22e">to</span> <span style="color:#a6e22e">basic</span> <span style="color:#a6e22e">index</span>.<span style="color:#a6e22e">json</span> <span style="color:#a6e22e">search</span> <span style="color:#a6e22e">without</span> <span style="color:#a6e22e">these</span>) <span style="color:#f92672">--</span>&gt;
+</span></span><span style="display:flex;"><span>    &lt;<span style="color:#a6e22e">meta</span> <span style="color:#a6e22e">name</span>=<span style="color:#e6db74">&#34;searchEndpoint&#34;</span> <span style="color:#a6e22e">content</span>=<span style="color:#e6db74">&#34;{{ . }}&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>    &lt;<span style="color:#a6e22e">meta</span> <span style="color:#a6e22e">name</span>=<span style="color:#e6db74">&#34;searchIndex&#34;</span> <span style="color:#a6e22e">content</span>=<span style="color:#e6db74">&#34;{{ $.Site.Params.search.index }}&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>{{<span style="color:#f92672">-</span> <span style="color:#a6e22e">end</span> }}
+</span></span></code></pre></div><p>Getting a bit more advanced, the <code>INDEX-NAME</code> might not be a forever static value. In my simple case it is indeed a static value because I have only one revision of my website contents - the latest. But for scenarios where you might need to have an index per content revision (<em>such as for documentation in different versions of your SDK/library/etc</em>) the index name might have a dynamic format like <code>SDK_DOCUMENTATION_123</code>, so it would get updated on every new published revision (<em><code>SDK_DOCUMENTATION_124</code>, <code>SDK_DOCUMENTATION_125</code> and so on</em>), and every indexing run would <a href="https://meilisearch.com/docs/reference/api/indexes/create-index">create</a> a new Meilisearch index (<em>while in my case I just <a href="https://meilisearch.com/docs/reference/api/indexes/swap-indexes">swap</a> old with new, so there is only ever one</em>). In such a case of several live indexes, trying to search for things within v1.2.4 documentation will get you results from the index that was created for this exact version and not from v1.2.3 or v1.2.5 - and that is mainly the point of stating the index name in the <code>searchIndex</code> meta tag.</p>
+<h4 id="updated-searchjs">Updated search.js</h4>
+<p>My crude <a href="/blog/2020/01/05/hugo-search/#write-the-search-function">search function</a> has changed quite a lot, but in short what it does now is first it tries to send a query to Meilisearch, and if that fails, then it fallbacks to the <a href="#basic-search-as-a-fallback">basic search</a> (<em>which got some small improvements too</em>).</p>
+<p>There are several interesting implementation details in the updated script, such as utilizing <a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortController">AbortController</a> for cancelled search queries and using search &ldquo;generations&rdquo; to drop no longer relevant (<em>superseded</em>) results, but it is probably better if you inspect the full script yourself instead of me posting 300+ lines here. The version that I had when I was writing this article is saved separately <a href="./etc/5440e6e809c40e780f27d4cab155f660c94aee10.search.js">here</a>, but you can also get the <a href="/js/search.js">latest version</a> directly from the live website.</p>
+<h3 id="indexing-script">Indexing script</h3>
+<p>So yes, there needs to be something that would index your website content, as Meilisearch itself does not fetch or crawl anything (<em>unless you are using their <a href="https://meilisearch.com/pricing">cloud variant</a></em>), so data will get into Meilisearch instance only when a script or some other executable will call the API to create an <a href="https://meilisearch.com/docs/resources/internals/indexes">index</a>. Moreover, Meilisearch operates with <a href="https://meilisearch.com/docs/capabilities/indexing/tasks_and_batches/monitor_tasks">asynchronous tasks</a>, and to know their status one would also need to poll the API. But even before calling the API, <code>search-records.json</code> file needs to be split into <a href="https://meilisearch.com/docs/resources/internals/documents">documents</a>, while also splitting long articles into chunks and trying not to tear code blocks into unrelated pieces.</p>
+<p>I figured that all of that can be done by a Python script, which I named simply <code>index-for-search.py</code>. Same as with the <a href="#updated-searchjs">search.js</a>, I won&rsquo;t post the entire 600+ lines of it in the article - you can get the full script from <a href="./etc/5440e6e809c40e780f27d4cab155f660c94aee10.index-for-search.py">here</a>. Also, not gonna lie, I didn&rsquo;t exactly write it myself, if you know what I mean.</p>
+<p>The script is meant to be run by CI/CD build agent over SSH right after the website content (<em>Hugo output</em>) is deployed to server:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ssh -o BatchMode<span style="color:#f92672">=</span>yes -o StrictHostKeyChecking<span style="color:#f92672">=</span>accept-new buildbot@YOUR-HOST <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;python - --records /var/www/YOUR-WEBSITE/search-records.json --key-file /home/buildbot/YOUR-WEBSITE-index-writer.key &amp;&amp; rm /var/www/YOUR-WEBSITE/search-records.json&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    &lt; ./scripts/index-for-search.py
+</span></span></code></pre></div><p>If you are going to use TeamCity for that, it would need to be a regular <a href="https://jetbrains.com/help/teamcity/command-line.html">Command Line</a> step (<em>not <a href="https://jetbrains.com/help/teamcity/ssh-exec.html">SSH Exec</a></em>), and it will also require adding <code>SSH agent</code> build feature with the SSH key for <code>buildbot@YOUR-HOST</code>.</p>
+<p>Deleting <code>search-records.json</code> after indexing is optional, and you might even prefer to keep it in case you&rsquo;ll ever need to re-build the index without running the entire CI/CD chain, but you should be aware that this file is likely to end up being publicly available at <code>https://YOUR-WEBSITE/search-records.json</code>.</p>
+<p>Once the script runs and creates the very first index in your Meilisearch instance (<em>on your next updated website deployment</em>), you can check whether it worked or not by sending the same request that was failing with <code>index_not_found</code> earlier:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -s -X POST https://YOUR-WEBSITE/api/search/indexes/INDEX-NAME/search <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;Content-Type: application/json&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --data <span style="color:#e6db74">&#39;{&#34;q&#34;:&#34;ololo&#34;}&#39;</span> -w <span style="color:#e6db74">&#34;\n&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    | jq
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;hits&#34;</span>: <span style="color:#f92672">[</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;/blog/2019/05/26/sdl-imgui/#concatenate-a-string&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;page_title&#34;</span>: <span style="color:#e6db74">&#34;SDL and Dear ImGui, C++ GUI without Qt&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;hierarchy&#34;</span>: <span style="color:#f92672">[</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;Dealing with C++ without Qt&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;Concatenate a string&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">]</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;breadcrumbs&#34;</span>: <span style="color:#f92672">[</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;Blog posts&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">]</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;content&#34;</span>: <span style="color:#e6db74">&#34;In Qt you can form a string like this:\n#include &lt;QString&gt;\n// ...\nQString someString = QString(\&#34;ololo, %1 with %2 words (actually, it&#39;s more)\&#34;)\n.arg(\&#34;this is a string\&#34;)\n.arg(4);\nThere are several ways to do that in C++ without Qt, and I liked the one with ostringstream the most:\n#include &lt;sstream&gt;\n// ...\nstd::ostringstream someStream;\nsomeStream &lt;&lt; \&#34;ololo, \&#34; &lt;&lt; \&#34;this is a string\&#34; &lt;&lt; \&#34; with \&#34; &lt;&lt; 4 &lt;&lt; \&#34; words (actually, it&#39;s more)\&#34;;\nstd::string someString = someStream.str();&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;section&#34;</span>: <span style="color:#e6db74">&#34;blog&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;date&#34;</span>: <span style="color:#e6db74">&#34;2019-05-26&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;tags&#34;</span>: <span style="color:#f92672">[</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;cpp&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;cmake&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">]</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;chunk&#34;</span>: <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;...&#34;</span>: <span style="color:#e6db74">&#34;...&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">]</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;query&#34;</span>: <span style="color:#e6db74">&#34;ololo&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;processingTimeMs&#34;</span>: 46,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;limit&#34;</span>: 20,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;offset&#34;</span>: 0,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;estimatedTotalHits&#34;</span>: 43,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;requestUid&#34;</span>: <span style="color:#e6db74">&#34;01a144e8-7973-72d1-b483-969c7869c434&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>And using the search input field on your website pages should now return results from Meilisearch.</p>
+<h2 id="basic-search-as-a-fallback">Basic search as a fallback</h2>
+<p>As I mentioned, the basic search didn&rsquo;t go anywhere, and it now serves as a fallback when the <a href="#meilisearch-as-the-main-search">main search</a> becomes unavailable for some reason (<em>Meilisearch instance is down, NGINX rate-limiting kicked in, etc</em>).</p>
+<p>The implementation is in the same <a href="#updated-searchjs">search.js</a>, and even though it got some small improvements (<em>mostly fixes for old problems, such as escaping regular expressions, so these no longer work</em>), it doesn&rsquo;t do anything new - still a very unintelligent <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/match">match()</a> for titles and summaries of the articles, so about 95% of the website content is unsearchable, as I have already explained <a href="#why-basic-search-isnt-enough">over there</a>.</p>
+<p>It does print a warning into web-browser console when the fallback happens:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#a6e22e">Meilisearch</span> <span style="color:#a6e22e">search</span> <span style="color:#a6e22e">is</span> <span style="color:#a6e22e">not</span> <span style="color:#a6e22e">available</span> (<span style="color:#ae81ff">404</span>, <span style="color:#a6e22e">no</span> <span style="color:#a6e22e">details</span>), <span style="color:#a6e22e">falling</span> <span style="color:#a6e22e">back</span> <span style="color:#a6e22e">to</span> <span style="color:#a6e22e">the</span> <span style="color:#a6e22e">basic</span> <span style="color:#a6e22e">search</span>
+</span></span></code></pre></div><p>but I should probably also show some indication of that in the search results.</p>
+<h2 id="other-features">Other features</h2>
+<p>Meilisearch has several additional experimental features, all of which are disabled by default. You can check the current state with this query:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -s <span style="color:#e6db74">&#34;</span>$M<span style="color:#e6db74">/experimental-features/&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#34;Authorization: Bearer </span>$MEILI_MASTER_KEY<span style="color:#e6db74">&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;Content-Type: application/json&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -w <span style="color:#e6db74">&#34;\n&#34;</span> | jq
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;metrics&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;logsRoute&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;tasksStreamingRoute&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;editDocumentsByFunction&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;containsFilter&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;dynamicSearchRules&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;network&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;getTaskDocumentsRoute&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;taskQueueCompactionRoute&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;compositeEmbedders&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;chatCompletions&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;multimodal&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;foreignKeys&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;disableDocumentsFetchQueue&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;legacySearch&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;renderRoute&#34;</span>: false,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;mcpRoute&#34;</span>: false
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>My output if from Meilisearch version 1.54.3, and it is likely to change in newer versions.</p>
+<h3 id="prometheus-metrics">Prometheus metrics</h3>
+<p>Conveniently, Meilisearch instance supports publishing <a href="https://meilisearch.com/docs/reference/api/stats/get-prometheus-metrics">Prometheus metrics</a>. First you need to enable it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -s -X PATCH <span style="color:#e6db74">&#34;</span>$M<span style="color:#e6db74">/experimental-features/&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#34;Authorization: Bearer </span>$MEILI_MASTER_KEY<span style="color:#e6db74">&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;Content-Type: application/json&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --data <span style="color:#e6db74">&#39;{&#34;metrics&#34;: true}&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -w <span style="color:#e6db74">&#34;\n&#34;</span> | jq
+</span></span></code></pre></div><p>and then issue a new API key for querying the metrics:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkkey <span style="color:#e6db74">&#39;{&#34;name&#34;:&#34;prometheus&#34;,&#34;description&#34;:&#34;Prometheus scraper, metrics only&#34;,&#34;actions&#34;:[&#34;metrics.get&#34;],&#34;indexes&#34;:[&#34;*&#34;],&#34;expiresAt&#34;:null}&#39;</span>
+</span></span><span style="display:flex;"><span>ISSUED-API-KEY-FOR-PROMETHEUS
+</span></span></code></pre></div><p>That key goes to your <code>prometheus.yml</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">scrape_configs</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">job_name</span>: <span style="color:#ae81ff">meilisearch</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">scheme</span>: <span style="color:#ae81ff">https</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">metrics_path</span>: <span style="color:#ae81ff">/api/search/metrics</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">authorization</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">type</span>: <span style="color:#ae81ff">Bearer</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">credentials</span>: <span style="color:#ae81ff">ISSUED-API-KEY-FOR-PROMETHEUS</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">static_configs</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">targets</span>: [<span style="color:#e6db74">&#39;YOUR-WEBSITE:443&#39;</span>]
+</span></span></code></pre></div><p>And then on the host with Meilisearch add this new <code>location</code> to NGINX config (<em>the same config where you have the <a href="#searching-key">searching key</a></em>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#75715e"># Meilisearch metrics (Prometheus)
+</span></span></span><span style="display:flex;"><span><span style="color:#66d9ef">location</span> = <span style="color:#e6db74">/api/search/metrics</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># you might want to restrict the allowed IPs to your home ISP
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e"># or wherever your Prometheus will be sending scraping requests from
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#allow 2.32.0.0/12;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#allow 103.37.6.0/23;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#deny all;
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">limit_except</span> <span style="color:#e6db74">GET</span> { <span style="color:#f92672">deny</span> <span style="color:#e6db74">all</span>; }
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># if you want to apply rate limiting here too, then `nginx.conf` should get
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e"># `limit_req_zone $binary_remote_addr zone=YOUR-WEBSITE_prometheus:1m rate=1r/s;`
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#limit_req zone=YOUR-WEBSITE_prometheus burst=5 nodelay;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#limit_req_status 429;
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># this time NGINX isn&#39;t setting the `Authorization` header here,
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e"># as it is expected to be provided by a client
+</span></span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://127.0.0.1:7700/metrics</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>To check that the Meilisearch metrics endpoint is reachable (<em>after restarting NGINX</em>), try sending requests to it from a different host:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -s <span style="color:#e6db74">&#34;https://YOUR-WEBSITE/api/search/metrics&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -w <span style="color:#e6db74">&#34;\n&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span><span style="color:#e6db74">&#34;message&#34;</span>:<span style="color:#e6db74">&#34;The Authorization header is missing. It must use the bearer authorization method.&#34;</span>,<span style="color:#e6db74">&#34;code&#34;</span>:<span style="color:#e6db74">&#34;missing_authorization_header&#34;</span>,<span style="color:#e6db74">&#34;type&#34;</span>:<span style="color:#e6db74">&#34;auth&#34;</span>,<span style="color:#e6db74">&#34;link&#34;</span>:<span style="color:#e6db74">&#34;https://docs.meilisearch.com/errors#missing_authorization_header&#34;</span><span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ curl -s <span style="color:#e6db74">&#34;https://YOUR-WEBSITE/api/search/metrics&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#34;Authorization: Bearer WRONG-API-KEY&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -w <span style="color:#e6db74">&#34;\n&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span><span style="color:#e6db74">&#34;message&#34;</span>:<span style="color:#e6db74">&#34;The provided API key is invalid.&#34;</span>,<span style="color:#e6db74">&#34;code&#34;</span>:<span style="color:#e6db74">&#34;invalid_api_key&#34;</span>,<span style="color:#e6db74">&#34;type&#34;</span>:<span style="color:#e6db74">&#34;auth&#34;</span>,<span style="color:#e6db74">&#34;link&#34;</span>:<span style="color:#e6db74">&#34;https://docs.meilisearch.com/errors#invalid_api_key&#34;</span><span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ curl -s <span style="color:#e6db74">&#34;https://YOUR-WEBSITE/api/search/metrics&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#34;Authorization: Bearer ISSUED-API-KEY-FOR-PROMETHEUS&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -w <span style="color:#e6db74">&#34;\n&#34;</span> | head -6
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># HELP meilisearch_db_size_bytes Meilisearch DB Size In Bytes</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># TYPE meilisearch_db_size_bytes gauge</span>
+</span></span><span style="display:flex;"><span>meilisearch_db_size_bytes <span style="color:#ae81ff">76771328</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># HELP meilisearch_http_requests_total Meilisearch HTTP requests total</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># TYPE meilisearch_http_requests_total counter</span>
+</span></span><span style="display:flex;"><span>meilisearch_http_requests_total<span style="color:#f92672">{</span>method<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;GET&#34;</span>,path<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/experimental-features&#34;</span>,status<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;200&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">4</span>
+</span></span></code></pre></div><p>If it&rsquo;s all good, then your Prometheus scraping should be working too. And of course the collected metrics can be visualized in Grafana:</p>
+
+
+    <img class="image-post" loading="lazy" src="/blog/2026/10/21/hugo-meilisearch/images/grafana-meilisearch-prometheus.png" alt="Meilisearch Prometheus metrics visualized in Grafana">
+
+<p>I don&rsquo;t know yet which metrics are actually worth tracking, so for now I added a small set of what looked interesting to me. If you&rsquo;d like to use this dashboard as a base for your own, here&rsquo;s an <a href="./etc/grafana-meilisearch-prometheus.json">exported JSON</a> for it.</p>
+<h3 id="mcp-server">MCP server</h3>
+<p>Another nice feature of Meilisearch is an <a href="https://meilisearch.com/docs/getting_started/integrations/mcp">MCP</a> server, which you can add to your LLM agent(s). This feature is also disabled by default, so you need to enable it first:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -s -X PATCH <span style="color:#e6db74">&#34;</span>$M<span style="color:#e6db74">/experimental-features/&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#34;Authorization: Bearer </span>$MEILI_MASTER_KEY<span style="color:#e6db74">&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;Content-Type: application/json&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --data <span style="color:#e6db74">&#39;{&#34;mcpRoute&#34;: true}&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -w <span style="color:#e6db74">&#34;\n&#34;</span> | jq
+</span></span></code></pre></div><p>And you will need to issue a yet another API key:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mkkey <span style="color:#e6db74">&#39;{&#34;name&#34;:&#34;mcp&#34;,&#34;description&#34;:&#34;MCP access for searching&#34;,&#34;actions&#34;:[&#34;search&#34;,&#34;indexes.get&#34;,&#34;documents.get&#34;],&#34;indexes&#34;:[&#34;*&#34;],&#34;expiresAt&#34;:null}&#39;</span>
+</span></span><span style="display:flex;"><span>ISSUED-API-KEY-FOR-MCP
+</span></span></code></pre></div><p>And of course you&rsquo;ll need a yet another reverse-proxy location in NGINX:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#75715e"># Meilisearch MCP
+</span></span></span><span style="display:flex;"><span><span style="color:#66d9ef">location</span> = <span style="color:#e6db74">/api/search/mcp</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># same way you might want to restrict the allowed IPs to your home ISP
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e"># or wherever your LLM agents will be connecting to Meilisearch MCP from
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#allow 2.32.0.0/12;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#allow 103.37.6.0/23;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#deny all;
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_pass</span> <span style="color:#e6db74">http://127.0.0.1:7700/mcp</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># none of these should be needed
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#proxy_set_header Host $host;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#75715e">#proxy_set_header X-Forwarded-Proto $scheme;
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_http_version</span> <span style="color:#ae81ff">1</span><span style="color:#e6db74">.1</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_buffering</span> <span style="color:#66d9ef">off</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">proxy_read_timeout</span> <span style="color:#e6db74">300s</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>To quickly check that it works you don&rsquo;t even need an API key yet:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -sS -X POST <span style="color:#e6db74">&#34;https://YOUR-WEBSITE/api/search/mcp&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;Content-Type: application/json&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;Accept: application/json, text/event-stream&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --data <span style="color:#e6db74">&#39;{
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      &#34;jsonrpc&#34;: &#34;2.0&#34;,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      &#34;id&#34;: 1,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      &#34;method&#34;: &#34;server/discover&#34;,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      &#34;params&#34;: {
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        &#34;_meta&#34;: {
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          &#34;io.modelcontextprotocol/protocolVersion&#34;: &#34;2026-07-28&#34;,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          &#34;io.modelcontextprotocol/clientInfo&#34;: { &#34;name&#34;: &#34;curl-test&#34;, &#34;version&#34;: &#34;1.0.0&#34; }
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        }
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      }
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    }&#39;</span> -w <span style="color:#e6db74">&#34;\n&#34;</span> | jq
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;jsonrpc&#34;</span>: <span style="color:#e6db74">&#34;2.0&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;id&#34;</span>: 1,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;result&#34;</span>: <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;resultType&#34;</span>: <span style="color:#e6db74">&#34;complete&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;supportedVersions&#34;</span>: <span style="color:#f92672">[</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;2026-07-28&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">]</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;_meta&#34;</span>: <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;io.modelcontextprotocol/serverInfo&#34;</span>: <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Meilisearch&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;1.54.3&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;capabilities&#34;</span>: <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;tools&#34;</span>: <span style="color:#f92672">{}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;instructions&#34;</span>: <span style="color:#e6db74">&#34;Meilisearch is a prefix search engine that supports filtering, sorting, federated searching (mixing results from different indexes).Meilisearch support classic keyword search but may also support semantic search throught the use of the hybrid search parameter.\n                You can find more information about available embedders for a given index when describing an index.We recommend you to use the listIndexes, describeIndex, and searchInIndexes tools, in this order to fetch the right informations from the available indexes.&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;ttlMs&#34;</span>: 500000,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;cacheScope&#34;</span>: <span style="color:#e6db74">&#34;private&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>But other queries such as <code>tools/call</code> do require a valid API key:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -sS -X POST <span style="color:#e6db74">&#34;https://YOUR-WEBSITE/api/search/mcp&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#34;Authorization: Bearer ISSUED-API-KEY-FOR-MCP&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;Content-Type: application/json&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;Accept: application/json, text/event-stream&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --data <span style="color:#e6db74">&#39;{
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      &#34;jsonrpc&#34;: &#34;2.0&#34;,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      &#34;id&#34;: 2,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      &#34;method&#34;: &#34;tools/call&#34;,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      &#34;params&#34;: {
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        &#34;_meta&#34;: {
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          &#34;io.modelcontextprotocol/protocolVersion&#34;: &#34;2026-07-28&#34;,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">          &#34;io.modelcontextprotocol/clientInfo&#34;: { &#34;name&#34;: &#34;curl-test&#34;, &#34;version&#34;: &#34;1.0.0&#34; }
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        },
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        &#34;name&#34;: &#34;listIndexes&#34;,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">        &#34;arguments&#34;: {}
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">      }
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">    }&#39;</span> -w <span style="color:#e6db74">&#34;\n&#34;</span> | jq
+</span></span><span style="display:flex;"><span><span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;jsonrpc&#34;</span>: <span style="color:#e6db74">&#34;2.0&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;id&#34;</span>: 2,
+</span></span><span style="display:flex;"><span>  <span style="color:#e6db74">&#34;result&#34;</span>: <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;resultType&#34;</span>: <span style="color:#e6db74">&#34;complete&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;content&#34;</span>: <span style="color:#f92672">[</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;text&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;text&#34;</span>: <span style="color:#e6db74">&#34;{\&#34;results\&#34;:[{\&#34;uid\&#34;:\&#34;INDEX-NAME\&#34;,\&#34;createdAt\&#34;:\&#34;2026-10-13T21:30:12.86320767Z\&#34;,\&#34;updatedAt\&#34;:\&#34;2026-10-13T21:30:25.383947401Z\&#34;,\&#34;primaryKey\&#34;:\&#34;id\&#34;}],\&#34;offset\&#34;:0,\&#34;limit\&#34;:20,\&#34;total\&#34;:1}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">]</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;structuredContent&#34;</span>: <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;results&#34;</span>: <span style="color:#f92672">[</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">{</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#e6db74">&#34;uid&#34;</span>: <span style="color:#e6db74">&#34;INDEX-NAME&#34;</span>,
+</span></span><span style="display:flex;"><span>          <span style="color:#e6db74">&#34;createdAt&#34;</span>: <span style="color:#e6db74">&#34;2026-10-13T21:30:12.86320767Z&#34;</span>,
+</span></span><span style="display:flex;"><span>          <span style="color:#e6db74">&#34;updatedAt&#34;</span>: <span style="color:#e6db74">&#34;2026-10-13T21:30:25.383947401Z&#34;</span>,
+</span></span><span style="display:flex;"><span>          <span style="color:#e6db74">&#34;primaryKey&#34;</span>: <span style="color:#e6db74">&#34;id&#34;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">]</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;offset&#34;</span>: 0,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;limit&#34;</span>: 20,
+</span></span><span style="display:flex;"><span>      <span style="color:#e6db74">&#34;total&#34;</span>: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">}</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;ttlMs&#34;</span>: 500000,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;cacheScope&#34;</span>: <span style="color:#e6db74">&#34;private&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">}</span>
+</span></span></code></pre></div><p>If you got a response like this, then MCP server is ready to be added to your agent. I&rsquo;ll be using <a href="https://claude.com/product/claude-code">Claude Code</a> in this example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ claude mcp add <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --transport http YOUR-WEBSITE https://YOUR-WEBSITE/api/search/mcp <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --header <span style="color:#e6db74">&#34;Authorization: Bearer ISSUED-API-KEY-FOR-MCP&#34;</span>
+</span></span></code></pre></div><p>Restart the agent and check if it can connect to the server:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>❯ /mcp
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Manage MCP servers
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">1</span> server
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Local MCPs <span style="color:#f92672">(</span>/home/claude/.claude.json <span style="color:#f92672">[</span>project: /workspace<span style="color:#f92672">])</span>
+</span></span><span style="display:flex;"><span>❯ ✔ YOUR-WEBSITE   <span style="color:#ae81ff">4</span> tools
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>YOUR-WEBSITE MCP Server
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Status:           ✔ connected
+</span></span><span style="display:flex;"><span>Auth:             ✔ authenticated
+</span></span><span style="display:flex;"><span>Protocol:         2026-07-28
+</span></span><span style="display:flex;"><span>URL:              https://YOUR-WEBSITE/api/search/mcp
+</span></span><span style="display:flex;"><span>Config location:  /home/claude/.claude.json <span style="color:#f92672">[</span>project: /workspace<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>Capabilities: tools
+</span></span><span style="display:flex;"><span>Tools: <span style="color:#ae81ff">4</span> tools
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>❯ 1. View tools
+</span></span><span style="display:flex;"><span>  2. Clear authentication
+</span></span><span style="display:flex;"><span>  3. Reconnect
+</span></span><span style="display:flex;"><span>  4. Disable
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Tools <span style="color:#66d9ef">for</span> YOUR-WEBSITE
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">4</span> tools
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>❯ searchInIndexes 
+</span></span><span style="display:flex;"><span>  facetSearch     
+</span></span><span style="display:flex;"><span>  listIndexes
+</span></span><span style="display:flex;"><span>  describeIndex
+</span></span></code></pre></div><h4 id="large-mcp-responses">Large MCP responses</h4>
+<p>So it did connect, and also the tools worked when I tried some queries/prompts, but I noticed the following warning in the output:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>Large MCP response <span style="color:#f92672">(</span>~10.4k tokens<span style="color:#f92672">)</span>, this can fill up context quickly
+</span></span></code></pre></div><p>When I asked Claude about that, he ran some tests and told me that the <code>instructions</code> text from that <code>server/discover</code> response is somewhat sub-optimal. Here are some of the issues he reported:</p>
+<blockquote>
+<ul>
+<li>There&rsquo;s no way to fetch one chunk by ID. That pushes clients to request full text up front, and it&rsquo;s why I needed a made-up query just to get the missing parts. A <code>get-document</code> tool, or making fields filterable, would fix that;</li>
+<li>The server&rsquo;s instructions to clients don&rsquo;t mention keeping results small. They only say which tools to call in which order. One sentence recommending excerpts and small limits would steer every client toward lean queries;</li>
+<li><code>describeIndex</code> returns only 5 sample hits, not the index settings. A client can&rsquo;t tell which fields support filtering, or whether semantic search is available.</li>
+</ul>
+</blockquote>
+<p>I don&rsquo;t know why default Meilisearch MCP instructions for clients are so &ldquo;not optimized&rdquo; out of the box, maybe because they can&rsquo;t account for all the ways people could be indexing their content? Besides, my <a href="#indexing-script">indexing script</a> is probably doing something &ldquo;unconventional&rdquo;, so that might have contributed too.</p>
+<p>Either way, since there seems to be no way to configure the instructions text, what one can do is overwrite it in NGINX (<em>with <a href="https://nginx.org/en/docs/http/ngx_http_sub_module.html#sub_filter">sub_filter</a></em>), since we are already proxying the MCP requests:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#75715e"># Meilisearch MCP</span>
+</span></span><span style="display:flex;"><span><span style="color:#ae81ff">location = /api/search/mcp {</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># ...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">proxy_pass http://127.0.0.1:7700/mcp;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">proxy_http_version 1.1;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">proxy_buffering off;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">proxy_read_timeout 300s;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">proxy_set_header Accept-Encoding &#34;&#34;; </span> <span style="color:#75715e"># Meilisearch compresses with br/gzip when asked, and sub_filter cannot read compressed bodies</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">sub_filter_types application/json;   </span> <span style="color:#75715e"># the default is text/html only</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">sub_filter_once on;                  </span> <span style="color:#75715e"># each pattern occurs once per response</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># server/discover</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">sub_filter &#39;&#34;instructions&#34;:&#34;Meilisearch is a prefix search engine that supports filtering, sorting, federated searching (mixing results from different indexes).Meilisearch support classic keyword search but may also support semantic search throught the use of the hybrid search parameter.\\n                You can find more information about available embedders for a given index when describing an index.We recommend you to use the listIndexes, describeIndex, and searchInIndexes tools, in this order to fetch the right informations from the available indexes.&#34;&#39;</span>
+</span></span><span style="display:flex;"><span>               <span style="color:#e6db74">&#39;&#34;instructions&#34;:&#34;Search over the YOUR-WEBSITE. It has one index, INDEX-NAME, so skip listIndexes; skip describeIndex as well, because it returns 5 full sample documents (about 6 KB) and no settings. Each document is one section of a page (a long section is split into several chunks): url (page path plus the #anchor of the section; a page intro has no anchor), page_title, hierarchy (heading path), breadcrumbs, section, date, tags, chunk and content. Searchable: content, hierarchy, page_title. Filterable: section (blog, news, etc, projects; the /about/ page has an empty section, which section IS EMPTY matches), tags (about 95, such as cpp, cmake, qt, linux, macos, windows, web, dotnet, home-automation, norway; facetSearch with facetName tags lists them all) and url (=, IN and STARTS WITH; CONTAINS is disabled). Sortable: chunk only. date can be neither filtered nor sorted, but an empty q returns documents newest first, and url STARTS WITH \&#39;/blog/2022/\&#39; or \&#39;/news/2022/05/\&#39; narrows by date. There are no embedders, so hybrid fails, and a search never returns more than 1000 hits. Content is in English and Russian: 88 of 234 blog posts (nearly all from 2014-2018, film reviews among them, so a Latin page_title does not mean English content), all 104 news posts (Russian translations of Norwegian news from 2022) and 17 of 29 etc pages are Russian, so for broad recall send an English and a Russian query in one federated request. Hits are large, so follow the size advice in the searchInIndexes description.&#34;&#39;</span><span style="color:#ae81ff">;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># tools/list - searchInIndexes, insert the INDEX-NAME recipe after the first sentence and keep the rest</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">sub_filter &#39;&#34;description&#34;:&#34;Run multiple search queries in a single API request.&#39;</span>
+</span></span><span style="display:flex;"><span>               <span style="color:#e6db74">&#39;&#34;description&#34;:&#34;Run multiple search queries in a single API request. On INDEX-NAME a hit carries about 1200 characters of content on average and up to 7400, so the default limit of 20 returns about 30 KB. For a first pass set attributesToRetrieve to [url, page_title], attributesToCrop to [content], cropLength to 30 and limit to 10 or below (about 5 KB); do not also list content in attributesToRetrieve, or each hit carries it twice. With federation, put limit in federation instead of in the queries. Hits sharing a url are chunks of one section: get them in order with an empty q, filter url = \&#39;&lt;url&gt;\&#39; and sort chunk:asc. To read several sections in one call, use an empty q, filter url IN [\&#39;&lt;url1&gt;\&#39;, \&#39;&lt;url2&gt;\&#39;] and no sort; sections of one page come back in reading order whatever the list order. For a whole page in reading order use an empty q, filter url STARTS WITH \&#39;&lt;page url without #anchor&gt;\&#39; and no sort, because sorting by chunk interleaves the sections; a page has up to 100 sections in 160 records and 300 KB, so list the outline first with attributesToRetrieve [url, hierarchy, chunk] and limit 200 (up to about 30 KB).&#39;</span><span style="color:#ae81ff">;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># tools/list - describeIndex, replace the misleading description</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">sub_filter &#39;&#34;description&#34;:&#34;Describes an index to understand what\&#39;s stored inside and what\&#39;s its purpose.&#34;&#39;</span>
+</span></span><span style="display:flex;"><span>               <span style="color:#e6db74">&#39;&#34;description&#34;:&#34;Returns only 5 full sample documents (about 6 KB): no settings, no embedders, no field list. On INDEX-NAME skip it; the server instructions already list the fields and settings.&#34;&#39;</span><span style="color:#ae81ff">;</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>One obvious shortcoming of these rewrites is that in newer Meilisearch versions the instructions text can be different, so the rewrites would need to be updated. They will also need to be updated if you&rsquo;ll change your indexing procedure, for example you might start adding new documents incrementally instead of swapping the entire index, or maybe you will change the way splitting works, or something else. So it is fair to say that <code>sub_filter</code> approach is quite fragile, but I am yet to come up with a better alternative.</p>
+<p>Anyway, you can verify whether the rewrites are working or not with a request like:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -s --compressed https://YOUR-WEBSITE/api/search/mcp <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;Accept-Encoding: gzip, br&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;Authorization: Bearer ISSUED-API-KEY-FOR-MCP&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;Content-Type: application/json&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;MCP-Protocol-Version: 2026-07-28&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    --data <span style="color:#e6db74">&#39;{&#34;jsonrpc&#34;:&#34;2.0&#34;,&#34;id&#34;:1,&#34;method&#34;:&#34;server/discover&#34;,&#34;params&#34;:{}}&#39;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>    -w <span style="color:#e6db74">&#34;\n&#34;</span> | jq -r .result.instructions
+</span></span></code></pre></div><h4 id="examples-of-using-mcp-in-claude-code">Examples of using MCP in Claude Code</h4>
+<p>Let&rsquo;s try to use our connected Meilisearch MCP in a live Claude Code session:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-markdown" data-lang="markdown"><span style="display:flex;"><span>❯ Search on decovar.dev with its MCP to find whether author prefers Conan or vcpkg for resolving 3rd-party dependencies in a C++ project                               
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>● The Conan post (2022) takes up every hit. Next I&#39;ll search for vcpkg with that post filtered out:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>● I found two relevant posts: one on Conan from 2022-02-06 and one on vcpkg from 2022-10-30. Now I&#39;ll check where the vcpkg post references Conan and look for any later posts
+</span></span><span style="display:flex;"><span>  comparing the two.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>● I&#39;ll pull the full text of those comparison sections and check later posts to see if vcpkg usage continued.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>● The author prefers vcpkg, and has kept using it for years. They tried Conan first, gave up on it, and wrote up the comparison.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  The evidence:
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">-</span> 2022-02-06, Conan and resolving dependencies in a C++ project (https://decovar.dev/blog/2022/02/06/cpp-dependencies-with-conan/): this was the first attempt, packaging
+</span></span><span style="display:flex;"><span>    pre-built binaries into Conan and hosting them in Artifactory.
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">-</span> 2022-10-30, Managing dependencies in a C++ project with vcpkg (https://decovar.dev/blog/2022/10/30/cpp-dependencies-with-vcpkg/): eight months later they switched. This
+</span></span><span style="display:flex;"><span>    post has sections on why, and two quotes sum it up:
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">-</span> &#34;Why we didn&#39;t proceed with Conan&#34;: they only packed pre-built artifacts without build() recipes, which was &#34;very (very) time-consuming&#34;. Other teams used compiler
+</span></span><span style="display:flex;"><span>      combinations nobody had pre-built. Mixing Conan Center with their own Artifactory went badly. And teammates disliked adding a Python/pip-based tool to the toolchain.
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">-</span> &#34;Speed&#34;: &#34;the research project that took about two weeks to implement with Conan, with vcpkg it barely took 3 days.&#34;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">-</span> &#34;Overall impression&#34;: &#34;vcpkg is more straightforward, down-to-earth and just &#39;based&#39;&#34;. The author also admits that Conan can probably do everything vcpkg does, and that
+</span></span><span style="display:flex;"><span>      they may have used it wrong.
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">-</span> Conan gets credit in two places: its documentation is better, and its dependency graph generation is better.
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">-</span> &#34;An update after a second attempt&#34;, added years later: they redid it properly with --build missing on both Conan 1.x and 2.x. Their verdict: &#34;this second attempt only
+</span></span><span style="display:flex;"><span>      highlighted how Conan is more confusing, less intuitive and in general is &#39;slower&#39; than vcpkg.&#34;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">-</span> Later posts all use vcpkg:
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">-</span> 2023, Steam Deck builds
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">-</span> 2024, C++ in Android
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">-</span> 2025, C++ in .NET (&#34;of course it is resolved with vcpkg&#34;)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">-</span> March 2025 updates to the SDL/Dear ImGui and Logstalgia posts
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">-</span> the author&#39;s own custom vcpkg registry, listed on /projects/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Outside the Conan post itself, Conan only appears in a 2022 note on the GLFW/Dear ImGui post.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  How the MCP behaved: four searches, about 5–10 KB each. All followed the new recipe: skim with cropped content, then fetch the full text of the 5 relevant sections.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">-</span> url IN [...] works: it fetches several sections in one call, which is handy.
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">-</span> Typo-tolerance noise: once the Conan post was excluded, a plain conan query drifted to unrelated &#34;connect&#34; posts, presumably through typo tolerance. That&#39;s expected
+</span></span><span style="display:flex;"><span>    Meilisearch behaviour, not a problem with the rewrites.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>✻ Cooked for 53s
+</span></span></code></pre></div><p>As the actual &ldquo;author&rdquo; from the prompt, I can confirm that these findings are absolutely correct.</p>
+<p>I haven&rsquo;t captured the MCP queries in that session, but here&rsquo;s another one as a video:</p>
+
+
+
+
+
+
+
+<video  controls="yes"   class="video">
+    <source src="https://files.decovar.dev/public/blog/meilisearch/claude-decovar-mcp-piracy.mp4" type="video/mp4">
+</video>
+
+<p class="video-fallback">If video doesn't play in your browser, you can download it <a href="https://files.decovar.dev/public/blog/meilisearch/claude-decovar-mcp-piracy.mp4">here</a>.</p>
+
+
+<p>and also in plain text with the expanded queries this time:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-markdown" data-lang="markdown"><span style="display:flex;"><span>❯ Based on information from decovar MCP, what can you say about the author&#39;s position about piracy?
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>● decovar - searchInIndexes (MCP)(queries: [{&#34;indexUid&#34;:&#34;decovar&#34;,&#34;q&#34;:&#34;piracy&#34;,&#34;attributesToRetrieve&#34;:[&#34;url&#34;,&#34;page_title&#34;],&#34;attributesToCrop&#34;:[&#34;content&#34;],&#34;cropLength&#34;:30},{&#34;indexUid&#34;:&#34;decovar&#34;,&#34;q&#34;:&#34;пиратство&#34;,&#34;attributesToRetrieve&#34;:[&#34;url&#34;,&#34;page_title&#34;],&#34;attributesToCrop&#34;:[&#34;content&#34;],&#34;cropLength&#34;:30},{&#34;indexUid&#34;:&#34;decovar&#34;,&#34;q&#34;:&#34;пиратский торрент&#34;,&#34;attributesToRetrieve&#34;:[&#34;url&#34;,&#34;page_title&#34;],&#34;attributesToCrop&#34;:[&#34;content&#34;],&#34;cropLength&#34;:30},{&#34;indexUid&#34;:&#34;decovar&#34;,&#34;q&#34;:&#34;pirated torrent&#34;,&#34;attributesToRetrieve&#34;:[&#34;url&#34;,&#34;page_title&#34;],&#34;attributesToCrop&#34;:[&#34;content&#34;],&#34;cropLength&#34;:30}],&#34;federation&#34;:{&#34;limit&#34;:15}})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>● decovar - searchInIndexes (MCP)(queries: [{&#34;indexUid&#34;:&#34;decovar&#34;,&#34;q&#34;:&#34;&#34;,&#34;filter&#34;:&#34;tags = piracy&#34;,&#34;attributesToRetrieve&#34;:[&#34;url&#34;,&#34;page_title&#34;,&#34;date&#34;],&#34;limit&#34;:50}])
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>● decovar - searchInIndexes (MCP)(queries: [{&#34;indexUid&#34;:&#34;decovar&#34;,&#34;q&#34;:&#34;&#34;,&#34;filter&#34;:&#34;tags = piracy AND NOT url STARTS WITH
+</span></span><span style="display:flex;"><span>  &#39;/blog/2023/04/10/steam-deck/&#39;&#34;,&#34;attributesToRetrieve&#34;:[&#34;url&#34;,&#34;page_title&#34;,&#34;date&#34;,&#34;tags&#34;],&#34;limit&#34;:50}])
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>● decovar - searchInIndexes (MCP)(queries: [{&#34;indexUid&#34;:&#34;decovar&#34;,&#34;q&#34;:&#34;&#34;,&#34;filter&#34;:&#34;url IN [&#39;/blog/2017/08/11/ulysses-switched-to-subscription/&#39;,
+</span></span><span style="display:flex;"><span>  &#39;/blog/2018/08/23/tower-switched-to-subscription/&#39;, &#39;/blog/2014/08/09/no-more-overlicensed/&#39;,
+</span></span><span style="display:flex;"><span>  &#39;/blog/2014/11/25/yify-crap-releases/&#39;]&#34;,&#34;attributesToRetrieve&#34;:[&#34;url&#34;,&#34;chunk&#34;,&#34;content&#34;],&#34;limit&#34;:20}])
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>● Found nine posts tagged piracy from 2014–2023 and read the four opinion-focused ones. Now I&#39;ll pull the relevant sections from the remaining five (Steam Deck, Cineworld,
+</span></span><span style="display:flex;"><span>  seedbox, Apple TV, proxy).
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>● decovar - searchInIndexes (MCP)(queries: [{&#34;indexUid&#34;:&#34;decovar&#34;,&#34;q&#34;:&#34;&#34;,&#34;filter&#34;:&#34;url IN [&#39;/blog/2023/04/10/steam-deck/#how-did-i-get-it&#39;,
+</span></span><span style="display:flex;"><span>  &#39;/blog/2023/04/10/steam-deck/#games&#39;, &#39;/blog/2023/04/10/steam-deck/#overall&#39;, &#39;/blog/2017/10/26/cineworld-imax-london/&#39;, &#39;/blog/2016/04/15/seedbox/&#39;,
+</span></span><span style="display:flex;"><span>  &#39;/blog/2019/12/26/appletv-kodi-network-share/#the-fuck-then-would-you-buy-apple-tv-for&#39;,
+</span></span><span style="display:flex;"><span>  &#39;/blog/2017/11/22/http-debugging-proxy-macos/#09062018--trial-version&#39;]&#34;,&#34;attributesToRetrieve&#34;:[&#34;url&#34;,&#34;chunk&#34;,&#34;content&#34;],&#34;limit&#34;:20}])
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>● The author of decovar.dev doesn&#39;t call piracy right or wrong as a rule. He decides case by case: he calls it stealing, prefers to pay, and pirates when he can&#39;t afford
+</span></span><span style="display:flex;"><span>  something or when the legal version is worse. Nine posts carry the site&#39;s piracy tag (2014–2023), and they&#39;re consistent on this.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  He calls it stealing and pays when he can
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">-</span> In the Ulysses post (2017) he says that for years everything on his computer was warez. He was a poor kid in a small Russian town in the 1990s, with no software shop
+</span></span><span style="display:flex;"><span>    and no proper internet. Once he had a developer salary in Moscow he bought Windows, Office and Total Commander. He says he&#39;s &#34;ashamed&#34; most about Total Commander,
+</span></span><span style="display:flex;"><span>    which he used cracked for 15+ years. He also bought old games like Doom and Wolfenstein on Steam, though he&#39;d finished them long ago, because &#34;back then they were
+</span></span><span style="display:flex;"><span>    &#39;stolen&#39;, and now I&#39;m paying back&#34;.
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">-</span> The seedbox post (2016, in Russian) is aimed at a &#34;poor student&#34; who will &#34;certainly pay for what was stolen in the hungry years (if it&#39;s worth it)&#34; once successful,
+</span></span><span style="display:flex;"><span>    but for now &#34;can only steal&#34;. Its practical advice is how to avoid being identified by rights-holders.
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">-</span> He says he&#39;ll pay high prices for good software: &#34;I&#39;m fine to pay once (even if the price is high – if it&#39;s worth it, I&#39;ll pay).&#34;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Things he says justify pirating
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">1.</span> DRM and extra services. In 2014 he bought GTA IV: Episodes legally and couldn&#39;t play it, because it depended on Games for Windows LIVE, which had shut down. A pirated
+</span></span><span style="display:flex;"><span>     copy would have just run. His sarcastic conclusion: choosing between pirate and licensed for GTA V is &#34;a very hard question&#34;. The 2023 Steam Deck post lists his
+</span></span><span style="display:flex;"><span>     usual reasons: DRM that hurts performance, extra launchers, third-party EULAs, forced accounts, needless always-online checks and DLC milking. He even gives a
+</span></span><span style="display:flex;"><span>     RuTracker ID for one game he&#39;ll &#34;never pay a single cent for&#34;.
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">2.</span> Subscriptions. On Ulysses (2017): &#34;you guys are promoting piracy yourselves.&#34; On Tower (2018): &#34;Sometimes it feels like I should&#39;ve just kept stealing it via
+</span></span><span style="display:flex;"><span>     torrent-trackers.&#34;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">3.</span> A bad paid experience. After about 28 minutes of ads before a film at a London IMAX cinema (2017), he wrote that he has &#34;no choice but the obvious one&#34;.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  What he actually did
+</span></span><span style="display:flex;"><span>  In the subscription cases he made threats but then left legally. Ulysses gave him a refund and a free period, and he later moved to iA Writer because it&#39;s a one-time
+</span></span><span style="display:flex;"><span>  purchase. He dropped Tower for the free SourceTree, even though his own Tower licence was still valid.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  His tone
+</span></span><span style="display:flex;"><span>  A 2014 post (in Russian) mocks people who download low-quality YIFY releases and recommends better release groups. It ends &#34;stealing is bad, of course – if you liked the
+</span></span><span style="display:flex;"><span>  film, buy it on disc or iTunes&#34;, which, after a guide on which pirate releases to pick, reads at least partly tongue-in-cheek.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  In short: he treats piracy as a reasonable answer to being poor or to treatment he sees as hostile to customers (DRM, subscriptions, ads, DLC). He&#39;s happy to pay
+</span></span><span style="display:flex;"><span>  companies he thinks treat users fairly, and he praises Valve and the Steam Deck for openness.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Sources are the decovar.dev blog posts: /blog/2017/08/11/ulysses-switched-to-subscription/, /blog/2018/08/23/tower-switched-to-subscription/,
+</span></span><span style="display:flex;"><span>  /blog/2014/08/09/no-more-overlicensed/, /blog/2016/04/15/seedbox/, /blog/2014/11/25/yify-crap-releases/, /blog/2017/10/26/cineworld-imax-london/ and
+</span></span><span style="display:flex;"><span>  /blog/2023/04/10/steam-deck/#games. I didn&#39;t read every section of the Apple TV/Kodi and HTTP-proxy posts, which also carry the tag, but the sections I checked don&#39;t add
+</span></span><span style="display:flex;"><span>  to this.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>✻ Crunched for 1m 0s
+</span></span></code></pre></div><p>Looking at the MCP queries, here&rsquo;s how the search went:</p>
+<ol>
+<li>First it executed 4 searches for <code>piracy</code>, <code>пиратство</code>, <code>пиратский торрент</code> and <code>pirated torrent</code> multi-language keywords in one request and used federation to merge results from all of those searches into a single ranked list. The data it selected to fetch was <code>url</code>, <code>page_title</code> and cropped <code>content</code>;
+<ul>
+<li>dunno why it decided to associate <code>torrent</code>/<code>торрент</code> keywords with piracy, no idea whatsoever;</li>
+</ul>
+</li>
+<li>Then it sent requests with empty search query, just filtering by tags and URLs and without fetching the <code>content</code> at all;</li>
+<li>And then it finally fetched the full uncropped <code>content</code> from the narrowed down 9 articles: first from the 4 that got classified as &ldquo;opinion-focused&rdquo; and then from the remaining 5, using just the <code>url IN</code> filter for both queries.</li>
+</ol>
+<p>Searching in more than one language (<em>so both in english and russian</em>), grouping several search queries in one request and merging the results, not fetching the full article/post/page content right away (<em>so getting cropped content first</em>) - all of that happened thanks to the <a href="#large-mcp-responses">updated instructions text</a>, otherwise the agent likely would have spent a larger amount of tokens and probably would have missed some content too (<em>especially the parts in russian</em>).</p>
+<p>I say, that is pretty cool, even on such a basic level of integration (<em>I haven&rsquo;t yet touched more advanced features such as semantic/hybrid search, conversations, embedders and so on</em>).</p>
+      </div>
+    </article>
+    <div><div id="tags">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://retifrav.github.io/tags/web/">web</a><a class="tag" href="https://retifrav.github.io/tags/hugo/">hugo</a><a class="tag" href="https://retifrav.github.io/tags/linux/">linux</a><a class="tag" href="https://retifrav.github.io/tags/devops/">devops</a><a class="tag" href="https://retifrav.github.io/tags/ai/">ai</a><a class="tag" href="https://retifrav.github.io/tags/mcp/">mcp</a></div><hr class="comments-divider"/>
+      <div id="comments">
+      
+          <div style="border:2px orange solid; background-color: floralwhite; border-radius:0.5rem; padding: 10px 14px; font-style:italic; font-size:0.9em;">
+              If you'd like to comment the article, you can do it on the
+              <a href="https://decovar.dev/blog/2026/10/21/hugo-meilisearch/#remark42" style="font-weight:bold;">
+                  original website</a>. This one is just a mirror without comments.
+          </div>
+      
+      </div>
+    </div>
+  </div>
+
+  
+        <div id="footer">
+          <div>
+              2014 - 2026,
+              <a href="/about/">retif</a>
+          </div>
+          <div><a href="/about/#licenses">CC BY-SA 4.0 / GPLv3</a></div>
+        </div>
+      </main>
+      <div class="app-header">
+        <div style="margin:0 0 20px;">
+            <input id="search-query" placeholder="Search in titles and summaries" />
+            <div id="search-results" style="display:none;"></div>
+        </div>
+        <div id="sidebars">
+            <a id="avatar" href="/about">
+                <img class="app-header-avatar" src="/images/avatar.png" />
+            </a>
+            <div class="sidebar-section" style="margin-top:1em;">
+                <h3 style="margin-top:0;">Donation</h3>
+                <p style="margin:8px 0 0 0;">
+                    You can support me by donating cryptocurrency to either of the following wallets
+                    (<i><a href="https://decovar.dev/donation.txt" style="color:#1e8449;">signed variant</a></i>):
+                </p>
+                <ul class="cryptocurrency-wallets">
+                    <li class="cryptocurrency-wallet-information">
+                        <p>XLM</p>
+                        <pre><code>GDYB2QGJYWT6VPT7O7INWIGRGJF5ZEAQ7Y73S4T47IOP2QQ554NPN3ZM</code></pre>
+                    </li>
+                    <li class="cryptocurrency-wallet-information">
+                        <p>BTC</p>
+                        <pre><code>bc1q2kfqwm2kwyw37ay2g4tnguasvp6j4hsmtrgjte</code></pre>
+                    </li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+              <h3>Feeds</h3>
+              <div class="sidebar-row">
+                <a href="/index.xml" title="Subscribe to RSS">
+                  <img src="/images/rss.png" class="sidebar-row-icon">
+                </a>
+                
+                <a href="https://t.me/decovar" title="Telegram channel">
+                  <img src="/images/telegram.png" class="sidebar-row-icon">
+                </a>
+              </div>
+            </div>
+            
+            
+            
+            
+            <div class="sidebar-section">
+              <h3>Tags</h3>
+              <ul style="list-style-type:none; padding:0; margin:0;">
+                  
+                  <li><a href="/tags/web">web (71)</a></li>
+                  
+                  <li><a href="/tags/fail">fail (40)</a></li>
+                  
+                  <li><a href="/tags/dotnet">dotnet (38)</a></li>
+                  
+                  <li><a href="/tags/qt">qt (35)</a></li>
+                  
+                  <li><a href="/tags/linux">linux (29)</a></li>
+                  
+                  <li><a href="/tags/review">review (28)</a></li>
+                  
+                  <li><a href="/tags/devops">devops (24)</a></li>
+                  
+                  <li><a href="/tags/macos">macos (23)</a></li>
+                  
+                  <li><a href="/tags/windows">windows (19)</a></li>
+                  
+                  <li><a href="/tags/mestuff">mestuff (17)</a></li>
+                  
+                  <li><a href="/tags/movies">movies (15)</a></li>
+                  
+                  <li><a href="/tags/norway">norway (15)</a></li>
+                  
+                  <li><a href="/tags/tractor">tractor (15)</a></li>
+                  
+                  <li><a href="/tags/cpp">cpp (13)</a></li>
+                  
+                  <li><a href="/tags/cmake">cmake (12)</a></li>
+                  
+                  <li><a href="/tags/irl">irl (12)</a></li>
+                  
+                  <li><a href="/tags/python">python (12)</a></li>
+                  
+                  <li><a href="/tags/telegram">telegram (12)</a></li>
+                  
+                  <li><a href="/tags/embedded">embedded (11)</a></li>
+                  
+                  <li><a href="/tags/soft">soft (10)</a></li>
+                  
+                  <li><a href="/tags/travel">travel (10)</a></li>
+                  
+                  <li><a href="/tags/applescript">applescript (9)</a></li>
+                  
+                  <li><a href="/tags/piracy">piracy (9)</a></li>
+                  
+                  <li><a href="/tags/ios">ios (8)</a></li>
+                  
+                  <li><a href="/tags/octopress">octopress (8)</a></li>
+                  
+                  <li><a href="/tags/apple">apple (7)</a></li>
+                  
+                  <li><a href="/tags/banks">banks (7)</a></li>
+                  
+                  <li><a href="/tags/games">games (7)</a></li>
+                  
+                  <li><a href="/tags/javascript">javascript (6)</a></li>
+                  
+                  <li><a href="/tags/photo">photo (6)</a></li>
+                  
+                  <li><a href="/tags/sql">sql (6)</a></li>
+                  
+                  <li><a href="/tags/hugo">hugo (5)</a></li>
+                  
+                  <li><a href="/tags/russia">russia (5)</a></li>
+                  
+                  <li><a href="/tags/android">android (4)</a></li>
+                  
+                  <li><a href="/tags/usa">usa (4)</a></li>
+                  
+                  <li><a href="/tags/wordpress">wordpress (4)</a></li>
+                  
+                  <li><a href="/tags/azure">azure (3)</a></li>
+                  
+                  <li><a href="/tags/tv">tv (3)</a></li>
+                  
+                  <li><a href="/tags/home-automation">home-automation (2)</a></li>
+                  
+                  <li><a href="/tags/privacy">privacy (2)</a></li>
+                  
+                  <li><a href="/tags/steam-deck">steam-deck (2)</a></li>
+                  
+                  <li><a href="/tags/tvos">tvos (2)</a></li>
+                  
+                  <li><a href="/tags/unsolved">unsolved (2)</a></li>
+                  
+                  <li><a href="/tags/ai">ai (1)</a></li>
+                  
+                  <li><a href="/tags/books">books (1)</a></li>
+                  
+                  <li><a href="/tags/ffmpeg">ffmpeg (1)</a></li>
+                  
+                  <li><a href="/tags/ldap">ldap (1)</a></li>
+                  
+                  <li><a href="/tags/mcp">mcp (1)</a></li>
+                  
+                  <li><a href="/tags/music">music (1)</a></li>
+                  
+                  <li><a href="/tags/science">science (1)</a></li>
+                  
+                  <li><a href="/tags/vr">vr (1)</a></li>
+                  
+              </ul>
+            </div>
+        </div>
+      </header>
+    </div>
+
+    <script src="/js/search.js"></script>
+
+    
+    
+
+    <script>
+        
+        window.onload = () =>
+        {
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+        }
+    </script>
+
+    
+    
+  </body>
+</html>
