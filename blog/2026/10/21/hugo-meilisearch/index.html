@@ -34,7 +34,7 @@
 
     
 
-    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.60c1bc4160e9f7ac460008102a8b89c4a1c40300022aecbd52888b2c5cafb9d0.css" />
+    <link rel="stylesheet" href="https://retifrav.github.io/css/main.min.ff8ca6852e7a73a455c9735158d574e21a0a347a283d9137eb0f216b4d32741d.css" />
     <link rel="stylesheet" href="/css/default.css" />
     <link rel="stylesheet" href="/css/post.css" />
     <link rel="stylesheet" href="/css/page.css" />
@@ -71,7 +71,7 @@
 </svg> 2026-10-21 16:36:48 &#43;0200</div>
           <div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
   <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-</svg> 35 min read</div>
+</svg> 38 min read</div>
         </div>
       </header>
       <div class="post-content">
@@ -111,7 +111,11 @@
         <li><a href="#hugo-integration">Hugo integration</a>
           <ul>
             <li><a href="#new-custom-output-and-updated-layout">New custom output and updated layout</a></li>
-            <li><a href="#updated-searchjs">Updated search.js</a></li>
+            <li><a href="#updated-searchjs">Updated search.js</a>
+              <ul>
+                <li><a href="#later-addition-of-the-page-field">Later addition of the page field</a></li>
+              </ul>
+            </li>
           </ul>
         </li>
         <li><a href="#indexing-script">Indexing script</a></li>
@@ -149,6 +153,7 @@
 <li><a href="#mcp-server">MCP</a> integration for LLM agents;</li>
 <li>some more features that I have not read about yet.</li>
 </ul>
+<p>Hell, the search got so advanced that I had to write a guide for <a href="/how-to-use-search/">how to use it</a>.</p>
 <h3 id="alternatives">Alternatives</h3>
 <p>There are several other search engines available, out of which I was also considering the following:</p>
 <ul>
@@ -472,8 +477,29 @@
 <h4 id="updated-searchjs">Updated search.js</h4>
 <p>My crude <a href="/blog/2020/01/05/hugo-search/#write-the-search-function">search function</a> has changed quite a lot, but in short what it does now is first it tries to send a query to Meilisearch, and if that fails, then it fallbacks to the <a href="#basic-search-as-a-fallback">basic search</a> (<em>which got some small improvements too</em>).</p>
 <p>There are several interesting implementation details in the updated script, such as utilizing <a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortController">AbortController</a> for cancelled search queries and using search &ldquo;generations&rdquo; to drop no longer relevant (<em>superseded</em>) results, but it is probably better if you inspect the full script yourself instead of me posting 300+ lines here. The version that I had when I was writing this article is saved separately <a href="./etc/5440e6e809c40e780f27d4cab155f660c94aee10.search.js">here</a>, but you can also get the <a href="/js/search.js">latest version</a> directly from the live website.</p>
+<h5 id="later-addition-of-the-page-field">Later addition of the page field</h5>
+<p>One problem I didn&rsquo;t immediately notice was that trying to search for &ldquo;<em>conan</em>&rdquo; keyword showed me results for just <a href="/blog/2022/02/06/cpp-dependencies-with-conan/">one article</a>, but I knew that Conan is for sure mentioned in at least <a href="/blog/2022/10/30/cpp-dependencies-with-vcpkg/">one more article</a>. The reason turned out to be the fact that default ranking favors title matches, and all the &ldquo;<em>conan</em>&rdquo; matches from the Conan article (<em>68 in total</em>) outranked &ldquo;<em>conan</em>&rdquo; matches from other articles, and since search results get cut off at 50 limit, matches from other articles (<em>as well as remaining 18 matches from the Conan article</em>) were discarded.</p>
+<p>To account for this I needed to:</p>
+<ol>
+<li>Add a filterable <code>page</code> field to the index (<em>that should happen in the <a href="#indexing-script">indexing script</a></em>);</li>
+<li>Send two requests in parallel (<em>with <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all">Promise.all()</a></em>) in <code>search.js</code>:
+<ul>
+<li>one is to get the best section of each page (<em>which pages will get listed and in what order</em>);</li>
+<li>and another is the current top-50 query.</li>
+</ul>
+</li>
+</ol>
+<p>That way super long articles with 50+ matches for a search keyword should no longer &ldquo;evict&rdquo; other articles matches from the search results.</p>
+<p>But that was not the end of it, as a bit later I noticed that some of the search results listed sections that had nothing to do with the search query. That turned out to be the same title matching problem but from a different point: that second top-50 request was searching in page titles too, so every section of that article was getting a match in its title, and since a match in the title outranks everything else, it didn&rsquo;t matter that the some sections were also a match in their heading and text, because all the sections of that article were getting the same rank and with the same original order of how they go on the page. And since I made it so that only 3 sections per page are shown in the results, those sections were getting discarded too.</p>
+<p>So now the search goes like this:</p>
+<ol>
+<li>That second top-50 request searches only in the sections headings and text;</li>
+<li>The best section of a page from the first request gets listed first, but only if the search query matched in that section itself, not just in the page title. That is still needed for queries where some of the words are only in the page title, because without the titles the second request wouldn&rsquo;t find the sections that have only the rest of the words (<em>by default Meilisearch drops words from the end of the query</em>), while for the first request that is exactly the best section of the page;</li>
+<li>If a page matched only in its title, it gets listed without any sections.</li>
+</ol>
+<p>A short summary at this point would be that implementing a proper search functionality on a website is fekkin not trivial at all - I had to update my searching script at least 3 times already, while it&rsquo;s been only a couple of days since the deployment.</p>
 <h3 id="indexing-script">Indexing script</h3>
-<p>So yes, there needs to be something that would index your website content, as Meilisearch itself does not fetch or crawl anything (<em>unless you are using their <a href="https://meilisearch.com/pricing">cloud variant</a></em>), so data will get into Meilisearch instance only when a script or some other executable will call the API to create an <a href="https://meilisearch.com/docs/resources/internals/indexes">index</a>. Moreover, Meilisearch operates with <a href="https://meilisearch.com/docs/capabilities/indexing/tasks_and_batches/monitor_tasks">asynchronous tasks</a>, and to know their status one would also need to poll the API. But even before calling the API, <code>search-records.json</code> file needs to be split into <a href="https://meilisearch.com/docs/resources/internals/documents">documents</a>, while also splitting long articles into chunks and trying not to tear code blocks into unrelated pieces.</p>
+<p>So yes, there needs to be something that would index your website content, as Meilisearch itself does not fetch or crawl anything (<em>unless you are using their <a href="https://meilisearch.com/pricing">cloud variant</a></em>), so data will get into Meilisearch instance only when a script or some other executable will call the API to create an <a href="https://meilisearch.com/docs/resources/internals/indexes">index</a>. Moreover, Meilisearch operates with <a href="https://meilisearch.com/docs/capabilities/indexing/tasks_and_batches/monitor_tasks">asynchronous tasks</a>, and to know their status one would also need to poll the API. But even before calling the API, <code>search-records.json</code> file needs to be split into <a href="https://meilisearch.com/docs/resources/internals/documents">documents</a>, while also splitting long articles into sections/chunks and trying not to tear code blocks into unrelated pieces.</p>
 <p>I figured that all of that can be done by a Python script, which I named simply <code>index-for-search.py</code>. Same as with the <a href="#updated-searchjs">search.js</a>, I won&rsquo;t post the entire 600+ lines of it in the article - you can get the full script from <a href="./etc/5440e6e809c40e780f27d4cab155f660c94aee10.index-for-search.py">here</a>. Also, not gonna lie, I didn&rsquo;t exactly write it myself, if you know what I mean.</p>
 <p>The script is meant to be run by CI/CD build agent over SSH right after the website content (<em>Hugo output</em>) is deployed to server:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ssh -o BatchMode<span style="color:#f92672">=</span>yes -o StrictHostKeyChecking<span style="color:#f92672">=</span>accept-new buildbot@YOUR-HOST <span style="color:#ae81ff">\
@@ -801,7 +827,8 @@
 </span></span><span style="display:flex;"><span>    <span style="color:#ae81ff">sub_filter &#39;&#34;description&#34;:&#34;Describes an index to understand what\&#39;s stored inside and what\&#39;s its purpose.&#34;&#39;</span>
 </span></span><span style="display:flex;"><span>               <span style="color:#e6db74">&#39;&#34;description&#34;:&#34;Returns only 5 full sample documents (about 6 KB): no settings, no embedders, no field list. On INDEX-NAME skip it; the server instructions already list the fields and settings.&#34;&#39;</span><span style="color:#ae81ff">;</span>
 </span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><p>One obvious shortcoming of these rewrites is that in newer Meilisearch versions the instructions text can be different, so the rewrites would need to be updated. They will also need to be updated if you&rsquo;ll change your indexing procedure, for example you might start adding new documents incrementally instead of swapping the entire index, or maybe you will change the way splitting works, or something else. So it is fair to say that <code>sub_filter</code> approach is quite fragile, but I am yet to come up with a better alternative.</p>
+</span></span></code></pre></div><p>Clearly, these are not universal, as they work only for my particular website, so you would need to come up with the ones specific to yours.</p>
+<p>One other shortcoming of these rewrites is that in newer Meilisearch versions the instructions text can be different, so the rewrites would need to be updated. They will also need to be updated if you&rsquo;ll change your indexing procedure (<em>like it happened <a href="#later-addition-of-the-page-field">here</a></em>), or you will start adding new documents incrementally instead of swapping the entire index, or maybe you will change the way splitting works, etc. In short, it is fair to say that <code>sub_filter</code> approach is quite fragile.</p>
 <p>Anyway, you can verify whether the rewrites are working or not with a request like:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ curl -s --compressed https://YOUR-WEBSITE/api/search/mcp <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span>    -H <span style="color:#e6db74">&#39;Accept-Encoding: gzip, br&#39;</span> <span style="color:#ae81ff">\
